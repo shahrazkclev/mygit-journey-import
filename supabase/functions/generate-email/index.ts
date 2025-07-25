@@ -33,19 +33,8 @@ Deno.serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     );
 
-    // Get user from auth header
-    const authHeader = req.headers.get('Authorization');
-    if (!authHeader) {
-      throw new Error('No authorization header');
-    }
-
-    const { data: { user }, error: authError } = await supabase.auth.getUser(
-      authHeader.replace('Bearer ', '')
-    );
-
-    if (authError || !user) {
-      throw new Error('Invalid authentication');
-    }
+    // Skip authentication for demo purposes
+    const demoUserId = '550e8400-e29b-41d4-a716-446655440000';
 
     const { prompt, subject, styleGuide }: EmailGenerationRequest = await req.json();
 
@@ -60,33 +49,25 @@ Deno.serve(async (req) => {
     }
 
     // Prepare the prompt for Claude
-    const systemPrompt = `You are an expert email marketing copywriter. Create a professional, engaging HTML email template based on the user's requirements. 
+    const systemPrompt = `You are creating a professional email for a business. Write naturally as if a human is communicating directly with another person. 
 
-Style Guidelines:
-- Brand Name: ${styleGuide?.brandName || 'Your Brand'}
-- Primary Color: ${styleGuide?.primaryColor || '#684cff'}
-- Secondary Color: ${styleGuide?.secondaryColor || '#22d3ee'}
-- Accent Color: ${styleGuide?.accentColor || '#34d399'}
-- Font Family: ${styleGuide?.fontFamily || 'Segoe UI, sans-serif'}
-- Tone: ${styleGuide?.tone || 'friendly'}
-- Brand Voice: ${styleGuide?.brandVoice || 'Professional yet approachable'}
+Brand Style:
+- Brand: ${styleGuide?.brandName || 'Your Brand'}  
+- Colors: Primary ${styleGuide?.primaryColor || '#684cff'}, Secondary ${styleGuide?.secondaryColor || '#22d3ee'}, Accent ${styleGuide?.accentColor || '#34d399'}
+- Font: ${styleGuide?.fontFamily || 'Arial, sans-serif'}
+- Voice: ${styleGuide?.tone || 'friendly'} and ${styleGuide?.brandVoice || 'professional'}
 
-Requirements:
-1. Create a complete HTML email template with embedded CSS
-2. Use EXACTLY these colors: Primary: ${styleGuide?.primaryColor || '#684cff'}, Secondary: ${styleGuide?.secondaryColor || '#22d3ee'}, Accent: ${styleGuide?.accentColor || '#34d399'}
-3. Apply the primary color to headers and main CTA buttons
-4. Apply the secondary color to secondary elements and backgrounds
-5. Apply the accent color to highlights and hover states
-6. Include proper email structure (header, content, footer)
-7. Add placeholder variables: {{name}}, {{unsubscribe_url}}
-8. Make it mobile-responsive
-9. Include a clear call-to-action button using the primary color
-10. Use the specified tone and brand voice
-11. Add the email signature: ${styleGuide?.emailSignature || 'Best regards,\\nThe Team'}
+Create a simple, clean HTML email that:
+1. Uses a subtle gradient background with the brand colors
+2. Has a clean white content area with simple styling  
+3. Includes {{name}} and {{unsubscribe_url}} placeholders
+4. Ends with: ${styleGuide?.emailSignature || 'Best regards,\\nThe Team'}
+5. Sounds natural and human - avoid corporate jargon
+6. Keep styling minimal and elegant
 
-Return only the HTML code, no explanations.`;
+Return only clean HTML code.`;
 
-    const userPrompt = `Create an email with subject "${subject}" based on this prompt: ${prompt}`;
+    const userPrompt = `Subject: "${subject}" - Write about: ${prompt}`;
 
     // Call Claude API
     const claudeResponse = await fetch('https://api.anthropic.com/v1/messages', {
@@ -122,7 +103,7 @@ Return only the HTML code, no explanations.`;
     }
 
     // Log the successful generation
-    console.log('Email template generated successfully for user:', user.id);
+    console.log('Email template generated successfully');
 
     return new Response(
       JSON.stringify({
@@ -130,7 +111,7 @@ Return only the HTML code, no explanations.`;
         htmlContent: generatedHtml,
         metadata: {
           subject,
-          userId: user.id,
+          userId: demoUserId,
           generatedAt: new Date().toISOString(),
         }
       }),
