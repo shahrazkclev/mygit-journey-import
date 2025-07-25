@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -7,25 +7,83 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Slider } from "@/components/ui/slider";
+import { ColorPicker } from "@/components/ui/color-picker";
 import { Sparkles, Send, Eye, Wand2, MessageSquare, Palette } from "lucide-react";
 import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
 
 export const CampaignComposer = () => {
   const [subject, setSubject] = useState("");
   const [prompt, setPrompt] = useState("");
   const [generatedTemplate, setGeneratedTemplate] = useState("");
   const [isGenerating, setIsGenerating] = useState(false);
-  const [selectedList, setSelectedList] = useState("");
+  const [selectedLists, setSelectedLists] = useState<string[]>([]);
+  const [availableLists, setAvailableLists] = useState<any[]>([]);
   const [isEditingWithAI, setIsEditingWithAI] = useState(false);
   const [aiEditPrompt, setAiEditPrompt] = useState("");
   const [showPreview, setShowPreview] = useState(false);
   const [senderCycleCount, setSenderCycleCount] = useState([10]);
   const [currentEmailCount, setCurrentEmailCount] = useState(0);
+  const [styleGuide, setStyleGuide] = useState<any>(null);
   
-  // Theme colors
+  // Theme colors (fallback if no style guide)
   const [primaryColor, setPrimaryColor] = useState("#684cff");
   const [secondaryColor, setSecondaryColor] = useState("#22d3ee");
   const [accentColor, setAccentColor] = useState("#34d399");
+
+  useEffect(() => {
+    loadEmailLists();
+    loadStyleGuide();
+  }, []);
+
+  const loadEmailLists = async () => {
+    try {
+      const { data: { user }, error: authError } = await supabase.auth.getUser();
+      if (authError || !user) return;
+
+      const { data: lists, error } = await supabase
+        .from('email_lists')
+        .select('*')
+        .eq('user_id', user.id);
+
+      if (error) {
+        console.error('Error loading email lists:', error);
+        return;
+      }
+
+      setAvailableLists(lists || []);
+    } catch (error) {
+      console.error('Error in loadEmailLists:', error);
+    }
+  };
+
+  const loadStyleGuide = async () => {
+    try {
+      const { data: { user }, error: authError } = await supabase.auth.getUser();
+      if (authError || !user) return;
+
+      const { data: guides, error } = await supabase
+        .from('style_guides')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('updated_at', { ascending: false })
+        .limit(1);
+
+      if (error) {
+        console.error('Error loading style guide:', error);
+        return;
+      }
+
+      if (guides && guides.length > 0) {
+        setStyleGuide(guides[0]);
+        setPrimaryColor(guides[0].primary_color);
+        setSecondaryColor(guides[0].secondary_color);
+        setAccentColor(guides[0].accent_color);
+      }
+    } catch (error) {
+      console.error('Error in loadStyleGuide:', error);
+    }
+  };
 
   const handleGenerateTemplate = async () => {
     if (!prompt.trim()) {
@@ -33,45 +91,59 @@ export const CampaignComposer = () => {
       return;
     }
 
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    if (authError || !user) {
+      toast.error("Please sign in to generate templates");
+      return;
+    }
+
     setIsGenerating(true);
     
-    // Simulate AI generation (replace with actual Claude API call)
-    setTimeout(() => {
-      const template = `
-        <html>
-          <head>
-            <style>
-              body { font-family: 'Segoe UI', sans-serif; background: linear-gradient(135deg, #f8f6ff, #e8f4f8); margin: 0; padding: 20px; }
-              .container { max-width: 600px; margin: 0 auto; background: white; border-radius: 16px; overflow: hidden; box-shadow: 0 8px 32px rgba(104, 76, 255, 0.1); }
-              .header { background: linear-gradient(135deg, #ddd6fe, #bae6fd); padding: 40px 30px; text-align: center; }
-              .content { padding: 30px; line-height: 1.6; color: #374151; }
-              .footer { background: #f9fafb; padding: 20px 30px; text-align: center; font-size: 12px; color: #6b7280; }
-              .cta { background: linear-gradient(135deg, #ddd6fe, #a7f3d0); color: #1f2937; padding: 12px 24px; border-radius: 8px; text-decoration: none; display: inline-block; margin: 20px 0; }
-            </style>
-          </head>
-          <body>
-            <div class="container">
-              <div class="header">
-                <h1 style="margin: 0; color: #1f2937; font-size: 28px;">Hello {{name}}!</h1>
-              </div>
-              <div class="content">
-                <p>We hope this message finds you well. Based on your prompt: "${prompt}"</p>
-                <p>This is a beautifully crafted email template that follows your style guide. It's designed to be engaging, personal, and effective.</p>
-                <a href="#" class="cta">Take Action Now</a>
-                <p>Thank you for being part of our community!</p>
-              </div>
-              <div class="footer">
-                <p>You received this email because you subscribed to our updates.</p>
-                <a href="{{unsubscribe_url}}" style="color: #6b7280;">Unsubscribe</a>
-              </div>
-            </div>
-          </body>
-        </html>
-      `;
-      setGeneratedTemplate(template);
+    try {
+      const { data, error } = await supabase.functions.invoke('generate-email', {
+        body: {
+          prompt,
+          subject,
+          styleGuide: styleGuide ? {
+            brandName: styleGuide.brand_name,
+            primaryColor: styleGuide.primary_color,
+            secondaryColor: styleGuide.secondary_color,
+            accentColor: styleGuide.accent_color,
+            fontFamily: styleGuide.font_family,
+            tone: styleGuide.tone,
+            brandVoice: styleGuide.brand_voice,
+            emailSignature: styleGuide.email_signature
+          } : {
+            brandName: "Your Brand",
+            primaryColor,
+            secondaryColor,
+            accentColor,
+            fontFamily: "Segoe UI, sans-serif",
+            tone: "friendly",
+            brandVoice: "Professional yet approachable",
+            emailSignature: "Best regards,\nThe Team"
+          }
+        }
+      });
+
+      if (error) {
+        console.error('Error generating template:', error);
+        toast.error("Failed to generate template");
+        return;
+      }
+
+      if (data?.success) {
+        setGeneratedTemplate(data.htmlContent);
+        toast.success("Email template generated successfully!");
+      } else {
+        toast.error(data?.error || "Failed to generate template");
+      }
+    } catch (error) {
+      console.error('Error in handleGenerateTemplate:', error);
+      toast.error("Failed to generate template");
+    } finally {
       setIsGenerating(false);
-      toast.success("Email template generated successfully!");
-    }, 2000);
+    }
   };
 
   const getCurrentSenderNumber = () => {
@@ -107,27 +179,58 @@ export const CampaignComposer = () => {
     }, 1500);
   };
 
-  const handleSendCampaign = () => {
-    if (!generatedTemplate || !selectedList) {
-      toast.error("Please generate a template and select an email list");
+  const handleSendCampaign = async () => {
+    if (!generatedTemplate || selectedLists.length === 0) {
+      toast.error("Please generate a template and select email lists");
       return;
     }
     
-    const senderNumber = getCurrentSenderNumber();
-    setCurrentEmailCount(prev => prev + 1);
-    
-    // Example webhook payload
-    const webhookData = {
-      emailSender: senderNumber,
-      subject: subject,
-      htmlContent: generatedTemplate,
-      emailTitle: subject,
-      timestamp: new Date().toISOString(),
-      list: selectedList
-    };
-    
-    console.log("Webhook payload:", webhookData);
-    toast.info(`Campaign setup ready! Using email sender ${senderNumber}. Connect Supabase to enable sending via Make.com webhook`);
+    try {
+      const { data: { user }, error: authError } = await supabase.auth.getUser();
+      if (authError || !user) {
+        toast.error("Please sign in to send campaigns");
+        return;
+      }
+
+      const senderNumber = getCurrentSenderNumber();
+      setCurrentEmailCount(prev => prev + 1);
+      
+      // Save campaign to database
+      const { data: campaign, error } = await supabase
+        .from('campaigns')
+        .insert({
+          user_id: user.id,
+          name: subject || `Campaign ${new Date().toLocaleDateString()}`,
+          subject,
+          html_content: generatedTemplate,
+          list_ids: selectedLists,
+          status: 'draft'
+        })
+        .select()
+        .single();
+
+      if (error) {
+        console.error('Error saving campaign:', error);
+        toast.error("Failed to save campaign");
+        return;
+      }
+
+      // Example webhook payload for Make.com integration
+      const webhookData = {
+        campaignId: campaign.id,
+        emailSender: senderNumber,
+        subject: subject,
+        htmlContent: generatedTemplate,
+        listIds: selectedLists,
+        timestamp: new Date().toISOString()
+      };
+      
+      console.log("Campaign saved with webhook payload:", webhookData);
+      toast.success(`Campaign saved! Using email sender ${senderNumber}. Ready for Make.com integration.`);
+    } catch (error) {
+      console.error('Error in handleSendCampaign:', error);
+      toast.error("Failed to save campaign");
+    }
   };
 
   return (
@@ -145,54 +248,40 @@ export const CampaignComposer = () => {
           />
         </div>
         <div className="space-y-2">
-          <Label htmlFor="list">Email Lists (Multiple Selection)</Label>
-          <div className="space-y-2 max-h-24 overflow-y-auto border border-email-primary/30 rounded-md p-2">
-            <label className="flex items-center space-x-2">
-              <input
-                type="checkbox"
-                value="newsletter"
-                onChange={(e) => {
-                  if (e.target.checked) {
-                    setSelectedList(selectedList ? `${selectedList},newsletter` : "newsletter");
-                  } else {
-                    setSelectedList(selectedList.split(",").filter(l => l !== "newsletter").join(","));
-                  }
-                }}
-                className="rounded"
-              />
-              <span className="text-sm">Newsletter Subscribers</span>
-            </label>
-            <label className="flex items-center space-x-2">
-              <input
-                type="checkbox"
-                value="customers"
-                onChange={(e) => {
-                  if (e.target.checked) {
-                    setSelectedList(selectedList ? `${selectedList},customers` : "customers");
-                  } else {
-                    setSelectedList(selectedList.split(",").filter(l => l !== "customers").join(","));
-                  }
-                }}
-                className="rounded"
-              />
-              <span className="text-sm">Customer List</span>
-            </label>
-            <label className="flex items-center space-x-2">
-              <input
-                type="checkbox"
-                value="prospects"
-                onChange={(e) => {
-                  if (e.target.checked) {
-                    setSelectedList(selectedList ? `${selectedList},prospects` : "prospects");
-                  } else {
-                    setSelectedList(selectedList.split(",").filter(l => l !== "prospects").join(","));
-                  }
-                }}
-                className="rounded"
-              />
-              <span className="text-sm">Prospects</span>
-            </label>
+          <Label htmlFor="list">Email Lists</Label>
+          <div className="space-y-2 max-h-32 overflow-y-auto border border-email-primary/30 rounded-md p-3">
+            {availableLists.length > 0 ? (
+              availableLists.map((list) => (
+                <label key={list.id} className="flex items-center space-x-2">
+                  <input
+                    type="checkbox"
+                    checked={selectedLists.includes(list.id)}
+                    onChange={(e) => {
+                      if (e.target.checked) {
+                        setSelectedLists([...selectedLists, list.id]);
+                      } else {
+                        setSelectedLists(selectedLists.filter(id => id !== list.id));
+                      }
+                    }}
+                    className="rounded"
+                  />
+                  <span className="text-sm">{list.name}</span>
+                  {list.description && (
+                    <span className="text-xs text-muted-foreground">({list.description})</span>
+                  )}
+                </label>
+              ))
+            ) : (
+              <div className="text-sm text-muted-foreground text-center py-4">
+                No email lists found. Create lists in the Lists tab.
+              </div>
+            )}
           </div>
+          {selectedLists.length > 0 && (
+            <div className="text-xs text-muted-foreground">
+              {selectedLists.length} list{selectedLists.length !== 1 ? 's' : ''} selected
+            </div>
+          )}
         </div>
       </div>
 
@@ -212,47 +301,32 @@ export const CampaignComposer = () => {
         <CardHeader>
           <CardTitle className="flex items-center space-x-2">
             <Palette className="h-5 w-5 text-email-primary" />
-            <span>Theme Colors</span>
+            <span>Theme Colors {styleGuide ? '(From Style Guide)' : '(Override)'}</span>
           </CardTitle>
+          <CardDescription>
+            {styleGuide ? 'Colors loaded from your style guide' : 'Set colors for this campaign'}
+          </CardDescription>
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-3 gap-4">
-            <div className="space-y-2">
-              <Label>Primary Color</Label>
-              <div className="flex items-center space-x-2">
-                <input
-                  type="color"
-                  value={primaryColor}
-                  onChange={(e) => setPrimaryColor(e.target.value)}
-                  className="w-12 h-8 rounded border"
-                />
-                <span className="text-sm text-muted-foreground">{primaryColor}</span>
-              </div>
-            </div>
-            <div className="space-y-2">
-              <Label>Secondary Color</Label>
-              <div className="flex items-center space-x-2">
-                <input
-                  type="color"
-                  value={secondaryColor}
-                  onChange={(e) => setSecondaryColor(e.target.value)}
-                  className="w-12 h-8 rounded border"
-                />
-                <span className="text-sm text-muted-foreground">{secondaryColor}</span>
-              </div>
-            </div>
-            <div className="space-y-2">
-              <Label>Accent Color</Label>
-              <div className="flex items-center space-x-2">
-                <input
-                  type="color"
-                  value={accentColor}
-                  onChange={(e) => setAccentColor(e.target.value)}
-                  className="w-12 h-8 rounded border"
-                />
-                <span className="text-sm text-muted-foreground">{accentColor}</span>
-              </div>
-            </div>
+            <ColorPicker
+              value={primaryColor}
+              onChange={setPrimaryColor}
+              label="Primary Color"
+              showPresets={true}
+            />
+            <ColorPicker
+              value={secondaryColor}
+              onChange={setSecondaryColor}
+              label="Secondary Color"
+              showPresets={true}
+            />
+            <ColorPicker
+              value={accentColor}
+              onChange={setAccentColor}
+              label="Accent Color"
+              showPresets={true}
+            />
           </div>
         </CardContent>
       </Card>
