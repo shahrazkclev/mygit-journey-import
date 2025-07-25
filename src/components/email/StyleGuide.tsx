@@ -1,46 +1,252 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Palette, Type, Image, Sparkles, Save, Eye } from "lucide-react";
+import { ColorPicker } from "@/components/ui/color-picker";
+import { Palette, Type, Image, Sparkles, Save, Eye, Settings } from "lucide-react";
 import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
 
 export const StyleGuide = () => {
+  const [loading, setLoading] = useState(false);
+  const [saveLoading, setSaveLoading] = useState(false);
+  
+  // Brand identity state
   const [brandName, setBrandName] = useState("Your Brand");
-  const [primaryColor, setPrimaryColor] = useState("#ddd6fe");
-  const [secondaryColor, setSecondaryColor] = useState("#bae6fd");
-  const [accentColor, setAccentColor] = useState("#a7f3d0");
+  const [primaryColor, setPrimaryColor] = useState("#684cff");
+  const [secondaryColor, setSecondaryColor] = useState("#22d3ee");
+  const [accentColor, setAccentColor] = useState("#34d399");
   const [fontFamily, setFontFamily] = useState("Segoe UI, sans-serif");
   const [tone, setTone] = useState("friendly");
   const [brandVoice, setBrandVoice] = useState("Professional yet approachable, with a focus on helping our community grow and succeed.");
   const [logoUrl, setLogoUrl] = useState("");
   const [emailSignature, setEmailSignature] = useState("Best regards,\nThe Team");
 
-  // Page theme colors
+  // Page theme colors (separate from brand colors)
   const [pageTheme, setPageTheme] = useState({
     primary: "#684cff",
     secondary: "#22d3ee", 
     accent: "#34d399"
   });
 
-  const applyPageTheme = () => {
+  // Load existing style guide on component mount
+  useEffect(() => {
+    loadStyleGuide();
+  }, []);
+
+  const loadStyleGuide = async () => {
+    try {
+      setLoading(true);
+      const { data: { user }, error: authError } = await supabase.auth.getUser();
+      
+      if (authError || !user) {
+        console.log("No user authenticated");
+        return;
+      }
+
+      const { data: styleGuides, error } = await supabase
+        .from('style_guides')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('updated_at', { ascending: false })
+        .limit(1);
+
+      if (error) {
+        console.error('Error loading style guide:', error);
+        return;
+      }
+
+      if (styleGuides && styleGuides.length > 0) {
+        const guide = styleGuides[0];
+        setBrandName(guide.brand_name);
+        setPrimaryColor(guide.primary_color);
+        setSecondaryColor(guide.secondary_color);
+        setAccentColor(guide.accent_color);
+        setFontFamily(guide.font_family);
+        setTone(guide.tone);
+        setBrandVoice(guide.brand_voice || "");
+        setLogoUrl(guide.logo_url || "");
+        setEmailSignature(guide.email_signature);
+        setPageTheme({
+          primary: guide.page_theme_primary,
+          secondary: guide.page_theme_secondary,
+          accent: guide.page_theme_accent
+        });
+        
+        // Apply the loaded theme immediately
+        applyPageTheme(guide.page_theme_primary, guide.page_theme_secondary, guide.page_theme_accent);
+      }
+    } catch (error) {
+      console.error('Error in loadStyleGuide:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const hexToHsl = (hex: string) => {
+    const r = parseInt(hex.slice(1, 3), 16) / 255;
+    const g = parseInt(hex.slice(3, 5), 16) / 255;
+    const b = parseInt(hex.slice(5, 7), 16) / 255;
+
+    const max = Math.max(r, g, b);
+    const min = Math.min(r, g, b);
+    let h, s, l = (max + min) / 2;
+
+    if (max === min) {
+      h = s = 0;
+    } else {
+      const d = max - min;
+      s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+      switch (max) {
+        case r: h = (g - b) / d + (g < b ? 6 : 0); break;
+        case g: h = (b - r) / d + 2; break;
+        case b: h = (r - g) / d + 4; break;
+        default: h = 0;
+      }
+      h /= 6;
+    }
+
+    return [Math.round(h * 360), Math.round(s * 100), Math.round(l * 100)];
+  };
+
+  const applyPageTheme = (primary?: string, secondary?: string, accent?: string) => {
     const root = document.documentElement;
-    root.style.setProperty('--email-primary', pageTheme.primary);
-    root.style.setProperty('--email-secondary', pageTheme.secondary);
-    root.style.setProperty('--email-accent', pageTheme.accent);
-    toast.success("Page theme applied!");
+    const p = primary || pageTheme.primary;
+    const s = secondary || pageTheme.secondary;
+    const a = accent || pageTheme.accent;
+    
+    // Convert hex to HSL for CSS variables
+    const [pH, pS, pL] = hexToHsl(p);
+    const [sH, sS, sL] = hexToHsl(s);
+    const [aH, aS, aL] = hexToHsl(a);
+    
+    root.style.setProperty('--theme-primary', `${pH} ${pS}% ${pL}%`);
+    root.style.setProperty('--theme-secondary', `${sH} ${sS}% ${sL}%`);
+    root.style.setProperty('--theme-accent', `${aH} ${aS}% ${aL}%`);
+    
+    // Also update the email-specific colors
+    root.style.setProperty('--email-primary', `${pH} ${pS}% ${pL}%`);
+    root.style.setProperty('--email-secondary', `${sH} ${sS}% ${sL}%`);
+    root.style.setProperty('--email-accent', `${aH} ${aS}% ${aL}%`);
+    
+    if (!primary && !secondary && !accent) {
+      toast.success("Page theme applied!");
+    }
   };
 
-  const handleSaveStyleGuide = () => {
-    applyPageTheme();
-    toast.success("Style guide saved and theme applied!");
+  const handleSaveStyleGuide = async () => {
+    try {
+      setSaveLoading(true);
+      const { data: { user }, error: authError } = await supabase.auth.getUser();
+      
+      if (authError || !user) {
+        toast.error("Please sign in to save your style guide");
+        return;
+      }
+
+      // First check if a style guide exists
+      const { data: existingGuides } = await supabase
+        .from('style_guides')
+        .select('id')
+        .eq('user_id', user.id)
+        .limit(1);
+
+      const styleGuideData = {
+        user_id: user.id,
+        brand_name: brandName,
+        primary_color: primaryColor,
+        secondary_color: secondaryColor,
+        accent_color: accentColor,
+        font_family: fontFamily,
+        tone,
+        brand_voice: brandVoice,
+        logo_url: logoUrl,
+        email_signature: emailSignature,
+        page_theme_primary: pageTheme.primary,
+        page_theme_secondary: pageTheme.secondary,
+        page_theme_accent: pageTheme.accent
+      };
+
+      if (existingGuides && existingGuides.length > 0) {
+        // Update existing style guide
+        const { error } = await supabase
+          .from('style_guides')
+          .update(styleGuideData)
+          .eq('id', existingGuides[0].id);
+
+        if (error) throw error;
+      } else {
+        // Create new style guide
+        const { error } = await supabase
+          .from('style_guides')
+          .insert(styleGuideData);
+
+        if (error) throw error;
+      }
+
+      applyPageTheme();
+      toast.success("Style guide saved and theme applied!");
+    } catch (error) {
+      console.error('Error saving style guide:', error);
+      toast.error("Failed to save style guide");
+    } finally {
+      setSaveLoading(false);
+    }
   };
 
-  const handlePreviewStyle = () => {
-    toast.info("Style preview will be implemented with Supabase integration");
+  const handlePreviewStyle = async () => {
+    try {
+      const { data: { user }, error: authError } = await supabase.auth.getUser();
+      
+      if (authError || !user) {
+        toast.error("Please sign in to generate preview emails");
+        return;
+      }
+
+      toast.info("Generating test email with your style guide...");
+      
+      // Call the edge function to generate a test email
+      const { data, error } = await supabase.functions.invoke('generate-email', {
+        body: {
+          prompt: "Create a welcome email for new subscribers with a warm, engaging tone.",
+          subject: "Welcome to our community!",
+          styleGuide: {
+            brandName,
+            primaryColor,
+            secondaryColor,
+            accentColor,
+            fontFamily,
+            tone,
+            brandVoice,
+            emailSignature
+          }
+        }
+      });
+
+      if (error) {
+        console.error('Error generating test email:', error);
+        toast.error("Failed to generate test email");
+        return;
+      }
+
+      if (data?.success) {
+        // Open the generated HTML in a new window for preview
+        const previewWindow = window.open('', '_blank');
+        if (previewWindow) {
+          previewWindow.document.write(data.htmlContent);
+          previewWindow.document.close();
+          toast.success("Test email generated! Check the new window.");
+        }
+      } else {
+        toast.error(data?.error || "Failed to generate test email");
+      }
+    } catch (error) {
+      console.error('Error in handlePreviewStyle:', error);
+      toast.error("Failed to generate test email");
+    }
   };
 
   const toneOptions = [
@@ -66,60 +272,27 @@ export const StyleGuide = () => {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="pageThemePrimary">Primary Theme</Label>
-              <div className="flex items-center space-x-2">
-                <Input
-                  id="pageThemePrimary"
-                  type="color"
-                  value={pageTheme.primary}
-                  onChange={(e) => setPageTheme({...pageTheme, primary: e.target.value})}
-                  className="w-16 h-10 p-1 border-email-primary/30"
-                />
-                <Input
-                  value={pageTheme.primary}
-                  onChange={(e) => setPageTheme({...pageTheme, primary: e.target.value})}
-                  className="flex-1 border-email-primary/30 focus:border-email-primary"
-                />
-              </div>
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="pageThemeSecondary">Secondary Theme</Label>
-              <div className="flex items-center space-x-2">
-                <Input
-                  id="pageThemeSecondary"
-                  type="color"
-                  value={pageTheme.secondary}
-                  onChange={(e) => setPageTheme({...pageTheme, secondary: e.target.value})}
-                  className="w-16 h-10 p-1 border-email-secondary/30"
-                />
-                <Input
-                  value={pageTheme.secondary}
-                  onChange={(e) => setPageTheme({...pageTheme, secondary: e.target.value})}
-                  className="flex-1 border-email-secondary/30 focus:border-email-secondary"
-                />
-              </div>
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="pageThemeAccent">Accent Theme</Label>
-              <div className="flex items-center space-x-2">
-                <Input
-                  id="pageThemeAccent"
-                  type="color"
-                  value={pageTheme.accent}
-                  onChange={(e) => setPageTheme({...pageTheme, accent: e.target.value})}
-                  className="w-16 h-10 p-1 border-email-accent/30"
-                />
-                <Input
-                  value={pageTheme.accent}
-                  onChange={(e) => setPageTheme({...pageTheme, accent: e.target.value})}
-                  className="flex-1 border-email-accent/30 focus:border-email-accent"
-                />
-              </div>
-            </div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <ColorPicker
+              value={pageTheme.primary}
+              onChange={(color) => setPageTheme({...pageTheme, primary: color})}
+              label="Primary Theme"
+              showPresets={true}
+            />
+            <ColorPicker
+              value={pageTheme.secondary}
+              onChange={(color) => setPageTheme({...pageTheme, secondary: color})}
+              label="Secondary Theme"
+              showPresets={true}
+            />
+            <ColorPicker
+              value={pageTheme.accent}
+              onChange={(color) => setPageTheme({...pageTheme, accent: color})}
+              label="Accent Theme"
+              showPresets={true}
+            />
           </div>
-          <Button onClick={applyPageTheme} className="mt-4">
+          <Button onClick={() => applyPageTheme()} className="mt-4">
             Apply Page Theme
           </Button>
         </CardContent>
@@ -159,61 +332,25 @@ export const StyleGuide = () => {
             </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="primaryColor">Primary Color</Label>
-              <div className="flex items-center space-x-2">
-                <Input
-                  id="primaryColor"
-                  type="color"
-                  value={primaryColor}
-                  onChange={(e) => setPrimaryColor(e.target.value)}
-                  className="w-16 h-10 p-1 border-email-primary/30"
-                />
-                <Input
-                  value={primaryColor}
-                  onChange={(e) => setPrimaryColor(e.target.value)}
-                  placeholder="#ddd6fe"
-                  className="flex-1 border-email-primary/30 focus:border-email-primary"
-                />
-              </div>
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="secondaryColor">Secondary Color</Label>
-              <div className="flex items-center space-x-2">
-                <Input
-                  id="secondaryColor"
-                  type="color"
-                  value={secondaryColor}
-                  onChange={(e) => setSecondaryColor(e.target.value)}
-                  className="w-16 h-10 p-1 border-email-secondary/30"
-                />
-                <Input
-                  value={secondaryColor}
-                  onChange={(e) => setSecondaryColor(e.target.value)}
-                  placeholder="#bae6fd"
-                  className="flex-1 border-email-secondary/30 focus:border-email-secondary"
-                />
-              </div>
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="accentColor">Accent Color</Label>
-              <div className="flex items-center space-x-2">
-                <Input
-                  id="accentColor"
-                  type="color"
-                  value={accentColor}
-                  onChange={(e) => setAccentColor(e.target.value)}
-                  className="w-16 h-10 p-1 border-email-accent/30"
-                />
-                <Input
-                  value={accentColor}
-                  onChange={(e) => setAccentColor(e.target.value)}
-                  placeholder="#a7f3d0"
-                  className="flex-1 border-email-accent/30 focus:border-email-accent"
-                />
-              </div>
-            </div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <ColorPicker
+              value={primaryColor}
+              onChange={setPrimaryColor}
+              label="Primary Color"
+              showPresets={true}
+            />
+            <ColorPicker
+              value={secondaryColor}
+              onChange={setSecondaryColor}
+              label="Secondary Color"
+              showPresets={true}
+            />
+            <ColorPicker
+              value={accentColor}
+              onChange={setAccentColor}
+              label="Accent Color"
+              showPresets={true}
+            />
           </div>
         </CardContent>
       </Card>
@@ -353,10 +490,11 @@ export const StyleGuide = () => {
         </Button>
         <Button 
           onClick={handleSaveStyleGuide}
+          disabled={saveLoading}
           className="bg-email-success hover:bg-email-success/80 text-foreground shadow-soft"
         >
           <Save className="h-4 w-4 mr-2" />
-          Save Style Guide
+          {saveLoading ? "Saving..." : "Save Style Guide"}
         </Button>
       </div>
     </div>

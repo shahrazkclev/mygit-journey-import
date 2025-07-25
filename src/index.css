@@ -38,11 +38,16 @@ All colors MUST be HSL.
     --ring: 268 75% 85%;
 
     /* Email campaign specific colors */
-    --email-primary: 268 75% 85%;
-    --email-secondary: 200 25% 92%;
-    --email-accent: 160 45% 88%;
-    --email-success: 140 45% 85%;
-    --email-warning: 45 85% 85%;
+    --email-primary: 268 75% 65%;
+    --email-secondary: 200 25% 72%;
+    --email-accent: 160 45% 68%;
+    --email-success: 140 45% 65%;
+    --email-warning: 45 85% 65%;
+    
+    /* Dynamic theme colors (updated by StyleGuide component) */
+    --theme-primary: 268 75% 65%;
+    --theme-secondary: 200 25% 72%;
+    --theme-accent: 160 45% 68%;
     
     /* Gradients */
     --gradient-soft: linear-gradient(135deg, hsl(268 75% 95%), hsl(200 45% 95%));
