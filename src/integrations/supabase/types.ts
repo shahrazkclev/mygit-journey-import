@@ -14,7 +14,300 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      campaigns: {
+        Row: {
+          created_at: string
+          html_content: string
+          id: string
+          list_ids: string[] | null
+          name: string
+          sent_at: string | null
+          status: string
+          subject: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          html_content: string
+          id?: string
+          list_ids?: string[] | null
+          name: string
+          sent_at?: string | null
+          status?: string
+          subject: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          html_content?: string
+          id?: string
+          list_ids?: string[] | null
+          name?: string
+          sent_at?: string | null
+          status?: string
+          subject?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      contact_lists: {
+        Row: {
+          contact_id: string
+          created_at: string
+          id: string
+          list_id: string
+        }
+        Insert: {
+          contact_id: string
+          created_at?: string
+          id?: string
+          list_id: string
+        }
+        Update: {
+          contact_id?: string
+          created_at?: string
+          id?: string
+          list_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "contact_lists_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "contacts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contact_lists_list_id_fkey"
+            columns: ["list_id"]
+            isOneToOne: false
+            referencedRelation: "email_lists"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      contact_products: {
+        Row: {
+          contact_id: string
+          id: string
+          price_paid: number | null
+          product_id: string
+          purchased_at: string
+        }
+        Insert: {
+          contact_id: string
+          id?: string
+          price_paid?: number | null
+          product_id: string
+          purchased_at?: string
+        }
+        Update: {
+          contact_id?: string
+          id?: string
+          price_paid?: number | null
+          product_id?: string
+          purchased_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "contact_products_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "contacts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contact_products_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      contacts: {
+        Row: {
+          created_at: string
+          email: string
+          first_name: string | null
+          id: string
+          last_name: string | null
+          status: string
+          tags: string[] | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          email: string
+          first_name?: string | null
+          id?: string
+          last_name?: string | null
+          status?: string
+          tags?: string[] | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          email?: string
+          first_name?: string | null
+          id?: string
+          last_name?: string | null
+          status?: string
+          tags?: string[] | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      email_lists: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          name: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          name: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          name?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      products: {
+        Row: {
+          category: string | null
+          created_at: string
+          description: string | null
+          id: string
+          name: string
+          price: number | null
+          sku: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          category?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          name: string
+          price?: number | null
+          sku?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          category?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          name?: string
+          price?: number | null
+          sku?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      style_guides: {
+        Row: {
+          accent_color: string
+          brand_name: string
+          brand_voice: string | null
+          created_at: string
+          email_signature: string | null
+          font_family: string
+          id: string
+          logo_url: string | null
+          page_theme_accent: string
+          page_theme_primary: string
+          page_theme_secondary: string
+          primary_color: string
+          secondary_color: string
+          tone: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          accent_color?: string
+          brand_name?: string
+          brand_voice?: string | null
+          created_at?: string
+          email_signature?: string | null
+          font_family?: string
+          id?: string
+          logo_url?: string | null
+          page_theme_accent?: string
+          page_theme_primary?: string
+          page_theme_secondary?: string
+          primary_color?: string
+          secondary_color?: string
+          tone?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          accent_color?: string
+          brand_name?: string
+          brand_voice?: string | null
+          created_at?: string
+          email_signature?: string | null
+          font_family?: string
+          id?: string
+          logo_url?: string | null
+          page_theme_accent?: string
+          page_theme_primary?: string
+          page_theme_secondary?: string
+          primary_color?: string
+          secondary_color?: string
+          tone?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      unsubscribes: {
+        Row: {
+          email: string
+          id: string
+          reason: string | null
+          unsubscribed_at: string
+          user_id: string
+        }
+        Insert: {
+          email: string
+          id?: string
+          reason?: string | null
+          unsubscribed_at?: string
+          user_id: string
+        }
+        Update: {
+          email?: string
+          id?: string
+          reason?: string | null
+          unsubscribed_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
