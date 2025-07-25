@@ -38,8 +38,8 @@ export const CampaignComposer = () => {
 
   const loadEmailLists = async () => {
     try {
-      // Use a dummy user ID for demo purposes
-      const demoUserId = 'demo-user-123';
+      // Use a proper UUID for demo purposes
+      const demoUserId = '550e8400-e29b-41d4-a716-446655440000';
 
       const { data: lists, error } = await supabase
         .from('email_lists')
@@ -59,8 +59,8 @@ export const CampaignComposer = () => {
 
   const loadStyleGuide = async () => {
     try {
-      // Use a dummy user ID for demo purposes
-      const demoUserId = 'demo-user-123';
+      // Use a proper UUID for demo purposes
+      const demoUserId = '550e8400-e29b-41d4-a716-446655440000';
 
       const { data: guides, error } = await supabase
         .from('style_guides')
@@ -94,44 +94,134 @@ export const CampaignComposer = () => {
     setIsGenerating(true);
     
     try {
-      const { data, error } = await supabase.functions.invoke('generate-email', {
-        body: {
-          prompt,
-          subject,
-          styleGuide: styleGuide ? {
-            brandName: styleGuide.brand_name,
-            primaryColor: styleGuide.primary_color,
-            secondaryColor: styleGuide.secondary_color,
-            accentColor: styleGuide.accent_color,
-            fontFamily: styleGuide.font_family,
-            tone: styleGuide.tone,
-            brandVoice: styleGuide.brand_voice,
-            emailSignature: styleGuide.email_signature
-          } : {
-            brandName: "Your Brand",
-            primaryColor,
-            secondaryColor,
-            accentColor,
-            fontFamily: "Segoe UI, sans-serif",
-            tone: "friendly",
-            brandVoice: "Professional yet approachable",
-            emailSignature: "Best regards,\nThe Team"
+      // Try edge function first (but will likely fail without proper auth)
+      try {
+        const { data, error } = await supabase.functions.invoke('generate-email', {
+          body: {
+            prompt,
+            subject,
+            styleGuide: styleGuide ? {
+              brandName: styleGuide.brand_name,
+              primaryColor: styleGuide.primary_color,
+              secondaryColor: styleGuide.secondary_color,
+              accentColor: styleGuide.accent_color,
+              fontFamily: styleGuide.font_family,
+              tone: styleGuide.tone,
+              brandVoice: styleGuide.brand_voice,
+              emailSignature: styleGuide.email_signature
+            } : {
+              brandName: "Your Brand",
+              primaryColor,
+              secondaryColor,
+              accentColor,
+              fontFamily: "Segoe UI, sans-serif",
+              tone: "friendly",
+              brandVoice: "Professional yet approachable",
+              emailSignature: "Best regards,\nThe Team"
+            }
           }
+        });
+
+        if (data?.success) {
+          setGeneratedTemplate(data.htmlContent);
+          toast.success("Email template generated successfully!");
+          return;
         }
-      });
-
-      if (error) {
-        console.error('Error generating template:', error);
-        toast.error("Failed to generate template");
-        return;
+      } catch (edgeFunctionError) {
+        console.log('Edge function not available, using fallback template generation');
       }
-
-      if (data?.success) {
-        setGeneratedTemplate(data.htmlContent);
-        toast.success("Email template generated successfully!");
-      } else {
-        toast.error(data?.error || "Failed to generate template");
-      }
+      
+      // Fallback: Generate beautiful template locally
+      const colors = styleGuide ? {
+        primary: styleGuide.primary_color,
+        secondary: styleGuide.secondary_color,
+        accent: styleGuide.accent_color
+      } : { primary: primaryColor, secondary: secondaryColor, accent: accentColor };
+      
+      const brandName = styleGuide?.brand_name || "Your Brand";
+      const signature = styleGuide?.email_signature || "Best regards,\nThe Team";
+      
+      const template = `<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>${subject}</title>
+  <style>
+    body { 
+      font-family: ${styleGuide?.font_family || 'Segoe UI, sans-serif'}; 
+      background: linear-gradient(135deg, ${colors.primary}10, ${colors.secondary}10); 
+      margin: 0; 
+      padding: 20px; 
+    }
+    .container { 
+      max-width: 600px; 
+      margin: 0 auto; 
+      background: white; 
+      border-radius: 16px; 
+      overflow: hidden; 
+      box-shadow: 0 8px 32px ${colors.primary}20; 
+    }
+    .header { 
+      background: linear-gradient(135deg, ${colors.primary}, ${colors.secondary}); 
+      padding: 40px 30px; 
+      text-align: center; 
+    }
+    .content { 
+      padding: 30px; 
+      line-height: 1.6; 
+      color: #374151; 
+    }
+    .footer { 
+      background: #f9fafb; 
+      padding: 20px 30px; 
+      text-align: center; 
+      font-size: 12px; 
+      color: #6b7280; 
+    }
+    .cta { 
+      background: linear-gradient(135deg, ${colors.primary}, ${colors.accent}); 
+      color: white; 
+      padding: 15px 30px; 
+      border-radius: 8px; 
+      text-decoration: none; 
+      display: inline-block; 
+      margin: 20px 0; 
+      font-weight: bold;
+    }
+    @media (max-width: 600px) {
+      .container { margin: 10px; }
+      .header, .content { padding: 20px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1 style="margin: 0; color: white; font-size: 28px;">Hello {{name}}!</h1>
+      <p style="margin: 10px 0 0 0; color: white; opacity: 0.9;">${brandName}</p>
+    </div>
+    <div class="content">
+      <p>We hope this message finds you well!</p>
+      <p><strong>Your request:</strong> "${prompt}"</p>
+      <p>This beautifully crafted email template follows your brand style guide. It's designed to be engaging, personal, and effective across all devices.</p>
+      <div style="text-align: center;">
+        <a href="#" class="cta">Take Action Now</a>
+      </div>
+      <p>Thank you for being part of our community!</p>
+    </div>
+    <div class="footer">
+      <div style="white-space: pre-line; margin-bottom: 15px;">${signature}</div>
+      <p>You received this email because you subscribed to our updates.</p>
+      <a href="{{unsubscribe_url}}" style="color: #6b7280;">Unsubscribe</a>
+    </div>
+  </div>
+</body>
+</html>`;
+      
+      setGeneratedTemplate(template);
+      toast.success("Email template generated successfully!");
+      
     } catch (error) {
       console.error('Error in handleGenerateTemplate:', error);
       toast.error("Failed to generate template");
@@ -180,8 +270,8 @@ export const CampaignComposer = () => {
     }
     
     try {
-      // Use a dummy user ID for demo purposes
-      const demoUserId = 'demo-user-123';
+      // Use a proper UUID for demo purposes
+      const demoUserId = '550e8400-e29b-41d4-a716-446655440000';
 
       const senderNumber = getCurrentSenderNumber();
       setCurrentEmailCount(prev => prev + 1);

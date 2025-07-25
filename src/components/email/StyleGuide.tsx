@@ -41,8 +41,8 @@ export const StyleGuide = () => {
     try {
       setLoading(true);
       
-      // Use a dummy user ID for demo purposes
-      const demoUserId = 'demo-user-123';
+      // Use a proper UUID for demo purposes
+      const demoUserId = '550e8400-e29b-41d4-a716-446655440000';
 
       const { data: styleGuides, error } = await supabase
         .from('style_guides')
@@ -138,8 +138,8 @@ export const StyleGuide = () => {
     try {
       setSaveLoading(true);
       
-      // Use a dummy user ID for demo purposes
-      const demoUserId = 'demo-user-123';
+      // Use a proper UUID for demo purposes
+      const demoUserId = '550e8400-e29b-41d4-a716-446655440000';
 
       // First check if a style guide exists
       const { data: existingGuides } = await supabase
@@ -193,8 +193,8 @@ export const StyleGuide = () => {
 
   const handlePreviewStyle = async () => {
     try {
-      // Use a dummy user ID for demo purposes
-      const demoUserId = 'demo-user-123';
+      // Use a proper UUID for demo purposes
+      const demoUserId = '550e8400-e29b-41d4-a716-446655440000';
 
       toast.info("Generating test email with your style guide...");
       
