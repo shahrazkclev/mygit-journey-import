@@ -73,13 +73,16 @@ Style Guidelines:
 
 Requirements:
 1. Create a complete HTML email template with embedded CSS
-2. Use the provided colors and fonts consistently
-3. Include proper email structure (header, content, footer)
-4. Add placeholder variables: {{name}}, {{unsubscribe_url}}
-5. Make it mobile-responsive
-6. Include a clear call-to-action button
-7. Use the specified tone and brand voice
-8. Add the email signature: ${styleGuide?.emailSignature || 'Best regards,\\nThe Team'}
+2. Use EXACTLY these colors: Primary: ${styleGuide?.primaryColor || '#684cff'}, Secondary: ${styleGuide?.secondaryColor || '#22d3ee'}, Accent: ${styleGuide?.accentColor || '#34d399'}
+3. Apply the primary color to headers and main CTA buttons
+4. Apply the secondary color to secondary elements and backgrounds
+5. Apply the accent color to highlights and hover states
+6. Include proper email structure (header, content, footer)
+7. Add placeholder variables: {{name}}, {{unsubscribe_url}}
+8. Make it mobile-responsive
+9. Include a clear call-to-action button using the primary color
+10. Use the specified tone and brand voice
+11. Add the email signature: ${styleGuide?.emailSignature || 'Best regards,\\nThe Team'}
 
 Return only the HTML code, no explanations.`;
 
