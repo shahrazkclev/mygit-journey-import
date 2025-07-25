@@ -10,6 +10,13 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Upload, Download, Users, Trash2, Plus, FileText, Filter, Eye, Tag, Calendar, ShoppingCart, Mail } from "lucide-react";
 import { toast } from "sonner";
 
+type Product = {
+  id: number;
+  name: string;
+  price: number;
+  category: string;
+};
+
 type Contact = {
   id: number;
   email: string;
@@ -17,12 +24,19 @@ type Contact = {
   tags: string[];
   source: string;
   lastContacted: string;
-  purchaseStatus: string;
+  purchasedProducts: Product[];
   dateAdded: string;
   listId: number;
 };
 
 export const EmailListManager = () => {
+  const [products, setProducts] = useState<Product[]>([
+    { id: 1, name: "Premium Course", price: 299, category: "Education" },
+    { id: 2, name: "Starter Package", price: 99, category: "Software" },
+    { id: 3, name: "Consultation Call", price: 150, category: "Service" },
+    { id: 4, name: "Advanced Toolkit", price: 499, category: "Software" }
+  ]);
+
   const [lists, setLists] = useState([
     { id: 1, name: "Newsletter Subscribers", count: 1250, lastUpdated: "2024-01-15" },
     { id: 2, name: "Customer List", count: 890, lastUpdated: "2024-01-14" },
@@ -30,25 +44,32 @@ export const EmailListManager = () => {
   ]);
   
   const [contacts, setContacts] = useState<Contact[]>([
-    { id: 1, email: "john@example.com", name: "John Doe", tags: ["customer", "premium"], source: "website", lastContacted: "2024-01-10", purchaseStatus: "purchased", dateAdded: "2023-12-01", listId: 2 },
-    { id: 2, email: "sarah@example.com", name: "Sarah Wilson", tags: ["lead", "newsletter"], source: "social media", lastContacted: "2024-01-08", purchaseStatus: "not purchased", dateAdded: "2024-01-05", listId: 1 },
-    { id: 3, email: "mike@example.com", name: "Mike Johnson", tags: ["prospect"], source: "referral", lastContacted: "never", purchaseStatus: "not purchased", dateAdded: "2024-01-12", listId: 3 },
+    { id: 1, email: "john@example.com", name: "John Doe", tags: ["customer", "premium"], source: "website", lastContacted: "2024-01-10", purchasedProducts: [products[0], products[2]], dateAdded: "2023-12-01", listId: 2 },
+    { id: 2, email: "sarah@example.com", name: "Sarah Wilson", tags: ["lead", "newsletter"], source: "social media", lastContacted: "2024-01-08", purchasedProducts: [], dateAdded: "2024-01-05", listId: 1 },
+    { id: 3, email: "mike@example.com", name: "Mike Johnson", tags: ["prospect"], source: "referral", lastContacted: "never", purchasedProducts: [products[1]], dateAdded: "2024-01-12", listId: 3 },
   ]);
   
   const [selectedLists, setSelectedLists] = useState<number[]>([]);
   const [newListName, setNewListName] = useState("");
   const [csvFile, setCsvFile] = useState<File | null>(null);
   const [filterTag, setFilterTag] = useState<string>("all");
-  const [filterPurchase, setFilterPurchase] = useState<string>("all");
+  const [filterProduct, setFilterProduct] = useState<string>("all");
   const [searchQuery, setSearchQuery] = useState("");
   const [isAddingContact, setIsAddingContact] = useState(false);
   const [editingContact, setEditingContact] = useState<Contact | null>(null);
+  const [isAddingProduct, setIsAddingProduct] = useState(false);
+  const [newProduct, setNewProduct] = useState({
+    name: "",
+    price: 0,
+    category: ""
+  });
   const [newContact, setNewContact] = useState({
     email: "",
     name: "",
     tags: "",
     source: "",
-    listId: 1
+    listId: 1,
+    selectedProducts: [] as number[]
   });
 
   const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -94,11 +115,29 @@ export const EmailListManager = () => {
     toast.success("Email list deleted");
   };
 
+  const handleAddProduct = () => {
+    if (!newProduct.name || !newProduct.price) {
+      toast.error("Please fill in product name and price");
+      return;
+    }
+    const product: Product = {
+      id: Date.now(),
+      name: newProduct.name,
+      price: newProduct.price,
+      category: newProduct.category || "General"
+    };
+    setProducts([...products, product]);
+    setNewProduct({ name: "", price: 0, category: "" });
+    setIsAddingProduct(false);
+    toast.success("Product added successfully!");
+  };
+
   const handleAddContact = () => {
     if (!newContact.email || !newContact.name) {
       toast.error("Please fill in email and name");
       return;
     }
+    const selectedProductObjects = products.filter(p => newContact.selectedProducts.includes(p.id));
     const contact: Contact = {
       id: Date.now(),
       email: newContact.email,
@@ -106,12 +145,12 @@ export const EmailListManager = () => {
       tags: newContact.tags.split(",").map(tag => tag.trim()).filter(Boolean),
       source: newContact.source || "manual",
       lastContacted: "never",
-      purchaseStatus: "not purchased",
+      purchasedProducts: selectedProductObjects,
       dateAdded: new Date().toISOString().split('T')[0],
       listId: newContact.listId
     };
     setContacts([...contacts, contact]);
-    setNewContact({ email: "", name: "", tags: "", source: "", listId: 1 });
+    setNewContact({ email: "", name: "", tags: "", source: "", listId: 1, selectedProducts: [] });
     setIsAddingContact(false);
     toast.success("Contact added successfully!");
   };
@@ -150,12 +189,16 @@ export const EmailListManager = () => {
   const filteredContacts = contacts.filter(contact => {
     if (selectedLists.length > 0 && !selectedLists.includes(contact.listId)) return false;
     if (filterTag !== "all" && !contact.tags.includes(filterTag)) return false;
-    if (filterPurchase !== "all" && contact.purchaseStatus !== filterPurchase) return false;
+    if (filterProduct !== "all") {
+      if (filterProduct === "no_purchases" && contact.purchasedProducts.length > 0) return false;
+      if (filterProduct !== "no_purchases" && !contact.purchasedProducts.some(p => p.id.toString() === filterProduct)) return false;
+    }
     if (searchQuery && !contact.email.toLowerCase().includes(searchQuery.toLowerCase()) && !contact.name.toLowerCase().includes(searchQuery.toLowerCase())) return false;
     return true;
   });
 
   const allTags = Array.from(new Set(contacts.flatMap(contact => contact.tags)));
+  const allCategories = Array.from(new Set(products.map(product => product.category)));
 
   const getListName = (listId: number) => {
     return lists.find(list => list.id === listId)?.name || "Unknown List";
@@ -164,10 +207,14 @@ export const EmailListManager = () => {
   return (
     <div className="space-y-6">
       <Tabs defaultValue="contacts" className="w-full">
-        <TabsList className="grid w-full grid-cols-2">
+        <TabsList className="grid w-full grid-cols-3">
           <TabsTrigger value="contacts" className="flex items-center space-x-2">
             <Mail className="h-4 w-4" />
             <span>Contact Management</span>
+          </TabsTrigger>
+          <TabsTrigger value="products" className="flex items-center space-x-2">
+            <ShoppingCart className="h-4 w-4" />
+            <span>Product Management</span>
           </TabsTrigger>
           <TabsTrigger value="lists" className="flex items-center space-x-2">
             <Users className="h-4 w-4" />
@@ -233,15 +280,19 @@ export const EmailListManager = () => {
                   </Select>
                 </div>
                 <div>
-                  <Label htmlFor="purchaseFilter">Purchase Status</Label>
-                  <Select value={filterPurchase} onValueChange={setFilterPurchase}>
+                  <Label htmlFor="purchaseFilter">Product Filter</Label>
+                  <Select value={filterProduct} onValueChange={setFilterProduct}>
                     <SelectTrigger className="border-email-primary/30 focus:border-email-primary">
-                      <SelectValue placeholder="All Statuses" />
+                      <SelectValue placeholder="All Products" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="all">All Statuses</SelectItem>
-                      <SelectItem value="purchased">Purchased</SelectItem>
-                      <SelectItem value="not purchased">Not Purchased</SelectItem>
+                      <SelectItem value="all">All Contacts</SelectItem>
+                      <SelectItem value="no_purchases">No Purchases</SelectItem>
+                      {products.map((product) => (
+                        <SelectItem key={product.id} value={product.id.toString()}>
+                          Purchased: {product.name}
+                        </SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
                 </div>
@@ -276,7 +327,7 @@ export const EmailListManager = () => {
                     <TableHead>Tags</TableHead>
                     <TableHead>Source</TableHead>
                     <TableHead>Last Contacted</TableHead>
-                    <TableHead>Purchase Status</TableHead>
+                    <TableHead>Purchased Products</TableHead>
                     <TableHead>Actions</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -313,13 +364,19 @@ export const EmailListManager = () => {
                         </div>
                       </TableCell>
                       <TableCell>
-                        <Badge 
-                          variant={contact.purchaseStatus === "purchased" ? "default" : "outline"}
-                          className={contact.purchaseStatus === "purchased" ? "bg-email-secondary text-foreground" : ""}
-                        >
-                          <ShoppingCart className="h-3 w-3 mr-1" />
-                          {contact.purchaseStatus}
-                        </Badge>
+                        <div className="flex flex-wrap gap-1">
+                          {contact.purchasedProducts.length > 0 ? (
+                            contact.purchasedProducts.map((product) => (
+                              <Badge key={product.id} variant="default" className="text-xs bg-email-success/20 text-email-success">
+                                {product.name} - ${product.price}
+                              </Badge>
+                            ))
+                          ) : (
+                            <Badge variant="outline" className="text-xs">
+                              No purchases
+                            </Badge>
+                          )}
+                        </div>
                       </TableCell>
                       <TableCell>
                         <div className="flex items-center space-x-1">
@@ -382,82 +439,212 @@ export const EmailListManager = () => {
                       placeholder="website, social media"
                     />
                   </div>
-                  <div>
-                    <Label htmlFor="newListId">List</Label>
-                    <select
-                      className="w-full px-3 py-2 border rounded-md"
-                      value={newContact.listId}
-                      onChange={(e) => setNewContact({...newContact, listId: parseInt(e.target.value)})}
-                    >
-                      {lists.map((list) => (
-                        <option key={list.id} value={list.id}>{list.name}</option>
-                      ))}
-                    </select>
+                    <div>
+                      <Label htmlFor="newListId">List</Label>
+                      <select
+                        className="w-full px-3 py-2 border rounded-md"
+                        value={newContact.listId}
+                        onChange={(e) => setNewContact({...newContact, listId: parseInt(e.target.value)})}
+                      >
+                        {lists.map((list) => (
+                          <option key={list.id} value={list.id}>{list.name}</option>
+                        ))}
+                      </select>
+                    </div>
                   </div>
-                </div>
-                <div className="flex gap-2 mt-4">
-                  <Button onClick={handleAddContact}>Add Contact</Button>
-                  <Button variant="outline" onClick={() => setIsAddingContact(false)}>Cancel</Button>
-                </div>
-              </CardContent>
-            </Card>
-          )}
+                  <div>
+                    <Label>Purchased Products (optional)</Label>
+                    <div className="space-y-2 max-h-32 overflow-y-auto border rounded-md p-2">
+                      {products.map((product) => (
+                        <label key={product.id} className="flex items-center space-x-2">
+                          <input
+                            type="checkbox"
+                            checked={newContact.selectedProducts.includes(product.id)}
+                            onChange={(e) => {
+                              if (e.target.checked) {
+                                setNewContact({...newContact, selectedProducts: [...newContact.selectedProducts, product.id]});
+                              } else {
+                                setNewContact({...newContact, selectedProducts: newContact.selectedProducts.filter(id => id !== product.id)});
+                              }
+                            }}
+                            className="rounded"
+                          />
+                          <span className="text-sm">{product.name} - ${product.price}</span>
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+                  <div className="flex gap-2 mt-4">
+                    <Button onClick={handleAddContact}>Add Contact</Button>
+                    <Button variant="outline" onClick={() => setIsAddingContact(false)}>Cancel</Button>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
 
-          {/* Edit Contact Dialog */}
-          {editingContact && (
-            <Card className="shadow-soft border-email-primary/20">
+            {/* Edit Contact Dialog */}
+            {editingContact && (
+              <Card className="shadow-soft border-email-primary/20">
+                <CardHeader>
+                  <CardTitle>Edit Contact</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <Label htmlFor="editEmail">Email</Label>
+                      <Input
+                        id="editEmail"
+                        value={editingContact.email}
+                        onChange={(e) => setEditingContact({...editingContact, email: e.target.value})}
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="editName">Name</Label>
+                      <Input
+                        id="editName"
+                        value={editingContact.name}
+                        onChange={(e) => setEditingContact({...editingContact, name: e.target.value})}
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="editTags">Tags (comma-separated)</Label>
+                      <Input
+                        id="editTags"
+                        value={editingContact.tags.join(", ")}
+                        onChange={(e) => setEditingContact({...editingContact, tags: e.target.value.split(",").map(tag => tag.trim())})}
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="editSource">Source</Label>
+                      <Input
+                        id="editSource"
+                        value={editingContact.source}
+                        onChange={(e) => setEditingContact({...editingContact, source: e.target.value})}
+                      />
+                    </div>
+                  </div>
+                  <div className="mt-4">
+                    <Label>Purchased Products</Label>
+                    <div className="space-y-2 max-h-32 overflow-y-auto border rounded-md p-2">
+                      {products.map((product) => (
+                        <label key={product.id} className="flex items-center space-x-2">
+                          <input
+                            type="checkbox"
+                            checked={editingContact.purchasedProducts.some(p => p.id === product.id)}
+                            onChange={(e) => {
+                              if (e.target.checked) {
+                                setEditingContact({
+                                  ...editingContact, 
+                                  purchasedProducts: [...editingContact.purchasedProducts, product]
+                                });
+                              } else {
+                                setEditingContact({
+                                  ...editingContact, 
+                                  purchasedProducts: editingContact.purchasedProducts.filter(p => p.id !== product.id)
+                                });
+                              }
+                            }}
+                            className="rounded"
+                          />
+                          <span className="text-sm">{product.name} - ${product.price}</span>
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+                  <div className="flex gap-2 mt-4">
+                    <Button onClick={handleUpdateContact}>Update Contact</Button>
+                    <Button variant="outline" onClick={() => setEditingContact(null)}>Cancel</Button>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+        </TabsContent>
+
+        {/* Product Management Tab */}
+        <TabsContent value="products" className="space-y-6">
+          <Card className="shadow-soft border-email-secondary/20">
+            <CardHeader>
+              <CardTitle className="flex items-center justify-between">
+                <div className="flex items-center space-x-2">
+                  <ShoppingCart className="h-5 w-5 text-email-secondary" />
+                  <span>Products ({products.length})</span>
+                </div>
+                <Button 
+                  size="sm"
+                  onClick={() => setIsAddingProduct(true)}
+                  className="bg-email-secondary hover:bg-email-secondary/80 text-foreground"
+                >
+                  <Plus className="h-4 w-4 mr-2" />
+                  Add Product
+                </Button>
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid gap-4">
+                {products.map((product) => (
+                  <Card key={product.id} className="border-email-accent/20">
+                    <CardContent className="p-4">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <h4 className="font-medium">{product.name}</h4>
+                          <div className="flex items-center space-x-4 text-sm text-muted-foreground">
+                            <span>${product.price}</span>
+                            <Badge variant="outline" className="border-email-accent text-email-accent">
+                              {product.category}
+                            </Badge>
+                          </div>
+                        </div>
+                        <div className="text-sm text-muted-foreground">
+                          {contacts.filter(c => c.purchasedProducts.some(p => p.id === product.id)).length} customers
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Add Product Form */}
+          {isAddingProduct && (
+            <Card className="shadow-soft border-email-secondary/20">
               <CardHeader>
-                <CardTitle>Edit Contact</CardTitle>
+                <CardTitle>Add New Product</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-3 gap-4">
                   <div>
-                    <Label htmlFor="editEmail">Email</Label>
+                    <Label htmlFor="productName">Product Name</Label>
                     <Input
-                      id="editEmail"
-                      value={editingContact.email}
-                      onChange={(e) => setEditingContact({...editingContact, email: e.target.value})}
+                      id="productName"
+                      value={newProduct.name}
+                      onChange={(e) => setNewProduct({...newProduct, name: e.target.value})}
+                      placeholder="Premium Course"
                     />
                   </div>
                   <div>
-                    <Label htmlFor="editName">Name</Label>
+                    <Label htmlFor="productPrice">Price ($)</Label>
                     <Input
-                      id="editName"
-                      value={editingContact.name}
-                      onChange={(e) => setEditingContact({...editingContact, name: e.target.value})}
+                      id="productPrice"
+                      type="number"
+                      value={newProduct.price}
+                      onChange={(e) => setNewProduct({...newProduct, price: parseFloat(e.target.value)})}
+                      placeholder="299"
                     />
                   </div>
                   <div>
-                    <Label htmlFor="editTags">Tags (comma-separated)</Label>
+                    <Label htmlFor="productCategory">Category</Label>
                     <Input
-                      id="editTags"
-                      value={editingContact.tags.join(", ")}
-                      onChange={(e) => setEditingContact({...editingContact, tags: e.target.value.split(",").map(tag => tag.trim())})}
+                      id="productCategory"
+                      value={newProduct.category}
+                      onChange={(e) => setNewProduct({...newProduct, category: e.target.value})}
+                      placeholder="Education"
                     />
-                  </div>
-                  <div>
-                    <Label htmlFor="editSource">Source</Label>
-                    <Input
-                      id="editSource"
-                      value={editingContact.source}
-                      onChange={(e) => setEditingContact({...editingContact, source: e.target.value})}
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="editPurchase">Purchase Status</Label>
-                    <select
-                      className="w-full px-3 py-2 border rounded-md"
-                      value={editingContact.purchaseStatus}
-                      onChange={(e) => setEditingContact({...editingContact, purchaseStatus: e.target.value})}
-                    >
-                      <option value="not purchased">Not Purchased</option>
-                      <option value="purchased">Purchased</option>
-                    </select>
                   </div>
                 </div>
                 <div className="flex gap-2 mt-4">
-                  <Button onClick={handleUpdateContact}>Update Contact</Button>
-                  <Button variant="outline" onClick={() => setEditingContact(null)}>Cancel</Button>
+                  <Button onClick={handleAddProduct}>Add Product</Button>
+                  <Button variant="outline" onClick={() => setIsAddingProduct(false)}>Cancel</Button>
                 </div>
               </CardContent>
             </Card>
