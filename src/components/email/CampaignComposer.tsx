@@ -8,7 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Slider } from "@/components/ui/slider";
 import { ColorPicker } from "@/components/ui/color-picker";
-import { Sparkles, Send, Eye, Wand2, MessageSquare, Palette } from "lucide-react";
+import { Sparkles, Send, Eye, Wand2, MessageSquare, Palette, Monitor, Smartphone } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -30,6 +30,7 @@ export const CampaignComposer = () => {
   const [primaryColor, setPrimaryColor] = useState("#684cff");
   const [secondaryColor, setSecondaryColor] = useState("#22d3ee");
   const [accentColor, setAccentColor] = useState("#34d399");
+  const [viewMode, setViewMode] = useState<'desktop' | 'mobile'>('desktop');
 
   useEffect(() => {
     loadEmailLists();
@@ -477,12 +478,39 @@ export const CampaignComposer = () => {
                 </Button>
               </DialogTrigger>
               <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
-                <DialogHeader>
-                  <DialogTitle>Email Preview</DialogTitle>
-                </DialogHeader>
-                <div className="border rounded-lg p-4 bg-white">
-                  <div dangerouslySetInnerHTML={{ __html: generatedTemplate }} />
-                </div>
+                 <DialogHeader>
+                   <DialogTitle className="flex items-center justify-between">
+                     Email Preview
+                     <div className="flex gap-2">
+                       <Button
+                         variant={viewMode === 'desktop' ? 'default' : 'outline'}
+                         size="sm"
+                         onClick={() => setViewMode('desktop')}
+                       >
+                         <Monitor className="h-4 w-4 mr-1" />
+                         Desktop
+                       </Button>
+                       <Button
+                         variant={viewMode === 'mobile' ? 'default' : 'outline'}
+                         size="sm"
+                         onClick={() => setViewMode('mobile')}
+                       >
+                         <Smartphone className="h-4 w-4 mr-1" />
+                         Mobile
+                       </Button>
+                     </div>
+                   </DialogTitle>
+                 </DialogHeader>
+                 <div className={`border rounded-lg bg-white overflow-auto ${
+                   viewMode === 'mobile' 
+                     ? 'max-w-[375px] mx-auto' 
+                     : 'w-full'
+                 }`}>
+                   <div 
+                     className={viewMode === 'mobile' ? 'scale-75 origin-top' : ''}
+                     dangerouslySetInnerHTML={{ __html: generatedTemplate }} 
+                   />
+                 </div>
               </DialogContent>
             </Dialog>
 
