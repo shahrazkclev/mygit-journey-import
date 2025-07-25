@@ -5,7 +5,9 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Sparkles, Send, Eye, Wand2, MessageSquare } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Slider } from "@/components/ui/slider";
+import { Sparkles, Send, Eye, Wand2, MessageSquare, Palette } from "lucide-react";
 import { toast } from "sonner";
 
 export const CampaignComposer = () => {
@@ -14,6 +16,16 @@ export const CampaignComposer = () => {
   const [generatedTemplate, setGeneratedTemplate] = useState("");
   const [isGenerating, setIsGenerating] = useState(false);
   const [selectedList, setSelectedList] = useState("");
+  const [isEditingWithAI, setIsEditingWithAI] = useState(false);
+  const [aiEditPrompt, setAiEditPrompt] = useState("");
+  const [showPreview, setShowPreview] = useState(false);
+  const [senderCycleCount, setSenderCycleCount] = useState([10]);
+  const [currentEmailCount, setCurrentEmailCount] = useState(0);
+  
+  // Theme colors
+  const [primaryColor, setPrimaryColor] = useState("#684cff");
+  const [secondaryColor, setSecondaryColor] = useState("#22d3ee");
+  const [accentColor, setAccentColor] = useState("#34d399");
 
   const handleGenerateTemplate = async () => {
     if (!prompt.trim()) {
@@ -62,12 +74,60 @@ export const CampaignComposer = () => {
     }, 2000);
   };
 
+  const getCurrentSenderNumber = () => {
+    const cycle = senderCycleCount[0];
+    return ((Math.floor(currentEmailCount / cycle)) % 3) + 1;
+  };
+
+  const handleEditWithAI = async () => {
+    if (!aiEditPrompt.trim()) {
+      toast.error("Please enter editing instructions");
+      return;
+    }
+    
+    setIsEditingWithAI(true);
+    
+    // Simulate AI editing (replace with actual Claude API call)
+    setTimeout(() => {
+      const editedTemplate = generatedTemplate.replace(
+        /color: #1f2937/g,
+        `color: ${primaryColor}`
+      ).replace(
+        /background: linear-gradient\(135deg, #ddd6fe, #bae6fd\)/g,
+        `background: linear-gradient(135deg, ${primaryColor}20, ${secondaryColor}20)`
+      ).replace(
+        /background: linear-gradient\(135deg, #ddd6fe, #a7f3d0\)/g,
+        `background: linear-gradient(135deg, ${primaryColor}40, ${accentColor}40)`
+      );
+      
+      setGeneratedTemplate(editedTemplate);
+      setIsEditingWithAI(false);
+      setAiEditPrompt("");
+      toast.success("Template updated with AI edits!");
+    }, 1500);
+  };
+
   const handleSendCampaign = () => {
     if (!generatedTemplate || !selectedList) {
       toast.error("Please generate a template and select an email list");
       return;
     }
-    toast.info("Campaign setup ready! Connect Supabase to enable sending via Make.com webhook");
+    
+    const senderNumber = getCurrentSenderNumber();
+    setCurrentEmailCount(prev => prev + 1);
+    
+    // Example webhook payload
+    const webhookData = {
+      emailSender: senderNumber,
+      subject: subject,
+      htmlContent: generatedTemplate,
+      emailTitle: subject,
+      timestamp: new Date().toISOString(),
+      list: selectedList
+    };
+    
+    console.log("Webhook payload:", webhookData);
+    toast.info(`Campaign setup ready! Using email sender ${senderNumber}. Connect Supabase to enable sending via Make.com webhook`);
   };
 
   return (
@@ -110,6 +170,85 @@ export const CampaignComposer = () => {
         />
       </div>
 
+      {/* Theme Color Picker */}
+      <Card className="shadow-soft border-email-primary/20">
+        <CardHeader>
+          <CardTitle className="flex items-center space-x-2">
+            <Palette className="h-5 w-5 text-email-primary" />
+            <span>Theme Colors</span>
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-3 gap-4">
+            <div className="space-y-2">
+              <Label>Primary Color</Label>
+              <div className="flex items-center space-x-2">
+                <input
+                  type="color"
+                  value={primaryColor}
+                  onChange={(e) => setPrimaryColor(e.target.value)}
+                  className="w-12 h-8 rounded border"
+                />
+                <span className="text-sm text-muted-foreground">{primaryColor}</span>
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Label>Secondary Color</Label>
+              <div className="flex items-center space-x-2">
+                <input
+                  type="color"
+                  value={secondaryColor}
+                  onChange={(e) => setSecondaryColor(e.target.value)}
+                  className="w-12 h-8 rounded border"
+                />
+                <span className="text-sm text-muted-foreground">{secondaryColor}</span>
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Label>Accent Color</Label>
+              <div className="flex items-center space-x-2">
+                <input
+                  type="color"
+                  value={accentColor}
+                  onChange={(e) => setAccentColor(e.target.value)}
+                  className="w-12 h-8 rounded border"
+                />
+                <span className="text-sm text-muted-foreground">{accentColor}</span>
+              </div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Email Sender Rotation */}
+      <Card className="shadow-soft border-email-accent/20">
+        <CardHeader>
+          <CardTitle>Email Sender Rotation</CardTitle>
+          <CardDescription>
+            Configure how often to cycle through email senders (1, 2, 3)
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label>Cycle Count: {senderCycleCount[0]} emails per sender</Label>
+              <Slider
+                value={senderCycleCount}
+                onValueChange={setSenderCycleCount}
+                max={50}
+                min={1}
+                step={1}
+                className="w-full"
+              />
+            </div>
+            <div className="flex items-center justify-between text-sm">
+              <span>Current Sender: {getCurrentSenderNumber()}</span>
+              <span>Emails Sent: {currentEmailCount}</span>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
       <div className="flex flex-wrap gap-3">
         <Button 
           onClick={handleGenerateTemplate}
@@ -131,14 +270,53 @@ export const CampaignComposer = () => {
 
         {generatedTemplate && (
           <>
-            <Button variant="outline" className="border-email-secondary hover:bg-email-secondary">
-              <Eye className="h-4 w-4 mr-2" />
-              Preview
-            </Button>
-            <Button variant="outline" className="border-email-accent hover:bg-email-accent">
-              <MessageSquare className="h-4 w-4 mr-2" />
-              Edit with AI
-            </Button>
+            <Dialog open={showPreview} onOpenChange={setShowPreview}>
+              <DialogTrigger asChild>
+                <Button variant="outline" className="border-email-secondary hover:bg-email-secondary">
+                  <Eye className="h-4 w-4 mr-2" />
+                  Preview
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+                <DialogHeader>
+                  <DialogTitle>Email Preview</DialogTitle>
+                </DialogHeader>
+                <div className="border rounded-lg p-4 bg-white">
+                  <div dangerouslySetInnerHTML={{ __html: generatedTemplate }} />
+                </div>
+              </DialogContent>
+            </Dialog>
+
+            <Dialog open={isEditingWithAI} onOpenChange={setIsEditingWithAI}>
+              <DialogTrigger asChild>
+                <Button variant="outline" className="border-email-accent hover:bg-email-accent">
+                  <MessageSquare className="h-4 w-4 mr-2" />
+                  Edit with AI
+                </Button>
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Edit Template with AI</DialogTitle>
+                </DialogHeader>
+                <div className="space-y-4">
+                  <Textarea
+                    placeholder="Describe what you want to change (e.g., 'make it more formal', 'add a discount section', 'change the call to action')"
+                    value={aiEditPrompt}
+                    onChange={(e) => setAiEditPrompt(e.target.value)}
+                    className="min-h-[100px]"
+                  />
+                  <div className="flex gap-3">
+                    <Button onClick={handleEditWithAI} disabled={!aiEditPrompt.trim()}>
+                      <Wand2 className="h-4 w-4 mr-2" />
+                      Apply Changes
+                    </Button>
+                    <Button variant="outline" onClick={() => setIsEditingWithAI(false)}>
+                      Cancel
+                    </Button>
+                  </div>
+                </div>
+              </DialogContent>
+            </Dialog>
           </>
         )}
       </div>
