@@ -19,8 +19,24 @@ export const StyleGuide = () => {
   const [logoUrl, setLogoUrl] = useState("");
   const [emailSignature, setEmailSignature] = useState("Best regards,\nThe Team");
 
+  // Page theme colors
+  const [pageTheme, setPageTheme] = useState({
+    primary: "#684cff",
+    secondary: "#22d3ee", 
+    accent: "#34d399"
+  });
+
+  const applyPageTheme = () => {
+    const root = document.documentElement;
+    root.style.setProperty('--email-primary', pageTheme.primary);
+    root.style.setProperty('--email-secondary', pageTheme.secondary);
+    root.style.setProperty('--email-accent', pageTheme.accent);
+    toast.success("Page theme applied!");
+  };
+
   const handleSaveStyleGuide = () => {
-    toast.success("Style guide saved successfully!");
+    applyPageTheme();
+    toast.success("Style guide saved and theme applied!");
   };
 
   const handlePreviewStyle = () => {
@@ -38,6 +54,77 @@ export const StyleGuide = () => {
 
   return (
     <div className="space-y-6">
+      {/* Page Theme Control */}
+      <Card className="shadow-soft border-email-primary/20">
+        <CardHeader>
+          <CardTitle className="flex items-center space-x-2">
+            <Palette className="h-5 w-5 text-email-primary" />
+            <span>Page Theme Control</span>
+          </CardTitle>
+          <CardDescription>
+            Control the theme colors of the entire application interface
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="pageThemePrimary">Primary Theme</Label>
+              <div className="flex items-center space-x-2">
+                <Input
+                  id="pageThemePrimary"
+                  type="color"
+                  value={pageTheme.primary}
+                  onChange={(e) => setPageTheme({...pageTheme, primary: e.target.value})}
+                  className="w-16 h-10 p-1 border-email-primary/30"
+                />
+                <Input
+                  value={pageTheme.primary}
+                  onChange={(e) => setPageTheme({...pageTheme, primary: e.target.value})}
+                  className="flex-1 border-email-primary/30 focus:border-email-primary"
+                />
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="pageThemeSecondary">Secondary Theme</Label>
+              <div className="flex items-center space-x-2">
+                <Input
+                  id="pageThemeSecondary"
+                  type="color"
+                  value={pageTheme.secondary}
+                  onChange={(e) => setPageTheme({...pageTheme, secondary: e.target.value})}
+                  className="w-16 h-10 p-1 border-email-secondary/30"
+                />
+                <Input
+                  value={pageTheme.secondary}
+                  onChange={(e) => setPageTheme({...pageTheme, secondary: e.target.value})}
+                  className="flex-1 border-email-secondary/30 focus:border-email-secondary"
+                />
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="pageThemeAccent">Accent Theme</Label>
+              <div className="flex items-center space-x-2">
+                <Input
+                  id="pageThemeAccent"
+                  type="color"
+                  value={pageTheme.accent}
+                  onChange={(e) => setPageTheme({...pageTheme, accent: e.target.value})}
+                  className="w-16 h-10 p-1 border-email-accent/30"
+                />
+                <Input
+                  value={pageTheme.accent}
+                  onChange={(e) => setPageTheme({...pageTheme, accent: e.target.value})}
+                  className="flex-1 border-email-accent/30 focus:border-email-accent"
+                />
+              </div>
+            </div>
+          </div>
+          <Button onClick={applyPageTheme} className="mt-4">
+            Apply Page Theme
+          </Button>
+        </CardContent>
+      </Card>
+
       {/* Brand Identity */}
       <Card className="shadow-soft border-email-primary/20">
         <CardHeader>

@@ -35,12 +35,21 @@ export const EmailListManager = () => {
     { id: 3, email: "mike@example.com", name: "Mike Johnson", tags: ["prospect"], source: "referral", lastContacted: "never", purchaseStatus: "not purchased", dateAdded: "2024-01-12", listId: 3 },
   ]);
   
-  const [selectedList, setSelectedList] = useState<number | null>(null);
+  const [selectedLists, setSelectedLists] = useState<number[]>([]);
   const [newListName, setNewListName] = useState("");
   const [csvFile, setCsvFile] = useState<File | null>(null);
   const [filterTag, setFilterTag] = useState<string>("all");
   const [filterPurchase, setFilterPurchase] = useState<string>("all");
   const [searchQuery, setSearchQuery] = useState("");
+  const [isAddingContact, setIsAddingContact] = useState(false);
+  const [editingContact, setEditingContact] = useState<Contact | null>(null);
+  const [newContact, setNewContact] = useState({
+    email: "",
+    name: "",
+    tags: "",
+    source: "",
+    listId: 1
+  });
 
   const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -85,8 +94,61 @@ export const EmailListManager = () => {
     toast.success("Email list deleted");
   };
 
+  const handleAddContact = () => {
+    if (!newContact.email || !newContact.name) {
+      toast.error("Please fill in email and name");
+      return;
+    }
+    const contact: Contact = {
+      id: Date.now(),
+      email: newContact.email,
+      name: newContact.name,
+      tags: newContact.tags.split(",").map(tag => tag.trim()).filter(Boolean),
+      source: newContact.source || "manual",
+      lastContacted: "never",
+      purchaseStatus: "not purchased",
+      dateAdded: new Date().toISOString().split('T')[0],
+      listId: newContact.listId
+    };
+    setContacts([...contacts, contact]);
+    setNewContact({ email: "", name: "", tags: "", source: "", listId: 1 });
+    setIsAddingContact(false);
+    toast.success("Contact added successfully!");
+  };
+
+  const handleEditContact = (contact: Contact) => {
+    setEditingContact(contact);
+  };
+
+  const handleUpdateContact = () => {
+    if (!editingContact) return;
+    setContacts(contacts.map(c => c.id === editingContact.id ? editingContact : c));
+    setEditingContact(null);
+    toast.success("Contact updated successfully!");
+  };
+
+  const handleDeleteContact = (id: number) => {
+    setContacts(contacts.filter(contact => contact.id !== id));
+    toast.success("Contact deleted");
+  };
+
+  const getUniqueContactsFromLists = () => {
+    if (selectedLists.length === 0) return [];
+    const contactsFromSelectedLists = contacts.filter(contact => 
+      selectedLists.includes(contact.listId)
+    );
+    // Remove duplicates by email
+    const uniqueContacts = contactsFromSelectedLists.reduce((acc, contact) => {
+      if (!acc.find(c => c.email === contact.email)) {
+        acc.push(contact);
+      }
+      return acc;
+    }, [] as Contact[]);
+    return uniqueContacts;
+  };
+
   const filteredContacts = contacts.filter(contact => {
-    if (selectedList && contact.listId !== selectedList) return false;
+    if (selectedLists.length > 0 && !selectedLists.includes(contact.listId)) return false;
     if (filterTag !== "all" && !contact.tags.includes(filterTag)) return false;
     if (filterPurchase !== "all" && contact.purchaseStatus !== filterPurchase) return false;
     if (searchQuery && !contact.email.toLowerCase().includes(searchQuery.toLowerCase()) && !contact.name.toLowerCase().includes(searchQuery.toLowerCase())) return false;
@@ -135,18 +197,26 @@ export const EmailListManager = () => {
                   />
                 </div>
                 <div>
-                  <Label htmlFor="listFilter">List</Label>
-                  <Select value={selectedList?.toString() || "all"} onValueChange={(value) => setSelectedList(value === "all" ? null : parseInt(value))}>
-                    <SelectTrigger className="border-email-primary/30 focus:border-email-primary">
-                      <SelectValue placeholder="All Lists" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">All Lists</SelectItem>
-                      {lists.map((list) => (
-                        <SelectItem key={list.id} value={list.id.toString()}>{list.name}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <Label htmlFor="listFilter">Lists (Multiple Selection)</Label>
+                  <div className="space-y-2">
+                    {lists.map((list) => (
+                      <label key={list.id} className="flex items-center space-x-2">
+                        <input
+                          type="checkbox"
+                          checked={selectedLists.includes(list.id)}
+                          onChange={(e) => {
+                            if (e.target.checked) {
+                              setSelectedLists([...selectedLists, list.id]);
+                            } else {
+                              setSelectedLists(selectedLists.filter(id => id !== list.id));
+                            }
+                          }}
+                          className="rounded border-email-primary/30"
+                        />
+                        <span className="text-sm">{list.name}</span>
+                      </label>
+                    ))}
+                  </div>
                 </div>
                 <div>
                   <Label htmlFor="tagFilter">Tag</Label>
@@ -189,6 +259,7 @@ export const EmailListManager = () => {
                 </div>
                 <Button 
                   size="sm"
+                  onClick={() => setIsAddingContact(true)}
                   className="bg-email-primary hover:bg-email-primary/80 text-primary-foreground"
                 >
                   <Plus className="h-4 w-4 mr-2" />
@@ -252,13 +323,10 @@ export const EmailListManager = () => {
                       </TableCell>
                       <TableCell>
                         <div className="flex items-center space-x-1">
-                          <Button variant="ghost" size="sm">
+                          <Button variant="ghost" size="sm" onClick={() => handleEditContact(contact)}>
                             <Eye className="h-3 w-3" />
                           </Button>
-                          <Button variant="ghost" size="sm">
-                            <Tag className="h-3 w-3" />
-                          </Button>
-                          <Button variant="ghost" size="sm">
+                          <Button variant="ghost" size="sm" onClick={() => handleDeleteContact(contact.id)}>
                             <Trash2 className="h-3 w-3" />
                           </Button>
                         </div>
@@ -269,6 +337,131 @@ export const EmailListManager = () => {
               </Table>
             </CardContent>
           </Card>
+
+          {/* Add Contact Dialog */}
+          {isAddingContact && (
+            <Card className="shadow-soft border-email-primary/20">
+              <CardHeader>
+                <CardTitle>Add New Contact</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="newEmail">Email</Label>
+                    <Input
+                      id="newEmail"
+                      value={newContact.email}
+                      onChange={(e) => setNewContact({...newContact, email: e.target.value})}
+                      placeholder="contact@example.com"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="newName">Name</Label>
+                    <Input
+                      id="newName"
+                      value={newContact.name}
+                      onChange={(e) => setNewContact({...newContact, name: e.target.value})}
+                      placeholder="John Doe"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="newTags">Tags (comma-separated)</Label>
+                    <Input
+                      id="newTags"
+                      value={newContact.tags}
+                      onChange={(e) => setNewContact({...newContact, tags: e.target.value})}
+                      placeholder="customer, premium"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="newSource">Source</Label>
+                    <Input
+                      id="newSource"
+                      value={newContact.source}
+                      onChange={(e) => setNewContact({...newContact, source: e.target.value})}
+                      placeholder="website, social media"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="newListId">List</Label>
+                    <select
+                      className="w-full px-3 py-2 border rounded-md"
+                      value={newContact.listId}
+                      onChange={(e) => setNewContact({...newContact, listId: parseInt(e.target.value)})}
+                    >
+                      {lists.map((list) => (
+                        <option key={list.id} value={list.id}>{list.name}</option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+                <div className="flex gap-2 mt-4">
+                  <Button onClick={handleAddContact}>Add Contact</Button>
+                  <Button variant="outline" onClick={() => setIsAddingContact(false)}>Cancel</Button>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Edit Contact Dialog */}
+          {editingContact && (
+            <Card className="shadow-soft border-email-primary/20">
+              <CardHeader>
+                <CardTitle>Edit Contact</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="editEmail">Email</Label>
+                    <Input
+                      id="editEmail"
+                      value={editingContact.email}
+                      onChange={(e) => setEditingContact({...editingContact, email: e.target.value})}
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="editName">Name</Label>
+                    <Input
+                      id="editName"
+                      value={editingContact.name}
+                      onChange={(e) => setEditingContact({...editingContact, name: e.target.value})}
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="editTags">Tags (comma-separated)</Label>
+                    <Input
+                      id="editTags"
+                      value={editingContact.tags.join(", ")}
+                      onChange={(e) => setEditingContact({...editingContact, tags: e.target.value.split(",").map(tag => tag.trim())})}
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="editSource">Source</Label>
+                    <Input
+                      id="editSource"
+                      value={editingContact.source}
+                      onChange={(e) => setEditingContact({...editingContact, source: e.target.value})}
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="editPurchase">Purchase Status</Label>
+                    <select
+                      className="w-full px-3 py-2 border rounded-md"
+                      value={editingContact.purchaseStatus}
+                      onChange={(e) => setEditingContact({...editingContact, purchaseStatus: e.target.value})}
+                    >
+                      <option value="not purchased">Not Purchased</option>
+                      <option value="purchased">Purchased</option>
+                    </select>
+                  </div>
+                </div>
+                <div className="flex gap-2 mt-4">
+                  <Button onClick={handleUpdateContact}>Update Contact</Button>
+                  <Button variant="outline" onClick={() => setEditingContact(null)}>Cancel</Button>
+                </div>
+              </CardContent>
+            </Card>
+          )}
         </TabsContent>
 
         <TabsContent value="lists" className="space-y-6">
@@ -381,7 +574,7 @@ export const EmailListManager = () => {
                         <Button 
                           variant="outline" 
                           size="sm"
-                          onClick={() => setSelectedList(list.id)}
+                          onClick={() => setSelectedLists([list.id])}
                           className="border-email-primary hover:bg-email-primary hover:text-primary-foreground"
                         >
                           <Eye className="h-4 w-4 mr-2" />

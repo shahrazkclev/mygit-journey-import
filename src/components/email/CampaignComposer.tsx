@@ -145,17 +145,54 @@ export const CampaignComposer = () => {
           />
         </div>
         <div className="space-y-2">
-          <Label htmlFor="list">Email List</Label>
-          <select 
-            className="w-full px-3 py-2 border border-email-primary/30 rounded-md focus:border-email-primary focus:outline-none focus:ring-2 focus:ring-email-primary/20"
-            value={selectedList}
-            onChange={(e) => setSelectedList(e.target.value)}
-          >
-            <option value="">Select a list...</option>
-            <option value="newsletter">Newsletter Subscribers</option>
-            <option value="customers">Customer List</option>
-            <option value="prospects">Prospects</option>
-          </select>
+          <Label htmlFor="list">Email Lists (Multiple Selection)</Label>
+          <div className="space-y-2 max-h-24 overflow-y-auto border border-email-primary/30 rounded-md p-2">
+            <label className="flex items-center space-x-2">
+              <input
+                type="checkbox"
+                value="newsletter"
+                onChange={(e) => {
+                  if (e.target.checked) {
+                    setSelectedList(selectedList ? `${selectedList},newsletter` : "newsletter");
+                  } else {
+                    setSelectedList(selectedList.split(",").filter(l => l !== "newsletter").join(","));
+                  }
+                }}
+                className="rounded"
+              />
+              <span className="text-sm">Newsletter Subscribers</span>
+            </label>
+            <label className="flex items-center space-x-2">
+              <input
+                type="checkbox"
+                value="customers"
+                onChange={(e) => {
+                  if (e.target.checked) {
+                    setSelectedList(selectedList ? `${selectedList},customers` : "customers");
+                  } else {
+                    setSelectedList(selectedList.split(",").filter(l => l !== "customers").join(","));
+                  }
+                }}
+                className="rounded"
+              />
+              <span className="text-sm">Customer List</span>
+            </label>
+            <label className="flex items-center space-x-2">
+              <input
+                type="checkbox"
+                value="prospects"
+                onChange={(e) => {
+                  if (e.target.checked) {
+                    setSelectedList(selectedList ? `${selectedList},prospects` : "prospects");
+                  } else {
+                    setSelectedList(selectedList.split(",").filter(l => l !== "prospects").join(","));
+                  }
+                }}
+                className="rounded"
+              />
+              <span className="text-sm">Prospects</span>
+            </label>
+          </div>
         </div>
       </div>
 
