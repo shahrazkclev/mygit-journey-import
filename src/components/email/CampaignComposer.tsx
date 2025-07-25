@@ -38,13 +38,13 @@ export const CampaignComposer = () => {
 
   const loadEmailLists = async () => {
     try {
-      const { data: { user }, error: authError } = await supabase.auth.getUser();
-      if (authError || !user) return;
+      // Use a dummy user ID for demo purposes
+      const demoUserId = 'demo-user-123';
 
       const { data: lists, error } = await supabase
         .from('email_lists')
         .select('*')
-        .eq('user_id', user.id);
+        .eq('user_id', demoUserId);
 
       if (error) {
         console.error('Error loading email lists:', error);
@@ -59,13 +59,13 @@ export const CampaignComposer = () => {
 
   const loadStyleGuide = async () => {
     try {
-      const { data: { user }, error: authError } = await supabase.auth.getUser();
-      if (authError || !user) return;
+      // Use a dummy user ID for demo purposes
+      const demoUserId = 'demo-user-123';
 
       const { data: guides, error } = await supabase
         .from('style_guides')
         .select('*')
-        .eq('user_id', user.id)
+        .eq('user_id', demoUserId)
         .order('updated_at', { ascending: false })
         .limit(1);
 
@@ -88,12 +88,6 @@ export const CampaignComposer = () => {
   const handleGenerateTemplate = async () => {
     if (!prompt.trim()) {
       toast.error("Please enter a prompt for your email");
-      return;
-    }
-
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
-    if (authError || !user) {
-      toast.error("Please sign in to generate templates");
       return;
     }
 
@@ -186,11 +180,8 @@ export const CampaignComposer = () => {
     }
     
     try {
-      const { data: { user }, error: authError } = await supabase.auth.getUser();
-      if (authError || !user) {
-        toast.error("Please sign in to send campaigns");
-        return;
-      }
+      // Use a dummy user ID for demo purposes
+      const demoUserId = 'demo-user-123';
 
       const senderNumber = getCurrentSenderNumber();
       setCurrentEmailCount(prev => prev + 1);
@@ -199,7 +190,7 @@ export const CampaignComposer = () => {
       const { data: campaign, error } = await supabase
         .from('campaigns')
         .insert({
-          user_id: user.id,
+          user_id: demoUserId,
           name: subject || `Campaign ${new Date().toLocaleDateString()}`,
           subject,
           html_content: generatedTemplate,

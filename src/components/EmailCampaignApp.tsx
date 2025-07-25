@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -8,50 +8,9 @@ import { EmailListManager } from "./email/EmailListManager";
 import { CampaignSettings } from "./email/CampaignSettings";
 import { UnsubscribeManager } from "./email/UnsubscribeManager";
 import { StyleGuide } from "./email/StyleGuide";
-import { AuthComponent } from "./auth/AuthComponent";
-import { supabase } from "@/integrations/supabase/client";
 
 export const EmailCampaignApp = () => {
   const [activeTab, setActiveTab] = useState("compose");
-  const [user, setUser] = useState<any>(null);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    // Get initial session
-    const getInitialSession = async () => {
-      const { data: { session }, error } = await supabase.auth.getSession();
-      if (error) {
-        console.error('Error getting session:', error);
-      } else {
-        setUser(session?.user || null);
-      }
-      setLoading(false);
-    };
-
-    getInitialSession();
-
-    // Listen for auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      setUser(session?.user || null);
-    });
-
-    return () => subscription.unsubscribe();
-  }, []);
-
-  const handleAuthChange = () => {
-    // This will trigger the auth state change listener
-  };
-
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-background via-background to-email-primary/5 flex items-center justify-center">
-        <div className="text-center">
-          <Wifi className="h-8 w-8 animate-spin mx-auto mb-4 text-email-primary" />
-          <p className="text-muted-foreground">Loading...</p>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-background to-email-primary/5">
@@ -69,25 +28,16 @@ export const EmailCampaignApp = () => {
                   Create, manage, and send AI-powered email campaigns with style
                 </CardDescription>
               </div>
-              <div className="flex items-center space-x-4">
-                <Badge 
-                  variant="outline" 
-                  className="border-email-success text-email-success bg-email-success/10"
-                >
-                  <Wifi className="h-3 w-3 mr-1" />
-                  Connected
-                </Badge>
-                <AuthComponent user={user} onAuthChange={handleAuthChange} />
-              </div>
+              <Badge 
+                variant="outline" 
+                className="border-email-success text-email-success bg-email-success/10"
+              >
+                <Wifi className="h-3 w-3 mr-1" />
+                Ready
+              </Badge>
             </div>
           </CardHeader>
         </Card>
-
-        {!user ? (
-          <div className="flex justify-center py-12">
-            <AuthComponent user={user} onAuthChange={handleAuthChange} />
-          </div>
-        ) : (
           <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
             <TabsList className="grid w-full grid-cols-5 lg:w-fit lg:grid-cols-5 bg-card shadow-soft">
               <TabsTrigger value="compose" className="flex items-center space-x-2">
@@ -196,8 +146,7 @@ export const EmailCampaignApp = () => {
                 </CardContent>
               </Card>
             </TabsContent>
-          </Tabs>
-        )}
+        </Tabs>
       </div>
     </div>
   );

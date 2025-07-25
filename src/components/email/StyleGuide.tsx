@@ -40,17 +40,14 @@ export const StyleGuide = () => {
   const loadStyleGuide = async () => {
     try {
       setLoading(true);
-      const { data: { user }, error: authError } = await supabase.auth.getUser();
       
-      if (authError || !user) {
-        console.log("No user authenticated");
-        return;
-      }
+      // Use a dummy user ID for demo purposes
+      const demoUserId = 'demo-user-123';
 
       const { data: styleGuides, error } = await supabase
         .from('style_guides')
         .select('*')
-        .eq('user_id', user.id)
+        .eq('user_id', demoUserId)
         .order('updated_at', { ascending: false })
         .limit(1);
 
@@ -140,22 +137,19 @@ export const StyleGuide = () => {
   const handleSaveStyleGuide = async () => {
     try {
       setSaveLoading(true);
-      const { data: { user }, error: authError } = await supabase.auth.getUser();
       
-      if (authError || !user) {
-        toast.error("Please sign in to save your style guide");
-        return;
-      }
+      // Use a dummy user ID for demo purposes
+      const demoUserId = 'demo-user-123';
 
       // First check if a style guide exists
       const { data: existingGuides } = await supabase
         .from('style_guides')
         .select('id')
-        .eq('user_id', user.id)
+        .eq('user_id', demoUserId)
         .limit(1);
 
       const styleGuideData = {
-        user_id: user.id,
+        user_id: demoUserId,
         brand_name: brandName,
         primary_color: primaryColor,
         secondary_color: secondaryColor,
@@ -199,12 +193,8 @@ export const StyleGuide = () => {
 
   const handlePreviewStyle = async () => {
     try {
-      const { data: { user }, error: authError } = await supabase.auth.getUser();
-      
-      if (authError || !user) {
-        toast.error("Please sign in to generate preview emails");
-        return;
-      }
+      // Use a dummy user ID for demo purposes
+      const demoUserId = 'demo-user-123';
 
       toast.info("Generating test email with your style guide...");
       
