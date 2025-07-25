@@ -210,9 +210,8 @@ export const CampaignComposer = () => {
       <p style="margin: 10px 0 0 0; color: white; opacity: 0.9;">${brandName}</p>
     </div>
     <div class="content">
-      <p>We hope this message finds you well!</p>
-      <p><strong>Your request:</strong> "${prompt}"</p>
-      <p>This beautifully crafted email template follows your brand style guide. It's designed to be engaging, personal, and effective across all devices.</p>
+      <p>Hi there!</p>
+      <p>${prompt}</p>
       <div style="text-align: center;">
         <a href="#" class="cta">Take Action Now</a>
       </div>
