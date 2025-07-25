@@ -49,22 +49,25 @@ Deno.serve(async (req) => {
     }
 
     // Prepare the prompt for Claude
-    const systemPrompt = `Write a simple, direct email. Don't sound like AI or marketing copy. Write like a real person would.
+    const systemPrompt = `CRITICAL RULES:
+1. DO NOT write "We hope this message finds you well"
+2. DO NOT write "Your request:" followed by what they asked for
+3. DO NOT write meta-commentary about the email template being "beautifully crafted" or "designed to be engaging"
+4. DO NOT write generic corporate phrases
+5. Just write the actual email content they requested
 
-Style the email with:
-- Background: subtle gradient using ${styleGuide?.primaryColor || '#684cff'} and ${styleGuide?.secondaryColor || '#22d3ee'}
-- Content: clean white box with simple styling
+Style with HTML/CSS:
+- Background: gradient from ${styleGuide?.primaryColor || '#684cff'} to ${styleGuide?.secondaryColor || '#22d3ee'}
+- Content: white container, simple clean layout
 - Font: ${styleGuide?.fontFamily || 'Arial, sans-serif'}
 
-Include these placeholders: {{name}} and {{unsubscribe_url}}
-End with: ${styleGuide?.emailSignature || 'Best regards,\\nThe Team'}
+Include {{name}} and {{unsubscribe_url}} placeholders
+Sign off with: ${styleGuide?.emailSignature || 'Best regards,\\nThe Team'}`;
 
-Just write the actual email content - no meta descriptions about the template.`;
+    const userPrompt = `Write an email about: "${prompt}"
+Subject should be: "${subject}"
 
-    const userPrompt = `Subject: "${subject}"
-Content request: "${prompt}"
-
-Write a natural email that directly addresses this request. Be conversational and human.`;
+Write it like a normal person would write an email. No corporate speak. Just natural, direct communication.`;
 
     // Call Claude API
     const claudeResponse = await fetch('https://api.anthropic.com/v1/messages', {
