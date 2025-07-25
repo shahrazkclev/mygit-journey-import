@@ -138,6 +138,14 @@ export const CampaignComposer = () => {
         accent: styleGuide.accent_color
       } : { primary: primaryColor, secondary: secondaryColor, accent: accentColor };
       
+      // Convert hex to rgba for transparency
+      const hexToRgba = (hex: string, alpha: number) => {
+        const r = parseInt(hex.slice(1, 3), 16);
+        const g = parseInt(hex.slice(3, 5), 16);
+        const b = parseInt(hex.slice(5, 7), 16);
+        return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+      };
+      
       const brandName = styleGuide?.brand_name || "Your Brand";
       const signature = styleGuide?.email_signature || "Best regards,\nThe Team";
       
@@ -150,7 +158,7 @@ export const CampaignComposer = () => {
   <style>
     body { 
       font-family: ${styleGuide?.font_family || 'Segoe UI, sans-serif'}; 
-      background: linear-gradient(135deg, ${colors.primary}10, ${colors.secondary}10); 
+      background: linear-gradient(135deg, ${hexToRgba(colors.primary, 0.1)}, ${hexToRgba(colors.secondary, 0.1)}); 
       margin: 0; 
       padding: 20px; 
     }
@@ -160,7 +168,7 @@ export const CampaignComposer = () => {
       background: white; 
       border-radius: 16px; 
       overflow: hidden; 
-      box-shadow: 0 8px 32px ${colors.primary}20; 
+      box-shadow: 0 8px 32px ${hexToRgba(colors.primary, 0.2)}; 
     }
     .header { 
       background: linear-gradient(135deg, ${colors.primary}, ${colors.secondary}); 
