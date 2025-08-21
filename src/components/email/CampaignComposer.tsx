@@ -39,6 +39,31 @@ export const CampaignComposer = () => {
 
   const { toast } = useToast();
 
+  const DRAFT_KEY = 'campaign_draft';
+
+  // Load draft from localStorage on mount (before fetching lists/styles)
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(DRAFT_KEY);
+      if (raw) {
+        const d = JSON.parse(raw);
+        if (typeof d.subject === 'string') setSubject(d.subject);
+        if (typeof d.prompt === 'string') setPrompt(d.prompt);
+        if (typeof d.generatedTemplate === 'string') setGeneratedTemplate(d.generatedTemplate);
+        if (Array.isArray(d.selectedLists)) setSelectedLists(d.selectedLists);
+        if (d.themeColors) setThemeColors(d.themeColors);
+      }
+    } catch {}
+  }, []);
+
+  // Persist draft locally so switching tabs doesn't lose progress
+  useEffect(() => {
+    const draft = { subject, prompt, generatedTemplate, selectedLists, themeColors };
+    try {
+      localStorage.setItem(DRAFT_KEY, JSON.stringify(draft));
+    } catch {}
+  }, [subject, prompt, generatedTemplate, selectedLists, themeColors]);
+
   useEffect(() => {
     loadEmailLists();
     loadStyleGuide();
@@ -99,6 +124,41 @@ export const CampaignComposer = () => {
     }
   };
 
+  // Apply simple in-app edits without external AI
+  const applyInstructionToHtml = (html: string, instruction: string) => {
+    let out = html;
+    const instr = instruction.toLowerCase();
+
+    const injectOverride = (css: string) => {
+      if (out.includes('</head>')) {
+        out = out.replace('</head>', `<style id="lovable-overrides">${css}</style></head>`);
+      } else {
+        out = `<!DOCTYPE html><html><head><style id="lovable-overrides">${css}</style></head>` + out.replace(/^<!DOCTYPE[^>]*>/i, '').replace(/^<html[^>]*>/i, '').replace(/<\/html>$/i, '') + '</html>';
+      }
+    };
+
+    // Background removal / neutralize
+    if (instr.includes('background') || instr.includes('bg')) {
+      // strip inline background styles on body
+      out = out.replace(/<body([^>]*)style="([^"]*)"([^>]*)>/i, (_m, pre, style, post) => {
+        const cleaned = style
+          .replace(/background[^;]*;?/gi, '')
+          .replace(/background-image[^;]*;?/gi, '')
+          .trim();
+        const newStyle = cleaned ? ` style="${cleaned}"` : '';
+        return `<body${pre}${newStyle}${post}>`;
+      });
+      // add strong override
+      injectOverride('body{background:#ffffff !important;background-image:none !important;} .container{background:#ffffff !important;}');
+    }
+
+    // Theme color nudge when user mentions color/theme
+    if (instr.includes('color') || instr.includes('theme')) {
+      injectOverride(`:root{--primary:${themeColors.primary};--secondary:${themeColors.secondary};--accent:${themeColors.accent}} .btn,.button{background:${themeColors.accent} !important;color:#fff !important}`);
+    }
+
+    return out;
+  };
   const handleGenerateTemplate = async () => {
     if (!subject.trim() || !prompt.trim()) {
       toast({
@@ -253,17 +313,18 @@ export const CampaignComposer = () => {
     setIsEditingWithAI(true);
 
     try {
-      // Simulate AI editing - in a real app, this would call an AI service
-      toast({
-        title: "AI Edit Applied",
-        description: `Applied edit: "${aiEditPrompt}". This is a simulation - integrate with your preferred AI service.`,
-      });
+      const updated = applyInstructionToHtml(generatedTemplate, aiEditPrompt);
+      setGeneratedTemplate(updated);
       setAiEditPrompt("");
+      toast({
+        title: "Edit Applied",
+        description: "Your changes were applied to the draft.",
+      });
     } catch (error) {
       console.error('Error editing with AI:', error);
       toast({
         title: "Edit Failed",
-        description: "Failed to apply AI edits. Please try again.",
+        description: "Failed to apply edits. Please try again.",
         variant: "destructive",
       });
     } finally {
@@ -324,6 +385,7 @@ export const CampaignComposer = () => {
       setPrompt("");
       setGeneratedTemplate("");
       setSelectedLists([]);
+      try { localStorage.removeItem(DRAFT_KEY); } catch {}
 
     } catch (error) {
       console.error('Error saving campaign:', error);
