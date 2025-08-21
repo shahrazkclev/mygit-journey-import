@@ -656,8 +656,7 @@ export const EmailListManager = () => {
       (contact.tags && contact.tags.includes(filterTag));
     
     return matchesSearch && matchesTag;
-    });
-  };
+  });
 
   // Get lists that a contact belongs to
   const getContactLists = (contactId: string) => {
