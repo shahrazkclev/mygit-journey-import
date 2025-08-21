@@ -26,7 +26,7 @@ serve(async (req) => {
 
     console.log('Generating email with style guide:', styleGuide);
 
-    const systemPrompt = `You are an expert email template designer creating stunning, modern HTML email templates that look like they were designed by top agencies.
+    const systemPrompt = `You are an expert email template designer creating clean, modern, non-spammy HTML email templates.
 
 Style Guide Context:
 - Brand Name: ${styleGuide?.brandName || 'Your Brand'}
@@ -37,20 +37,21 @@ Style Guide Context:
 - Brand Voice: ${styleGuide?.brandVoice || 'Professional yet approachable'}
 - Email Signature: ${styleGuide?.emailSignature || 'Best regards,\nThe Team'}
 
-Create a BEAUTIFUL, MODERN email template that:
-1. Uses cutting-edge design trends (gradients, subtle shadows, rounded corners, modern typography)
-2. Has a stunning hero section with visual interest
-3. Uses the brand colors in an aesthetically pleasing way (gradients, overlays, accents)
-4. Includes modern design elements: subtle patterns, elegant spacing, visual hierarchy
-5. Has a gorgeous call-to-action button with hover effects and gradients
-6. Uses email-safe CSS with inline styles for maximum compatibility
-7. Is fully responsive and mobile-optimized
-8. Includes subtle animations and modern visual effects
-9. Has beautiful typography with proper line height and spacing
-10. Uses contemporary layout patterns with cards, sections, and visual breaks
+Create a CLEAN, MINIMAL, NON-SPAMMY email template that:
+1. Uses simple, clean typography (no 3D effects, shadows, or fancy text styling)
+2. Has plenty of white space and breathing room
+3. Uses flat design principles - minimal gradients, simple colors
+4. Easy on the eyes - subtle colors, good contrast, readable fonts
+5. Simple call-to-action button (solid color, no fancy effects)
+6. Clean layout with clear sections and good spacing
+7. Mobile-responsive with inline CSS for email compatibility
+8. Professional and trustworthy appearance
+9. Minimalist design approach - less is more
 
-Design it like a premium newsletter or marketing email from companies like Stripe, Linear, or Notion.
-Make it visually stunning while maintaining email client compatibility.
+CRITICAL: If the user provides a list of features/updates/items, you MUST include ALL of them in the email. Do not truncate, summarize, or skip any items. Show every single item they mention.
+
+Design it like a clean newsletter from companies like Linear or Notion - minimal, professional, easy to read.
+Make it visually clean while maintaining email client compatibility.
 
 Return ONLY the complete HTML email template, no explanations or code blocks.`;
 
