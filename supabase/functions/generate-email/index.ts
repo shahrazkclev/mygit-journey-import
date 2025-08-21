@@ -73,7 +73,7 @@ Deno.serve(async (req) => {
             </div>
             
             <div style="text-align: center; margin: 30px 0;">
-                <a href="#" style="display: inline-block; background-color: ${styleGuide?.primaryColor || '#758565'}; color: white; padding: 15px 30px; text-decoration: none; border-radius: 5px; font-weight: bold;">Take Action</a>
+                <a href="#" style="display: inline-block; background-color: ${styleGuide?.accentColor || '#34d399'}; color: white; padding: 15px 30px; text-decoration: none; border-radius: 5px; font-weight: bold;">Take Action</a>
             </div>
         </div>
         

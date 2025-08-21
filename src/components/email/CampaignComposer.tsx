@@ -36,6 +36,7 @@ export const CampaignComposer = () => {
   });
   
   const [viewMode, setViewMode] = useState<'desktop' | 'mobile'>('desktop');
+  const [colorsInitialized, setColorsInitialized] = useState(false);
 
   const { toast } = useToast();
 
@@ -51,7 +52,7 @@ export const CampaignComposer = () => {
         if (typeof d.prompt === 'string') setPrompt(d.prompt);
         if (typeof d.generatedTemplate === 'string') setGeneratedTemplate(d.generatedTemplate);
         if (Array.isArray(d.selectedLists)) setSelectedLists(d.selectedLists);
-        if (d.themeColors) setThemeColors(d.themeColors);
+        if (d.themeColors) { setThemeColors(d.themeColors); setColorsInitialized(true); }
       }
     } catch {}
   }, []);
@@ -98,11 +99,25 @@ export const CampaignComposer = () => {
       if (data && data.length > 0) {
         const guide = data[0];
         setStyleGuide(guide);
-        setThemeColors({
-          primary: guide.primary_color,
-          secondary: guide.secondary_color,
-          accent: guide.accent_color,
-        });
+
+        // Only initialize theme colors from style guide if not already set from draft/user
+        let hasDraftColors = false;
+        try {
+          const raw = localStorage.getItem(DRAFT_KEY);
+          if (raw) {
+            const d = JSON.parse(raw);
+            hasDraftColors = !!d?.themeColors;
+          }
+        } catch {}
+
+        if (!colorsInitialized && !hasDraftColors) {
+          setThemeColors({
+            primary: guide.primary_color,
+            secondary: guide.secondary_color,
+            accent: guide.accent_color,
+          });
+          setColorsInitialized(true);
+        }
       }
     } catch (error) {
       console.error('Error loading style guide:', error);
