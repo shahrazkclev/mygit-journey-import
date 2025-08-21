@@ -237,8 +237,18 @@ export const CampaignComposer = () => {
           prompt: prompt,
           subject: subject,
           regenId: Date.now(),
-          // Only send basic theme colors, no style guide context for new prompts
-          themeColors: themeColors
+          themeColors: themeColors,
+          styleGuide: styleGuide ? {
+            brandName: styleGuide.brand_name,
+            primaryColor: styleGuide.primary_color,
+            secondaryColor: styleGuide.secondary_color,
+            accentColor: styleGuide.accent_color,
+            fontFamily: styleGuide.font_family,
+            tone: styleGuide.tone,
+            brandVoice: styleGuide.brand_voice,
+            logoUrl: styleGuide.logo_url,
+            emailSignature: styleGuide.email_signature,
+          } : null
         }
       });
 
