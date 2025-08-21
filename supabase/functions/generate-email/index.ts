@@ -29,13 +29,18 @@ serve(async (req) => {
 
 CRITICAL STYLE REQUIREMENTS - Match this exact aesthetic:
 
-1. **MINIMAL & CLEAN DESIGN**: 
+1. **RESPONSIVE DESIGN**: 
+   - Mobile (≤600px): Smaller fonts, tighter padding, single column
+   - Desktop (>600px): Larger fonts, generous padding, optimal spacing
+   - Use CSS media queries with proper email client compatibility
+
+2. **MINIMAL & CLEAN DESIGN**: 
    - Single column layout, max 600px width
-   - Generous white space and padding
+   - Fluid, responsive spacing and typography
    - Clean typography with clear hierarchy
    - Simple, uncluttered sections
 
-2. **COLOR PALETTE** (use these exact colors):
+3. **COLOR PALETTE** (use these exact colors):
    - Background: #FFFFFF (white)
    - Content cards: #F9F8F5 (light warm off-white)
    - Primary text: #333333 (dark gray)
@@ -43,36 +48,64 @@ CRITICAL STYLE REQUIREMENTS - Match this exact aesthetic:
    - Button text: #FFFFFF (white)
    - Accent/highlights: #FCD34D (warm yellow/gold)
 
-3. **TYPOGRAPHY**:
+4. **RESPONSIVE TYPOGRAPHY**:
    - Font: Inter, Lato, or Open Sans
-   - Large, bold headings (24-28px)
-   - Medium section titles (18-20px)
-   - Body text (14-16px), left-aligned
-   - Clean, simple styling
+   - Mobile: Headings (20-24px), sections (16px), body (14px)
+   - Desktop: Headings (24-28px), sections (18px), body (16px)
+   - Clean, simple styling with proper line-height
 
-4. **COMPONENTS**:
+5. **RESPONSIVE SPACING**:
+   - Mobile: Tighter padding (20px), smaller margins (20px)
+   - Desktop: Generous padding (30-40px), larger margins (30-40px)
+   - Cards adapt: Mobile (20px padding), Desktop (30px padding)
+
+6. **COMPONENTS**:
    - Header: Brand name with "Cleverpoly" highlighted in accent color
    - Salutation: "Hey [Name]," 
-   - Content cards: Light background, rounded corners, generous padding
+   - Content cards: Light background, rounded corners, responsive padding
    - Primary CTA: Solid olive button with white text, slightly rounded
    - Secondary links: Text with arrow "→"
    - Footer: Simple contact info and signature
 
-5. **LAYOUT STRUCTURE**:
+7. **LAYOUT STRUCTURE**:
    - Simple header with brand name
    - Clean main title
-   - Generous spacing between sections
+   - Responsive spacing between sections
    - Card-based content organization
    - Single prominent call-to-action
    - Clean footer
 
+MANDATORY CSS STRUCTURE:
+Include these responsive styles in every template:
+```css
+@media only screen and (max-width: 600px) {
+    .container { width: 100% !important; margin: 10px !important; }
+    .content { padding: 20px !important; }
+    .header { padding: 30px 20px 15px 20px !important; }
+    .main-title { font-size: 24px !important; }
+    .section-title { font-size: 16px !important; }
+    .body-text { font-size: 14px !important; }
+    .card { padding: 20px !important; margin: 20px 0 !important; }
+}
+@media only screen and (min-width: 601px) {
+    .container { max-width: 600px; }
+    .content { padding: 40px; }
+    .header { padding: 40px 40px 20px 40px; }
+    .main-title { font-size: 28px; }
+    .section-title { font-size: 18px; }
+    .body-text { font-size: 16px; }
+    .card { padding: 30px; margin: 30px 0; }
+}
+```
+
 AVOID:
+- Fixed sizes that don't scale
 - Gradients, complex backgrounds, decorative elements
 - Multiple colors beyond the specified palette
 - Complex layouts, grids, or fancy components
 - Excessive styling or visual noise
 
-Create a template that looks EXACTLY like professional, minimal email design - clean, organized, and user-friendly.`;
+Create a template that scales perfectly from mobile to desktop with proper responsive design.`;
 
     const response = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
@@ -130,7 +163,21 @@ Return ONLY the complete HTML email template, no explanations or code blocks.`
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
         @media only screen and (max-width: 600px) {
             .container { width: 100% !important; margin: 10px !important; }
-            .content { padding: 30px 20px !important; }
+            .content { padding: 20px !important; }
+            .header { padding: 30px 20px 15px 20px !important; }
+            .main-title { font-size: 24px !important; }
+            .section-title { font-size: 16px !important; }
+            .body-text { font-size: 14px !important; }
+            .card { padding: 20px !important; margin: 20px 0 !important; }
+        }
+        @media only screen and (min-width: 601px) {
+            .container { max-width: 600px; }
+            .content { padding: 40px; }
+            .header { padding: 40px 40px 20px 40px; }
+            .main-title { font-size: 28px; }
+            .section-title { font-size: 18px; }
+            .body-text { font-size: 16px; }
+            .card { padding: 30px; margin: 30px 0; }
         }
     </style>
 </head>
@@ -140,7 +187,7 @@ Return ONLY the complete HTML email template, no explanations or code blocks.`
             
             <!-- Header -->
             <tr>
-                <td style="padding: 40px 40px 20px 40px; text-align: center;">
+                <td class="header" style="padding: 40px 40px 20px 40px; text-align: center;">
                     <h1 style="margin: 0; color: #333333; font-size: 24px; font-weight: 600;">
                         <span style="background: #FCD34D; padding: 2px 8px; border-radius: 4px;">Cleverpoly</span>.Store
                     </h1>
@@ -149,8 +196,8 @@ Return ONLY the complete HTML email template, no explanations or code blocks.`
             
             <!-- Main Title -->
             <tr>
-                <td style="padding: 20px 40px 40px 40px; text-align: center;">
-                    <h2 style="margin: 0; color: #333333; font-size: 28px; font-weight: 600; line-height: 1.3;">${subject}</h2>
+                <td class="header" style="padding: 20px 40px 40px 40px; text-align: center;">
+                    <h2 class="main-title" style="margin: 0; color: #333333; font-size: 28px; font-weight: 600; line-height: 1.3;">${subject}</h2>
                 </td>
             </tr>
             
@@ -159,19 +206,19 @@ Return ONLY the complete HTML email template, no explanations or code blocks.`
                 <td class="content" style="padding: 0 40px 40px 40px;">
                     
                     <!-- Salutation -->
-                    <p style="margin: 0 0 20px 0; font-size: 16px; color: #333333;">Hey [Name],</p>
+                    <p class="body-text" style="margin: 0 0 20px 0; font-size: 16px; color: #333333;">Hey [Name],</p>
                     
                     <!-- Main Content Card -->
-                    <div style="background: #F9F8F5; border-radius: 8px; padding: 30px; margin: 30px 0;">
-                        <p style="margin: 0; font-size: 16px; line-height: 1.6; color: #333333;">${prompt}</p>
+                    <div class="card" style="background: #F9F8F5; border-radius: 8px; padding: 30px; margin: 30px 0;">
+                        <p class="body-text" style="margin: 0; font-size: 16px; line-height: 1.6; color: #333333;">${prompt}</p>
                     </div>
                     
                     <!-- Downloads Section -->
                     <div style="margin: 40px 0;">
-                        <h3 style="margin: 0 0 16px 0; color: #333333; font-size: 18px; font-weight: 600; display: flex; align-items: center;">
+                        <h3 class="section-title" style="margin: 0 0 16px 0; color: #333333; font-size: 18px; font-weight: 600; display: flex; align-items: center;">
                             📦 Your Downloads
                         </h3>
-                        <p style="margin: 0 0 24px 0; font-size: 16px; line-height: 1.6; color: #333333;">
+                        <p class="body-text" style="margin: 0 0 24px 0; font-size: 16px; line-height: 1.6; color: #333333;">
                             Access your files through the download button below. All future updates will be available in the same location.
                         </p>
                         
@@ -189,21 +236,21 @@ Return ONLY the complete HTML email template, no explanations or code blocks.`
                     
                     <!-- Installation Guide -->
                     <div style="margin: 40px 0;">
-                        <h3 style="margin: 0 0 16px 0; color: #333333; font-size: 18px; font-weight: 600; display: flex; align-items: center;">
+                        <h3 class="section-title" style="margin: 0 0 16px 0; color: #333333; font-size: 18px; font-weight: 600; display: flex; align-items: center;">
                             📋 Installation Guide
                         </h3>
-                        <p style="margin: 0 0 12px 0; font-size: 16px; line-height: 1.6; color: #333333;">
+                        <p class="body-text" style="margin: 0 0 12px 0; font-size: 16px; line-height: 1.6; color: #333333;">
                             Need help installing? Check out our step-by-step installation guide:
                         </p>
-                        <p style="margin: 0; font-size: 16px;">
+                        <p class="body-text" style="margin: 0; font-size: 16px;">
                             <a href="#" style="color: #333333; text-decoration: none;">View Installation Instructions →</a>
                         </p>
                     </div>
                     
                     <!-- Additional Info -->
                     <div style="margin: 40px 0;">
-                        <p style="margin: 0 0 12px 0; font-size: 16px; color: #333333;">Want to explore more assets?</p>
-                        <p style="margin: 0; font-size: 16px;">
+                        <p class="body-text" style="margin: 0 0 12px 0; font-size: 16px; color: #333333;">Want to explore more assets?</p>
+                        <p class="body-text" style="margin: 0; font-size: 16px;">
                             Visit <span style="background: #FCD34D; padding: 1px 4px; border-radius: 3px;">Cleverpoly</span> Store →
                         </p>
                     </div>
@@ -213,15 +260,15 @@ Return ONLY the complete HTML email template, no explanations or code blocks.`
             
             <!-- Footer -->
             <tr>
-                <td style="padding: 40px; text-align: left; border-top: 1px solid #F9F8F5;">
-                    <p style="margin: 0 0 16px 0; font-size: 16px; color: #333333;">
+                <td class="content" style="padding: 40px; text-align: left; border-top: 1px solid #F9F8F5;">
+                    <p class="body-text" style="margin: 0 0 16px 0; font-size: 16px; color: #333333;">
                         If you have any questions or need assistance, feel free to contact us at 
                         <span style="background: #FCD34D; padding: 1px 4px; border-radius: 3px;">cleverpoly</span>.store@gmail.com
                     </p>
                     
                     <div style="margin-top: 30px;">
-                        <p style="margin: 0; font-size: 16px; color: #333333;">Best regards,</p>
-                        <p style="margin: 0; font-size: 16px; color: #333333; font-weight: 500;">
+                        <p class="body-text" style="margin: 0; font-size: 16px; color: #333333;">Best regards,</p>
+                        <p class="body-text" style="margin: 0; font-size: 16px; color: #333333; font-weight: 500;">
                             <span style="background: #FCD34D; padding: 1px 4px; border-radius: 3px;">Cleverpoly</span>
                         </p>
                     </div>
