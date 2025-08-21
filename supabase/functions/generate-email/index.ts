@@ -1,7 +1,6 @@
-import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
-const openAIApiKey = Deno.env.get('OPENAI_API_KEY');
+const claudeApiKey = Deno.env.get('CLAUDE_API_KEY');
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -55,34 +54,41 @@ Make it visually stunning while maintaining email client compatibility.
 
 Return ONLY the complete HTML email template, no explanations or code blocks.`;
 
-    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+    const response = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${openAIApiKey}`,
         'Content-Type': 'application/json',
+        'x-api-key': claudeApiKey,
+        'anthropic-version': '2023-06-01',
       },
       body: JSON.stringify({
-        model: 'gpt-5-2025-08-07',
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 3000,
         messages: [
-          { role: 'system', content: systemPrompt },
-          { role: 'user', content: `Create a stunning email template for: "${subject}"
+          {
+            role: 'user',
+            content: `${systemPrompt}
+
+Create a stunning email template for: "${subject}"
 
 Content prompt: ${prompt}
 
-Layout variant: ${chosenVariant}. Design MUST differ materially between variants (structure, section order, and components). Use email-safe HTML/CSS only.` }
+Layout variant: ${chosenVariant}. Design MUST differ materially between variants (structure, section order, and components). Use email-safe HTML/CSS only.
+
+Return ONLY the complete HTML email template, no explanations or code blocks.`
+          }
         ],
-        max_completion_tokens: 3000,
       }),
     });
 
     if (!response.ok) {
-      const errorData = await response.json();
-      console.error('OpenAI API error:', errorData);
-      throw new Error(`OpenAI API error: ${errorData.error?.message || 'Unknown error'}`);
+      const errorData = await response.text();
+      console.error('Claude API error:', errorData);
+      throw new Error(`Claude API error: ${response.status}`);
     }
 
     const data = await response.json();
-    const htmlContent = data.choices[0].message.content;
+    const htmlContent = data.content[0]?.text || '';
 
     console.log('Beautiful email template generated successfully');
 
