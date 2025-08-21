@@ -14,8 +14,11 @@ serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
+  // Parse request body once and reuse
+  const requestData = await req.json();
+  const { prompt, subject, styleGuide } = requestData;
+
   try {
-    const { prompt, subject, styleGuide } = await req.json();
 
     console.log('Generating email with style guide:', styleGuide);
 
@@ -81,8 +84,7 @@ Return ONLY the complete HTML email template, no explanations or code blocks.`;
   } catch (error) {
     console.error('Error in generate-email function:', error);
 
-    // Premium fallback template with modern design
-    const { prompt, subject, styleGuide } = await req.json();
+    // Premium fallback template with modern design - reuse parsed data
     
     const fallbackTemplate = `
 <!DOCTYPE html>
