@@ -237,27 +237,8 @@ export const CampaignComposer = () => {
           prompt: prompt,
           subject: subject,
           regenId: Date.now(),
-          styleGuide: styleGuide ? {
-            brandName: styleGuide.brand_name,
-            primaryColor: themeColors.primary,
-            secondaryColor: themeColors.secondary,
-            accentColor: themeColors.accent,
-            fontFamily: styleGuide.font_family,
-            tone: styleGuide.tone,
-            brandVoice: styleGuide.brand_voice,
-            logoUrl: styleGuide.logo_url,
-            emailSignature: styleGuide.email_signature,
-          } : {
-            brandName: "Your Brand",
-            primaryColor: themeColors.primary,
-            secondaryColor: themeColors.secondary,
-            accentColor: themeColors.accent,
-            fontFamily: "Segoe UI, sans-serif",
-            tone: "friendly",
-            brandVoice: "Professional yet approachable",
-            logoUrl: "",
-            emailSignature: "Best regards,\nThe Team",
-          }
+          // Only send basic theme colors, no style guide context for new prompts
+          themeColors: themeColors
         }
       });
 
@@ -425,7 +406,19 @@ export const CampaignComposer = () => {
         body: {
           htmlContent: generatedTemplate,
           editInstruction: aiEditPrompt,
-          themeColors: themeColors
+          themeColors: themeColors,
+          // Include style guide context for AI editing
+          styleGuide: styleGuide ? {
+            brandName: styleGuide.brand_name,
+            primaryColor: themeColors.primary,
+            secondaryColor: themeColors.secondary,
+            accentColor: themeColors.accent,
+            fontFamily: styleGuide.font_family,
+            tone: styleGuide.tone,
+            brandVoice: styleGuide.brand_voice,
+            logoUrl: styleGuide.logo_url,
+            emailSignature: styleGuide.email_signature,
+          } : null
         }
       });
 
