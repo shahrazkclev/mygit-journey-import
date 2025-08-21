@@ -604,47 +604,6 @@ export const CampaignComposer = () => {
         </CardContent>
       </Card>
 
-      {/* Theme Colors Override */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center space-x-2">
-            <Palette className="h-5 w-5" />
-            <span>Campaign Theme Colors</span>
-          </CardTitle>
-          <CardDescription>
-            Override brand colors for this specific campaign (optional)
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="space-y-2">
-              <Label>Primary Color</Label>
-              <ColorPicker
-                value={themeColors.primary}
-                onChange={(color) => setThemeColors({...themeColors, primary: color})}
-                label="Primary"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label>Secondary Color</Label>
-              <ColorPicker
-                value={themeColors.secondary}
-                onChange={(color) => setThemeColors({...themeColors, secondary: color})}
-                label="Secondary"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label>Accent Color</Label>
-              <ColorPicker
-                value={themeColors.accent}
-                onChange={(color) => setThemeColors({...themeColors, accent: color})}
-                label="Accent"
-              />
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
       {/* Sender Rotation */}
       <Card>
         <CardHeader>
