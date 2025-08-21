@@ -1,59 +1,74 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { UserX, Search, Download, Trash2, Calendar } from "lucide-react";
 import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
 
 interface UnsubscribedUser {
-  id: number;
+  id: string;
   email: string;
-  unsubscribedAt: string;
+  unsubscribed_at: string;
   reason?: string;
-  campaign?: string;
+  user_id: string;
 }
 
 export const UnsubscribeManager = () => {
-  const [unsubscribedUsers, setUnsubscribedUsers] = useState<UnsubscribedUser[]>([
-    {
-      id: 1,
-      email: "user1@example.com",
-      unsubscribedAt: "2024-01-15T10:30:00Z",
-      reason: "Too many emails",
-      campaign: "Newsletter Jan 2024"
-    },
-    {
-      id: 2,
-      email: "user2@example.com",
-      unsubscribedAt: "2024-01-14T15:45:00Z",
-      reason: "Not interested",
-      campaign: "Product Launch"
-    },
-    {
-      id: 3,
-      email: "user3@example.com",
-      unsubscribedAt: "2024-01-13T09:15:00Z",
-      campaign: "Weekly Update"
-    }
-  ]);
-  
+  const [unsubscribedUsers, setUnsubscribedUsers] = useState<UnsubscribedUser[]>([]);
+  const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
+
+  // Load unsubscribe data from database
+  useEffect(() => {
+    loadUnsubscribeData();
+  }, []);
+
+  const loadUnsubscribeData = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('unsubscribes')
+        .select('*')
+        .order('unsubscribed_at', { ascending: false });
+
+      if (error) throw error;
+
+      setUnsubscribedUsers(data || []);
+    } catch (error: any) {
+      toast.error("Failed to load unsubscribe data: " + error.message);
+      console.error('Error loading unsubscribe data:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const filteredUsers = unsubscribedUsers.filter(user =>
     user.email.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  const handleRemoveFromList = (id: number) => {
-    setUnsubscribedUsers(users => users.filter(user => user.id !== id));
-    toast.success("User removed from unsubscribe list");
+  const handleRemoveFromList = async (id: string) => {
+    try {
+      const { error } = await supabase
+        .from('unsubscribes')
+        .delete()
+        .eq('id', id);
+
+      if (error) throw error;
+
+      setUnsubscribedUsers(users => users.filter(user => user.id !== id));
+      toast.success("User removed from unsubscribe list");
+    } catch (error: any) {
+      toast.error("Failed to remove user: " + error.message);
+      console.error('Error removing user:', error);
+    }
   };
 
   const handleExportList = () => {
     const csvContent = [
-      "Email,Unsubscribed At,Reason,Campaign",
+      "Email,Unsubscribed At,Reason",
       ...unsubscribedUsers.map(user => 
-        `${user.email},${user.unsubscribedAt},${user.reason || 'N/A'},${user.campaign || 'N/A'}`
+        `${user.email},${user.unsubscribed_at},${user.reason || 'N/A'}`
       )
     ].join('\n');
     
@@ -101,7 +116,7 @@ export const UnsubscribeManager = () => {
               <div>
                 <p className="text-2xl font-bold">
                   {unsubscribedUsers.filter(u => 
-                    new Date(u.unsubscribedAt) > new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)
+                    new Date(u.unsubscribed_at) > new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)
                   ).length}
                 </p>
                 <p className="text-sm text-muted-foreground">This Week</p>
@@ -158,7 +173,12 @@ export const UnsubscribeManager = () => {
 
             {/* Unsubscribed Users List */}
             <div className="space-y-3">
-              {filteredUsers.length === 0 ? (
+              {loading ? (
+                <div className="text-center py-8 text-muted-foreground">
+                  <div className="animate-spin h-8 w-8 border-2 border-primary border-t-transparent rounded-full mx-auto mb-4"></div>
+                  <p>Loading unsubscribe data...</p>
+                </div>
+              ) : filteredUsers.length === 0 ? (
                 <div className="text-center py-8 text-muted-foreground">
                   <UserX className="h-12 w-12 mx-auto mb-4 opacity-50" />
                   <p>No unsubscribed users found</p>
@@ -178,13 +198,10 @@ export const UnsubscribeManager = () => {
                           <div className="text-sm text-muted-foreground space-y-1">
                             <p className="flex items-center space-x-2">
                               <Calendar className="h-3 w-3" />
-                              <span>Unsubscribed: {formatDate(user.unsubscribedAt)}</span>
+                              <span>Unsubscribed: {formatDate(user.unsubscribed_at)}</span>
                             </p>
                             {user.reason && (
                               <p>Reason: {user.reason}</p>
-                            )}
-                            {user.campaign && (
-                              <p>From campaign: {user.campaign}</p>
                             )}
                           </div>
                         </div>

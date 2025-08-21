@@ -37,6 +37,7 @@ export const CampaignComposer = () => {
   
   const [viewMode, setViewMode] = useState<'desktop' | 'mobile'>('desktop');
   const [colorsInitialized, setColorsInitialized] = useState(false);
+  const [originalTemplate, setOriginalTemplate] = useState<string | null>(null);
 
   const { toast } = useToast();
 
@@ -177,29 +178,47 @@ export const CampaignComposer = () => {
 
   // Apply color changes to template in real-time
   const applyColorChangesToTemplate = (primary: string, secondary: string, accent: string) => {
-    if (!generatedTemplate) return;
+    if (!originalTemplate) return originalTemplate;
 
-    let updatedTemplate = generatedTemplate;
-    
-    // Replace color values in the HTML
-    updatedTemplate = updatedTemplate
-      .replace(/background:\s*linear-gradient\([^)]+\)/gi, `background: linear-gradient(135deg, ${primary}, ${secondary})`)
+    console.log('Applying color changes:', { primary, secondary, accent });
+
+    // Create a more comprehensive color replacement using the original template
+    let updatedTemplate = originalTemplate
+      // Replace various background color formats
       .replace(/background-color:\s*#[0-9a-fA-F]{6}/gi, `background-color: ${primary}`)
       .replace(/background:\s*#[0-9a-fA-F]{6}/gi, `background: ${primary}`)
-      .replace(/"Take Action"[^>]*style="[^"]*background-color:[^;"]*;?/gi, (match) => {
-        return match.replace(/background-color:[^;"]*;?/gi, `background-color: ${accent};`);
-      });
+      .replace(/background:\s*linear-gradient\([^)]*#[0-9a-fA-F]{6}[^)]*\)/gi, 
+        `background: linear-gradient(135deg, ${primary} 0%, ${secondary} 100%)`)
+      
+      // Replace specific default colors
+      .replace(/#684cff/gi, primary)
+      .replace(/#22d3ee/gi, secondary) 
+      .replace(/#34d399/gi, accent)
+      
+      // Replace button backgrounds specifically
+      .replace(/("Take Action"[^>]*style="[^"]*background[^;"]*);?/gi, (match) => {
+        return match.replace(/background[^;"]*;?/gi, `background: ${accent};`);
+      })
 
-    // Update CSS custom properties if they exist
-    if (updatedTemplate.includes(':root')) {
-      updatedTemplate = updatedTemplate.replace(
-        /:root\s*{[^}]*}/gi,
-        `:root { --primary: ${primary}; --secondary: ${secondary}; --accent: ${accent}; }`
-      );
-    }
+      // Replace gradients with current colors
+      .replace(/linear-gradient\([^)]*\)/gi, `linear-gradient(135deg, ${primary} 0%, ${secondary} 100%)`);
 
-    setGeneratedTemplate(updatedTemplate);
+    return updatedTemplate;
   };
+
+  // Update template when colors change
+  useEffect(() => {
+    if (originalTemplate) {
+      const updatedTemplate = applyColorChangesToTemplate(
+        themeColors.primary, 
+        themeColors.secondary, 
+        themeColors.accent
+      );
+      if (updatedTemplate) {
+        setGeneratedTemplate(updatedTemplate);
+      }
+    }
+  }, [themeColors, originalTemplate]);
   const handleGenerateTemplate = async () => {
     if (!subject.trim() || !prompt.trim()) {
       toast({
@@ -246,6 +265,7 @@ export const CampaignComposer = () => {
 
       if (data?.htmlContent) {
         const cleaned = cleanHtmlContent(data.htmlContent);
+        setOriginalTemplate(cleaned); // Store original for color changes
         setGeneratedTemplate(cleaned);
         toast({
           title: "Template Generated",
@@ -372,6 +392,7 @@ export const CampaignComposer = () => {
         </html>
       `;
       
+      setOriginalTemplate(fallbackHTML); // Store original for color changes
       setGeneratedTemplate(fallbackHTML);
       toast({
         title: "Template Generated",
