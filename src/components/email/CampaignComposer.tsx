@@ -84,6 +84,21 @@ export const CampaignComposer = () => {
     }
   };
 
+  // Clean code fences and extraneous markdown around returned HTML
+  const cleanHtmlContent = (raw: string) => {
+    try {
+      let s = raw.trim();
+      // Remove ```html ... ``` fences if present
+      if (s.startsWith("```")) {
+        s = s.replace(/^```[a-zA-Z]*\n?/i, "");
+        s = s.replace(/```\s*$/i, "");
+      }
+      return s.trim();
+    } catch {
+      return raw;
+    }
+  };
+
   const handleGenerateTemplate = async () => {
     if (!subject.trim() || !prompt.trim()) {
       toast({
@@ -128,7 +143,8 @@ export const CampaignComposer = () => {
       if (error) throw error;
 
       if (data?.htmlContent) {
-        setGeneratedTemplate(data.htmlContent);
+        const cleaned = cleanHtmlContent(data.htmlContent);
+        setGeneratedTemplate(cleaned);
         toast({
           title: "Template Generated",
           description: "Your email template has been generated successfully!",
@@ -510,12 +526,18 @@ export const CampaignComposer = () => {
                       Full Preview
                     </Button>
                   </DialogTrigger>
-                  <DialogContent className="max-w-4xl max-h-[80vh] overflow-auto">
-                    <DialogHeader>
-                      <DialogTitle>Email Preview</DialogTitle>
-                    </DialogHeader>
-                    <div dangerouslySetInnerHTML={{ __html: generatedTemplate }} />
-                  </DialogContent>
+                    <DialogContent className="max-w-4xl max-h-[80vh] overflow-auto" aria-describedby="email-preview-desc">
+                      <DialogHeader>
+                        <DialogTitle>Email Preview</DialogTitle>
+                      </DialogHeader>
+                      <p id="email-preview-desc" className="sr-only">Full email preview content in an isolated iframe.</p>
+                      <iframe
+                        title="Email full preview"
+                        srcDoc={generatedTemplate}
+                        className="w-full h-[70vh] border rounded"
+                        sandbox="allow-same-origin"
+                      />
+                    </DialogContent>
                 </Dialog>
               </div>
             </div>
@@ -529,14 +551,11 @@ export const CampaignComposer = () => {
                 height: viewMode === 'mobile' ? '600px' : '500px',
               }}
             >
-              <div 
-                dangerouslySetInnerHTML={{ __html: generatedTemplate }}
-                className={viewMode === 'mobile' ? 'p-1' : 'p-0'}
-                style={viewMode === 'mobile' ? { 
-                  transform: 'scale(0.7)',
-                  transformOrigin: 'top left',
-                  width: '142%'
-                } : {}}
+              <iframe
+                title="Email preview"
+                srcDoc={generatedTemplate}
+                className="w-full h-full"
+                sandbox="allow-same-origin"
               />
             </div>
 
