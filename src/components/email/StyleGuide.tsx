@@ -90,8 +90,10 @@ export const StyleGuide = () => {
       if (data && data.length > 0) {
         const guide = data[0];
         
-        // Only initialize if not already set by user changes
-        if (!brandInitialized) {
+        // Only load from database if it's not the default values - otherwise keep Cleverpoly defaults
+        const isDefaultData = guide.brand_name === 'Your Brand' || guide.brand_name === 'Cleverpoly';
+        
+        if (!brandInitialized && !isDefaultData) {
           setBrandIdentity({
             name: guide.brand_name,
             primaryColor: guide.primary_color,
@@ -111,9 +113,15 @@ export const StyleGuide = () => {
           secondary: guide.page_theme_secondary,
           accent: guide.page_theme_accent,
         });
+      } else {
+        // No data exists, save the Cleverpoly defaults to database
+        setBrandInitialized(true);
+        setTimeout(() => saveBrandToSupabase(), 500);
       }
     } catch (error) {
       console.error('Error loading style guide:', error);
+      // On error, keep the Cleverpoly defaults
+      setBrandInitialized(true);
     }
   };
 
