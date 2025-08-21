@@ -1,0 +1,116 @@
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.52.1'
+
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+}
+
+Deno.serve(async (req) => {
+  // Handle CORS preflight requests
+  if (req.method === 'OPTIONS') {
+    return new Response(null, { headers: corsHeaders });
+  }
+
+  try {
+    const url = new URL(req.url);
+    const email = url.searchParams.get('email');
+    const campaignId = url.searchParams.get('campaign');
+
+    if (!email) {
+      return new Response('Email parameter is required', { 
+        status: 400,
+        headers: corsHeaders 
+      });
+    }
+
+    // Initialize Supabase client
+    const supabase = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+    );
+
+    // Add to unsubscribes table
+    const { error: unsubscribeError } = await supabase
+      .from('unsubscribes')
+      .insert({
+        user_id: '550e8400-e29b-41d4-a716-446655440000', // Demo user ID
+        email,
+        reason: 'Unsubscribed via email link'
+      });
+
+    if (unsubscribeError) {
+      console.error('Error adding unsubscribe:', unsubscribeError);
+    }
+
+    // Update contact status to unsubscribed
+    const { error: contactError } = await supabase
+      .from('contacts')
+      .update({ status: 'unsubscribed' })
+      .eq('email', email)
+      .eq('user_id', '550e8400-e29b-41d4-a716-446655440000');
+
+    if (contactError) {
+      console.error('Error updating contact status:', contactError);
+    }
+
+    // Return a simple unsubscribe confirmation page
+    const htmlResponse = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <title>Unsubscribed</title>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <style>
+          body { 
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            max-width: 600px; 
+            margin: 100px auto; 
+            padding: 40px; 
+            text-align: center;
+            background-color: #f9fafb;
+          }
+          .container {
+            background: white;
+            padding: 40px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+          }
+          h1 { color: #374151; margin-bottom: 20px; }
+          p { color: #6b7280; line-height: 1.6; }
+          .email { font-weight: 600; color: #374151; }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <h1>✓ Successfully Unsubscribed</h1>
+          <p>The email address <span class="email">${email}</span> has been removed from all mailing lists.</p>
+          <p>You will no longer receive promotional emails from us.</p>
+          <p>If you change your mind, you can always resubscribe through our website.</p>
+        </div>
+      </body>
+      </html>
+    `;
+
+    return new Response(htmlResponse, {
+      headers: { 
+        ...corsHeaders, 
+        'Content-Type': 'text/html' 
+      },
+    });
+
+  } catch (error) {
+    console.error('Error in unsubscribe function:', error);
+    
+    return new Response(
+      JSON.stringify({
+        success: false,
+        error: error.message || 'Internal server error',
+      }),
+      {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 500,
+      }
+    );
+  }
+});

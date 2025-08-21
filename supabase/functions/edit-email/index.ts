@@ -42,7 +42,7 @@ Deno.serve(async (req) => {
 Your task is to modify the HTML email according to the instruction. IMPORTANT RULES:
 - Return ONLY the modified HTML, no explanations or comments
 - Keep the overall structure intact unless specifically asked to change it
-- Preserve any {{name}} and {{unsubscribe_url}} placeholders
+- Preserve any {{name}} placeholders and ensure unsubscribe links point to: https://mixifcnokcmxarpzwfiy.supabase.co/functions/v1/unsubscribe?email={{email}}
 - If the instruction mentions removing background, replace gradient backgrounds with clean white/light backgrounds
 - If colors are mentioned, use the provided theme colors: primary=${themeColors?.primary || '#684cff'}, secondary=${themeColors?.secondary || '#22d3ee'}, accent=${themeColors?.accent || '#34d399'}
 - Make sure the email remains responsive and email-client friendly`;
