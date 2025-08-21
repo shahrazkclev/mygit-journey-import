@@ -12,6 +12,7 @@ import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { DEMO_USER_ID } from "@/lib/demo-auth";
 import { useGlobalTheme } from "@/hooks/useGlobalTheme";
+import { setCssThemeFromHex } from "@/lib/theme";
 
 interface BrandIdentity {
   name: string;
@@ -55,6 +56,9 @@ export const StyleGuide = () => {
 
   const setPageThemeColors = (colors: { primary?: string; secondary?: string; accent?: string }) => {
     updateTheme(colors);
+    // Save immediately to Supabase when colors change
+    const updatedColors = { ...pageThemeColors, ...colors };
+    saveThemeToSupabase(updatedColors);
   };
 
   const { toast } = useToast();
@@ -101,8 +105,6 @@ export const StyleGuide = () => {
           secondary: guide.page_theme_secondary,
           accent: guide.page_theme_accent,
         });
-
-        // Theme is applied via global updateTheme on setPageThemeColors
       }
     } catch (error) {
       console.error('Error loading style guide:', error);
@@ -111,62 +113,15 @@ export const StyleGuide = () => {
 
 
   const handleSaveStyleGuide = async () => {
+    setLoading(true);
     try {
-      // Check if a style guide already exists for this user
-      const { data: existingData, error: checkError } = await supabase
-        .from('style_guides')
-        .select('id')
-        .eq('user_id', DEMO_USER_ID)
-        .limit(1);
-
-      if (checkError) throw checkError;
-
-      const styleGuideData = {
-        user_id: DEMO_USER_ID,
-        brand_name: brandIdentity.name,
-        primary_color: brandIdentity.primaryColor,
-        secondary_color: brandIdentity.secondaryColor,
-        accent_color: brandIdentity.accentColor,
-        font_family: brandIdentity.font,
-        tone: brandIdentity.voice,
-        brand_voice: brandIdentity.brandVoice,
-        logo_url: brandIdentity.logo,
-        email_signature: brandIdentity.signature,
-        page_theme_primary: pageThemeColors.primary,
-        page_theme_secondary: pageThemeColors.secondary,
-        page_theme_accent: pageThemeColors.accent,
-      };
-
-      let result;
-      if (existingData && existingData.length > 0) {
-        // Update existing style guide
-        result = await supabase
-          .from('style_guides')
-          .update(styleGuideData)
-          .eq('id', existingData[0].id);
-      } else {
-        // Insert new style guide
-        result = await supabase
-          .from('style_guides')
-          .insert([styleGuideData]);
-      }
-
-      if (result.error) throw result.error;
-
-      // Update global theme state to sync with saved data
-      updateTheme({
-        primary: pageThemeColors.primary,
-        secondary: pageThemeColors.secondary,
-        accent: pageThemeColors.accent
-      });
-
-      console.log('Theme saved to Supabase:', pageThemeColors);
+      await saveBrandToSupabase();
+      await saveThemeToSupabase(pageThemeColors);
 
       toast({
         title: "Style Guide Saved",
         description: "Your brand style guide has been saved successfully.",
       });
-
     } catch (error) {
       console.error('Error saving style guide:', error);
       toast({
@@ -174,6 +129,8 @@ export const StyleGuide = () => {
         description: "Failed to save style guide. Please try again.",
         variant: "destructive",
       });
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -335,7 +292,11 @@ export const StyleGuide = () => {
               <Input
                 id="brandName"
                 value={brandIdentity.name}
-                onChange={(e) => setBrandIdentity({...brandIdentity, name: e.target.value})}
+                onChange={(e) => {
+                  setBrandIdentity({...brandIdentity, name: e.target.value});
+                  // Auto-save brand changes
+                  setTimeout(() => saveBrandToSupabase(), 1000);
+                }}
                 placeholder="Your Brand Name"
               />
             </div>
@@ -344,7 +305,10 @@ export const StyleGuide = () => {
               <Input
                 id="logoUrl"
                 value={brandIdentity.logo}
-                onChange={(e) => setBrandIdentity({...brandIdentity, logo: e.target.value})}
+                onChange={(e) => {
+                  setBrandIdentity({...brandIdentity, logo: e.target.value});
+                  setTimeout(() => saveBrandToSupabase(), 1000);
+                }}
                 placeholder="https://example.com/logo.png"
               />
             </div>
@@ -355,7 +319,10 @@ export const StyleGuide = () => {
               <Label>Primary Brand Color</Label>
               <ColorPicker
                 value={brandIdentity.primaryColor}
-                onChange={(color) => setBrandIdentity({...brandIdentity, primaryColor: color})}
+                onChange={(color) => {
+                  setBrandIdentity({...brandIdentity, primaryColor: color});
+                  setTimeout(() => saveBrandToSupabase(), 1000);
+                }}
                 label="Primary"
               />
             </div>
@@ -363,7 +330,10 @@ export const StyleGuide = () => {
               <Label>Secondary Brand Color</Label>
               <ColorPicker
                 value={brandIdentity.secondaryColor}
-                onChange={(color) => setBrandIdentity({...brandIdentity, secondaryColor: color})}
+                onChange={(color) => {
+                  setBrandIdentity({...brandIdentity, secondaryColor: color});
+                  setTimeout(() => saveBrandToSupabase(), 1000);
+                }}
                 label="Secondary"
               />
             </div>
@@ -371,7 +341,10 @@ export const StyleGuide = () => {
               <Label>Accent Brand Color</Label>
               <ColorPicker
                 value={brandIdentity.accentColor}
-                onChange={(color) => setBrandIdentity({...brandIdentity, accentColor: color})}
+                onChange={(color) => {
+                  setBrandIdentity({...brandIdentity, accentColor: color});
+                  setTimeout(() => saveBrandToSupabase(), 1000);
+                }}
                 label="Accent"
               />
             </div>
@@ -394,7 +367,10 @@ export const StyleGuide = () => {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="fontFamily">Font Family</Label>
-              <Select value={brandIdentity.font} onValueChange={(value) => setBrandIdentity({...brandIdentity, font: value})}>
+              <Select value={brandIdentity.font} onValueChange={(value) => {
+                setBrandIdentity({...brandIdentity, font: value});
+                setTimeout(() => saveBrandToSupabase(), 1000);
+              }}>
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
@@ -409,7 +385,10 @@ export const StyleGuide = () => {
             </div>
             <div className="space-y-2">
               <Label htmlFor="tone">Brand Tone</Label>
-              <Select value={brandIdentity.voice} onValueChange={(value) => setBrandIdentity({...brandIdentity, voice: value})}>
+              <Select value={brandIdentity.voice} onValueChange={(value) => {
+                setBrandIdentity({...brandIdentity, voice: value});
+                setTimeout(() => saveBrandToSupabase(), 1000);
+              }}>
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
@@ -426,24 +405,30 @@ export const StyleGuide = () => {
 
           <div className="space-y-2">
             <Label htmlFor="brandVoice">Brand Voice Description</Label>
-            <Textarea
-              id="brandVoice"
-              value={brandIdentity.brandVoice}
-              onChange={(e) => setBrandIdentity({...brandIdentity, brandVoice: e.target.value})}
-              placeholder="Describe your brand's personality and communication style..."
-              rows={3}
-            />
+              <Textarea
+                id="brandVoice"
+                value={brandIdentity.brandVoice}
+                onChange={(e) => {
+                  setBrandIdentity({...brandIdentity, brandVoice: e.target.value});
+                  setTimeout(() => saveBrandToSupabase(), 1000);
+                }}
+                placeholder="Describe your brand's personality and communication style..."
+                rows={3}
+              />
           </div>
 
           <div className="space-y-2">
             <Label htmlFor="signature">Email Signature</Label>
-            <Textarea
-              id="signature"
-              value={brandIdentity.signature}
-              onChange={(e) => setBrandIdentity({...brandIdentity, signature: e.target.value})}
-              placeholder="Best regards,&#10;The Team"
-              rows={3}
-            />
+              <Textarea
+                id="signature"
+                value={brandIdentity.signature}
+                onChange={(e) => {
+                  setBrandIdentity({...brandIdentity, signature: e.target.value});
+                  setTimeout(() => saveBrandToSupabase(), 1000);
+                }}
+                placeholder="Best regards,&#10;The Team"
+                rows={3}
+              />
           </div>
         </CardContent>
       </Card>
@@ -515,7 +500,7 @@ export const StyleGuide = () => {
           <Eye className="h-4 w-4" />
           <span>Generate Test Email</span>
         </Button>
-        <Button onClick={handleSaveStyleGuide} className="flex items-center space-x-2">
+        <Button onClick={handleSaveStyleGuide} disabled={loading} className="flex items-center space-x-2">
           <Save className="h-4 w-4" />
           <span>Save Style Guide</span>
         </Button>
