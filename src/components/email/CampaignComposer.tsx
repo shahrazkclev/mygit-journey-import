@@ -39,39 +39,51 @@ export const CampaignComposer = () => {
 
   const loadEmailLists = async () => {
     try {
-      // Use a proper UUID for demo purposes
-      const demoUserId = '550e8400-e29b-41d4-a716-446655440000';
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      if (!user) {
+        console.log('No authenticated user found');
+        setAvailableLists([]);
+        return;
+      }
 
       const { data: lists, error } = await supabase
         .from('email_lists')
         .select('*')
-        .eq('user_id', demoUserId);
+        .eq('user_id', user.id);
 
       if (error) {
         console.error('Error loading email lists:', error);
+        toast.error("Failed to load email lists");
         return;
       }
 
       setAvailableLists(lists || []);
     } catch (error) {
       console.error('Error in loadEmailLists:', error);
+      toast.error("Failed to load email lists");
     }
   };
 
   const loadStyleGuide = async () => {
     try {
-      // Use a proper UUID for demo purposes
-      const demoUserId = '550e8400-e29b-41d4-a716-446655440000';
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      if (!user) {
+        console.log('No authenticated user found');
+        return;
+      }
 
       const { data: guides, error } = await supabase
         .from('style_guides')
         .select('*')
-        .eq('user_id', demoUserId)
+        .eq('user_id', user.id)
         .order('updated_at', { ascending: false })
         .limit(1);
 
       if (error) {
         console.error('Error loading style guide:', error);
+        toast.error("Failed to load style guide");
         return;
       }
 
@@ -83,6 +95,7 @@ export const CampaignComposer = () => {
       }
     } catch (error) {
       console.error('Error in loadStyleGuide:', error);
+      toast.error("Failed to load style guide");
     }
   };
 
@@ -139,16 +152,19 @@ export const CampaignComposer = () => {
         accent: styleGuide.accent_color
       } : { primary: primaryColor, secondary: secondaryColor, accent: accentColor };
       
-      // Convert hex to rgba for transparency
+      // Convert hex to rgba for transparency with validation
       const hexToRgba = (hex: string, alpha: number) => {
+        if (!hex || hex.length !== 7 || !hex.startsWith('#')) {
+          return `rgba(104, 76, 255, ${alpha})`; // fallback to primary color
+        }
         const r = parseInt(hex.slice(1, 3), 16);
         const g = parseInt(hex.slice(3, 5), 16);
         const b = parseInt(hex.slice(5, 7), 16);
         return `rgba(${r}, ${g}, ${b}, ${alpha})`;
       };
       
-      const brandName = styleGuide?.brand_name || "Your Brand";
-      const signature = styleGuide?.email_signature || "Best regards,\nThe Team";
+      const brandName = styleGuide?.brand_name?.trim() || "Your Brand";
+      const signature = styleGuide?.email_signature?.trim() || "Best regards,\nThe Team";
       
       const template = `<!DOCTYPE html>
 <html>
@@ -277,9 +293,18 @@ export const CampaignComposer = () => {
       return;
     }
     
+    if (!subject.trim()) {
+      toast.error("Please enter an email subject");
+      return;
+    }
+    
     try {
-      // Use a proper UUID for demo purposes
-      const demoUserId = '550e8400-e29b-41d4-a716-446655440000';
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      if (!user) {
+        toast.error("You must be logged in to save campaigns");
+        return;
+      }
 
       const senderNumber = getCurrentSenderNumber();
       setCurrentEmailCount(prev => prev + 1);
@@ -288,9 +313,9 @@ export const CampaignComposer = () => {
       const { data: campaign, error } = await supabase
         .from('campaigns')
         .insert({
-          user_id: demoUserId,
+          user_id: user.id,
           name: subject || `Campaign ${new Date().toLocaleDateString()}`,
-          subject,
+          subject: subject.trim(),
           html_content: generatedTemplate,
           list_ids: selectedLists,
           status: 'draft'
@@ -308,7 +333,7 @@ export const CampaignComposer = () => {
       const webhookData = {
         campaignId: campaign.id,
         emailSender: senderNumber,
-        subject: subject,
+        subject: subject.trim(),
         htmlContent: generatedTemplate,
         listIds: selectedLists,
         timestamp: new Date().toISOString()
@@ -341,7 +366,7 @@ export const CampaignComposer = () => {
           <div className="space-y-2 max-h-32 overflow-y-auto border border-email-primary/30 rounded-md p-3">
             {availableLists.length > 0 ? (
               availableLists.map((list) => (
-                <label key={list.id} className="flex items-center space-x-2">
+                <label key={list.id} className="flex items-center space-x-2 cursor-pointer hover:bg-muted/50 p-1 rounded">
                   <input
                     type="checkbox"
                     checked={selectedLists.includes(list.id)}
@@ -354,7 +379,7 @@ export const CampaignComposer = () => {
                     }}
                     className="rounded"
                   />
-                  <span className="text-sm">{list.name}</span>
+                  <span className="text-sm font-medium">{list.name || 'Unnamed List'}</span>
                   {list.description && (
                     <span className="text-xs text-muted-foreground">({list.description})</span>
                   )}
@@ -362,7 +387,7 @@ export const CampaignComposer = () => {
               ))
             ) : (
               <div className="text-sm text-muted-foreground text-center py-4">
-                No email lists found. Create lists in the Lists tab.
+                No email lists found. Please authenticate and create lists in the Lists tab.
               </div>
             )}
           </div>
