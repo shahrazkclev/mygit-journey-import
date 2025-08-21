@@ -57,6 +57,7 @@ export const EmailListManager = () => {
   const [contactLists, setContactLists] = useState<ContactList[]>([]);
   const [selectedContacts, setSelectedContacts] = useState<string[]>([]);
   const [selectedList, setSelectedList] = useState<EmailList | null>(null);
+  const [editingList, setEditingList] = useState<EmailList | null>(null);
   
   // UI state
   const [isAddingContact, setIsAddingContact] = useState(false);
@@ -95,13 +96,10 @@ export const EmailListManager = () => {
 
   const loadData = async () => {
     try {
-      // Load email lists with contact count
+      // Load email lists
       const { data: listsData, error: listsError } = await supabase
         .from('email_lists')
-        .select(`
-          *,
-          contact_count:contact_lists(count)
-        `)
+        .select('*')
         .order('created_at', { ascending: false });
 
       if (listsError) throw listsError;
@@ -129,10 +127,13 @@ export const EmailListManager = () => {
 
       if (contactListsError) throw contactListsError;
 
-      setLists(listsData?.map(list => ({
+      // Calculate contact count for each list
+      const listsWithCounts = (listsData || []).map(list => ({
         ...list,
-        contact_count: list.contact_count?.[0]?.count || 0
-      })) || []);
+        contact_count: (contactListsData || []).filter(cl => cl.list_id === list.id).length
+      }));
+
+      setLists(listsWithCounts);
       setContacts(contactsData || []);
       setProducts(productsData || []);
       setContactLists(contactListsData || []);
@@ -277,6 +278,45 @@ export const EmailListManager = () => {
     } catch (error: any) {
       toast({
         title: "Error deleting list",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleEditList = (list: EmailList) => {
+    setEditingList(list);
+    setNewListName(list.name);
+    setNewListDescription(list.description || "");
+  };
+
+  const handleUpdateList = async () => {
+    if (!editingList || !newListName.trim()) return;
+
+    try {
+      const { data, error } = await supabase
+        .from('email_lists')
+        .update({
+          name: newListName.trim(),
+          description: newListDescription.trim() || null,
+        })
+        .eq('id', editingList.id)
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      setLists(lists.map(l => l.id === editingList.id ? { ...data, contact_count: l.contact_count } : l));
+      setEditingList(null);
+      setNewListName("");
+      setNewListDescription("");
+      toast({
+        title: "List updated",
+        description: "Email list has been updated successfully.",
+      });
+    } catch (error: any) {
+      toast({
+        title: "Error updating list",
         description: error.message,
         variant: "destructive",
       });
@@ -616,7 +656,17 @@ export const EmailListManager = () => {
       (contact.tags && contact.tags.includes(filterTag));
     
     return matchesSearch && matchesTag;
-  });
+    });
+  };
+
+  // Get lists that a contact belongs to
+  const getContactLists = (contactId: string) => {
+    const contactListIds = contactLists
+      .filter(cl => cl.contact_id === contactId)
+      .map(cl => cl.list_id);
+    
+    return lists.filter(list => contactListIds.includes(list.id));
+  };
 
   // Get unique tags for filter
   const uniqueTags = Array.from(new Set(contacts.flatMap(c => c.tags || [])));
@@ -867,9 +917,18 @@ export const EmailListManager = () => {
                           </div>
                         </TableCell>
                         <TableCell>
-                          <Badge variant={contact.status === 'subscribed' ? 'default' : 'secondary'}>
-                            {contact.status}
-                          </Badge>
+                          <div className="space-y-1">
+                            <Badge variant={contact.status === 'subscribed' ? 'default' : 'secondary'}>
+                              {contact.status}
+                            </Badge>
+                            <div className="flex flex-wrap gap-1">
+                              {getContactLists(contact.id).map(list => (
+                                <Badge key={list.id} variant="outline" className="text-xs">
+                                  📋 {list.name}
+                                </Badge>
+                              ))}
+                            </div>
+                          </div>
                         </TableCell>
                         <TableCell>
                           {new Date(contact.created_at).toLocaleDateString()}
@@ -1182,7 +1241,7 @@ export const EmailListManager = () => {
                         <TableCell className="text-muted-foreground">{list.description}</TableCell>
                         <TableCell>
                           <div className="flex space-x-2">
-                            <Button variant="outline" size="sm">
+                            <Button variant="outline" size="sm" onClick={() => handleEditList(list)}>
                               <Edit className="h-4 w-4" />
                             </Button>
                             <Button 
@@ -1277,6 +1336,50 @@ export const EmailListManager = () => {
         </DialogContent>
       </Dialog>
 
+      {/* Edit List Dialog */}
+      <Dialog open={editingList !== null} onOpenChange={(open) => !open && setEditingList(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Edit Email List</DialogTitle>
+            <DialogDescription>
+              Update the list information below.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label htmlFor="editListName">List Name</Label>
+              <Input
+                id="editListName"
+                value={newListName}
+                onChange={(e) => setNewListName(e.target.value)}
+                placeholder="Newsletter Subscribers"
+              />
+            </div>
+            <div>
+              <Label htmlFor="editListDescription">Description</Label>
+              <Textarea
+                id="editListDescription"
+                value={newListDescription}
+                onChange={(e) => setNewListDescription(e.target.value)}
+                placeholder="List description..."
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => {
+              setEditingList(null);
+              setNewListName("");
+              setNewListDescription("");
+            }}>
+              Cancel
+            </Button>
+            <Button onClick={handleUpdateList} disabled={!newListName.trim()}>
+              Update List
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       {/* Edit Product Dialog */}
       <Dialog open={editingProduct !== null} onOpenChange={(open) => !open && setEditingProduct(null)}>
         <DialogContent>
@@ -1331,6 +1434,50 @@ export const EmailListManager = () => {
             </Button>
             <Button onClick={handleUpdateProduct}>
               Update Product
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit List Dialog */}
+      <Dialog open={editingList !== null} onOpenChange={(open) => !open && setEditingList(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Edit Email List</DialogTitle>
+            <DialogDescription>
+              Update the list information below.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label htmlFor="editListName">List Name</Label>
+              <Input
+                id="editListName"
+                value={newListName}
+                onChange={(e) => setNewListName(e.target.value)}
+                placeholder="Newsletter Subscribers"
+              />
+            </div>
+            <div>
+              <Label htmlFor="editListDescription">Description</Label>
+              <Textarea
+                id="editListDescription"
+                value={newListDescription}
+                onChange={(e) => setNewListDescription(e.target.value)}
+                placeholder="List description..."
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => {
+              setEditingList(null);
+              setNewListName("");
+              setNewListDescription("");
+            }}>
+              Cancel
+            </Button>
+            <Button onClick={handleUpdateList} disabled={!newListName.trim()}>
+              Update List
             </Button>
           </DialogFooter>
         </DialogContent>
