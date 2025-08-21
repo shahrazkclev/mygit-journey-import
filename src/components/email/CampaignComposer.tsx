@@ -543,24 +543,77 @@ export const CampaignComposer = () => {
             <div className="mt-4 space-y-2">
               <div className="flex justify-between items-center">
                 <Label>Generated Template</Label>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => {
-                    navigator.clipboard.writeText(generatedTemplate);
-                    toast({
-                      title: "Copied!",
-                      description: "HTML template copied to clipboard.",
-                    });
-                  }}
-                >
-                  Copy HTML
-                </Button>
+                <div className="flex space-x-2">
+                  <Dialog open={showPreview} onOpenChange={setShowPreview}>
+                    <DialogTrigger asChild>
+                      <Button variant="outline" size="sm">
+                        <Eye className="h-4 w-4 mr-2" />
+                        Preview
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent className="max-w-4xl max-h-[80vh] overflow-auto" aria-describedby="email-preview-desc">
+                      <DialogHeader>
+                        <DialogTitle>Email Preview</DialogTitle>
+                      </DialogHeader>
+                      <p id="email-preview-desc" className="sr-only">Full email preview content in an isolated iframe.</p>
+                      <iframe
+                        title="Email full preview"
+                        srcDoc={generatedTemplate}
+                        className="w-full h-[70vh] border rounded"
+                        sandbox="allow-same-origin"
+                      />
+                    </DialogContent>
+                  </Dialog>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      navigator.clipboard.writeText(generatedTemplate);
+                      toast({
+                        title: "Copied!",
+                        description: "HTML template copied to clipboard.",
+                      });
+                    }}
+                  >
+                    Copy HTML
+                  </Button>
+                </div>
               </div>
               <div className="border rounded-lg p-4 bg-muted/50 max-h-32 overflow-y-auto">
                 <pre className="text-xs text-muted-foreground whitespace-pre-wrap">
                   {generatedTemplate.substring(0, 300)}...
                 </pre>
+              </div>
+              
+              {/* AI Edit Controls */}
+              <div className="mt-4 space-y-2">
+                <Label htmlFor="aiEdit">Edit with AI</Label>
+                <div className="flex space-x-2">
+                  <Input
+                    id="aiEdit"
+                    value={aiEditPrompt}
+                    onChange={(e) => setAiEditPrompt(e.target.value)}
+                    placeholder="Describe changes you want to make..."
+                    className="flex-1"
+                  />
+                  <Button
+                    onClick={handleEditWithAI}
+                    disabled={isEditingWithAI}
+                    variant="outline"
+                  >
+                    {isEditingWithAI ? (
+                      <>
+                        <Wand2 className="h-4 w-4 mr-2 animate-spin" />
+                        Editing...
+                      </>
+                    ) : (
+                      <>
+                        <Wand2 className="h-4 w-4 mr-2" />
+                        Apply Edit
+                      </>
+                    )}
+                  </Button>
+                </div>
               </div>
             </div>
           )}
