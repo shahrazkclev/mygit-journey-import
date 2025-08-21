@@ -553,48 +553,121 @@ export const StyleGuide = () => {
         </CardHeader>
         <CardContent>
           <div 
-            className="p-6 rounded-lg border-2"
+            className="rounded-lg border"
             style={{
               fontFamily: brandIdentity.font,
-              background: `linear-gradient(135deg, ${brandIdentity.primaryColor}15, ${brandIdentity.secondaryColor}15)`
+              background: '#FFFFFF',
+              border: '1px solid #F9F8F5'
             }}
           >
+            {/* Cleverpoly Header */}
             <div 
-              className="text-center p-4 rounded-md mb-4"
-              style={{ backgroundColor: brandIdentity.primaryColor, color: 'white' }}
+              className="text-center p-6 text-white"
+              style={{ backgroundColor: '#6A7059' }}
             >
-              <h3 className="text-xl font-bold">{brandIdentity.name}</h3>
-              <p className="opacity-90">Sample Email Header</p>
+              <h3 className="text-xl font-bold" style={{ color: 'white' }}>
+                <span 
+                  style={{ 
+                    background: '#FCD34D', 
+                    color: '#333333',
+                    padding: '2px 8px', 
+                    borderRadius: '4px',
+                    fontWeight: '600'
+                  }}
+                >
+                  Cleverpoly
+                </span>.Store
+              </h3>
+              <p className="opacity-90 mt-2" style={{ color: 'white' }}>Sample Email Header</p>
             </div>
             
-            <div className="space-y-3">
-              <p>Hello [Name],</p>
-              <div>This is how your emails will look with the current brand settings. The tone is <Badge variant="secondary">{brandIdentity.voice}</Badge>.</div>
-              <p>{brandIdentity.brandVoice}</p>
+            {/* Content Area */}
+            <div className="p-6 space-y-4" style={{ background: '#FFFFFF', color: '#333333' }}>
+              <p style={{ color: '#333333', fontSize: '16px' }}>Hello [Name],</p>
               
-              <div className="flex space-x-2">
+              <p style={{ color: '#333333', fontSize: '16px', lineHeight: '1.6' }}>
+                This is how your emails will look with the current brand settings. The tone is{' '}
+                <span 
+                  style={{ 
+                    background: '#FCD34D', 
+                    padding: '2px 6px', 
+                    borderRadius: '3px',
+                    fontSize: '14px',
+                    fontWeight: '500'
+                  }}
+                >
+                  {brandIdentity.voice}
+                </span>.
+              </p>
+              
+              {/* Brand Voice Card */}
+              <div 
+                style={{ 
+                  background: '#F9F8F5',
+                  padding: '20px',
+                  borderRadius: '8px',
+                  margin: '20px 0'
+                }}
+              >
+                <p style={{ color: '#333333', fontSize: '16px', lineHeight: '1.6', margin: '0' }}>
+                  {brandIdentity.brandVoice}
+                </p>
+              </div>
+              
+              {/* CTA Button */}
+              <div className="flex space-x-3">
                 <button 
-                  className="px-4 py-2 rounded text-white font-medium"
-                  style={{ backgroundColor: brandIdentity.accentColor }}
+                  className="px-6 py-3 rounded font-medium transition-colors"
+                  style={{ 
+                    backgroundColor: '#6A7059',
+                    color: '#FFFFFF',
+                    border: 'none',
+                    borderRadius: '6px',
+                    fontSize: '16px',
+                    fontWeight: '500'
+                  }}
                 >
                   Call to Action
                 </button>
-                <button 
-                  className="px-4 py-2 rounded border font-medium"
+                <a 
+                  href="#"
                   style={{ 
-                    borderColor: brandIdentity.secondaryColor,
-                    color: brandIdentity.secondaryColor
+                    color: '#333333',
+                    textDecoration: 'none',
+                    fontSize: '16px',
+                    alignSelf: 'center'
                   }}
                 >
-                  Secondary Action
-                </button>
+                  Secondary Action →
+                </a>
               </div>
               
+              {/* Footer */}
               <div 
-                className="mt-6 p-3 rounded border-l-4"
-                style={{ borderLeftColor: brandIdentity.secondaryColor, backgroundColor: `${brandIdentity.secondaryColor}10` }}
+                className="mt-8 pt-6"
+                style={{ 
+                  borderTop: '1px solid #F9F8F5',
+                  marginTop: '40px',
+                  paddingTop: '24px'
+                }}
               >
-                <pre className="text-sm whitespace-pre-wrap">{brandIdentity.signature}</pre>
+                <div style={{ color: '#333333', fontSize: '16px', lineHeight: '1.6' }}>
+                  <p style={{ margin: '0 0 16px 0' }}>
+                    If you have any questions or need assistance, feel free to contact us at{' '}
+                    <span style={{ background: '#FCD34D', padding: '1px 4px', borderRadius: '3px' }}>
+                      cleverpoly
+                    </span>.store@gmail.com
+                  </p>
+                  
+                  <div style={{ marginTop: '20px' }}>
+                    <p style={{ margin: '0', fontSize: '16px' }}>Best regards,</p>
+                    <p style={{ margin: '0', fontSize: '16px', fontWeight: '500' }}>
+                      <span style={{ background: '#FCD34D', padding: '1px 4px', borderRadius: '3px' }}>
+                        Cleverpoly
+                      </span>
+                    </p>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
