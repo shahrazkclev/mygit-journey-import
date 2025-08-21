@@ -567,13 +567,7 @@ export const StyleGuide = () => {
             >
               <h3 className="text-xl font-bold" style={{ color: 'white' }}>
                 <span 
-                  style={{ 
-                    background: '#FCD34D', 
-                    color: '#333333',
-                    padding: '2px 8px', 
-                    borderRadius: '4px',
-                    fontWeight: '600'
-                  }}
+                  className="px-2 py-1 rounded text-gray-800 bg-yellow-200"
                 >
                   Cleverpoly
                 </span>.Store
@@ -587,15 +581,7 @@ export const StyleGuide = () => {
               
               <p style={{ color: '#333333', fontSize: '16px', lineHeight: '1.6' }}>
                 This is how your emails will look with the current brand settings. The tone is{' '}
-                <span 
-                  style={{ 
-                    background: '#FCD34D', 
-                    padding: '2px 6px', 
-                    borderRadius: '3px',
-                    fontSize: '14px',
-                    fontWeight: '500'
-                  }}
-                >
+                <span className="bg-yellow-200 text-gray-800 px-2 py-1 rounded text-sm font-medium">
                   {brandIdentity.voice}
                 </span>.
               </p>
@@ -654,7 +640,7 @@ export const StyleGuide = () => {
                 <div style={{ color: '#333333', fontSize: '16px', lineHeight: '1.6' }}>
                   <p style={{ margin: '0 0 16px 0' }}>
                     If you have any questions or need assistance, feel free to contact us at{' '}
-                    <span style={{ background: '#FCD34D', padding: '1px 4px', borderRadius: '3px' }}>
+                    <span className="bg-yellow-200 text-gray-800 px-1 rounded">
                       cleverpoly
                     </span>.store@gmail.com
                   </p>
@@ -662,7 +648,7 @@ export const StyleGuide = () => {
                   <div style={{ marginTop: '20px' }}>
                     <p style={{ margin: '0', fontSize: '16px' }}>Best regards,</p>
                     <p style={{ margin: '0', fontSize: '16px', fontWeight: '500' }}>
-                      <span style={{ background: '#FCD34D', padding: '1px 4px', borderRadius: '3px' }}>
+                      <span className="bg-yellow-200 text-gray-800 px-1 rounded">
                         Cleverpoly
                       </span>
                     </p>
