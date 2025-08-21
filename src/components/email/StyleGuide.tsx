@@ -639,18 +639,13 @@ export const StyleGuide = () => {
               >
                 <div style={{ color: '#333333', fontSize: '16px', lineHeight: '1.6' }}>
                   <p style={{ margin: '0 0 16px 0' }}>
-                    If you have any questions or need assistance, feel free to contact us at{' '}
-                    <span className="bg-yellow-200 text-gray-800 px-1 rounded">
-                      cleverpoly
-                    </span>.store@gmail.com
+                    If you have any questions or need assistance, feel free to contact us at cleverpoly.store@gmail.com
                   </p>
                   
                   <div style={{ marginTop: '20px' }}>
                     <p style={{ margin: '0', fontSize: '16px' }}>Best regards,</p>
                     <p style={{ margin: '0', fontSize: '16px', fontWeight: '500' }}>
-                      <span className="bg-yellow-200 text-gray-800 px-1 rounded">
-                        Cleverpoly
-                      </span>
+                      Cleverpoly
                     </p>
                   </div>
                 </div>
