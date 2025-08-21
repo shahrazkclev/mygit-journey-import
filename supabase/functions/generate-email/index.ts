@@ -48,35 +48,54 @@ Deno.serve(async (req) => {
       throw new Error('Claude API key not configured');
     }
 
-    // Prepare the prompt for Claude
-    const systemPrompt = `You are writing an email for the brand "${styleGuide?.brandName || 'Your Brand'}".
+    // Optimized prompt for faster, better generation
+    const emailTemplate = `<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>${subject}</title>
+</head>
+<body style="margin: 0; padding: 0; font-family: ${styleGuide?.fontFamily || 'Arial, sans-serif'}; background-color: #f5f5f5;">
+    <div style="max-width: 600px; margin: 0 auto; background-color: white;">
+        <!-- Header -->
+        <div style="background: linear-gradient(135deg, ${styleGuide?.primaryColor || '#758565'}, ${styleGuide?.secondaryColor || '#374151'}); color: white; text-align: center; padding: 40px 20px;">
+            <h1 style="margin: 0; font-size: 32px; font-weight: bold;">${styleGuide?.brandName || 'Your Brand'}</h1>
+            <h2 style="margin: 10px 0 0 0; font-size: 24px; font-weight: normal; opacity: 0.9;">${subject}</h2>
+        </div>
+        
+        <!-- Content -->
+        <div style="padding: 40px 30px;">
+            <p style="margin: 0 0 20px 0; font-size: 16px; line-height: 1.6; color: #333;">Dear {{name}},</p>
+            
+            <div id="ai-content">
+                <!-- AI will replace this with actual content -->
+            </div>
+            
+            <div style="text-align: center; margin: 30px 0;">
+                <a href="#" style="display: inline-block; background-color: ${styleGuide?.primaryColor || '#758565'}; color: white; padding: 15px 30px; text-decoration: none; border-radius: 5px; font-weight: bold;">Take Action</a>
+            </div>
+        </div>
+        
+        <!-- Footer -->
+        <div style="padding: 20px 30px; background-color: #f9f9f9; border-top: 1px solid #eee; text-align: center;">
+            <p style="margin: 0 0 10px 0; font-size: 14px; color: #666; white-space: pre-line;">${styleGuide?.emailSignature || 'Best regards,\\nThe Team'}</p>
+            <p style="margin: 10px 0 0 0; font-size: 12px; color: #999;">
+                <a href="https://mixifcnokcmxarpzwfiy.supabase.co/functions/v1/unsubscribe?email={{email}}" style="color: #999;">Unsubscribe</a>
+            </p>
+        </div>
+    </div>
+</body>
+</html>`;
 
-BRAND VOICE: ${styleGuide?.brandVoice || 'Professional yet approachable'}
-TONE: ${styleGuide?.tone || 'friendly'}
+    // Short, focused prompt for speed
+    const contentPrompt = `Write email content for "${prompt}" in ${styleGuide?.tone || 'friendly'} tone for ${styleGuide?.brandName || 'Your Brand'}. 
+    
+Brand voice: ${styleGuide?.brandVoice || 'Professional yet approachable'}
 
-CRITICAL RULES:
-1. Write in the brand voice and tone specified above
-2. DO NOT write "We hope this message finds you well"
-3. DO NOT write generic corporate phrases unless the brand voice calls for it
-4. Use the brand name "${styleGuide?.brandName || 'Your Brand'}" appropriately in the email
-5. Match the tone - if it's casual, be casual; if it's professional, be professional
+Write 2-3 paragraphs of engaging content only. No subject, no greetings, no signature. Just the main content paragraphs.`;
 
-Style with HTML/CSS:
-- Background: Clean white or very light background 
-- Use brand colors subtly: Primary ${styleGuide?.primaryColor || '#684cff'}, Secondary ${styleGuide?.secondaryColor || '#22d3ee'}, Accent ${styleGuide?.accentColor || '#34d399'}
-- Content: white container, clean modern layout  
-- Font: ${styleGuide?.fontFamily || 'Arial, sans-serif'}
-- Keep it email-client friendly and professional looking
-
-Include {{name}} placeholder and use this unsubscribe URL: https://mixifcnokcmxarpzwfiy.supabase.co/functions/v1/unsubscribe?email={{email}}
-Sign off with: ${styleGuide?.emailSignature || 'Best regards,\\nThe Team'}`;
-
-    const userPrompt = `Write an email about: "${prompt}"
-Subject should be: "${subject}"
-
-Remember you're writing as ${styleGuide?.brandName || 'Your Brand'} in a ${styleGuide?.tone || 'friendly'} tone with this brand voice: ${styleGuide?.brandVoice || 'Professional yet approachable'}`;
-
-    // Call Claude API
+    // Use faster model for speed optimization
     const claudeResponse = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
       headers: {
@@ -85,12 +104,12 @@ Remember you're writing as ${styleGuide?.brandName || 'Your Brand'} in a ${style
         'anthropic-version': '2023-06-01',
       },
       body: JSON.stringify({
-        model: 'claude-sonnet-4-20250514',
-        max_tokens: 4000,
+        model: 'claude-3-5-haiku-20241022', // Faster model
+        max_tokens: 800, // Reduced token limit for speed
         messages: [
           {
             role: 'user',
-            content: `${systemPrompt}\n\n${userPrompt}`
+            content: contentPrompt
           }
         ],
       }),
@@ -103,26 +122,30 @@ Remember you're writing as ${styleGuide?.brandName || 'Your Brand'} in a ${style
     }
 
     const claudeData = await claudeResponse.json();
-    let generatedHtml = claudeData.content[0]?.text || '';
+    let aiContent = claudeData.content[0]?.text || '';
 
-    if (!generatedHtml) {
+    if (!aiContent) {
       throw new Error('No content generated by Claude');
     }
 
-    // Remove subject line and markdown code blocks from the generated HTML
-    generatedHtml = generatedHtml
-      .replace(/\*\*Subject:\*\*[^\n]*\n\n/g, '')
+    // Clean up AI content
+    aiContent = aiContent
       .replace(/```html\n?/g, '')
       .replace(/```\n?/g, '')
       .trim();
 
-    // Log the successful generation
-    console.log('Email template generated successfully');
+    // Insert AI content into template
+    let finalHtml = emailTemplate.replace(
+      '<div id="ai-content">',
+      `<div id="ai-content"><div style="font-size: 16px; line-height: 1.6; color: #333;">${aiContent.split('\n').map(p => p.trim() ? `<p style="margin: 0 0 20px 0;">${p}</p>` : '').join('')}</div>`
+    );
+
+    console.log('Optimized email template generated successfully');
 
     return new Response(
       JSON.stringify({
         success: true,
-        htmlContent: generatedHtml,
+        htmlContent: finalHtml,
         metadata: {
           subject,
           userId: demoUserId,
