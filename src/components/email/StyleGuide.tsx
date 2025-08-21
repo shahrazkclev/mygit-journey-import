@@ -566,11 +566,7 @@ export const StyleGuide = () => {
               style={{ backgroundColor: '#6A7059' }}
             >
               <h3 className="text-xl font-bold" style={{ color: 'white' }}>
-                <span 
-                  className="px-2 py-1 rounded text-gray-800 bg-yellow-200"
-                >
-                  Cleverpoly
-                </span>.Store
+                Cleverpoly.Store
               </h3>
               <p className="opacity-90 mt-2" style={{ color: 'white' }}>Sample Email Header</p>
             </div>
@@ -580,10 +576,7 @@ export const StyleGuide = () => {
               <p style={{ color: '#333333', fontSize: '16px' }}>Hello [Name],</p>
               
               <p style={{ color: '#333333', fontSize: '16px', lineHeight: '1.6' }}>
-                This is how your emails will look with the current brand settings. The tone is{' '}
-                <span className="bg-yellow-200 text-gray-800 px-2 py-1 rounded text-sm font-medium">
-                  {brandIdentity.voice}
-                </span>.
+                This is how your emails will look with the current brand settings. The tone is {brandIdentity.voice}.
               </p>
               
               {/* Brand Voice Card */}
