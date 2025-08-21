@@ -8,8 +8,9 @@ import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Slider } from "@/components/ui/slider";
 import { ColorPicker } from "@/components/ui/color-picker";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Sparkles, Send, Eye, Wand2, MessageSquare, Palette, Monitor, Smartphone } from "lucide-react";
-import { toast } from "sonner";
+import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 
 export const CampaignComposer = () => {
@@ -18,7 +19,7 @@ export const CampaignComposer = () => {
   const [generatedTemplate, setGeneratedTemplate] = useState("");
   const [isGenerating, setIsGenerating] = useState(false);
   const [selectedLists, setSelectedLists] = useState<string[]>([]);
-  const [availableLists, setAvailableLists] = useState<any[]>([]);
+  const [emailLists, setEmailLists] = useState<any[]>([]);
   const [isEditingWithAI, setIsEditingWithAI] = useState(false);
   const [aiEditPrompt, setAiEditPrompt] = useState("");
   const [showPreview, setShowPreview] = useState(false);
@@ -26,11 +27,16 @@ export const CampaignComposer = () => {
   const [currentEmailCount, setCurrentEmailCount] = useState(0);
   const [styleGuide, setStyleGuide] = useState<any>(null);
   
-  // Theme colors (fallback if no style guide)
-  const [primaryColor, setPrimaryColor] = useState("#684cff");
-  const [secondaryColor, setSecondaryColor] = useState("#22d3ee");
-  const [accentColor, setAccentColor] = useState("#34d399");
+  // Theme colors (can override style guide colors)
+  const [themeColors, setThemeColors] = useState({
+    primary: "#684cff",
+    secondary: "#22d3ee",
+    accent: "#34d399"
+  });
+  
   const [viewMode, setViewMode] = useState<'desktop' | 'mobile'>('desktop');
+
+  const { toast } = useToast();
 
   useEffect(() => {
     loadEmailLists();
@@ -40,574 +46,585 @@ export const CampaignComposer = () => {
   const loadEmailLists = async () => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
-      
-      if (!user) {
-        console.log('No authenticated user found');
-        setAvailableLists([]);
-        return;
-      }
+      if (!user) return;
 
-      const { data: lists, error } = await supabase
+      const { data, error } = await supabase
         .from('email_lists')
         .select('*')
-        .eq('user_id', user.id);
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false });
 
-      if (error) {
-        console.error('Error loading email lists:', error);
-        toast.error("Failed to load email lists");
-        return;
-      }
-
-      setAvailableLists(lists || []);
+      if (error) throw error;
+      setEmailLists(data || []);
     } catch (error) {
-      console.error('Error in loadEmailLists:', error);
-      toast.error("Failed to load email lists");
+      console.error('Error loading email lists:', error);
     }
   };
 
   const loadStyleGuide = async () => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
-      
-      if (!user) {
-        console.log('No authenticated user found');
-        return;
-      }
+      if (!user) return;
 
-      const { data: guides, error } = await supabase
+      const { data, error } = await supabase
         .from('style_guides')
         .select('*')
         .eq('user_id', user.id)
-        .order('updated_at', { ascending: false })
+        .order('created_at', { ascending: false })
         .limit(1);
 
-      if (error) {
-        console.error('Error loading style guide:', error);
-        toast.error("Failed to load style guide");
-        return;
-      }
+      if (error) throw error;
 
-      if (guides && guides.length > 0) {
-        setStyleGuide(guides[0]);
-        setPrimaryColor(guides[0].primary_color);
-        setSecondaryColor(guides[0].secondary_color);
-        setAccentColor(guides[0].accent_color);
+      if (data && data.length > 0) {
+        const guide = data[0];
+        setStyleGuide(guide);
+        setThemeColors({
+          primary: guide.primary_color,
+          secondary: guide.secondary_color,
+          accent: guide.accent_color,
+        });
       }
     } catch (error) {
-      console.error('Error in loadStyleGuide:', error);
-      toast.error("Failed to load style guide");
+      console.error('Error loading style guide:', error);
     }
   };
 
   const handleGenerateTemplate = async () => {
-    if (!prompt.trim()) {
-      toast.error("Please enter a prompt for your email");
+    if (!subject.trim() || !prompt.trim()) {
+      toast({
+        title: "Missing Information",
+        description: "Please provide both a subject and prompt for the email.",
+        variant: "destructive",
+      });
       return;
     }
 
     setIsGenerating(true);
-    
-    try {
-      // Try edge function first (but will likely fail without proper auth)
-      try {
-        const { data, error } = await supabase.functions.invoke('generate-email', {
-          body: {
-            prompt,
-            subject,
-            styleGuide: styleGuide ? {
-              brandName: styleGuide.brand_name,
-              primaryColor: styleGuide.primary_color,
-              secondaryColor: styleGuide.secondary_color,
-              accentColor: styleGuide.accent_color,
-              fontFamily: styleGuide.font_family,
-              tone: styleGuide.tone,
-              brandVoice: styleGuide.brand_voice,
-              emailSignature: styleGuide.email_signature
-            } : {
-              brandName: "Your Brand",
-              primaryColor,
-              secondaryColor,
-              accentColor,
-              fontFamily: "Segoe UI, sans-serif",
-              tone: "friendly",
-              brandVoice: "Professional yet approachable",
-              emailSignature: "Best regards,\nThe Team"
-            }
-          }
-        });
 
-        if (data?.success) {
-          setGeneratedTemplate(data.htmlContent);
-          toast.success("Email template generated successfully!");
-          return;
+    try {
+      const { data, error } = await supabase.functions.invoke('generate-email', {
+        body: {
+          prompt: prompt,
+          subject: subject,
+          styleGuide: styleGuide ? {
+            brandName: styleGuide.brand_name,
+            primaryColor: themeColors.primary,
+            secondaryColor: themeColors.secondary,
+            accentColor: themeColors.accent,
+            fontFamily: styleGuide.font_family,
+            tone: styleGuide.tone,
+            brandVoice: styleGuide.brand_voice,
+            logoUrl: styleGuide.logo_url,
+            emailSignature: styleGuide.email_signature,
+          } : {
+            brandName: "Your Brand",
+            primaryColor: themeColors.primary,
+            secondaryColor: themeColors.secondary,
+            accentColor: themeColors.accent,
+            fontFamily: "Segoe UI, sans-serif",
+            tone: "friendly",
+            brandVoice: "Professional yet approachable",
+            logoUrl: "",
+            emailSignature: "Best regards,\nThe Team",
+          }
         }
-      } catch (edgeFunctionError) {
-        console.log('Edge function not available, using fallback template generation');
+      });
+
+      if (error) throw error;
+
+      if (data?.htmlContent) {
+        setGeneratedTemplate(data.htmlContent);
+        toast({
+          title: "Template Generated",
+          description: "Your email template has been generated successfully!",
+        });
+      } else {
+        throw new Error("No content received from AI generator");
       }
-      
-      // Fallback: Generate beautiful template locally
-      const colors = styleGuide ? {
-        primary: styleGuide.primary_color,
-        secondary: styleGuide.secondary_color,
-        accent: styleGuide.accent_color
-      } : { primary: primaryColor, secondary: secondaryColor, accent: accentColor };
-      
-      // Convert hex to rgba for transparency with validation
-      const hexToRgba = (hex: string, alpha: number) => {
-        if (!hex || hex.length !== 7 || !hex.startsWith('#')) {
-          return `rgba(104, 76, 255, ${alpha})`; // fallback to primary color
-        }
-        const r = parseInt(hex.slice(1, 3), 16);
-        const g = parseInt(hex.slice(3, 5), 16);
-        const b = parseInt(hex.slice(5, 7), 16);
-        return `rgba(${r}, ${g}, ${b}, ${alpha})`;
-      };
-      
-      const brandName = styleGuide?.brand_name?.trim() || "Your Brand";
-      const signature = styleGuide?.email_signature?.trim() || "Best regards,\nThe Team";
-      
-      const template = `<!DOCTYPE html>
-<html>
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>${subject}</title>
-  <style>
-    body { 
-      font-family: ${styleGuide?.font_family || 'Segoe UI, sans-serif'}; 
-      background: linear-gradient(135deg, ${hexToRgba(colors.primary, 0.1)}, ${hexToRgba(colors.secondary, 0.1)}); 
-      margin: 0; 
-      padding: 20px; 
-    }
-    .container { 
-      max-width: 600px; 
-      margin: 0 auto; 
-      background: white; 
-      border-radius: 16px; 
-      overflow: hidden; 
-      box-shadow: 0 8px 32px ${hexToRgba(colors.primary, 0.2)}; 
-    }
-    .header { 
-      background: linear-gradient(135deg, ${colors.primary}, ${colors.secondary}); 
-      padding: 40px 30px; 
-      text-align: center; 
-    }
-    .content { 
-      padding: 30px; 
-      line-height: 1.6; 
-      color: #374151; 
-    }
-    .footer { 
-      background: #f9fafb; 
-      padding: 20px 30px; 
-      text-align: center; 
-      font-size: 12px; 
-      color: #6b7280; 
-    }
-    .cta { 
-      background: linear-gradient(135deg, ${colors.primary}, ${colors.accent}); 
-      color: white; 
-      padding: 15px 30px; 
-      border-radius: 8px; 
-      text-decoration: none; 
-      display: inline-block; 
-      margin: 20px 0; 
-      font-weight: bold;
-    }
-    @media (max-width: 600px) {
-      .container { margin: 10px; }
-      .header, .content { padding: 20px; }
-    }
-  </style>
-</head>
-<body>
-  <div class="container">
-    <div class="header">
-      <h1 style="margin: 0; color: white; font-size: 28px;">Hello {{name}}!</h1>
-      <p style="margin: 10px 0 0 0; color: white; opacity: 0.9;">${brandName}</p>
-    </div>
-    <div class="content">
-      <p>Hi there!</p>
-      <p>${prompt}</p>
-      <div style="text-align: center;">
-        <a href="#" class="cta">Take Action Now</a>
-      </div>
-      <p>Thank you for being part of our community!</p>
-    </div>
-    <div class="footer">
-      <div style="white-space: pre-line; margin-bottom: 15px;">${signature}</div>
-      <p>You received this email because you subscribed to our updates.</p>
-      <a href="{{unsubscribe_url}}" style="color: #6b7280;">Unsubscribe</a>
-    </div>
-  </div>
-</body>
-</html>`;
-      
-      setGeneratedTemplate(template);
-      toast.success("Email template generated successfully!");
-      
     } catch (error) {
-      console.error('Error in handleGenerateTemplate:', error);
-      toast.error("Failed to generate template");
+      console.error('Error generating template:', error);
+      
+      // Fallback HTML generation
+      const fallbackHTML = `
+        <!DOCTYPE html>
+        <html>
+          <head>
+            <meta charset="utf-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <title>${subject}</title>
+            <style>
+              body { 
+                font-family: ${styleGuide?.font_family || 'Segoe UI, sans-serif'}; 
+                margin: 0; 
+                padding: 20px; 
+                background-color: #f5f5f5; 
+              }
+              .container { 
+                max-width: 600px; 
+                margin: 0 auto; 
+                background: white; 
+                border-radius: 8px; 
+                overflow: hidden; 
+                box-shadow: 0 2px 10px rgba(0,0,0,0.1); 
+              }
+              .header { 
+                background: ${themeColors.primary}; 
+                color: white; 
+                padding: 30px; 
+                text-align: center; 
+              }
+              .content { 
+                padding: 30px; 
+                line-height: 1.6; 
+              }
+              .button { 
+                display: inline-block; 
+                background: ${themeColors.accent}; 
+                color: white; 
+                padding: 12px 24px; 
+                text-decoration: none; 
+                border-radius: 6px; 
+                margin: 20px 0; 
+              }
+              .footer { 
+                background: #f8f9fa; 
+                padding: 20px; 
+                text-align: center; 
+                border-top: 1px solid #e9ecef; 
+              }
+            </style>
+          </head>
+          <body>
+            <div class="container">
+              <div class="header">
+                <h1>${styleGuide?.brand_name || 'Your Brand'}</h1>
+                <h2>${subject}</h2>
+              </div>
+              <div class="content">
+                <p>Dear Valued Customer,</p>
+                <p>${prompt}</p>
+                <p>We hope this message finds you well and we look forward to serving you better.</p>
+                <a href="#" class="button">Take Action</a>
+              </div>
+              <div class="footer">
+                <pre>${styleGuide?.email_signature || 'Best regards,\\nThe Team'}</pre>
+              </div>
+            </div>
+          </body>
+        </html>
+      `;
+      
+      setGeneratedTemplate(fallbackHTML);
+      toast({
+        title: "Template Generated",
+        description: "Used fallback template generator. Your email is ready!",
+      });
     } finally {
       setIsGenerating(false);
     }
   };
 
   const getCurrentSenderNumber = () => {
-    const cycle = senderCycleCount[0];
-    return ((Math.floor(currentEmailCount / cycle)) % 3) + 1;
+    const cycleSize = senderCycleCount[0];
+    return Math.floor(currentEmailCount / cycleSize) % 3 + 1; // Assuming 3 senders
   };
 
   const handleEditWithAI = async () => {
-    if (!aiEditPrompt.trim()) {
-      toast.error("Please enter editing instructions");
+    if (!aiEditPrompt.trim() || !generatedTemplate) {
+      toast({
+        title: "Missing Information", 
+        description: "Please provide editing instructions and ensure you have a generated template.",
+        variant: "destructive",
+      });
       return;
     }
-    
+
     setIsEditingWithAI(true);
-    
-    // Simulate AI editing (replace with actual Claude API call)
-    setTimeout(() => {
-      const editedTemplate = generatedTemplate.replace(
-        /color: #1f2937/g,
-        `color: ${primaryColor}`
-      ).replace(
-        /background: linear-gradient\(135deg, #ddd6fe, #bae6fd\)/g,
-        `background: linear-gradient(135deg, ${primaryColor}20, ${secondaryColor}20)`
-      ).replace(
-        /background: linear-gradient\(135deg, #ddd6fe, #a7f3d0\)/g,
-        `background: linear-gradient(135deg, ${primaryColor}40, ${accentColor}40)`
-      );
-      
-      setGeneratedTemplate(editedTemplate);
-      setIsEditingWithAI(false);
+
+    try {
+      // Simulate AI editing - in a real app, this would call an AI service
+      toast({
+        title: "AI Edit Applied",
+        description: `Applied edit: "${aiEditPrompt}". This is a simulation - integrate with your preferred AI service.`,
+      });
       setAiEditPrompt("");
-      toast.success("Template updated with AI edits!");
-    }, 1500);
+    } catch (error) {
+      console.error('Error editing with AI:', error);
+      toast({
+        title: "Edit Failed",
+        description: "Failed to apply AI edits. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsEditingWithAI(false);
+    }
   };
 
   const handleSendCampaign = async () => {
-    if (!generatedTemplate || selectedLists.length === 0) {
-      toast.error("Please generate a template and select email lists");
+    if (!subject.trim() || !generatedTemplate || selectedLists.length === 0) {
+      toast({
+        title: "Missing Information",
+        description: "Please ensure you have a subject, generated template, and selected email lists.",
+        variant: "destructive",
+      });
       return;
     }
-    
-    if (!subject.trim()) {
-      toast.error("Please enter an email subject");
-      return;
-    }
-    
+
     try {
       const { data: { user } } = await supabase.auth.getUser();
-      
       if (!user) {
-        toast.error("You must be logged in to save campaigns");
+        toast({
+          title: "Error",
+          description: "You must be logged in to save campaigns.",
+          variant: "destructive",
+        });
         return;
       }
 
+      // Calculate current sender number
       const senderNumber = getCurrentSenderNumber();
-      setCurrentEmailCount(prev => prev + 1);
       
       // Save campaign to database
-      const { data: campaign, error } = await supabase
+      const { data, error } = await supabase
         .from('campaigns')
-        .insert({
-          user_id: user.id,
-          name: subject || `Campaign ${new Date().toLocaleDateString()}`,
-          subject: subject.trim(),
-          html_content: generatedTemplate,
-          list_ids: selectedLists,
-          status: 'draft'
-        })
+        .insert([
+          {
+            user_id: user.id,
+            name: `Campaign: ${subject}`,
+            subject: subject,
+            html_content: generatedTemplate,
+            list_ids: selectedLists,
+            status: 'draft',
+          }
+        ])
         .select()
         .single();
 
-      if (error) {
-        console.error('Error saving campaign:', error);
-        toast.error("Failed to save campaign");
-        return;
-      }
+      if (error) throw error;
 
-      // Example webhook payload for Make.com integration
-      const webhookData = {
-        campaignId: campaign.id,
-        emailSender: senderNumber,
-        subject: subject.trim(),
-        htmlContent: generatedTemplate,
-        listIds: selectedLists,
-        timestamp: new Date().toISOString()
+      // Generate webhook payload for Make.com integration
+      const webhookPayload = {
+        campaign_id: data.id,
+        subject: subject,
+        html_content: generatedTemplate,
+        list_ids: selectedLists,
+        sender_number: senderNumber,
+        theme_colors: themeColors,
+        created_at: new Date().toISOString(),
       };
-      
-      console.log("Campaign saved with webhook payload:", webhookData);
-      toast.success(`Campaign saved! Using email sender ${senderNumber}. Ready for Make.com integration.`);
+
+      toast({
+        title: "Campaign Saved",
+        description: `Your campaign "${subject}" has been saved and is ready for sending.`,
+      });
+
+      // Reset form
+      setSubject("");
+      setPrompt("");
+      setGeneratedTemplate("");
+      setSelectedLists([]);
+
     } catch (error) {
-      console.error('Error in handleSendCampaign:', error);
-      toast.error("Failed to save campaign");
+      console.error('Error saving campaign:', error);
+      toast({
+        title: "Error",
+        description: "Failed to save campaign. Please try again.",
+        variant: "destructive",
+      });
     }
+  };
+
+  const toggleListSelection = (listId: string) => {
+    setSelectedLists(prev => 
+      prev.includes(listId) 
+        ? prev.filter(id => id !== listId)
+        : [...prev, listId]
+    );
   };
 
   return (
     <div className="space-y-6">
-      {/* Subject and Prompt Input */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div className="space-y-2">
-          <Label htmlFor="subject">Email Subject</Label>
-          <Input
-            id="subject"
-            placeholder="Enter email subject..."
-            value={subject}
-            onChange={(e) => setSubject(e.target.value)}
-            className="border-email-primary/30 focus:border-email-primary"
-          />
-        </div>
-        <div className="space-y-2">
-          <Label htmlFor="list">Email Lists</Label>
-          <div className="space-y-2 max-h-32 overflow-y-auto border border-email-primary/30 rounded-md p-3">
-            {availableLists.length > 0 ? (
-              availableLists.map((list) => (
-                <label key={list.id} className="flex items-center space-x-2 cursor-pointer hover:bg-muted/50 p-1 rounded">
-                  <input
-                    type="checkbox"
-                    checked={selectedLists.includes(list.id)}
-                    onChange={(e) => {
-                      if (e.target.checked) {
-                        setSelectedLists([...selectedLists, list.id]);
-                      } else {
-                        setSelectedLists(selectedLists.filter(id => id !== list.id));
-                      }
-                    }}
-                    className="rounded"
-                  />
-                  <span className="text-sm font-medium">{list.name || 'Unnamed List'}</span>
-                  {list.description && (
-                    <span className="text-xs text-muted-foreground">({list.description})</span>
-                  )}
-                </label>
-              ))
-            ) : (
-              <div className="text-sm text-muted-foreground text-center py-4">
-                No email lists found. Please authenticate and create lists in the Lists tab.
-              </div>
-            )}
-          </div>
-          {selectedLists.length > 0 && (
-            <div className="text-xs text-muted-foreground">
-              {selectedLists.length} list{selectedLists.length !== 1 ? 's' : ''} selected
-            </div>
-          )}
-        </div>
-      </div>
-
-      <div className="space-y-2">
-        <Label htmlFor="prompt">AI Prompt</Label>
-        <Textarea
-          id="prompt"
-          placeholder="Describe the email you want to create (e.g., 'Create a friendly newsletter about our new product launch with a professional yet casual tone')"
-          value={prompt}
-          onChange={(e) => setPrompt(e.target.value)}
-          className="min-h-[100px] border-email-primary/30 focus:border-email-primary"
-        />
-      </div>
-
-      {/* Theme Color Picker */}
-      <Card className="shadow-soft border-email-primary/20">
+      {/* Email Content Form */}
+      <Card>
         <CardHeader>
-          <CardTitle className="flex items-center space-x-2">
-            <Palette className="h-5 w-5 text-email-primary" />
-            <span>Theme Colors {styleGuide ? '(From Style Guide)' : '(Override)'}</span>
-          </CardTitle>
+          <CardTitle>Email Content</CardTitle>
           <CardDescription>
-            {styleGuide ? 'Colors loaded from your style guide' : 'Set colors for this campaign'}
+            Create your email campaign with AI assistance
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="subject">Email Subject</Label>
+            <Input
+              id="subject"
+              value={subject}
+              onChange={(e) => setSubject(e.target.value)}
+              placeholder="Enter your email subject line..."
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="prompt">AI Prompt</Label>
+            <Textarea
+              id="prompt"
+              value={prompt}
+              onChange={(e) => setPrompt(e.target.value)}
+              placeholder="Describe the email you want to create (e.g., 'Write a promotional email about our new product launch with a 20% discount offer')"
+              rows={4}
+            />
+          </div>
+
+          <Button 
+            onClick={handleGenerateTemplate}
+            disabled={isGenerating}
+            className="w-full"
+          >
+            {isGenerating ? (
+              <>
+                <Sparkles className="h-4 w-4 mr-2 animate-spin" />
+                Generating...
+              </>
+            ) : (
+              <>
+                <Sparkles className="h-4 w-4 mr-2" />
+                Generate Email Template
+              </>
+            )}
+          </Button>
+        </CardContent>
+      </Card>
+
+      {/* Email Lists Selection */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Target Email Lists</CardTitle>
+          <CardDescription>
+            Select which email lists to send this campaign to
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-3 gap-4">
-            <ColorPicker
-              value={primaryColor}
-              onChange={setPrimaryColor}
-              label="Primary Color"
-              showPresets={true}
-            />
-            <ColorPicker
-              value={secondaryColor}
-              onChange={setSecondaryColor}
-              label="Secondary Color"
-              showPresets={true}
-            />
-            <ColorPicker
-              value={accentColor}
-              onChange={setAccentColor}
-              label="Accent Color"
-              showPresets={true}
-            />
+          {emailLists.length === 0 ? (
+            <p className="text-muted-foreground">
+              No email lists found. Create some email lists in the Lists tab first.
+            </p>
+          ) : (
+            <div className="space-y-2">
+              {emailLists.map(list => (
+                <div key={list.id} className="flex items-center space-x-2">
+                  <Checkbox
+                    id={list.id}
+                    checked={selectedLists.includes(list.id)}
+                    onCheckedChange={() => toggleListSelection(list.id)}
+                  />
+                  <Label htmlFor={list.id} className="flex-1">
+                    {list.name}
+                    {list.description && (
+                      <span className="text-muted-foreground text-sm ml-2">
+                        - {list.description}
+                      </span>
+                    )}
+                  </Label>
+                </div>
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Theme Colors Override */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center space-x-2">
+            <Palette className="h-5 w-5" />
+            <span>Campaign Theme Colors</span>
+          </CardTitle>
+          <CardDescription>
+            Override brand colors for this specific campaign (optional)
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="space-y-2">
+              <Label>Primary Color</Label>
+              <ColorPicker
+                value={themeColors.primary}
+                onChange={(color) => setThemeColors({...themeColors, primary: color})}
+                label="Primary"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Secondary Color</Label>
+              <ColorPicker
+                value={themeColors.secondary}
+                onChange={(color) => setThemeColors({...themeColors, secondary: color})}
+                label="Secondary"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Accent Color</Label>
+              <ColorPicker
+                value={themeColors.accent}
+                onChange={(color) => setThemeColors({...themeColors, accent: color})}
+                label="Accent"
+              />
+            </div>
           </div>
         </CardContent>
       </Card>
 
-      {/* Email Sender Rotation */}
-      <Card className="shadow-soft border-email-accent/20">
+      {/* Sender Rotation */}
+      <Card>
         <CardHeader>
           <CardTitle>Email Sender Rotation</CardTitle>
           <CardDescription>
-            Configure how often to cycle through email senders (1, 2, 3)
+            Configure how many emails each sender handles before rotating
           </CardDescription>
         </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
-            <div className="space-y-2">
-              <Label>Cycle Count: {senderCycleCount[0]} emails per sender</Label>
-              <Slider
-                value={senderCycleCount}
-                onValueChange={setSenderCycleCount}
-                max={50}
-                min={1}
-                step={1}
-                className="w-full"
-              />
-            </div>
-            <div className="flex items-center justify-between text-sm">
-              <span>Current Sender: {getCurrentSenderNumber()}</span>
-              <span>Emails Sent: {currentEmailCount}</span>
-            </div>
+        <CardContent className="space-y-4">
+          <div className="space-y-2">
+            <Label>Cycle Count: {senderCycleCount[0]} emails per sender</Label>
+            <Slider
+              value={senderCycleCount}
+              onValueChange={setSenderCycleCount}
+              max={50}
+              min={5}
+              step={5}
+              className="w-full"
+            />
+          </div>
+          <div className="text-sm text-muted-foreground">
+            Current sender: Sender {getCurrentSenderNumber()} (sent {currentEmailCount} emails)
           </div>
         </CardContent>
       </Card>
 
-      <div className="flex flex-wrap gap-3">
-        <Button 
-          onClick={handleGenerateTemplate}
-          disabled={isGenerating || !prompt.trim()}
-          className="bg-email-primary hover:bg-email-primary/80 text-primary-foreground shadow-soft"
-        >
-          {isGenerating ? (
-            <>
-              <Wand2 className="h-4 w-4 mr-2 animate-spin" />
-              Generating...
-            </>
-          ) : (
-            <>
-              <Sparkles className="h-4 w-4 mr-2" />
-              Generate Template
-            </>
-          )}
-        </Button>
-
-        {generatedTemplate && (
-          <>
-            <Dialog open={showPreview} onOpenChange={setShowPreview}>
-              <DialogTrigger asChild>
-                <Button variant="outline" className="border-email-secondary hover:bg-email-secondary">
-                  <Eye className="h-4 w-4 mr-2" />
-                  Preview
-                </Button>
-              </DialogTrigger>
-              <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
-                 <DialogHeader>
-                   <DialogTitle className="flex items-center justify-between">
-                     Email Preview
-                     <div className="flex gap-2">
-                       <Button
-                         variant={viewMode === 'desktop' ? 'default' : 'outline'}
-                         size="sm"
-                         onClick={() => setViewMode('desktop')}
-                       >
-                         <Monitor className="h-4 w-4 mr-1" />
-                         Desktop
-                       </Button>
-                       <Button
-                         variant={viewMode === 'mobile' ? 'default' : 'outline'}
-                         size="sm"
-                         onClick={() => setViewMode('mobile')}
-                       >
-                         <Smartphone className="h-4 w-4 mr-1" />
-                         Mobile
-                       </Button>
-                     </div>
-                   </DialogTitle>
-                 </DialogHeader>
-                 <div className={`border rounded-lg bg-white overflow-auto ${
-                   viewMode === 'mobile' 
-                     ? 'max-w-[375px] mx-auto' 
-                     : 'w-full'
-                 }`}>
-                   <div 
-                     className={viewMode === 'mobile' ? 'scale-75 origin-top' : ''}
-                     dangerouslySetInnerHTML={{ __html: generatedTemplate }} 
-                   />
-                 </div>
-              </DialogContent>
-            </Dialog>
-
-            <Dialog open={isEditingWithAI} onOpenChange={setIsEditingWithAI}>
-              <DialogTrigger asChild>
-                <Button variant="outline" className="border-email-accent hover:bg-email-accent">
-                  <MessageSquare className="h-4 w-4 mr-2" />
-                  Edit with AI
-                </Button>
-              </DialogTrigger>
-              <DialogContent>
-                <DialogHeader>
-                  <DialogTitle>Edit Template with AI</DialogTitle>
-                </DialogHeader>
-                <div className="space-y-4">
-                  <Textarea
-                    placeholder="Describe what you want to change (e.g., 'make it more formal', 'add a discount section', 'change the call to action')"
-                    value={aiEditPrompt}
-                    onChange={(e) => setAiEditPrompt(e.target.value)}
-                    className="min-h-[100px]"
-                  />
-                  <div className="flex gap-3">
-                    <Button onClick={handleEditWithAI} disabled={!aiEditPrompt.trim()}>
-                      <Wand2 className="h-4 w-4 mr-2" />
-                      Apply Changes
-                    </Button>
-                    <Button variant="outline" onClick={() => setIsEditingWithAI(false)}>
-                      Cancel
-                    </Button>
-                  </div>
-                </div>
-              </DialogContent>
-            </Dialog>
-          </>
-        )}
-      </div>
-
       {/* Generated Template Preview */}
       {generatedTemplate && (
-        <Card className="shadow-soft border-email-success/20">
+        <Card>
           <CardHeader>
-            <CardTitle className="flex items-center justify-between">
-              <span className="flex items-center space-x-2">
-                <Sparkles className="h-5 w-5 text-email-success" />
-                <span>Generated Template</span>
-              </span>
-              <Badge variant="secondary" className="bg-email-success/20 text-email-success">
-                Ready to Send
-              </Badge>
-            </CardTitle>
+            <div className="flex justify-between items-center">
+              <div>
+                <CardTitle>Generated Email Template</CardTitle>
+                <CardDescription>
+                  Preview and edit your AI-generated email
+                </CardDescription>
+              </div>
+              <div className="flex space-x-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setViewMode(viewMode === 'desktop' ? 'mobile' : 'desktop')}
+                >
+                  {viewMode === 'desktop' ? <Smartphone className="h-4 w-4" /> : <Monitor className="h-4 w-4" />}
+                  {viewMode === 'desktop' ? 'Mobile' : 'Desktop'}
+                </Button>
+                <Dialog open={showPreview} onOpenChange={setShowPreview}>
+                  <DialogTrigger asChild>
+                    <Button variant="outline" size="sm">
+                      <Eye className="h-4 w-4 mr-2" />
+                      Full Preview
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent className="max-w-4xl max-h-[80vh] overflow-auto">
+                    <DialogHeader>
+                      <DialogTitle>Email Preview</DialogTitle>
+                    </DialogHeader>
+                    <div dangerouslySetInnerHTML={{ __html: generatedTemplate }} />
+                  </DialogContent>
+                </Dialog>
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <div 
+              className={`border rounded-lg overflow-hidden bg-white ${
+                viewMode === 'mobile' ? 'max-w-sm mx-auto' : 'w-full'
+              }`}
+            >
+              <div 
+                dangerouslySetInnerHTML={{ __html: generatedTemplate }}
+                className="min-h-[200px]"
+              />
+            </div>
+
+            {/* AI Edit Controls */}
+            <div className="mt-4 space-y-2">
+              <Label htmlFor="aiEdit">Edit with AI</Label>
+              <div className="flex space-x-2">
+                <Input
+                  id="aiEdit"
+                  value={aiEditPrompt}
+                  onChange={(e) => setAiEditPrompt(e.target.value)}
+                  placeholder="Describe changes you want to make..."
+                  className="flex-1"
+                />
+                <Button
+                  onClick={handleEditWithAI}
+                  disabled={isEditingWithAI}
+                  variant="outline"
+                >
+                  {isEditingWithAI ? (
+                    <>
+                      <Wand2 className="h-4 w-4 mr-2 animate-spin" />
+                      Editing...
+                    </>
+                  ) : (
+                    <>
+                      <Wand2 className="h-4 w-4 mr-2" />
+                      Apply Edit
+                    </>
+                  )}
+                </Button>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Send Campaign */}
+      {generatedTemplate && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Send Campaign</CardTitle>
             <CardDescription>
-              Template includes personalization and unsubscribe handling
+              Review and send your email campaign
             </CardDescription>
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              <div className="bg-muted/50 p-4 rounded-lg max-h-60 overflow-y-auto">
-                <pre className="text-xs whitespace-pre-wrap">{generatedTemplate}</pre>
-              </div>
-              
-              <div className="flex items-center justify-between pt-4 border-t">
-                <div className="text-sm text-muted-foreground">
-                  Features: Name personalization, Style consistency, Unsubscribe link
+              <div className="grid grid-cols-2 gap-4 text-sm">
+                <div>
+                  <strong>Subject:</strong> {subject}
                 </div>
-                <Button 
-                  onClick={handleSendCampaign}
-                  className="bg-email-success hover:bg-email-success/80 text-foreground shadow-soft"
-                >
-                  <Send className="h-4 w-4 mr-2" />
-                  Setup Campaign
-                </Button>
+                <div>
+                  <strong>Selected Lists:</strong> {selectedLists.length}
+                </div>
+                <div>
+                  <strong>Current Sender:</strong> Sender {getCurrentSenderNumber()}
+                </div>
+                <div>
+                  <strong>Theme:</strong> 
+                  <div className="flex space-x-1 mt-1">
+                    <div 
+                      className="w-4 h-4 rounded" 
+                      style={{ backgroundColor: themeColors.primary }}
+                    />
+                    <div 
+                      className="w-4 h-4 rounded" 
+                      style={{ backgroundColor: themeColors.secondary }}
+                    />
+                    <div 
+                      className="w-4 h-4 rounded" 
+                      style={{ backgroundColor: themeColors.accent }}
+                    />
+                  </div>
+                </div>
               </div>
+
+              <Button onClick={handleSendCampaign} className="w-full">
+                <Send className="h-4 w-4 mr-2" />
+                Save & Setup Campaign
+              </Button>
             </div>
           </CardContent>
         </Card>

@@ -1,894 +1,878 @@
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Upload, Download, Users, Trash2, Plus, FileText, Filter, Eye, Tag, Calendar, ShoppingCart, Mail, Pencil } from "lucide-react";
-import { toast } from "sonner";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
+import { Plus, Upload, Edit, Trash2, Users, Package, List, Search, Filter, Download } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 
+// Data types matching our Supabase schema
 type Product = {
-  id: number;
+  id: string;
   name: string;
   price: number;
   category: string;
+  description?: string;
 };
 
 type Contact = {
-  id: number;
+  id: string;
   email: string;
+  first_name?: string;
+  last_name?: string;
+  tags?: string[];
+  status: string;
+  created_at: string;
+  updated_at: string;
+};
+
+type EmailList = {
+  id: string;
   name: string;
-  tags: string[];
-  source: string;
-  lastContacted: string;
-  purchasedProducts: Product[];
-  dateAdded: string;
-  listId: number;
+  description?: string;
+  created_at: string;
+  updated_at: string;
 };
 
 export const EmailListManager = () => {
-  const [products, setProducts] = useState<Product[]>([
-    { id: 1, name: "Premium Course", price: 299, category: "Education" },
-    { id: 2, name: "Starter Package", price: 99, category: "Software" },
-    { id: 3, name: "Consultation Call", price: 150, category: "Service" },
-    { id: 4, name: "Advanced Toolkit", price: 499, category: "Software" }
-  ]);
-
-  const [lists, setLists] = useState([
-    { id: 1, name: "Newsletter Subscribers", count: 1250, lastUpdated: "2024-01-15" },
-    { id: 2, name: "Customer List", count: 890, lastUpdated: "2024-01-14" },
-    { id: 3, name: "Prospects", count: 345, lastUpdated: "2024-01-13" }
-  ]);
+  const [lists, setLists] = useState<EmailList[]>([]);
+  const [contacts, setContacts] = useState<Contact[]>([]);
+  const [products, setProducts] = useState<Product[]>([]);
   
-  const [contacts, setContacts] = useState<Contact[]>([
-    { id: 1, email: "john@example.com", name: "John Doe", tags: ["customer", "premium"], source: "website", lastContacted: "2024-01-10", purchasedProducts: [products[0], products[2]], dateAdded: "2023-12-01", listId: 2 },
-    { id: 2, email: "sarah@example.com", name: "Sarah Wilson", tags: ["lead", "newsletter"], source: "social media", lastContacted: "2024-01-08", purchasedProducts: [], dateAdded: "2024-01-05", listId: 1 },
-    { id: 3, email: "mike@example.com", name: "Mike Johnson", tags: ["prospect"], source: "referral", lastContacted: "never", purchasedProducts: [products[1]], dateAdded: "2024-01-12", listId: 3 },
-  ]);
-  
-  const [selectedLists, setSelectedLists] = useState<number[]>([]);
-  const [newListName, setNewListName] = useState("");
-  const [csvFile, setCsvFile] = useState<File | null>(null);
-  const [filterTag, setFilterTag] = useState<string>("all");
-  const [filterProduct, setFilterProduct] = useState<string>("all");
-  const [searchQuery, setSearchQuery] = useState("");
+  // UI state
   const [isAddingContact, setIsAddingContact] = useState(false);
   const [editingContact, setEditingContact] = useState<Contact | null>(null);
   const [isAddingProduct, setIsAddingProduct] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [filterTag, setFilterTag] = useState<string>("all");
+  const [filterProduct, setFilterProduct] = useState<string>("all");
+  
+  // Form state
+  const [newListName, setNewListName] = useState("");
+  const [newListDescription, setNewListDescription] = useState("");
   const [newProduct, setNewProduct] = useState({
     name: "",
     price: 0,
-    category: ""
+    category: "",
+    description: ""
   });
   const [newContact, setNewContact] = useState({
     email: "",
-    name: "",
+    firstName: "",
+    lastName: "",
     tags: "",
-    source: "",
-    listId: 1,
-    selectedProducts: [] as number[]
+    status: "subscribed"
   });
+
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const { toast } = useToast();
+
+  // Load data on component mount
+  useEffect(() => {
+    loadData();
+  }, []);
+
+  const loadData = async () => {
+    try {
+      // Load email lists
+      const { data: listsData, error: listsError } = await supabase
+        .from('email_lists')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (listsError) throw listsError;
+
+      // Load contacts
+      const { data: contactsData, error: contactsError } = await supabase
+        .from('contacts')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (contactsError) throw contactsError;
+
+      // Load products
+      const { data: productsData, error: productsError } = await supabase
+        .from('products')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (productsError) throw productsError;
+
+      setLists(listsData || []);
+      setContacts(contactsData || []);
+      setProducts(productsData || []);
+    } catch (error: any) {
+      toast({
+        title: "Error loading data",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
+  };
 
   const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
       if (file.type !== "text/csv") {
-        toast.error("Please upload a CSV file");
+        toast({
+          title: "Invalid file type",
+          description: "Please upload a CSV file.",
+          variant: "destructive",
+        });
         return;
       }
-      setCsvFile(file);
-      toast.success(`Selected: ${file.name}`);
+      handleUploadCSV(file);
     }
   };
 
-  const handleUploadCSV = () => {
-    if (!csvFile) {
-      toast.error("Please select a CSV file first");
-      return;
-    }
-    // Simulate CSV processing
-    toast.info("CSV processing requires Supabase backend integration");
-  };
+  const handleUploadCSV = (file: File) => {
+    const reader = new FileReader();
+    reader.onload = async (e) => {
+      try {
+        const csv = e.target?.result as string;
+        const lines = csv.split('\n');
+        const headers = lines[0].split(',').map(h => h.trim());
+        
+        const emailIndex = headers.findIndex(h => h.toLowerCase().includes('email'));
+        const firstNameIndex = headers.findIndex(h => h.toLowerCase().includes('first'));
+        const lastNameIndex = headers.findIndex(h => h.toLowerCase().includes('last'));
+        
+        if (emailIndex === -1) {
+          toast({
+            title: "Invalid CSV",
+            description: "CSV must contain an email column.",
+            variant: "destructive",
+          });
+          return;
+        }
 
-  const handleCreateList = () => {
-    if (!newListName.trim()) {
-      toast.error("Please enter a list name");
-      return;
-    }
-    const newList = {
-      id: Date.now(),
-      name: newListName,
-      count: 0,
-      lastUpdated: new Date().toISOString().split('T')[0]
+        const newContacts = [];
+        for (let i = 1; i < lines.length; i++) {
+          const values = lines[i].split(',').map(v => v.trim());
+          if (values.length >= headers.length && values[emailIndex]) {
+            newContacts.push({
+              email: values[emailIndex],
+              first_name: firstNameIndex >= 0 ? values[firstNameIndex] : null,
+              last_name: lastNameIndex >= 0 ? values[lastNameIndex] : null,
+              status: 'subscribed',
+            });
+          }
+        }
+
+        if (newContacts.length > 0) {
+          const { data, error } = await supabase
+            .from('contacts')
+            .insert(newContacts)
+            .select();
+
+          if (error) throw error;
+
+          setContacts([...contacts, ...data]);
+          toast({
+            title: "CSV Import Successful",
+            description: `Imported ${data.length} contacts.`,
+          });
+        }
+      } catch (error: any) {
+        toast({
+          title: "Import failed",
+          description: error.message,
+          variant: "destructive",
+        });
+      }
     };
-    setLists([...lists, newList]);
-    setNewListName("");
-    toast.success("Email list created successfully!");
+    reader.readAsText(file);
   };
 
-  const handleDeleteList = (id: number) => {
-    setLists(lists.filter(list => list.id !== id));
-    setContacts(contacts.filter(contact => contact.listId !== id));
-    toast.success("Email list deleted");
-  };
+  const handleCreateList = async () => {
+    if (newListName.trim()) {
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) return;
 
-  const handleAddProduct = () => {
-    if (!newProduct.name || !newProduct.price) {
-      toast.error("Please fill in product name and price");
-      return;
+        const { data, error } = await supabase
+          .from('email_lists')
+          .insert([
+            {
+              user_id: user.id,
+              name: newListName.trim(),
+              description: newListDescription.trim() || null,
+            }
+          ])
+          .select()
+          .single();
+
+        if (error) throw error;
+
+        setLists([...lists, data]);
+        setNewListName("");
+        setNewListDescription("");
+        toast({
+          title: "List created",
+          description: `"${data.name}" has been created successfully.`,
+        });
+      } catch (error: any) {
+        toast({
+          title: "Error creating list",
+          description: error.message,
+          variant: "destructive",
+        });
+      }
     }
-    const product: Product = {
-      id: Date.now(),
-      name: newProduct.name,
-      price: newProduct.price,
-      category: newProduct.category || "General"
-    };
-    setProducts([...products, product]);
-    setNewProduct({ name: "", price: 0, category: "" });
-    setIsAddingProduct(false);
-    toast.success("Product added successfully!");
   };
 
-  const handleAddContact = () => {
-    if (!newContact.email || !newContact.name) {
-      toast.error("Please fill in email and name");
-      return;
+  const handleDeleteList = async (listId: string) => {
+    try {
+      const { error } = await supabase
+        .from('email_lists')
+        .delete()
+        .eq('id', listId);
+
+      if (error) throw error;
+
+      setLists(lists.filter(list => list.id !== listId));
+      
+      // Remove contact-list relationships
+      await supabase
+        .from('contact_lists')
+        .delete()
+        .eq('list_id', listId);
+
+      toast({
+        title: "List deleted",
+        description: "The list has been removed successfully.",
+      });
+    } catch (error: any) {
+      toast({
+        title: "Error deleting list",
+        description: error.message,
+        variant: "destructive",
+      });
     }
-    const selectedProductObjects = products.filter(p => newContact.selectedProducts.includes(p.id));
-    const contact: Contact = {
-      id: Date.now(),
-      email: newContact.email,
-      name: newContact.name,
-      tags: newContact.tags.split(",").map(tag => tag.trim()).filter(Boolean),
-      source: newContact.source || "manual",
-      lastContacted: "never",
-      purchasedProducts: selectedProductObjects,
-      dateAdded: new Date().toISOString().split('T')[0],
-      listId: newContact.listId
-    };
-    setContacts([...contacts, contact]);
-    setNewContact({ email: "", name: "", tags: "", source: "", listId: 1, selectedProducts: [] });
-    setIsAddingContact(false);
-    toast.success("Contact added successfully!");
+  };
+
+  const handleAddProduct = async () => {
+    if (newProduct.name.trim()) {
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) return;
+
+        const { data, error } = await supabase
+          .from('products')
+          .insert([
+            {
+              user_id: user.id,
+              name: newProduct.name.trim(),
+              price: newProduct.price || null,
+              category: newProduct.category.trim() || null,
+              description: newProduct.description.trim() || null,
+            }
+          ])
+          .select()
+          .single();
+
+        if (error) throw error;
+
+        setProducts([...products, data]);
+        setNewProduct({ name: "", price: 0, category: "", description: "" });
+        toast({
+          title: "Product added",
+          description: `"${data.name}" has been added to your catalog.`,
+        });
+      } catch (error: any) {
+        toast({
+          title: "Error adding product",
+          description: error.message,
+          variant: "destructive",
+        });
+      }
+    }
+  };
+
+  const handleAddContact = async () => {
+    if (newContact.email.trim()) {
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) return;
+
+        const { data, error } = await supabase
+          .from('contacts')
+          .insert([
+            {
+              user_id: user.id,
+              email: newContact.email.trim(),
+              first_name: newContact.firstName.trim() || null,
+              last_name: newContact.lastName.trim() || null,
+              tags: newContact.tags.split(',').map(tag => tag.trim()).filter(tag => tag.length > 0),
+              status: newContact.status,
+            }
+          ])
+          .select()
+          .single();
+
+        if (error) throw error;
+
+        setContacts([...contacts, data]);
+        setNewContact({ email: "", firstName: "", lastName: "", tags: "", status: "subscribed" });
+        setIsAddingContact(false);
+        toast({
+          title: "Contact added",
+          description: `"${data.email}" has been added to your contacts.`,
+        });
+      } catch (error: any) {
+        toast({
+          title: "Error adding contact",
+          description: error.message,
+          variant: "destructive",
+        });
+      }
+    }
   };
 
   const handleEditContact = (contact: Contact) => {
     setEditingContact(contact);
+    setNewContact({
+      email: contact.email,
+      firstName: contact.first_name || "",
+      lastName: contact.last_name || "",
+      tags: (contact.tags || []).join(", "),
+      status: contact.status,
+    });
   };
 
-  const handleUpdateContact = () => {
+  const handleUpdateContact = async () => {
     if (!editingContact) return;
-    setContacts(contacts.map(c => c.id === editingContact.id ? editingContact : c));
-    setEditingContact(null);
-    toast.success("Contact updated successfully!");
-  };
 
-  const handleDeleteContact = (id: number) => {
-    setContacts(contacts.filter(contact => contact.id !== id));
-    toast.success("Contact deleted");
-  };
+    try {
+      const { data, error } = await supabase
+        .from('contacts')
+        .update({
+          email: newContact.email.trim(),
+          first_name: newContact.firstName.trim() || null,
+          last_name: newContact.lastName.trim() || null,
+          tags: newContact.tags.split(',').map(tag => tag.trim()).filter(tag => tag.length > 0),
+          status: newContact.status,
+        })
+        .eq('id', editingContact.id)
+        .select()
+        .single();
 
-  const handleEditProduct = (product: Product) => {
-    setEditingProduct(product);
-  };
+      if (error) throw error;
 
-  const handleUpdateProduct = () => {
-    if (!editingProduct) return;
-    setProducts(products.map(p => p.id === editingProduct.id ? editingProduct : p));
-    setContacts(contacts.map(c => ({
-      ...c,
-      purchasedProducts: c.purchasedProducts.map(p => p.id === editingProduct.id ? editingProduct : p)
-    })));
-    setEditingProduct(null);
-    toast.success("Product updated successfully!");
-  };
-
-  const handleDeleteProduct = (id: number) => {
-    setProducts(products.filter(p => p.id !== id));
-    setContacts(contacts.map(c => ({
-      ...c,
-      purchasedProducts: c.purchasedProducts.filter(p => p.id !== id)
-    })));
-    toast.success("Product deleted");
-  };
-
-  const getUniqueContactsFromLists = () => {
-    if (selectedLists.length === 0) return [];
-    const contactsFromSelectedLists = contacts.filter(contact => 
-      selectedLists.includes(contact.listId)
-    );
-    // Remove duplicates by email
-    const uniqueContacts = contactsFromSelectedLists.reduce((acc, contact) => {
-      if (!acc.find(c => c.email === contact.email)) {
-        acc.push(contact);
-      }
-      return acc;
-    }, [] as Contact[]);
-    return uniqueContacts;
-  };
-
-  const filteredContacts = contacts.filter(contact => {
-    if (selectedLists.length > 0 && !selectedLists.includes(contact.listId)) return false;
-    if (filterTag !== "all" && !contact.tags.includes(filterTag)) return false;
-    if (filterProduct !== "all") {
-      if (filterProduct === "no_purchases" && contact.purchasedProducts.length > 0) return false;
-      if (filterProduct !== "no_purchases" && !contact.purchasedProducts.some(p => p.id.toString() === filterProduct)) return false;
+      setContacts(contacts.map(c => c.id === editingContact.id ? data : c));
+      setEditingContact(null);
+      setNewContact({ email: "", firstName: "", lastName: "", tags: "", status: "subscribed" });
+      toast({
+        title: "Contact updated",
+        description: "Contact has been updated successfully.",
+      });
+    } catch (error: any) {
+      toast({
+        title: "Error updating contact",
+        description: error.message,
+        variant: "destructive",
+      });
     }
-    if (searchQuery && !contact.email.toLowerCase().includes(searchQuery.toLowerCase()) && !contact.name.toLowerCase().includes(searchQuery.toLowerCase())) return false;
-    return true;
+  };
+
+  const handleDeleteContact = async (contactId: string) => {
+    try {
+      const { error } = await supabase
+        .from('contacts')
+        .delete()
+        .eq('id', contactId);
+
+      if (error) throw error;
+
+      setContacts(contacts.filter(c => c.id !== contactId));
+      toast({
+        title: "Contact deleted",
+        description: "Contact has been removed successfully.",
+      });
+    } catch (error: any) {
+      toast({
+        title: "Error deleting contact",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
+  };
+
+  // Filter contacts based on search and filters
+  const filteredContacts = contacts.filter(contact => {
+    const matchesSearch = !searchQuery || 
+      contact.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      contact.first_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      contact.last_name?.toLowerCase().includes(searchQuery.toLowerCase());
+    
+    const matchesTag = filterTag === "all" || 
+      (contact.tags && contact.tags.includes(filterTag));
+    
+    return matchesSearch && matchesTag;
   });
 
-  const allTags = Array.from(new Set(contacts.flatMap(contact => contact.tags)));
-  const allCategories = Array.from(new Set(products.map(product => product.category)));
-
-  const getListName = (listId: number) => {
-    return lists.find(list => list.id === listId)?.name || "Unknown List";
-  };
+  // Get unique tags for filter
+  const uniqueTags = Array.from(new Set(contacts.flatMap(c => c.tags || [])));
 
   return (
     <div className="space-y-6">
-      <Tabs defaultValue="contacts" className="w-full">
+      <Tabs defaultValue="contacts" className="space-y-4">
         <TabsList className="grid w-full grid-cols-3">
           <TabsTrigger value="contacts" className="flex items-center space-x-2">
-            <Mail className="h-4 w-4" />
-            <span>Contact Management</span>
+            <Users className="h-4 w-4" />
+            <span>Contacts</span>
           </TabsTrigger>
           <TabsTrigger value="products" className="flex items-center space-x-2">
-            <ShoppingCart className="h-4 w-4" />
-            <span>Product Management</span>
+            <Package className="h-4 w-4" />
+            <span>Products</span>
           </TabsTrigger>
           <TabsTrigger value="lists" className="flex items-center space-x-2">
-            <Users className="h-4 w-4" />
-            <span>List Management</span>
+            <List className="h-4 w-4" />
+            <span>Lists</span>
           </TabsTrigger>
         </TabsList>
 
-        <TabsContent value="contacts" className="space-y-6">
-          {/* Filters and Search */}
-          <Card className="shadow-soft border-email-primary/20">
+        <TabsContent value="contacts" className="space-y-4">
+          <Card>
             <CardHeader>
-              <CardTitle className="flex items-center space-x-2">
-                <Filter className="h-5 w-5 text-email-primary" />
-                <span>Filter Contacts</span>
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+              <div className="flex justify-between items-center">
                 <div>
-                  <Label htmlFor="search">Search</Label>
-                  <Input
-                    id="search"
-                    placeholder="Search by email or name..."
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    className="border-email-primary/30 focus:border-email-primary"
+                  <CardTitle>Contact Management</CardTitle>
+                  <p className="text-sm text-muted-foreground">
+                    {contacts.length} total contacts
+                  </p>
+                </div>
+                <div className="flex space-x-2">
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept=".csv"
+                    onChange={handleFileUpload}
+                    className="hidden"
                   />
-                </div>
-                <div>
-                  <Label htmlFor="listFilter">Lists (Multiple Selection)</Label>
-                  <div className="space-y-2">
-                    {lists.map((list) => (
-                      <label key={list.id} className="flex items-center space-x-2">
-                        <input
-                          type="checkbox"
-                          checked={selectedLists.includes(list.id)}
-                          onChange={(e) => {
-                            if (e.target.checked) {
-                              setSelectedLists([...selectedLists, list.id]);
-                            } else {
-                              setSelectedLists(selectedLists.filter(id => id !== list.id));
-                            }
-                          }}
-                          className="rounded border-email-primary/30"
-                        />
-                        <span className="text-sm">{list.name}</span>
-                      </label>
-                    ))}
-                  </div>
-                </div>
-                <div>
-                  <Label htmlFor="tagFilter">Tag</Label>
-                  <Select value={filterTag} onValueChange={setFilterTag}>
-                    <SelectTrigger className="border-email-primary/30 focus:border-email-primary">
-                      <SelectValue placeholder="All Tags" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">All Tags</SelectItem>
-                      {allTags.map((tag) => (
-                        <SelectItem key={tag} value={tag}>{tag}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div>
-                  <Label htmlFor="purchaseFilter">Product Filter</Label>
-                  <Select value={filterProduct} onValueChange={setFilterProduct}>
-                    <SelectTrigger className="border-email-primary/30 focus:border-email-primary">
-                      <SelectValue placeholder="All Products" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">All Contacts</SelectItem>
-                      <SelectItem value="no_purchases">No Purchases</SelectItem>
-                      {products.map((product) => (
-                        <SelectItem key={product.id} value={product.id.toString()}>
-                          Purchased: {product.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <Button
+                    variant="outline"
+                    onClick={() => fileInputRef.current?.click()}
+                  >
+                    <Upload className="h-4 w-4 mr-2" />
+                    Import CSV
+                  </Button>
+                  <Dialog open={isAddingContact} onOpenChange={setIsAddingContact}>
+                    <DialogTrigger asChild>
+                      <Button>
+                        <Plus className="h-4 w-4 mr-2" />
+                        Add Contact
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent>
+                      <DialogHeader>
+                        <DialogTitle>Add New Contact</DialogTitle>
+                      </DialogHeader>
+                      <div className="space-y-4">
+                        <div>
+                          <Label htmlFor="email">Email</Label>
+                          <Input
+                            id="email"
+                            type="email"
+                            value={newContact.email}
+                            onChange={(e) => setNewContact({...newContact, email: e.target.value})}
+                            placeholder="contact@example.com"
+                          />
+                        </div>
+                        <div className="grid grid-cols-2 gap-4">
+                          <div>
+                            <Label htmlFor="firstName">First Name</Label>
+                            <Input
+                              id="firstName"
+                              value={newContact.firstName}
+                              onChange={(e) => setNewContact({...newContact, firstName: e.target.value})}
+                              placeholder="John"
+                            />
+                          </div>
+                          <div>
+                            <Label htmlFor="lastName">Last Name</Label>
+                            <Input
+                              id="lastName"
+                              value={newContact.lastName}
+                              onChange={(e) => setNewContact({...newContact, lastName: e.target.value})}
+                              placeholder="Doe"
+                            />
+                          </div>
+                        </div>
+                        <div>
+                          <Label htmlFor="tags">Tags (comma-separated)</Label>
+                          <Input
+                            id="tags"
+                            value={newContact.tags}
+                            onChange={(e) => setNewContact({...newContact, tags: e.target.value})}
+                            placeholder="customer, premium, newsletter"
+                          />
+                        </div>
+                        <div>
+                          <Label htmlFor="status">Status</Label>
+                          <Select value={newContact.status} onValueChange={(value) => setNewContact({...newContact, status: value})}>
+                            <SelectTrigger>
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="subscribed">Subscribed</SelectItem>
+                              <SelectItem value="unsubscribed">Unsubscribed</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      </div>
+                      <DialogFooter>
+                        <Button variant="outline" onClick={() => setIsAddingContact(false)}>
+                          Cancel
+                        </Button>
+                        <Button onClick={handleAddContact}>
+                          Add Contact
+                        </Button>
+                      </DialogFooter>
+                    </DialogContent>
+                  </Dialog>
                 </div>
               </div>
-            </CardContent>
-          </Card>
-
-          {/* Contacts Table */}
-          <Card className="shadow-soft border-email-accent/20">
-            <CardHeader>
-              <CardTitle className="flex items-center justify-between">
-                <div className="flex items-center space-x-2">
-                  <Users className="h-5 w-5 text-email-accent" />
-                  <span>Contacts ({filteredContacts.length})</span>
-                </div>
-                <Button 
-                  size="sm"
-                  onClick={() => setIsAddingContact(true)}
-                  className="bg-email-primary hover:bg-email-primary/80 text-primary-foreground"
-                >
-                  <Plus className="h-4 w-4 mr-2" />
-                  Add Contact
-                </Button>
-              </CardTitle>
             </CardHeader>
             <CardContent>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Contact</TableHead>
-                    <TableHead>List</TableHead>
-                    <TableHead>Tags</TableHead>
-                    <TableHead>Source</TableHead>
-                    <TableHead>Last Contacted</TableHead>
-                    <TableHead>Purchased Products</TableHead>
-                    <TableHead>Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filteredContacts.map((contact) => (
-                    <>
+              <div className="flex space-x-4 mb-4">
+                <div className="flex-1">
+                  <Input
+                    placeholder="Search contacts..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="max-w-sm"
+                  />
+                </div>
+                <Select value={filterTag} onValueChange={setFilterTag}>
+                  <SelectTrigger className="w-48">
+                    <SelectValue placeholder="Filter by tag" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Tags</SelectItem>
+                    {uniqueTags.map(tag => (
+                      <SelectItem key={tag} value={tag}>{tag}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="border rounded-lg">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Contact</TableHead>
+                      <TableHead>Tags</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead>Created</TableHead>
+                      <TableHead>Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {filteredContacts.map(contact => (
                       <TableRow key={contact.id}>
                         <TableCell>
                           <div>
-                            <div className="font-medium">{contact.name}</div>
-                            <div className="text-sm text-muted-foreground">{contact.email}</div>
+                            <div className="font-medium">{contact.email}</div>
+                            <div className="text-sm text-muted-foreground">
+                              {contact.first_name} {contact.last_name}
+                            </div>
                           </div>
                         </TableCell>
                         <TableCell>
-                          <Badge variant="outline" className="border-email-accent text-email-accent">
-                            {getListName(contact.listId)}
-                          </Badge>
-                        </TableCell>
-                        <TableCell>
                           <div className="flex flex-wrap gap-1">
-                            {contact.tags.map((tag) => (
-                              <Badge key={tag} variant="secondary" className="text-xs">
+                            {(contact.tags || []).map((tag: string, index: number) => (
+                              <Badge key={index} variant="secondary" className="text-xs">
                                 {tag}
                               </Badge>
                             ))}
                           </div>
                         </TableCell>
                         <TableCell>
-                          <span className="text-sm">{contact.source}</span>
+                          <Badge variant={contact.status === 'subscribed' ? 'default' : 'secondary'}>
+                            {contact.status}
+                          </Badge>
                         </TableCell>
                         <TableCell>
-                          <div className="flex items-center space-x-1">
-                            <Calendar className="h-3 w-3 text-muted-foreground" />
-                            <span className="text-sm">{contact.lastContacted}</span>
-                          </div>
+                          {new Date(contact.created_at).toLocaleDateString()}
                         </TableCell>
                         <TableCell>
-                          <div className="flex flex-wrap gap-1">
-                            {contact.purchasedProducts.length > 0 ? (
-                              contact.purchasedProducts.map((product) => (
-                                <Badge key={product.id} variant="default" className="text-xs bg-email-success/20 text-email-success">
-                                  {product.name} - ${product.price}
-                                </Badge>
-                              ))
-                            ) : (
-                              <Badge variant="outline" className="text-xs">
-                                No purchases
-                              </Badge>
-                            )}
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex items-center space-x-1">
-                            <Button variant="ghost" size="sm" onClick={() => handleEditContact(contact)}>
-                              <Pencil className="h-3 w-3" />
+                          <div className="flex space-x-2">
+                            <Button variant="outline" size="sm" onClick={() => handleEditContact(contact)}>
+                              <Edit className="h-4 w-4" />
                             </Button>
-                            <Button variant="ghost" size="sm" onClick={() => handleDeleteContact(contact.id)}>
-                              <Trash2 className="h-3 w-3" />
+                            <Button variant="outline" size="sm" onClick={() => handleDeleteContact(contact.id)}>
+                              <Trash2 className="h-4 w-4" />
                             </Button>
                           </div>
                         </TableCell>
                       </TableRow>
-                      {editingContact && editingContact.id === contact.id && (
-                        <TableRow>
-                          <TableCell colSpan={7} className="bg-muted/50">
-                            <div className="animate-fade-in">
-                              <Card className="shadow-soft border-email-primary/20">
-                                <CardHeader>
-                                  <CardTitle>Edit Contact</CardTitle>
-                                </CardHeader>
-                                <CardContent>
-                                  <div className="grid grid-cols-2 gap-4">
-                                    <div>
-                                      <Label htmlFor="editEmail">Email</Label>
-                                      <Input
-                                        id="editEmail"
-                                        value={editingContact.email}
-                                        onChange={(e) => setEditingContact({...editingContact, email: e.target.value})}
-                                      />
-                                    </div>
-                                    <div>
-                                      <Label htmlFor="editName">Name</Label>
-                                      <Input
-                                        id="editName"
-                                        value={editingContact.name}
-                                        onChange={(e) => setEditingContact({...editingContact, name: e.target.value})}
-                                      />
-                                    </div>
-                                    <div>
-                                      <Label htmlFor="editTags">Tags (comma-separated)</Label>
-                                      <Input
-                                        id="editTags"
-                                        value={editingContact.tags.join(", ")}
-                                        onChange={(e) => setEditingContact({...editingContact, tags: e.target.value.split(",").map(tag => tag.trim())})}
-                                      />
-                                    </div>
-                                    <div>
-                                      <Label htmlFor="editSource">Source</Label>
-                                      <Input
-                                        id="editSource"
-                                        value={editingContact.source}
-                                        onChange={(e) => setEditingContact({...editingContact, source: e.target.value})}
-                                      />
-                                    </div>
-                                  </div>
-                                  <div className="mt-4">
-                                    <Label>Purchased Products</Label>
-                                    <div className="space-y-2 max-h-32 overflow-y-auto border rounded-md p-2">
-                                      {products.map((product) => (
-                                        <label key={product.id} className="flex items-center space-x-2">
-                                          <input
-                                            type="checkbox"
-                                            checked={editingContact.purchasedProducts.some(p => p.id === product.id)}
-                                            onChange={(e) => {
-                                              if (e.target.checked) {
-                                                setEditingContact({
-                                                  ...editingContact, 
-                                                  purchasedProducts: [...editingContact.purchasedProducts, product]
-                                                });
-                                              } else {
-                                                setEditingContact({
-                                                  ...editingContact, 
-                                                  purchasedProducts: editingContact.purchasedProducts.filter(p => p.id !== product.id)
-                                                });
-                                              }
-                                            }}
-                                            className="rounded"
-                                          />
-                                          <span className="text-sm">{product.name} - ${product.price}</span>
-                                        </label>
-                                      ))}
-                                    </div>
-                                  </div>
-                                  <div className="flex gap-2 mt-4">
-                                    <Button onClick={handleUpdateContact}>Update Contact</Button>
-                                    <Button variant="outline" onClick={() => setEditingContact(null)}>Cancel</Button>
-                                  </div>
-                                </CardContent>
-                              </Card>
-                            </div>
-                          </TableCell>
-                        </TableRow>
-                      )}
-                    </>
-                  ))}
-                </TableBody>
-              </Table>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
             </CardContent>
           </Card>
-
-          {/* Add Contact Dialog */}
-          {isAddingContact && (
-            <Card className="shadow-soft border-email-primary/20">
-              <CardHeader>
-                <CardTitle>Add New Contact</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <Label htmlFor="newEmail">Email</Label>
-                    <Input
-                      id="newEmail"
-                      value={newContact.email}
-                      onChange={(e) => setNewContact({...newContact, email: e.target.value})}
-                      placeholder="contact@example.com"
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="newName">Name</Label>
-                    <Input
-                      id="newName"
-                      value={newContact.name}
-                      onChange={(e) => setNewContact({...newContact, name: e.target.value})}
-                      placeholder="John Doe"
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="newTags">Tags (comma-separated)</Label>
-                    <Input
-                      id="newTags"
-                      value={newContact.tags}
-                      onChange={(e) => setNewContact({...newContact, tags: e.target.value})}
-                      placeholder="customer, premium"
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="newSource">Source</Label>
-                    <Input
-                      id="newSource"
-                      value={newContact.source}
-                      onChange={(e) => setNewContact({...newContact, source: e.target.value})}
-                      placeholder="website, social media"
-                    />
-                  </div>
-                    <div>
-                      <Label htmlFor="newListId">List</Label>
-                      <select
-                        className="w-full px-3 py-2 border rounded-md"
-                        value={newContact.listId}
-                        onChange={(e) => setNewContact({...newContact, listId: parseInt(e.target.value)})}
-                      >
-                        {lists.map((list) => (
-                          <option key={list.id} value={list.id}>{list.name}</option>
-                        ))}
-                      </select>
-                    </div>
-                  </div>
-                  <div>
-                    <Label>Purchased Products (optional)</Label>
-                    <div className="space-y-2 max-h-32 overflow-y-auto border rounded-md p-2">
-                      {products.map((product) => (
-                        <label key={product.id} className="flex items-center space-x-2">
-                          <input
-                            type="checkbox"
-                            checked={newContact.selectedProducts.includes(product.id)}
-                            onChange={(e) => {
-                              if (e.target.checked) {
-                                setNewContact({...newContact, selectedProducts: [...newContact.selectedProducts, product.id]});
-                              } else {
-                                setNewContact({...newContact, selectedProducts: newContact.selectedProducts.filter(id => id !== product.id)});
-                              }
-                            }}
-                            className="rounded"
-                          />
-                          <span className="text-sm">{product.name} - ${product.price}</span>
-                        </label>
-                      ))}
-                    </div>
-                  </div>
-                  <div className="flex gap-2 mt-4">
-                    <Button onClick={handleAddContact}>Add Contact</Button>
-                    <Button variant="outline" onClick={() => setIsAddingContact(false)}>Cancel</Button>
-                  </div>
-                </CardContent>
-              </Card>
-            )}
-
         </TabsContent>
 
-        {/* Product Management Tab */}
-        <TabsContent value="products" className="space-y-6">
-          <Card className="shadow-soft border-email-secondary/20">
+        <TabsContent value="products" className="space-y-4">
+          <Card>
             <CardHeader>
-              <CardTitle className="flex items-center justify-between">
-                <div className="flex items-center space-x-2">
-                  <ShoppingCart className="h-5 w-5 text-email-secondary" />
-                  <span>Products ({products.length})</span>
+              <div className="flex justify-between items-center">
+                <div>
+                  <CardTitle>Product Catalog</CardTitle>
+                  <p className="text-sm text-muted-foreground">
+                    {products.length} products in catalog
+                  </p>
                 </div>
-                <Button 
-                  size="sm"
-                  onClick={() => setIsAddingProduct(true)}
-                  className="bg-email-secondary hover:bg-email-secondary/80 text-foreground"
-                >
-                  <Plus className="h-4 w-4 mr-2" />
-                  Add Product
-                </Button>
-              </CardTitle>
+                <Dialog open={isAddingProduct} onOpenChange={setIsAddingProduct}>
+                  <DialogTrigger asChild>
+                    <Button>
+                      <Plus className="h-4 w-4 mr-2" />
+                      Add Product
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent>
+                    <DialogHeader>
+                      <DialogTitle>Add New Product</DialogTitle>
+                    </DialogHeader>
+                    <div className="space-y-4">
+                      <div>
+                        <Label htmlFor="productName">Product Name</Label>
+                        <Input
+                          id="productName"
+                          value={newProduct.name}
+                          onChange={(e) => setNewProduct({...newProduct, name: e.target.value})}
+                          placeholder="Premium Course"
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="price">Price</Label>
+                        <Input
+                          id="price"
+                          type="number"
+                          value={newProduct.price}
+                          onChange={(e) => setNewProduct({...newProduct, price: parseFloat(e.target.value) || 0})}
+                          placeholder="299"
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="category">Category</Label>
+                        <Input
+                          id="category"
+                          value={newProduct.category}
+                          onChange={(e) => setNewProduct({...newProduct, category: e.target.value})}
+                          placeholder="Education"
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="description">Description</Label>
+                        <Textarea
+                          id="description"
+                          value={newProduct.description}
+                          onChange={(e) => setNewProduct({...newProduct, description: e.target.value})}
+                          placeholder="Product description..."
+                        />
+                      </div>
+                    </div>
+                    <DialogFooter>
+                      <Button variant="outline" onClick={() => setIsAddingProduct(false)}>
+                        Cancel
+                      </Button>
+                      <Button onClick={handleAddProduct}>
+                        Add Product
+                      </Button>
+                    </DialogFooter>
+                  </DialogContent>
+                </Dialog>
+              </div>
             </CardHeader>
             <CardContent>
-              <div className="grid gap-4">
-                {products.map((product) => (
-                  <div key={product.id}>
-                    <Card className="border-email-accent/20">
-                      <CardContent className="p-4">
-                        <div className="flex items-center justify-between">
-                          <div>
-                            <h4 className="font-medium">{product.name}</h4>
-                            <div className="flex items-center space-x-4 text-sm text-muted-foreground">
-                              <span>${product.price}</span>
-                              <Badge variant="outline" className="border-email-accent text-email-accent">
-                                {product.category}
-                              </Badge>
-                            </div>
+              <div className="border rounded-lg">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Name</TableHead>
+                      <TableHead>Category</TableHead>
+                      <TableHead>Price</TableHead>
+                      <TableHead>Description</TableHead>
+                      <TableHead>Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {products.map(product => (
+                      <TableRow key={product.id}>
+                        <TableCell className="font-medium">{product.name}</TableCell>
+                        <TableCell>{product.category}</TableCell>
+                        <TableCell>${product.price}</TableCell>
+                        <TableCell className="text-muted-foreground">{product.description}</TableCell>
+                        <TableCell>
+                          <div className="flex space-x-2">
+                            <Button variant="outline" size="sm">
+                              <Edit className="h-4 w-4" />
+                            </Button>
+                            <Button variant="outline" size="sm">
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
                           </div>
-                          <div className="flex items-center gap-2">
-                            <span className="text-sm text-muted-foreground">
-                              {contacts.filter(c => c.purchasedProducts.some(p => p.id === product.id)).length} customers
-                            </span>
-                            <Button 
-                              variant="outline" 
-                              size="sm"
-                              onClick={() => handleEditProduct(product)}
-                              className="border-email-secondary hover:bg-email-secondary/10"
-                            >
-                              <Pencil className="h-4 w-4" />
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="lists" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <div className="flex justify-between items-center">
+                <div>
+                  <CardTitle>Email Lists</CardTitle>
+                  <p className="text-sm text-muted-foreground">
+                    {lists.length} email lists
+                  </p>
+                </div>
+                <div className="flex space-x-2">
+                  <Input
+                    placeholder="List name"
+                    value={newListName}
+                    onChange={(e) => setNewListName(e.target.value)}
+                    className="w-48"
+                  />
+                  <Input
+                    placeholder="Description (optional)"
+                    value={newListDescription}
+                    onChange={(e) => setNewListDescription(e.target.value)}
+                    className="w-48"
+                  />
+                  <Button onClick={handleCreateList}>
+                    <Plus className="h-4 w-4 mr-2" />
+                    Create List
+                  </Button>
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <div className="border rounded-lg">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Name</TableHead>
+                      <TableHead>Contacts</TableHead>
+                      <TableHead>Description</TableHead>
+                      <TableHead>Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {lists.map(list => (
+                      <TableRow key={list.id}>
+                        <TableCell className="font-medium">{list.name}</TableCell>
+                        <TableCell>0</TableCell>
+                        <TableCell className="text-muted-foreground">{list.description}</TableCell>
+                        <TableCell>
+                          <div className="flex space-x-2">
+                            <Button variant="outline" size="sm">
+                              <Edit className="h-4 w-4" />
                             </Button>
                             <Button 
                               variant="outline" 
                               size="sm"
-                              onClick={() => handleDeleteProduct(product.id)}
-                              className="border-destructive hover:bg-destructive hover:text-destructive-foreground"
+                              onClick={() => handleDeleteList(list.id)}
                             >
                               <Trash2 className="h-4 w-4" />
                             </Button>
                           </div>
-                        </div>
-                      </CardContent>
-                    </Card>
-                    {editingProduct && editingProduct.id === product.id && (
-                      <div className="mt-2 animate-fade-in">
-                        <Card className="shadow-soft border-email-secondary/20">
-                          <CardHeader>
-                            <CardTitle>Edit Product</CardTitle>
-                          </CardHeader>
-                          <CardContent>
-                            <div className="grid grid-cols-3 gap-4">
-                              <div>
-                                <Label htmlFor="editProductName">Product Name</Label>
-                                <Input
-                                  id="editProductName"
-                                  value={editingProduct.name}
-                                  onChange={(e) => setEditingProduct({ ...editingProduct, name: e.target.value })}
-                                  placeholder="Product name"
-                                />
-                              </div>
-                              <div>
-                                <Label htmlFor="editProductPrice">Price ($)</Label>
-                                <Input
-                                  id="editProductPrice"
-                                  type="number"
-                                  value={editingProduct.price}
-                                  onChange={(e) => setEditingProduct({ ...editingProduct, price: parseFloat(e.target.value) || 0 })}
-                                  placeholder="0"
-                                />
-                              </div>
-                              <div>
-                                <Label htmlFor="editProductCategory">Category</Label>
-                                <Input
-                                  id="editProductCategory"
-                                  value={editingProduct.category}
-                                  onChange={(e) => setEditingProduct({ ...editingProduct, category: e.target.value })}
-                                  placeholder="Category"
-                                />
-                              </div>
-                            </div>
-                            <div className="flex gap-2 mt-4">
-                              <Button onClick={handleUpdateProduct}>Update Product</Button>
-                              <Button variant="outline" onClick={() => setEditingProduct(null)}>Cancel</Button>
-                            </div>
-                          </CardContent>
-                        </Card>
-                      </div>
-                    )}
-                  </div>
-                ))}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
               </div>
             </CardContent>
           </Card>
-
-          {/* Add Product Form */}
-          {isAddingProduct && (
-            <Card className="shadow-soft border-email-secondary/20">
-              <CardHeader>
-                <CardTitle>Add New Product</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-3 gap-4">
-                  <div>
-                    <Label htmlFor="productName">Product Name</Label>
-                    <Input
-                      id="productName"
-                      value={newProduct.name}
-                      onChange={(e) => setNewProduct({...newProduct, name: e.target.value})}
-                      placeholder="Premium Course"
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="productPrice">Price ($)</Label>
-                    <Input
-                      id="productPrice"
-                      type="number"
-                      value={newProduct.price}
-                      onChange={(e) => setNewProduct({...newProduct, price: parseFloat(e.target.value)})}
-                      placeholder="299"
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="productCategory">Category</Label>
-                    <Input
-                      id="productCategory"
-                      value={newProduct.category}
-                      onChange={(e) => setNewProduct({...newProduct, category: e.target.value})}
-                      placeholder="Education"
-                    />
-                  </div>
-                </div>
-                <div className="flex gap-2 mt-4">
-                  <Button onClick={handleAddProduct}>Add Product</Button>
-                  <Button variant="outline" onClick={() => setIsAddingProduct(false)}>Cancel</Button>
-                </div>
-              </CardContent>
-            </Card>
-          )}
-        </TabsContent>
-
-        <TabsContent value="lists" className="space-y-6">
-          {/* Create New List */}
-          <Card className="shadow-soft border-email-primary/20">
-            <CardHeader>
-              <CardTitle className="flex items-center space-x-2">
-                <Plus className="h-5 w-5 text-email-primary" />
-                <span>Create New List</span>
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="flex gap-4">
-                <div className="flex-1">
-                  <Label htmlFor="listName">List Name</Label>
-                  <Input
-                    id="listName"
-                    placeholder="Enter list name..."
-                    value={newListName}
-                    onChange={(e) => setNewListName(e.target.value)}
-                    className="border-email-primary/30 focus:border-email-primary"
-                  />
-                </div>
-                <div className="flex items-end">
-                  <Button 
-                    onClick={handleCreateList}
-                    className="bg-email-primary hover:bg-email-primary/80 text-primary-foreground"
-                  >
-                    <Plus className="h-4 w-4 mr-2" />
-                    Create
-                  </Button>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* CSV Upload */}
-          <Card className="shadow-soft border-email-secondary/20">
-            <CardHeader>
-              <CardTitle className="flex items-center space-x-2">
-                <Upload className="h-5 w-5 text-email-secondary" />
-                <span>Import from CSV</span>
-              </CardTitle>
-              <CardDescription>
-                Upload a CSV file with columns: email, name, tags (comma-separated), source, purchase_status
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                <div>
-                  <Label htmlFor="csvFile">Select CSV File</Label>
-                  <Input
-                    id="csvFile"
-                    type="file"
-                    accept=".csv"
-                    onChange={handleFileUpload}
-                    className="border-email-secondary/30 focus:border-email-secondary"
-                  />
-                </div>
-                {csvFile && (
-                  <div className="flex items-center justify-between p-3 bg-email-secondary/10 rounded-lg">
-                    <div className="flex items-center space-x-2">
-                      <FileText className="h-4 w-4 text-email-secondary" />
-                      <span className="text-sm">{csvFile.name}</span>
-                      <Badge variant="outline" className="border-email-secondary text-email-secondary">
-                        {(csvFile.size / 1024).toFixed(1)} KB
-                      </Badge>
-                    </div>
-                    <Button 
-                      onClick={handleUploadCSV}
-                      size="sm"
-                      className="bg-email-secondary hover:bg-email-secondary/80 text-foreground"
-                    >
-                      <Upload className="h-4 w-4 mr-2" />
-                      Upload
-                    </Button>
-                  </div>
-                )}
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Email Lists */}
-          <div className="grid gap-4">
-            <h3 className="text-lg font-semibold flex items-center space-x-2">
-              <Users className="h-5 w-5 text-email-accent" />
-              <span>Your Email Lists</span>
-            </h3>
-            
-            {lists.map((list) => {
-              const listContactCount = contacts.filter(contact => contact.listId === list.id).length;
-              return (
-                <Card key={list.id} className="shadow-soft border-email-accent/20 hover:shadow-glow transition-shadow">
-                  <CardContent className="p-4">
-                    <div className="flex items-center justify-between">
-                      <div className="space-y-1">
-                        <h4 className="font-medium">{list.name}</h4>
-                        <div className="flex items-center space-x-4 text-sm text-muted-foreground">
-                          <span className="flex items-center space-x-1">
-                            <Users className="h-4 w-4" />
-                            <span>{listContactCount} contacts</span>
-                          </span>
-                          <span>Updated {list.lastUpdated}</span>
-                        </div>
-                      </div>
-                      <div className="flex items-center space-x-2">
-                        <Badge variant="outline" className="border-email-accent text-email-accent">
-                          Active
-                        </Badge>
-                        <Button 
-                          variant="outline" 
-                          size="sm"
-                          onClick={() => setSelectedLists([list.id])}
-                          className="border-email-primary hover:bg-email-primary hover:text-primary-foreground"
-                        >
-                          <Eye className="h-4 w-4 mr-2" />
-                          View Contacts
-                        </Button>
-                        <Button 
-                          variant="outline" 
-                          size="sm"
-                          className="border-email-secondary hover:bg-email-secondary"
-                        >
-                          <Download className="h-4 w-4 mr-2" />
-                          Export
-                        </Button>
-                        <Button 
-                          variant="outline" 
-                          size="sm"
-                          onClick={() => handleDeleteList(list.id)}
-                          className="border-destructive hover:bg-destructive hover:text-destructive-foreground"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              );
-            })}
-          </div>
         </TabsContent>
       </Tabs>
+
+      {/* Edit Contact Dialog */}
+      <Dialog open={editingContact !== null} onOpenChange={(open) => !open && setEditingContact(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Edit Contact</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label htmlFor="editEmail">Email</Label>
+              <Input
+                id="editEmail"
+                type="email"
+                value={newContact.email}
+                onChange={(e) => setNewContact({...newContact, email: e.target.value})}
+                placeholder="contact@example.com"
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="editFirstName">First Name</Label>
+                <Input
+                  id="editFirstName"
+                  value={newContact.firstName}
+                  onChange={(e) => setNewContact({...newContact, firstName: e.target.value})}
+                  placeholder="John"
+                />
+              </div>
+              <div>
+                <Label htmlFor="editLastName">Last Name</Label>
+                <Input
+                  id="editLastName"
+                  value={newContact.lastName}
+                  onChange={(e) => setNewContact({...newContact, lastName: e.target.value})}
+                  placeholder="Doe"
+                />
+              </div>
+            </div>
+            <div>
+              <Label htmlFor="editTags">Tags (comma-separated)</Label>
+              <Input
+                id="editTags"
+                value={newContact.tags}
+                onChange={(e) => setNewContact({...newContact, tags: e.target.value})}
+                placeholder="customer, premium, newsletter"
+              />
+            </div>
+            <div>
+              <Label htmlFor="editStatus">Status</Label>
+              <Select value={newContact.status} onValueChange={(value) => setNewContact({...newContact, status: value})}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="subscribed">Subscribed</SelectItem>
+                  <SelectItem value="unsubscribed">Unsubscribed</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditingContact(null)}>
+              Cancel
+            </Button>
+            <Button onClick={handleUpdateContact}>
+              Update Contact
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
