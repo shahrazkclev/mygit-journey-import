@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Upload, Download, Users, Trash2, Plus, FileText, Filter, Eye, Tag, Calendar, ShoppingCart, Mail } from "lucide-react";
+import { Upload, Download, Users, Trash2, Plus, FileText, Filter, Eye, Tag, Calendar, ShoppingCart, Mail, Pencil } from "lucide-react";
 import { toast } from "sonner";
 
 type Product = {
@@ -58,6 +58,7 @@ export const EmailListManager = () => {
   const [isAddingContact, setIsAddingContact] = useState(false);
   const [editingContact, setEditingContact] = useState<Contact | null>(null);
   const [isAddingProduct, setIsAddingProduct] = useState(false);
+  const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [newProduct, setNewProduct] = useState({
     name: "",
     price: 0,
@@ -169,6 +170,30 @@ export const EmailListManager = () => {
   const handleDeleteContact = (id: number) => {
     setContacts(contacts.filter(contact => contact.id !== id));
     toast.success("Contact deleted");
+  };
+
+  const handleEditProduct = (product: Product) => {
+    setEditingProduct(product);
+  };
+
+  const handleUpdateProduct = () => {
+    if (!editingProduct) return;
+    setProducts(products.map(p => p.id === editingProduct.id ? editingProduct : p));
+    setContacts(contacts.map(c => ({
+      ...c,
+      purchasedProducts: c.purchasedProducts.map(p => p.id === editingProduct.id ? editingProduct : p)
+    })));
+    setEditingProduct(null);
+    toast.success("Product updated successfully!");
+  };
+
+  const handleDeleteProduct = (id: number) => {
+    setProducts(products.filter(p => p.id !== id));
+    setContacts(contacts.map(c => ({
+      ...c,
+      purchasedProducts: c.purchasedProducts.filter(p => p.id !== id)
+    })));
+    toast.success("Product deleted");
   };
 
   const getUniqueContactsFromLists = () => {
@@ -594,8 +619,26 @@ export const EmailListManager = () => {
                             </Badge>
                           </div>
                         </div>
-                        <div className="text-sm text-muted-foreground">
-                          {contacts.filter(c => c.purchasedProducts.some(p => p.id === product.id)).length} customers
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm text-muted-foreground">
+                            {contacts.filter(c => c.purchasedProducts.some(p => p.id === product.id)).length} customers
+                          </span>
+                          <Button 
+                            variant="outline" 
+                            size="sm"
+                            onClick={() => handleEditProduct(product)}
+                            className="border-email-secondary hover:bg-email-secondary/10"
+                          >
+                            <Pencil className="h-4 w-4" />
+                          </Button>
+                          <Button 
+                            variant="outline" 
+                            size="sm"
+                            onClick={() => handleDeleteProduct(product.id)}
+                            className="border-destructive hover:bg-destructive hover:text-destructive-foreground"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
                         </div>
                       </div>
                     </CardContent>
@@ -645,6 +688,49 @@ export const EmailListManager = () => {
                 <div className="flex gap-2 mt-4">
                   <Button onClick={handleAddProduct}>Add Product</Button>
                   <Button variant="outline" onClick={() => setIsAddingProduct(false)}>Cancel</Button>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+          {editingProduct && (
+            <Card className="shadow-soft border-email-secondary/20">
+              <CardHeader>
+                <CardTitle>Edit Product</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-3 gap-4">
+                  <div>
+                    <Label htmlFor="editProductName">Product Name</Label>
+                    <Input
+                      id="editProductName"
+                      value={editingProduct.name}
+                      onChange={(e) => setEditingProduct({ ...editingProduct, name: e.target.value })}
+                      placeholder="Product name"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="editProductPrice">Price ($)</Label>
+                    <Input
+                      id="editProductPrice"
+                      type="number"
+                      value={editingProduct.price}
+                      onChange={(e) => setEditingProduct({ ...editingProduct, price: parseFloat(e.target.value) || 0 })}
+                      placeholder="0"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="editProductCategory">Category</Label>
+                    <Input
+                      id="editProductCategory"
+                      value={editingProduct.category}
+                      onChange={(e) => setEditingProduct({ ...editingProduct, category: e.target.value })}
+                      placeholder="Category"
+                    />
+                  </div>
+                </div>
+                <div className="flex gap-2 mt-4">
+                  <Button onClick={handleUpdateProduct}>Update Product</Button>
+                  <Button variant="outline" onClick={() => setEditingProduct(null)}>Cancel</Button>
                 </div>
               </CardContent>
             </Card>
