@@ -217,6 +217,7 @@ export const CampaignComposer = () => {
         body: {
           prompt: prompt,
           subject: subject,
+          regenId: Date.now(),
           styleGuide: styleGuide ? {
             brandName: styleGuide.brand_name,
             primaryColor: themeColors.primary,

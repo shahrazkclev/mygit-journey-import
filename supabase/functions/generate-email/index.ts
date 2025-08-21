@@ -16,7 +16,12 @@ serve(async (req) => {
 
   // Parse request body once and reuse
   const requestData = await req.json();
-  const { prompt, subject, styleGuide } = requestData;
+  const { prompt, subject, styleGuide, regenId } = requestData as { prompt: string; subject: string; styleGuide?: any; regenId?: number };
+
+  // Choose a design variant to force fresh layouts on each regeneration
+  const designVariants = ['hero-gradient', 'card-grid', 'split-feature', 'spotlight'] as const;
+  const variantIndex = typeof regenId === 'number' ? Math.abs(regenId) % designVariants.length : Math.floor(Math.random() * designVariants.length);
+  const chosenVariant = designVariants[variantIndex];
 
   try {
 
@@ -57,13 +62,16 @@ Return ONLY the complete HTML email template, no explanations or code blocks.`;
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'gpt-4.1-2025-04-14',
+        model: 'gpt-5-2025-08-07',
         messages: [
           { role: 'system', content: systemPrompt },
-          { role: 'user', content: `Create a stunning email template for: "${subject}"\n\nContent prompt: ${prompt}\n\nMake it absolutely beautiful and modern - think premium SaaS company level design.` }
+          { role: 'user', content: `Create a stunning email template for: "${subject}"
+
+Content prompt: ${prompt}
+
+Layout variant: ${chosenVariant}. Design MUST differ materially between variants (structure, section order, and components). Use email-safe HTML/CSS only.` }
         ],
-        max_tokens: 3000,
-        temperature: 0.8,
+        max_completion_tokens: 3000,
       }),
     });
 
