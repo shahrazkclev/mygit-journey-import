@@ -522,22 +522,21 @@ export const CampaignComposer = () => {
           </CardHeader>
           <CardContent>
             <div 
-              className={`border rounded-lg overflow-auto bg-white ${
-                viewMode === 'mobile' ? 'max-w-sm mx-auto' : 'w-full'
+              className={`border rounded-lg bg-white ${
+                viewMode === 'mobile' ? 'max-w-sm mx-auto overflow-auto' : 'w-full overflow-hidden'
               }`}
               style={{ 
-                maxHeight: viewMode === 'mobile' ? '600px' : '500px',
-                minHeight: '200px'
+                height: viewMode === 'mobile' ? '600px' : '500px',
               }}
             >
               <div 
                 dangerouslySetInnerHTML={{ __html: generatedTemplate }}
-                className="p-2"
-                style={{ 
-                  transform: viewMode === 'mobile' ? 'scale(0.8)' : 'scale(1)',
+                className={viewMode === 'mobile' ? 'p-1' : 'p-0'}
+                style={viewMode === 'mobile' ? { 
+                  transform: 'scale(0.7)',
                   transformOrigin: 'top left',
-                  width: viewMode === 'mobile' ? '125%' : '100%'
-                }}
+                  width: '142%'
+                } : {}}
               />
             </div>
 
