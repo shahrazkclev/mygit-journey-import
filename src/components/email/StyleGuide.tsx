@@ -111,6 +111,97 @@ export const StyleGuide = () => {
     }
   };
 
+  // Persist page theme colors to Supabase
+  const saveThemeToSupabase = async (colors: PageThemeColors) => {
+    try {
+      const { data: existingData, error: checkError } = await supabase
+        .from('style_guides')
+        .select('id')
+        .eq('user_id', DEMO_USER_ID)
+        .limit(1);
+
+      if (checkError) throw checkError;
+
+      const styleGuideData = {
+        user_id: DEMO_USER_ID,
+        brand_name: brandIdentity.name,
+        primary_color: brandIdentity.primaryColor,
+        secondary_color: brandIdentity.secondaryColor,
+        accent_color: brandIdentity.accentColor,
+        font_family: brandIdentity.font,
+        tone: brandIdentity.voice,
+        brand_voice: brandIdentity.brandVoice,
+        logo_url: brandIdentity.logo,
+        email_signature: brandIdentity.signature,
+        page_theme_primary: colors.primary,
+        page_theme_secondary: colors.secondary,
+        page_theme_accent: colors.accent,
+      };
+
+      let result;
+      if (existingData && existingData.length > 0) {
+        result = await supabase
+          .from('style_guides')
+          .update(styleGuideData)
+          .eq('id', existingData[0].id);
+      } else {
+        result = await supabase
+          .from('style_guides')
+          .insert([styleGuideData]);
+      }
+
+      if (result.error) throw result.error;
+      console.log('Theme auto-saved to Supabase:', colors);
+    } catch (error) {
+      console.error('Error auto-saving theme:', error);
+    }
+  };
+
+  // Persist brand identity to Supabase
+  const saveBrandToSupabase = async () => {
+    try {
+      const { data: existingData, error: checkError } = await supabase
+        .from('style_guides')
+        .select('id')
+        .eq('user_id', DEMO_USER_ID)
+        .limit(1);
+
+      if (checkError) throw checkError;
+
+      const styleGuideData = {
+        user_id: DEMO_USER_ID,
+        brand_name: brandIdentity.name,
+        primary_color: brandIdentity.primaryColor,
+        secondary_color: brandIdentity.secondaryColor,
+        accent_color: brandIdentity.accentColor,
+        font_family: brandIdentity.font,
+        tone: brandIdentity.voice,
+        brand_voice: brandIdentity.brandVoice,
+        logo_url: brandIdentity.logo,
+        email_signature: brandIdentity.signature,
+        page_theme_primary: pageThemeColors.primary,
+        page_theme_secondary: pageThemeColors.secondary,
+        page_theme_accent: pageThemeColors.accent,
+      };
+
+      let result;
+      if (existingData && existingData.length > 0) {
+        result = await supabase
+          .from('style_guides')
+          .update(styleGuideData)
+          .eq('id', existingData[0].id);
+      } else {
+        result = await supabase
+          .from('style_guides')
+          .insert([styleGuideData]);
+      }
+
+      if (result.error) throw result.error;
+      console.log('Brand identity saved to Supabase:', brandIdentity);
+    } catch (error) {
+      console.error('Error saving brand identity:', error);
+    }
+  };
 
   const handleSaveStyleGuide = async () => {
     setLoading(true);
@@ -462,7 +553,7 @@ export const StyleGuide = () => {
             
             <div className="space-y-3">
               <p>Hello [Name],</p>
-              <p>This is how your emails will look with the current brand settings. The tone is <Badge variant="secondary">{brandIdentity.voice}</Badge>.</p>
+              <div>This is how your emails will look with the current brand settings. The tone is <Badge variant="secondary">{brandIdentity.voice}</Badge>.</div>
               <p>{brandIdentity.brandVoice}</p>
               
               <div className="flex space-x-2">
