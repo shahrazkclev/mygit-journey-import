@@ -11,6 +11,7 @@ import { Palette, Type, Image, Sparkles, Save, Eye, Settings } from "lucide-reac
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { DEMO_USER_ID } from "@/lib/demo-auth";
+import { useGlobalTheme } from "@/hooks/useGlobalTheme";
 
 interface BrandIdentity {
   name: string;
@@ -44,19 +45,19 @@ export const StyleGuide = () => {
     signature: "Best regards,\nThe Team"
   });
 
-  // Page theme colors (separate from brand colors)
-  const [pageThemeColors, setPageThemeColors] = useState<PageThemeColors>({
-    primary: "#684cff",
-    secondary: "#22d3ee",
-    accent: "#34d399"
-  });
+  // Page theme colors (separate from brand colors) - use global state
+  const { themeColors, updateTheme } = useGlobalTheme();
+  const pageThemeColors = {
+    primary: themeColors.primary,
+    secondary: themeColors.secondary,
+    accent: themeColors.accent
+  };
+
+  const setPageThemeColors = (colors: { primary?: string; secondary?: string; accent?: string }) => {
+    updateTheme(colors);
+  };
 
   const { toast } = useToast();
-
-  // Load existing style guide on component mount
-  useEffect(() => {
-    loadStyleGuide();
-  }, []);
 
   // Keep browser tab title in sync with brand name
   useEffect(() => {
@@ -64,6 +65,11 @@ export const StyleGuide = () => {
       document.title = `${brandIdentity.name} – Email Campaign Manager`;
     }
   }, [brandIdentity.name]);
+
+  // Load existing style guide on component mount only once
+  useEffect(() => {
+    loadStyleGuide();
+  }, []);
 
   const loadStyleGuide = async () => {
     try {
@@ -196,7 +202,7 @@ export const StyleGuide = () => {
 
       if (result.error) throw result.error;
 
-      // Apply page theme
+      // Apply page theme immediately and update local state
       applyPageTheme(pageThemeColors.primary, pageThemeColors.secondary, pageThemeColors.accent);
 
       toast({
@@ -350,6 +356,9 @@ export const StyleGuide = () => {
               <Save className="h-4 w-4" />
               <span>Save Theme</span>
             </Button>
+            <p className="text-xs text-muted-foreground mt-2">
+              Changes are applied instantly. Click "Save Theme" to persist them.
+            </p>
           </div>
         </CardContent>
       </Card>
