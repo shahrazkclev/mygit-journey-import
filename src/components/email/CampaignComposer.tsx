@@ -256,73 +256,118 @@ export const CampaignComposer = () => {
     } catch (error) {
       console.error('Error generating template:', error);
       
-      // Fallback HTML generation
+      // Beautiful fallback HTML generation with modern design
       const fallbackHTML = `
         <!DOCTYPE html>
-        <html>
-          <head>
-            <meta charset="utf-8">
+        <html lang="en">
+        <head>
+            <meta charset="UTF-8">
             <meta name="viewport" content="width=device-width, initial-scale=1.0">
             <title>${subject}</title>
             <style>
-              body { 
-                font-family: ${styleGuide?.font_family || 'Segoe UI, sans-serif'}; 
-                margin: 0; 
-                padding: 20px; 
-                background-color: #f5f5f5; 
-              }
-              .container { 
-                max-width: 600px; 
-                margin: 0 auto; 
-                background: white; 
-                border-radius: 8px; 
-                overflow: hidden; 
-                box-shadow: 0 2px 10px rgba(0,0,0,0.1); 
-              }
-              .header { 
-                background: ${themeColors.primary}; 
-                color: white; 
-                padding: 30px; 
-                text-align: center; 
-              }
-              .content { 
-                padding: 30px; 
-                line-height: 1.6; 
-              }
-              .button { 
-                display: inline-block; 
-                background: ${themeColors.accent}; 
-                color: white; 
-                padding: 12px 24px; 
-                text-decoration: none; 
-                border-radius: 6px; 
-                margin: 20px 0; 
-              }
-              .footer { 
-                background: #f8f9fa; 
-                padding: 20px; 
-                text-align: center; 
-                border-top: 1px solid #e9ecef; 
-              }
+                @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+                @media only screen and (max-width: 600px) {
+                    .container { width: 100% !important; margin: 10px !important; }
+                    .header { padding: 30px 20px !important; }
+                    .content { padding: 30px 20px !important; }
+                    .hero-title { font-size: 24px !important; }
+                    .button { width: 90% !important; }
+                }
             </style>
-          </head>
-          <body>
-            <div class="container">
-              <div class="header">
-                <h1>${styleGuide?.brand_name || 'Your Brand'}</h1>
-                <h2>${subject}</h2>
-              </div>
-              <div class="content">
-                <p>Dear Valued Customer,</p>
-                <p>${prompt}</p>
-                <p>We hope this message finds you well and we look forward to serving you better.</p>
-                <a href="#" class="button">Take Action</a>
-              </div>
-              <div class="footer">
-                <pre>${styleGuide?.email_signature || 'Best regards,\\nThe Team'}</pre>
-              </div>
+        </head>
+        <body style="margin: 0; padding: 0; font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%); min-height: 100vh;">
+            <div style="padding: 30px 15px;">
+                <table class="container" role="presentation" cellspacing="0" cellpadding="0" border="0" style="max-width: 600px; width: 100%; margin: 0 auto; background: #ffffff; border-radius: 20px; box-shadow: 0 25px 50px rgba(0,0,0,0.1); overflow: hidden;">
+                    
+                    <!-- Gradient Header -->
+                    <tr>
+                        <td style="background: linear-gradient(135deg, ${themeColors.primary} 0%, ${themeColors.secondary} 100%); padding: 0; height: 6px;"></td>
+                    </tr>
+                    
+                    <!-- Hero Section -->
+                    <tr>
+                        <td class="header" style="background: linear-gradient(135deg, ${themeColors.primary}12 0%, ${themeColors.secondary}08 100%); padding: 50px 40px; text-align: center; position: relative;">
+                            <div style="position: absolute; top: 20px; right: 30px; width: 32px; height: 32px; background: ${themeColors.accent}25; border-radius: 50%; opacity: 0.6;"></div>
+                            
+                            <h1 style="margin: 0 0 10px 0; color: #1e293b; font-size: 26px; font-weight: 700; letter-spacing: -0.5px;">${styleGuide?.brand_name || 'Your Brand'}</h1>
+                            <div style="width: 60px; height: 3px; background: linear-gradient(90deg, ${themeColors.primary}, ${themeColors.accent}); margin: 16px auto; border-radius: 2px;"></div>
+                            <h2 class="hero-title" style="margin: 20px 0 0 0; color: #334155; font-size: 28px; font-weight: 600; line-height: 1.3; letter-spacing: -0.3px;">${subject}</h2>
+                        </td>
+                    </tr>
+                    
+                    <!-- Content -->
+                    <tr>
+                        <td class="content" style="padding: 40px; background: #ffffff;">
+                            
+                            <!-- Welcome Box -->
+                            <div style="background: linear-gradient(135deg, ${themeColors.primary}08 0%, ${themeColors.accent}05 100%); border-radius: 16px; padding: 30px; margin-bottom: 35px; border: 1px solid ${themeColors.primary}15;">
+                                <h3 style="margin: 0 0 16px 0; color: #1e293b; font-size: 18px; font-weight: 600;">Hello there! 👋</h3>
+                                <p style="margin: 0; font-size: 16px; line-height: 1.7; color: #475569;">${prompt}</p>
+                            </div>
+                            
+                            <!-- Value Proposition -->
+                            <div style="margin-bottom: 40px;">
+                                <p style="margin: 0 0 20px 0; font-size: 16px; line-height: 1.7; color: #475569;">We're excited to share this with you and believe it will make a meaningful impact. Our team has carefully crafted this experience with you in mind.</p>
+                                
+                                <div style="display: flex; gap: 15px; margin: 25px 0;">
+                                    <div style="flex: 1; background: #f8fafc; border-radius: 12px; padding: 20px; text-align: center; border: 1px solid #e2e8f0;">
+                                        <div style="width: 40px; height: 40px; background: linear-gradient(135deg, ${themeColors.primary}, ${themeColors.accent}); border-radius: 10px; margin: 0 auto 12px; display: flex; align-items: center; justify-content: center;">
+                                            <span style="color: white; font-size: 16px;">✨</span>
+                                        </div>
+                                        <h4 style="margin: 0 0 6px 0; color: #334155; font-size: 13px; font-weight: 600;">Premium</h4>
+                                        <p style="margin: 0; color: #64748b; font-size: 12px;">Quality first</p>
+                                    </div>
+                                    <div style="flex: 1; background: #f8fafc; border-radius: 12px; padding: 20px; text-align: center; border: 1px solid #e2e8f0;">
+                                        <div style="width: 40px; height: 40px; background: linear-gradient(135deg, ${themeColors.accent}, ${themeColors.secondary}); border-radius: 10px; margin: 0 auto 12px; display: flex; align-items: center; justify-content: center;">
+                                            <span style="color: white; font-size: 16px;">🚀</span>
+                                        </div>
+                                        <h4 style="margin: 0 0 6px 0; color: #334155; font-size: 13px; font-weight: 600;">Fast</h4>
+                                        <p style="margin: 0; color: #64748b; font-size: 12px;">Built for speed</p>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- CTA Section -->
+                            <div style="text-align: center; margin: 40px 0; padding: 35px 20px; background: linear-gradient(135deg, ${themeColors.primary}05 0%, ${themeColors.secondary}03 100%); border-radius: 18px; border: 1px solid ${themeColors.primary}10;">
+                                <h3 style="margin: 0 0 12px 0; color: #1e293b; font-size: 18px; font-weight: 600;">Ready to dive in?</h3>
+                                <p style="margin: 0 0 28px 0; color: #64748b; font-size: 14px; line-height: 1.6;">Take the next step and discover what we have to offer.</p>
+                                
+                                <table role="presentation" cellspacing="0" cellpadding="0" border="0" style="margin: 0 auto;">
+                                    <tr>
+                                        <td style="border-radius: 50px; background: linear-gradient(135deg, ${themeColors.accent} 0%, ${themeColors.primary} 100%); box-shadow: 0 10px 20px ${themeColors.accent}40;">
+                                            <a href="#" class="button" style="display: inline-block; padding: 16px 32px; font-size: 15px; font-weight: 600; color: #ffffff; text-decoration: none; border-radius: 50px; letter-spacing: 0.3px;">
+                                                Take Action Now →
+                                            </a>
+                                        </td>
+                                    </tr>
+                                </table>
+                                
+                                <p style="margin: 20px 0 0 0; color: #94a3b8; font-size: 12px;">No spam, unsubscribe anytime</p>
+                            </div>
+                            
+                        </td>
+                    </tr>
+                    
+                    <!-- Footer -->
+                    <tr>
+                        <td style="background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%); padding: 35px; text-align: center; border-top: 1px solid #e2e8f0;">
+                            <div style="margin-bottom: 20px;">
+                                <pre style="margin: 0; font-family: 'Inter', sans-serif; font-size: 14px; color: #475569; white-space: pre-line; font-weight: 500;">${styleGuide?.email_signature || 'Best regards,\nThe Team'}</pre>
+                            </div>
+                            
+                            <div style="border-top: 1px solid #d1d5db; padding-top: 20px;">
+                                <p style="margin: 0 0 10px 0; font-size: 13px; color: #64748b; font-weight: 500;">© 2024 ${styleGuide?.brand_name || 'Your Brand'}. All rights reserved.</p>
+                                <div style="margin-top: 12px;">
+                                    <a href="#" style="color: #6366f1; text-decoration: none; font-size: 12px; font-weight: 500; margin: 0 10px;">Preferences</a>
+                                    <span style="color: #cbd5e1;">|</span>
+                                    <a href="#" style="color: #6366f1; text-decoration: none; font-size: 12px; font-weight: 500; margin: 0 10px;">Unsubscribe</a>
+                                </div>
+                            </div>
+                        </td>
+                    </tr>
+                </table>
             </div>
-          </body>
+        </body>
         </html>
       `;
       

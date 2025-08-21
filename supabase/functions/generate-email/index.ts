@@ -1,175 +1,209 @@
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.52.1'
+import "https://deno.land/x/xhr@0.1.0/mod.ts";
+import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+
+const openAIApiKey = Deno.env.get('OPENAI_API_KEY');
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-}
+};
 
-interface EmailGenerationRequest {
-  prompt: string;
-  subject: string;
-  styleGuide?: {
-    brandName: string;
-    primaryColor: string;
-    secondaryColor: string;
-    accentColor: string;
-    fontFamily: string;
-    tone: string;
-    brandVoice: string;
-    emailSignature: string;
-  };
-}
-
-Deno.serve(async (req) => {
+serve(async (req) => {
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    // Initialize Supabase client
-    const supabase = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
-    );
+    const { prompt, subject, styleGuide } = await req.json();
 
-    // Skip authentication for demo purposes
-    const demoUserId = '550e8400-e29b-41d4-a716-446655440000';
+    console.log('Generating email with style guide:', styleGuide);
 
-    const { prompt, subject, styleGuide }: EmailGenerationRequest = await req.json();
+    const systemPrompt = `You are an expert email template designer creating stunning, modern HTML email templates that look like they were designed by top agencies.
 
-    if (!prompt || !subject) {
-      throw new Error('Missing required fields: prompt and subject');
+Style Guide Context:
+- Brand Name: ${styleGuide?.brandName || 'Your Brand'}
+- Primary Color: ${styleGuide?.primaryColor || '#684cff'}
+- Secondary Color: ${styleGuide?.secondaryColor || '#22d3ee'}
+- Accent Color: ${styleGuide?.accentColor || '#34d399'}
+- Font Family: ${styleGuide?.fontFamily || 'Segoe UI, sans-serif'}
+- Brand Voice: ${styleGuide?.brandVoice || 'Professional yet approachable'}
+- Email Signature: ${styleGuide?.emailSignature || 'Best regards,\nThe Team'}
+
+Create a BEAUTIFUL, MODERN email template that:
+1. Uses cutting-edge design trends (gradients, subtle shadows, rounded corners, modern typography)
+2. Has a stunning hero section with visual interest
+3. Uses the brand colors in an aesthetically pleasing way (gradients, overlays, accents)
+4. Includes modern design elements: subtle patterns, elegant spacing, visual hierarchy
+5. Has a gorgeous call-to-action button with hover effects and gradients
+6. Uses email-safe CSS with inline styles for maximum compatibility
+7. Is fully responsive and mobile-optimized
+8. Includes subtle animations and modern visual effects
+9. Has beautiful typography with proper line height and spacing
+10. Uses contemporary layout patterns with cards, sections, and visual breaks
+
+Design it like a premium newsletter or marketing email from companies like Stripe, Linear, or Notion.
+Make it visually stunning while maintaining email client compatibility.
+
+Return ONLY the complete HTML email template, no explanations or code blocks.`;
+
+    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${openAIApiKey}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        model: 'gpt-4.1-2025-04-14',
+        messages: [
+          { role: 'system', content: systemPrompt },
+          { role: 'user', content: `Create a stunning email template for: "${subject}"\n\nContent prompt: ${prompt}\n\nMake it absolutely beautiful and modern - think premium SaaS company level design.` }
+        ],
+        max_tokens: 3000,
+        temperature: 0.8,
+      }),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      console.error('OpenAI API error:', errorData);
+      throw new Error(`OpenAI API error: ${errorData.error?.message || 'Unknown error'}`);
     }
 
-    // Get Claude API key from secrets
-    const claudeApiKey = Deno.env.get('CLAUDE_API_KEY');
-    if (!claudeApiKey) {
-      throw new Error('Claude API key not configured');
-    }
+    const data = await response.json();
+    const htmlContent = data.choices[0].message.content;
 
-    // Optimized prompt for faster, better generation
-    const emailTemplate = `<!DOCTYPE html>
-<html>
+    console.log('Beautiful email template generated successfully');
+
+    return new Response(JSON.stringify({ htmlContent }), {
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
+  } catch (error) {
+    console.error('Error in generate-email function:', error);
+
+    // Premium fallback template with modern design
+    const { prompt, subject, styleGuide } = await req.json();
+    
+    const fallbackTemplate = `
+<!DOCTYPE html>
+<html lang="en">
 <head>
-    <meta charset="utf-8">
+    <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>${subject}</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        @media only screen and (max-width: 600px) {
+            .container { width: 100% !important; margin: 0 !important; }
+            .header { padding: 30px 20px !important; }
+            .content { padding: 30px 20px !important; }
+            .hero-title { font-size: 28px !important; }
+            .button { width: 90% !important; }
+            .feature-grid { flex-direction: column !important; }
+            .feature-item { margin-bottom: 20px !important; }
+        }
+    </style>
 </head>
-<body style="margin: 0; padding: 0; font-family: ${styleGuide?.fontFamily || 'Arial, sans-serif'}; background-color: #f5f5f5;">
-    <div style="max-width: 600px; margin: 0 auto; background-color: white;">
-        <!-- Header -->
-        <div style="background: linear-gradient(135deg, ${styleGuide?.primaryColor || '#758565'}, ${styleGuide?.secondaryColor || '#374151'}); color: white; text-align: center; padding: 40px 20px;">
-            <h1 style="margin: 0; font-size: 32px; font-weight: bold;">${styleGuide?.brandName || 'Your Brand'}</h1>
-            <h2 style="margin: 10px 0 0 0; font-size: 24px; font-weight: normal; opacity: 0.9;">${subject}</h2>
-        </div>
-        
-        <!-- Content -->
-        <div style="padding: 40px 30px;">
-            <p style="margin: 0 0 20px 0; font-size: 16px; line-height: 1.6; color: #333;">Dear {{name}},</p>
+<body style="margin: 0; padding: 0; font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); min-height: 100vh;">
+    <div style="padding: 40px 20px;">
+        <table class="container" role="presentation" cellspacing="0" cellpadding="0" border="0" style="max-width: 650px; width: 100%; margin: 0 auto; background: #ffffff; border-radius: 24px; box-shadow: 0 32px 64px rgba(0,0,0,0.12); overflow: hidden; position: relative;">
             
-            <div id="ai-content">
-                <!-- AI will replace this with actual content -->
-            </div>
+            <!-- Decorative Background Pattern -->
+            <tr>
+                <td style="position: relative; background: linear-gradient(135deg, ${styleGuide?.primaryColor || '#684cff'} 0%, ${styleGuide?.secondaryColor || '#22d3ee'} 100%); padding: 0; height: 8px;"></td>
+            </tr>
             
-            <div style="text-align: center; margin: 30px 0;">
-                <a href="#" style="display: inline-block; background-color: ${styleGuide?.accentColor || '#34d399'}; color: white; padding: 15px 30px; text-decoration: none; border-radius: 5px; font-weight: bold;">Take Action</a>
-            </div>
-        </div>
-        
-        <!-- Footer -->
-        <div style="padding: 20px 30px; background-color: #f9f9f9; border-top: 1px solid #eee; text-align: center;">
-            <p style="margin: 0 0 10px 0; font-size: 14px; color: #666; white-space: pre-line;">${styleGuide?.emailSignature || 'Best regards,\\nThe Team'}</p>
-            <p style="margin: 10px 0 0 0; font-size: 12px; color: #999;">
-                <a href="https://mixifcnokcmxarpzwfiy.supabase.co/functions/v1/unsubscribe?email={{email}}" style="color: #999;">Unsubscribe</a>
-            </p>
-        </div>
+            <!-- Hero Header -->
+            <tr>
+                <td class="header" style="background: linear-gradient(135deg, ${styleGuide?.primaryColor || '#684cff'}15 0%, ${styleGuide?.secondaryColor || '#22d3ee'}08 100%); padding: 50px 40px; text-align: center; position: relative; border-bottom: 1px solid #f1f5f9;">
+                    <!-- Floating Elements -->
+                    <div style="position: absolute; top: 20px; right: 30px; width: 40px; height: 40px; background: linear-gradient(45deg, ${styleGuide?.accentColor || '#34d399'}20, ${styleGuide?.primaryColor || '#684cff'}15); border-radius: 50%; opacity: 0.6;"></div>
+                    <div style="position: absolute; bottom: 30px; left: 40px; width: 24px; height: 24px; background: ${styleGuide?.secondaryColor || '#22d3ee'}25; border-radius: 50%; opacity: 0.4;"></div>
+                    
+                    <div style="position: relative; z-index: 1;">
+                        <h1 style="margin: 0 0 8px 0; color: #1e293b; font-size: 28px; font-weight: 700; letter-spacing: -0.5px; line-height: 1.2;">${styleGuide?.brandName || 'Your Brand'}</h1>
+                        <div style="width: 80px; height: 3px; background: linear-gradient(90deg, ${styleGuide?.primaryColor || '#684cff'}, ${styleGuide?.accentColor || '#34d399'}); margin: 16px auto; border-radius: 2px;"></div>
+                        <h2 class="hero-title" style="margin: 24px 0 0 0; color: #334155; font-size: 32px; font-weight: 600; line-height: 1.3; letter-spacing: -0.3px;">${subject}</h2>
+                    </div>
+                </td>
+            </tr>
+            
+            <!-- Main Content -->
+            <tr>
+                <td class="content" style="padding: 50px 40px; background: #ffffff;">
+                    
+                    <!-- Welcome Message -->
+                    <div style="background: linear-gradient(135deg, ${styleGuide?.primaryColor || '#684cff'}08 0%, ${styleGuide?.accentColor || '#34d399'}05 100%); border-radius: 16px; padding: 32px; margin-bottom: 40px; border: 1px solid ${styleGuide?.primaryColor || '#684cff'}15;">
+                        <h3 style="margin: 0 0 16px 0; color: #1e293b; font-size: 20px; font-weight: 600;">Hello there! 👋</h3>
+                        <p style="margin: 0; font-size: 16px; line-height: 1.7; color: #475569;">${prompt}</p>
+                    </div>
+                    
+                    <!-- Feature Highlights -->
+                    <div style="margin-bottom: 40px;">
+                        <h3 style="margin: 0 0 24px 0; color: #1e293b; font-size: 18px; font-weight: 600; text-align: center;">What makes this special?</h3>
+                        <div class="feature-grid" style="display: flex; gap: 20px; flex-wrap: wrap;">
+                            <div class="feature-item" style="flex: 1; min-width: 150px; background: #f8fafc; border-radius: 12px; padding: 24px; text-align: center; border: 1px solid #e2e8f0;">
+                                <div style="width: 48px; height: 48px; background: linear-gradient(135deg, ${styleGuide?.primaryColor || '#684cff'}, ${styleGuide?.accentColor || '#34d399'}); border-radius: 12px; margin: 0 auto 16px; display: flex; align-items: center; justify-content: center;">
+                                    <span style="color: white; font-size: 20px;">✨</span>
+                                </div>
+                                <h4 style="margin: 0 0 8px 0; color: #334155; font-size: 14px; font-weight: 600;">Premium Quality</h4>
+                                <p style="margin: 0; color: #64748b; font-size: 13px; line-height: 1.5;">Crafted with attention to detail</p>
+                            </div>
+                            <div class="feature-item" style="flex: 1; min-width: 150px; background: #f8fafc; border-radius: 12px; padding: 24px; text-align: center; border: 1px solid #e2e8f0;">
+                                <div style="width: 48px; height: 48px; background: linear-gradient(135deg, ${styleGuide?.accentColor || '#34d399'}, ${styleGuide?.secondaryColor || '#22d3ee'}); border-radius: 12px; margin: 0 auto 16px; display: flex; align-items: center; justify-content: center;">
+                                    <span style="color: white; font-size: 20px;">🚀</span>
+                                </div>
+                                <h4 style="margin: 0 0 8px 0; color: #334155; font-size: 14px; font-weight: 600;">Fast & Reliable</h4>
+                                <p style="margin: 0; color: #64748b; font-size: 13px; line-height: 1.5;">Built for performance</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- CTA Section -->
+                    <div style="text-align: center; margin: 50px 0 40px 0; padding: 40px 20px; background: linear-gradient(135deg, ${styleGuide?.primaryColor || '#684cff'}05 0%, ${styleGuide?.secondaryColor || '#22d3ee'}03 100%); border-radius: 20px; border: 1px solid ${styleGuide?.primaryColor || '#684cff'}10;">
+                        <h3 style="margin: 0 0 16px 0; color: #1e293b; font-size: 20px; font-weight: 600;">Ready to get started?</h3>
+                        <p style="margin: 0 0 32px 0; color: #64748b; font-size: 15px; line-height: 1.6;">Join thousands of satisfied customers who trust us with their needs.</p>
+                        
+                        <table role="presentation" cellspacing="0" cellpadding="0" border="0" style="margin: 0 auto;">
+                            <tr>
+                                <td style="border-radius: 50px; background: linear-gradient(135deg, ${styleGuide?.accentColor || '#34d399'} 0%, ${styleGuide?.primaryColor || '#684cff'} 100%); box-shadow: 0 12px 24px ${styleGuide?.accentColor || '#34d399'}40; transition: all 0.3s ease;">
+                                    <a href="#" class="button" style="display: inline-block; padding: 18px 36px; font-size: 16px; font-weight: 600; color: #ffffff; text-decoration: none; border-radius: 50px; letter-spacing: 0.3px; transition: all 0.3s ease;">
+                                        Take Action Now →
+                                    </a>
+                                </td>
+                            </tr>
+                        </table>
+                        
+                        <p style="margin: 24px 0 0 0; color: #94a3b8; font-size: 13px;">No spam, unsubscribe at any time</p>
+                    </div>
+                    
+                </td>
+            </tr>
+            
+            <!-- Footer -->
+            <tr>
+                <td style="background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%); padding: 40px; text-align: center; border-top: 1px solid #e2e8f0;">
+                    <div style="margin-bottom: 24px;">
+                        <pre style="margin: 0; font-family: 'Inter', sans-serif; font-size: 14px; color: #475569; white-space: pre-line; font-weight: 500;">${styleGuide?.emailSignature || 'Best regards,\nThe Team'}</pre>
+                    </div>
+                    
+                    <div style="border-top: 1px solid #d1d5db; padding-top: 24px;">
+                        <p style="margin: 0 0 12px 0; font-size: 14px; color: #64748b; font-weight: 500;">© 2024 ${styleGuide?.brandName || 'Your Brand'}. All rights reserved.</p>
+                        <div style="margin-top: 16px;">
+                            <a href="#" style="color: #6366f1; text-decoration: none; font-size: 13px; font-weight: 500; margin: 0 12px;">Update preferences</a>
+                            <span style="color: #cbd5e1;">|</span>
+                            <a href="#" style="color: #6366f1; text-decoration: none; font-size: 13px; font-weight: 500; margin: 0 12px;">Unsubscribe</a>
+                        </div>
+                    </div>
+                </td>
+            </tr>
+        </table>
     </div>
 </body>
 </html>`;
 
-    // Short, focused prompt for speed
-    const contentPrompt = `Write email content for "${prompt}" in ${styleGuide?.tone || 'friendly'} tone for ${styleGuide?.brandName || 'Your Brand'}. 
-    
-Brand voice: ${styleGuide?.brandVoice || 'Professional yet approachable'}
-
-Write 2-3 paragraphs of engaging content only. No subject, no greetings, no signature. Just the main content paragraphs.`;
-
-    // Use faster model for speed optimization
-    const claudeResponse = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': claudeApiKey,
-        'anthropic-version': '2023-06-01',
-      },
-      body: JSON.stringify({
-        model: 'claude-3-5-sonnet-20241022', // Better model for quality responses
-        max_tokens: 2000,
-        messages: [
-          {
-            role: 'user',
-            content: contentPrompt
-          }
-        ],
-      }),
+    return new Response(JSON.stringify({ htmlContent: fallbackTemplate }), {
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
-
-    if (!claudeResponse.ok) {
-      const errorText = await claudeResponse.text();
-      console.error('Claude API error:', errorText);
-      throw new Error(`Claude API error: ${claudeResponse.status}`);
-    }
-
-    const claudeData = await claudeResponse.json();
-    let aiContent = claudeData.content[0]?.text || '';
-
-    if (!aiContent) {
-      throw new Error('No content generated by Claude');
-    }
-
-    // Clean up AI content
-    aiContent = aiContent
-      .replace(/```html\n?/g, '')
-      .replace(/```\n?/g, '')
-      .trim();
-
-    // Insert AI content into template
-    let finalHtml = emailTemplate.replace(
-      '<div id="ai-content">',
-      `<div id="ai-content"><div style="font-size: 16px; line-height: 1.6; color: #333;">${aiContent.split('\n').map(p => p.trim() ? `<p style="margin: 0 0 20px 0;">${p}</p>` : '').join('')}</div>`
-    );
-
-    console.log('Optimized email template generated successfully');
-
-    return new Response(
-      JSON.stringify({
-        success: true,
-        htmlContent: finalHtml,
-        metadata: {
-          subject,
-          userId: demoUserId,
-          generatedAt: new Date().toISOString(),
-        }
-      }),
-      {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 200,
-      }
-    );
-
-  } catch (error) {
-    console.error('Error in generate-email function:', error);
-    
-    return new Response(
-      JSON.stringify({
-        success: false,
-        error: error.message || 'Internal server error',
-      }),
-      {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 500,
-      }
-    );
   }
 });
