@@ -141,9 +141,47 @@ Return ONLY the complete HTML email template, no explanations or code blocks.`
     }
 
     const data = await response.json();
-    const htmlContent = data.content[0]?.text || '';
+    let htmlContent = data.content[0]?.text || '';
 
-    console.log('Clean minimal email template generated successfully');
+    // Enforce strict Cleverpoly minimal style by sanitizing AI output
+    const injectReset = `<style id="cleverpoly-reset">
+      body{margin:0 !important;background:#FFFFFF !important;color:#333333 !important;font-family:'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif !important;}
+      .container{max-width:600px !important;width:100% !important;margin:0 auto !important;}
+      .content{padding:40px !important;}
+      .card{background:#F9F8F5 !important;border-radius:8px !important;}
+      a.button,.button,button,.btn{background:#6A7059 !important;color:#FFFFFF !important;border-radius:6px !important;text-decoration:none !important;}
+      *{background-image:none !important;box-shadow:none !important;}
+      @media only screen and (max-width: 600px){
+        .content{padding:20px !important;}
+        .header{padding:30px 20px 15px 20px !important;}
+        .main-title{font-size:24px !important;}
+        .section-title{font-size:16px !important;}
+        .body-text{font-size:14px !important;}
+        .card{padding:20px !important;margin:20px 0 !important;}
+      }
+    </style>`;
+
+    const ensureInjected = (s: string) => {
+      if (s.includes('</head>')) {
+        return s.replace('</head>', `${injectReset}</head>`);
+      }
+      const content = s.replace(/^<!DOCTYPE[^>]*>/i,'').replace(/^<html[^>]*>/i,'').replace(/<\/html>/i,'');
+      return `<!DOCTYPE html><html><head>${injectReset}</head>${content}</html>`;
+    };
+
+    const stripGradientsAndExcess = (s: string) =>
+      s
+        // Remove gradients and background images
+        .replace(/background(-image)?:\s*linear-gradient\([^;>]*\);?/gi, '')
+        .replace(/background-image:\s*url\([^)]*\);?/gi, '')
+        .replace(/background-image:[^;>]*;?/gi, '')
+        // Normalize overly rounded corners and shadows
+        .replace(/box-shadow:[^;>]*;?/gi, '')
+        .replace(/border-radius:\s*(?:[1-9]\d|\d{3,})px/gi, 'border-radius:8px');
+
+    htmlContent = ensureInjected(stripGradientsAndExcess(htmlContent));
+
+    console.log('Clean minimal email template generated successfully (sanitized)');
 
     return new Response(JSON.stringify({ htmlContent }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
