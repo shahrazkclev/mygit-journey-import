@@ -42,7 +42,7 @@ export const StyleGuide = () => {
     accentColor: "#FCD34D",
     font: "Inter, Lato, Open Sans, sans-serif",
     voice: "friendly",
-    brandVoice: "Clean and professional, using generous white space and a card-based design to create an organized and user-friendly experience. The tone should be helpful and direct.",
+    brandVoice: "Clean and professional aesthetic using generous white space and a card-based design to create an organized and user-friendly experience. The tone should be helpful and direct.",
     logo: "",
     signature: "Best regards,\nCleverpoly\n\nIf you have any questions or need assistance, feel free to contact us at cleverpoly.store@gmail.com"
   });
