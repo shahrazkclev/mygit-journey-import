@@ -24,7 +24,7 @@ serve(async (req) => {
   };
 
   try {
-    console.log('Generating clean, minimal email template');
+    console.log('Generating clean, minimal email template with strict brand compliance');
 
     // Resolve brand tokens from style guide or theme colors
     const brandName = styleGuide?.brandName || 'Cleverpoly';
@@ -32,39 +32,30 @@ serve(async (req) => {
     const secondary = styleGuide?.secondaryColor || themeColors?.secondary || '#F9F8F5';
     const accent = styleGuide?.accentColor || themeColors?.accent || '#FCD34D';
     const fontFamily = styleGuide?.fontFamily || "Inter, Lato, 'Open Sans', Arial, sans-serif";
-    const brandVoice = styleGuide?.brandVoice || 'Clean and professional aesthetic using generous white space and a card-based design.';
 
+    const systemPrompt = `You are an expert email template designer. You MUST create templates that EXACTLY match the provided brand style.
 
-    const systemPrompt = `You are an expert email template designer creating clean, minimal HTML email templates that precisely follow the provided brand tokens.
+MANDATORY BRAND COLORS (use these EXACT hex values):
+- Background: #FFFFFF (pure white)
+- Primary: ${primary} (olive green - for buttons and header backgrounds)
+- Secondary: ${secondary} (warm off-white - for content cards only)
+- Accent: ${accent} (warm gold - ONLY for brand name highlights)
+- Text: #333333 (dark gray)
+- Button Text: #FFFFFF (white)
 
-BRAND TOKENS (use exactly):
-- Brand Name: ${brandName}
-- Primary: ${primary}
-- Secondary (cards/background accents): ${secondary}
-- Accent: ${accent}
-- Font: ${fontFamily}
-- Brand Voice: ${brandVoice}
+REQUIRED STRUCTURE:
+1. Header: ${primary} background, white text, brand name with ${accent} highlight
+2. Main content: white background with ${secondary} content cards
+3. Buttons: ${primary} background, white text, rounded corners
+4. Footer: simple, clean layout
 
-CRITICAL STYLE REQUIREMENTS:
-1) RESPONSIVE DESIGN
-- Mobile (≤600px): smaller fonts, tighter padding
-- Desktop (>600px): larger fonts, generous padding
+FORBIDDEN:
+- Any colors not listed above
+- Gradients, shadows, or decorative elements
+- Complex layouts or fancy styling
+- Multiple color schemes
 
-2) MINIMAL & CLEAN
-- Single column, max 600px container
-- White background, soft card sections (${secondary})
-- Clear hierarchy, no decorative gradients or shadows
-
-3) COMPONENTS
-- Header with brand name (optionally highlight '${brandName.split(' ')[0]}' subtly with ${accent})
-- Salutation: "Hey [Name],"
-- Content cards with ${secondary}
-- Primary CTA: solid ${primary} button with white text
-- Secondary CTA: simple text link with arrow →
-- Footer: simple signature + helpful info
-
-Follow these tokens exactly; do not introduce gradients or extra colors.`;
-
+Create a clean, minimal, professional email that looks EXACTLY like the Cleverpoly brand preview.`;
 
     const response = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
@@ -81,13 +72,10 @@ Follow these tokens exactly; do not introduce gradients or extra colors.`;
             role: 'user',
             content: `${systemPrompt}
 
-Create a clean, minimal email template for: "${subject}"
+Subject: "${subject}"
+Content: ${prompt}
 
-Content prompt: ${prompt}
-
-IMPORTANT: If the prompt contains a list of features or updates, make sure to include ALL of them in the email template. Do not truncate or skip any items from the list.
-
-Return ONLY the complete HTML email template, no explanations or code blocks.`
+Return ONLY the complete HTML email template that matches the brand exactly.`
           }
         ],
       }),
@@ -102,7 +90,7 @@ Return ONLY the complete HTML email template, no explanations or code blocks.`
     const data = await response.json();
     let htmlContent = data.content[0]?.text || '';
 
-    // Enforce strict Cleverpoly minimal style by sanitizing AI output
+    // Enforce strict brand compliance by sanitizing AI output
     const cssReset = `
       body{margin:0 !important;background:#FFFFFF !important;color:#333333 !important;font-family:${fontFamily} !important;}
       .container{max-width:600px !important;width:100% !important;margin:0 auto !important;}
@@ -144,11 +132,20 @@ ${mobileCss}
         .replace(/background-image:[^;>]*;?/gi, '')
         // Normalize overly rounded corners and shadows
         .replace(/box-shadow:[^;>]*;?/gi, '')
-        .replace(/border-radius:\s*(?:[1-9]\d|\d{3,})px/gi, 'border-radius:8px');
+        .replace(/border-radius:\s*(?:[1-9]\d|\d{3,})px/gi, 'border-radius:8px')
+        // Force brand colors
+        .replace(/#[0-9a-fA-F]{6}/gi, (match) => {
+          if (match.toLowerCase() === primary.toLowerCase()) return primary;
+          if (match.toLowerCase() === secondary.toLowerCase()) return secondary;
+          if (match.toLowerCase() === accent.toLowerCase()) return accent;
+          if (match === '#FFFFFF' || match === '#ffffff') return '#FFFFFF';
+          if (match === '#333333') return '#333333';
+          return primary; // Default problematic colors to primary
+        });
 
     htmlContent = ensureInjected(stripGradientsAndExcess(htmlContent));
 
-    console.log('Clean minimal email template generated successfully (sanitized)');
+    console.log('Email template generated with strict brand compliance');
 
     return new Response(JSON.stringify({ htmlContent }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -156,7 +153,13 @@ ${mobileCss}
   } catch (error) {
     console.error('Error in generate-email function:', error);
 
-    // Clean, minimal fallback template matching Cleverpoly style
+    // Brand-compliant fallback template
+    const brandName = styleGuide?.brandName || 'Cleverpoly';
+    const primary = styleGuide?.primaryColor || '#6A7059';
+    const secondary = styleGuide?.secondaryColor || '#F9F8F5';
+    const accent = styleGuide?.accentColor || '#FCD34D';
+    const fontFamily = styleGuide?.fontFamily || "Inter, 'Open Sans', Arial, sans-serif";
+
     const fallbackTemplate = `
 <!DOCTYPE html>
 <html lang="en">
@@ -186,16 +189,17 @@ ${mobileCss}
         }
     </style>
 </head>
-<body style="margin: 0; padding: 0; font-family: 'Inter', sans-serif; background: #FFFFFF; color: #333333;">
+<body style="margin: 0; padding: 0; font-family: ${fontFamily}; background: #FFFFFF; color: #333333;">
     <div style="padding: 20px;">
         <table class="container" role="presentation" cellspacing="0" cellpadding="0" border="0" style="max-width: 600px; width: 100%; margin: 0 auto; background: #FFFFFF;">
             
             <!-- Header -->
             <tr>
-                <td class="header" style="padding: 40px 40px 20px 40px; text-align: center;">
-                    <h1 style="margin: 0; color: #333333; font-size: 24px; font-weight: 600;">
-                        <span style="background: ${accent}; padding: 2px 8px; border-radius: 4px;">${brandName}</span>
+                <td class="header" style="padding: 40px 40px 20px 40px; text-align: center; background: ${primary};">
+                    <h1 style="margin: 0; color: #FFFFFF; font-size: 24px; font-weight: 600;">
+                        <span style="background: ${accent}; color: #333333; padding: 2px 8px; border-radius: 4px;">${brandName.split('.')[0]}</span>${brandName.includes('.') ? '.' + brandName.split('.')[1] : ''}
                     </h1>
+                    <p style="margin: 8px 0 0 0; color: #FFFFFF; opacity: 0.9;">Sample Email Header</p>
                 </td>
             </tr>
             
@@ -218,46 +222,17 @@ ${mobileCss}
                         <p class="body-text" style="margin: 0; font-size: 16px; line-height: 1.6; color: #333333;">${prompt}</p>
                     </div>
                     
-                    <!-- Downloads Section -->
-                    <div style="margin: 40px 0;">
-                        <h3 class="section-title" style="margin: 0 0 16px 0; color: #333333; font-size: 18px; font-weight: 600; display: flex; align-items: center;">
-                            📦 Your Downloads
-                        </h3>
-                        <p class="body-text" style="margin: 0 0 24px 0; font-size: 16px; line-height: 1.6; color: #333333;">
-                            Access your files through the download button below. All future updates will be available in the same location.
-                        </p>
-                        
-                        <!-- CTA Button -->
-                        <table role="presentation" cellspacing="0" cellpadding="0" border="0">
+                    <!-- CTA Button -->
+                    <div style="text-align: center; margin: 30px 0;">
+                        <table role="presentation" cellspacing="0" cellpadding="0" border="0" style="margin: 0 auto;">
                             <tr>
                                 <td style="border-radius: 6px; background: ${primary};">
                                     <a href="#" style="display: inline-block; padding: 14px 28px; font-size: 16px; font-weight: 500; color: #FFFFFF; text-decoration: none; border-radius: 6px;">
-                                        Download Files
+                                        Take Action
                                     </a>
                                 </td>
                             </tr>
                         </table>
-                    </div>
-                    
-                    <!-- Installation Guide -->
-                    <div style="margin: 40px 0;">
-                        <h3 class="section-title" style="margin: 0 0 16px 0; color: #333333; font-size: 18px; font-weight: 600; display: flex; align-items: center;">
-                            📋 Installation Guide
-                        </h3>
-                        <p class="body-text" style="margin: 0 0 12px 0; font-size: 16px; line-height: 1.6; color: #333333;">
-                            Need help installing? Check out our step-by-step installation guide:
-                        </p>
-                        <p class="body-text" style="margin: 0; font-size: 16px;">
-                            <a href="#" style="color: #333333; text-decoration: none;">View Installation Instructions →</a>
-                        </p>
-                    </div>
-                    
-                    <!-- Additional Info -->
-                    <div style="margin: 40px 0;">
-                        <p class="body-text" style="margin: 0 0 12px 0; font-size: 16px; color: #333333;">Want to explore more assets?</p>
-                        <p class="body-text" style="margin: 0; font-size: 16px;">
-                            Visit <span style="background: ${accent}; padding: 1px 4px; border-radius: 3px;">Cleverpoly</span> Store →
-                        </p>
                     </div>
                     
                 </td>
@@ -267,15 +242,12 @@ ${mobileCss}
             <tr>
                 <td class="content" style="padding: 40px; text-align: left; border-top: 1px solid ${secondary};">
                     <p class="body-text" style="margin: 0 0 16px 0; font-size: 16px; color: #333333;">
-                        If you have any questions or need assistance, feel free to contact us at 
-                        <span style="background: ${accent}; padding: 1px 4px; border-radius: 3px;">cleverpoly</span>.store@gmail.com
+                        If you have any questions or need assistance, feel free to contact us.
                     </p>
                     
                     <div style="margin-top: 30px;">
                         <p class="body-text" style="margin: 0; font-size: 16px; color: #333333;">Best regards,</p>
-                        <p class="body-text" style="margin: 0; font-size: 16px; color: #333333; font-weight: 500;">
-                            <span style="background: ${accent}; padding: 1px 4px; border-radius: 3px;">Cleverpoly</span>
-                        </p>
+                        <p class="body-text" style="margin: 0; font-size: 16px; color: #333333; font-weight: 500;">${brandName}</p>
                     </div>
                 </td>
             </tr>
