@@ -278,6 +278,7 @@ export const EmailListManager = () => {
 
         setProducts([...products, data]);
         setNewProduct({ name: "", price: 0, category: "", description: "" });
+        setIsAddingProduct(false);
         toast({
           title: "Product added",
           description: `"${data.name}" has been added to your catalog.`,
@@ -392,6 +393,73 @@ export const EmailListManager = () => {
     } catch (error: any) {
       toast({
         title: "Error deleting contact",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleEditProduct = (product: Product) => {
+    setEditingProduct(product);
+    setNewProduct({
+      name: product.name,
+      price: product.price,
+      category: product.category,
+      description: product.description || "",
+    });
+  };
+
+  const handleUpdateProduct = async () => {
+    if (!editingProduct) return;
+
+    try {
+      const { data, error } = await supabase
+        .from('products')
+        .update({
+          name: newProduct.name.trim(),
+          price: newProduct.price || null,
+          category: newProduct.category.trim() || null,
+          description: newProduct.description.trim() || null,
+        })
+        .eq('id', editingProduct.id)
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      setProducts(products.map(p => p.id === editingProduct.id ? data : p));
+      setEditingProduct(null);
+      setNewProduct({ name: "", price: 0, category: "", description: "" });
+      toast({
+        title: "Product updated",
+        description: "Product has been updated successfully.",
+      });
+    } catch (error: any) {
+      toast({
+        title: "Error updating product",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleDeleteProduct = async (productId: string) => {
+    try {
+      const { error } = await supabase
+        .from('products')
+        .delete()
+        .eq('id', productId);
+
+      if (error) throw error;
+
+      setProducts(products.filter(p => p.id !== productId));
+      toast({
+        title: "Product deleted",
+        description: "Product has been removed successfully.",
+      });
+    } catch (error: any) {
+      toast({
+        title: "Error deleting product",
         description: error.message,
         variant: "destructive",
       });
@@ -708,10 +776,10 @@ export const EmailListManager = () => {
                         <TableCell className="text-muted-foreground">{product.description}</TableCell>
                         <TableCell>
                           <div className="flex space-x-2">
-                            <Button variant="outline" size="sm">
+                            <Button variant="outline" size="sm" onClick={() => handleEditProduct(product)}>
                               <Edit className="h-4 w-4" />
                             </Button>
-                            <Button variant="outline" size="sm">
+                            <Button variant="outline" size="sm" onClick={() => handleDeleteProduct(product.id)}>
                               <Trash2 className="h-4 w-4" />
                             </Button>
                           </div>
@@ -801,6 +869,9 @@ export const EmailListManager = () => {
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Edit Contact</DialogTitle>
+            <DialogDescription>
+              Update the contact information below.
+            </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
             <div>
@@ -861,6 +932,65 @@ export const EmailListManager = () => {
             </Button>
             <Button onClick={handleUpdateContact}>
               Update Contact
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Product Dialog */}
+      <Dialog open={editingProduct !== null} onOpenChange={(open) => !open && setEditingProduct(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Edit Product</DialogTitle>
+            <DialogDescription>
+              Update the product information below.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label htmlFor="editProductName">Product Name</Label>
+              <Input
+                id="editProductName"
+                value={newProduct.name}
+                onChange={(e) => setNewProduct({...newProduct, name: e.target.value})}
+                placeholder="Premium Course"
+              />
+            </div>
+            <div>
+              <Label htmlFor="editPrice">Price</Label>
+              <Input
+                id="editPrice"
+                type="number"
+                value={newProduct.price}
+                onChange={(e) => setNewProduct({...newProduct, price: parseFloat(e.target.value) || 0})}
+                placeholder="299"
+              />
+            </div>
+            <div>
+              <Label htmlFor="editCategory">Category</Label>
+              <Input
+                id="editCategory"
+                value={newProduct.category}
+                onChange={(e) => setNewProduct({...newProduct, category: e.target.value})}
+                placeholder="Education"
+              />
+            </div>
+            <div>
+              <Label htmlFor="editDescription">Description</Label>
+              <Textarea
+                id="editDescription"
+                value={newProduct.description}
+                onChange={(e) => setNewProduct({...newProduct, description: e.target.value})}
+                placeholder="Product description..."
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditingProduct(null)}>
+              Cancel
+            </Button>
+            <Button onClick={handleUpdateProduct}>
+              Update Product
             </Button>
           </DialogFooter>
         </DialogContent>
