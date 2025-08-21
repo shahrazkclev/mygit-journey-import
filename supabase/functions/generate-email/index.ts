@@ -75,28 +75,11 @@ CRITICAL STYLE REQUIREMENTS - Match this exact aesthetic:
    - Single prominent call-to-action
    - Clean footer
 
-MANDATORY CSS STRUCTURE:
-Include these responsive styles in every template:
-```css
-@media only screen and (max-width: 600px) {
-    .container { width: 100% !important; margin: 10px !important; }
-    .content { padding: 20px !important; }
-    .header { padding: 30px 20px 15px 20px !important; }
-    .main-title { font-size: 24px !important; }
-    .section-title { font-size: 16px !important; }
-    .body-text { font-size: 14px !important; }
-    .card { padding: 20px !important; margin: 20px 0 !important; }
-}
-@media only screen and (min-width: 601px) {
-    .container { max-width: 600px; }
-    .content { padding: 40px; }
-    .header { padding: 40px 40px 20px 40px; }
-    .main-title { font-size: 28px; }
-    .section-title { font-size: 18px; }
-    .body-text { font-size: 16px; }
-    .card { padding: 30px; margin: 30px 0; }
-}
-```
+RESPONSIVE CSS REQUIREMENTS:
+- Use proper media queries for mobile (max-width: 600px) and desktop (min-width: 601px)
+- Apply responsive classes: .container, .content, .header, .main-title, .section-title, .body-text, .card
+- Mobile: smaller fonts, tighter padding
+- Desktop: larger fonts, generous padding
 
 AVOID:
 - Fixed sizes that don't scale
