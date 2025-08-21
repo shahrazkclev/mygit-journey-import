@@ -35,24 +35,42 @@ export const useGlobalTheme = () => {
         .order('created_at', { ascending: false })
         .limit(1);
 
-      if (error) return;
+      if (error) {
+        console.error('Database error loading theme:', error);
+        globalThemeState.initialized = true;
+        return;
+      }
 
       if (data && data.length > 0) {
         const guide = data[0];
+        console.log('Loading saved theme:', guide);
+        
+        // Update global state with loaded theme
         globalThemeState = {
-          primary: guide.page_theme_primary,
-          secondary: guide.page_theme_secondary,
-          accent: guide.page_theme_accent,
+          primary: guide.page_theme_primary || "#684cff",
+          secondary: guide.page_theme_secondary || "#22d3ee", 
+          accent: guide.page_theme_accent || "#34d399",
           initialized: true
         };
-        setThemeColors(globalThemeState);
+        
+        // Apply theme to CSS immediately
         setCssThemeFromHex(
           globalThemeState.primary,
           globalThemeState.secondary,
           globalThemeState.accent
         );
+        
+        // Update React state to trigger re-render
+        setThemeColors({...globalThemeState});
       } else {
+        console.log('No saved theme found, using defaults');
         globalThemeState.initialized = true;
+        // Apply default theme
+        setCssThemeFromHex(
+          globalThemeState.primary,
+          globalThemeState.secondary,
+          globalThemeState.accent
+        );
       }
     } catch (error) {
       console.error('Error loading theme:', error);
