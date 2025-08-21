@@ -36,15 +36,15 @@ export const StyleGuide = () => {
   const [loading, setLoading] = useState(false);
   const [brandInitialized, setBrandInitialized] = useState(false);
   const [brandIdentity, setBrandIdentity] = useState<BrandIdentity>({
-    name: "Your Brand",
-    primaryColor: "#684cff",
-    secondaryColor: "#22d3ee",
-    accentColor: "#34d399",
-    font: "Segoe UI, sans-serif",
+    name: "Cleverpoly",
+    primaryColor: "#6A7059",
+    secondaryColor: "#F9F8F5",
+    accentColor: "#FCD34D",
+    font: "Inter, Lato, Open Sans, sans-serif",
     voice: "friendly",
-    brandVoice: "Professional yet approachable, with a focus on helping our community grow and succeed.",
+    brandVoice: "Clean and professional, using generous white space and a card-based design to create an organized and user-friendly experience. The tone should be helpful and direct.",
     logo: "",
-    signature: "Best regards,\nThe Team"
+    signature: "Best regards,\nCleverpoly\n\nIf you have any questions or need assistance, feel free to contact us at cleverpoly.store@gmail.com"
   });
 
   // Page theme colors (separate from brand colors) - use global state
