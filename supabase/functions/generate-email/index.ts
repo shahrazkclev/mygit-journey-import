@@ -34,14 +34,61 @@ serve(async (req) => {
     const accent = styleGuide?.accentColor || themeColors?.accent || '#FCD34D';
     const fontFamily = styleGuide?.fontFamily || "Inter, Lato, 'Open Sans', Arial, sans-serif";
 
+    // Build a reference template from saved preview or generate one using brand tokens
+    const referenceTemplate = (typeof templatePreview === 'string' && templatePreview.trim().length > 0)
+      ? templatePreview
+      : `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>${subject}</title>
+</head>
+<body style="margin:0;padding:0;background:#FFFFFF;color:#333333;font-family:${fontFamily}">
+  <div style="padding:20px;">
+    <table role="presentation" cellspacing="0" cellpadding="0" border="0" style="max-width:600px;width:100%;margin:0 auto;background:#FFFFFF;">
+      <tr>
+        <td class="header" style="background:${primary};text-align:center;padding:40px 40px 20px 40px;">
+          <h1 style="margin:0;color:#FFFFFF;font-size:24px;font-weight:600;">
+            <span style="background:${accent};color:#333333;padding:2px 8px;border-radius:4px;">${brandName.split('.')[0]}</span>${brandName.includes('.') ? '.' + brandName.split('.')[1] : ''}
+          </h1>
+          <p style="margin:8px 0 0 0;color:#FFFFFF;opacity:0.9;">Sample Email Header</p>
+        </td>
+      </tr>
+      <tr>
+        <td class="content" style="padding:40px;background:#FFFFFF;">
+          <div class="card" style="background:${secondary};border-radius:8px;padding:30px;margin:24px 0;">
+            <p class="body-text" style="margin:0;font-size:16px;line-height:1.6;color:#333333;">${prompt}</p>
+          </div>
+          <div style="text-align:center;margin:24px 0;">
+            <table role="presentation" cellspacing="0" cellpadding="0" border="0" style="margin:0 auto;">
+              <tr>
+                <td style="border-radius:6px;background:${primary};">
+                  <a href="#" style="display:inline-block;padding:14px 28px;font-size:16px;font-weight:500;color:#FFFFFF;text-decoration:none;border-radius:6px;">Take Action</a>
+                </td>
+              </tr>
+            </table>
+          </div>
+        </td>
+      </tr>
+      <tr>
+        <td class="content" style="padding:40px;text-align:left;border-top:1px solid ${secondary};">
+          <pre style="margin:0;font-size:14px;line-height:1.6;color:#333333;white-space:pre-wrap;">Best regards,\n${brandName}</pre>
+        </td>
+      </tr>
+    </table>
+  </div>
+</body>
+</html>`;
+
     const systemPrompt = `You are an expert email template designer. You MUST create templates that EXACTLY match the provided brand style template.
 
-${templatePreview ? `REFERENCE TEMPLATE TO FOLLOW:
+REFERENCE TEMPLATE TO FOLLOW:
 Use this exact template structure and styling as your reference. Adapt the content but keep the exact same visual style, layout, colors, and branding:
 
-${templatePreview}
+${referenceTemplate}
 
-CRITICAL: Use this template as your EXACT visual reference. Only change the content (subject, body text) but maintain all styling, colors, layout, and branding elements exactly as shown.` : ''}
+CRITICAL: Use this template as your EXACT visual reference. Only change the content (subject, body text) but maintain all styling, colors, layout, and branding elements exactly as shown.
 
 MANDATORY BRAND COLORS (use these EXACT hex values):
 - Background: #FFFFFF (pure white)
@@ -63,7 +110,7 @@ FORBIDDEN:
 - Complex layouts or fancy styling
 - Multiple color schemes
 
-${templatePreview ? 'Follow the reference template structure EXACTLY while adapting only the content.' : 'Create a clean, minimal, professional email that matches the brand style.'}`;
+Follow the reference template structure EXACTLY while adapting only the content.`;
 
     const response = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
@@ -151,7 +198,7 @@ ${mobileCss}
           return primary; // Default problematic colors to primary
         });
 
-    htmlContent = templatePreview ? ensureInjected(htmlContent) : ensureInjected(stripGradientsAndExcess(htmlContent));
+    htmlContent = ensureInjected(stripGradientsAndExcess(htmlContent));
 
     console.log('Email template generated with strict brand compliance');
 
