@@ -597,7 +597,7 @@ export const CampaignComposer = () => {
                 <iframe
                   title="Email inline preview"
                   srcDoc={generatedTemplate}
-                  className="w-full h-96 border-0"
+                  className="w-full h-[600px] border-0"
                   sandbox="allow-same-origin"
                 />
               </div>
