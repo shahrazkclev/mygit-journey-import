@@ -358,62 +358,145 @@ export const EmailListManager = () => {
                 </TableHeader>
                 <TableBody>
                   {filteredContacts.map((contact) => (
-                    <TableRow key={contact.id}>
-                      <TableCell>
-                        <div>
-                          <div className="font-medium">{contact.name}</div>
-                          <div className="text-sm text-muted-foreground">{contact.email}</div>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant="outline" className="border-email-accent text-email-accent">
-                          {getListName(contact.listId)}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex flex-wrap gap-1">
-                          {contact.tags.map((tag) => (
-                            <Badge key={tag} variant="secondary" className="text-xs">
-                              {tag}
-                            </Badge>
-                          ))}
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <span className="text-sm">{contact.source}</span>
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex items-center space-x-1">
-                          <Calendar className="h-3 w-3 text-muted-foreground" />
-                          <span className="text-sm">{contact.lastContacted}</span>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex flex-wrap gap-1">
-                          {contact.purchasedProducts.length > 0 ? (
-                            contact.purchasedProducts.map((product) => (
-                              <Badge key={product.id} variant="default" className="text-xs bg-email-success/20 text-email-success">
-                                {product.name} - ${product.price}
+                    <>
+                      <TableRow key={contact.id}>
+                        <TableCell>
+                          <div>
+                            <div className="font-medium">{contact.name}</div>
+                            <div className="text-sm text-muted-foreground">{contact.email}</div>
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant="outline" className="border-email-accent text-email-accent">
+                            {getListName(contact.listId)}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex flex-wrap gap-1">
+                            {contact.tags.map((tag) => (
+                              <Badge key={tag} variant="secondary" className="text-xs">
+                                {tag}
                               </Badge>
-                            ))
-                          ) : (
-                            <Badge variant="outline" className="text-xs">
-                              No purchases
-                            </Badge>
-                          )}
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex items-center space-x-1">
-                          <Button variant="ghost" size="sm" onClick={() => handleEditContact(contact)}>
-                            <Eye className="h-3 w-3" />
-                          </Button>
-                          <Button variant="ghost" size="sm" onClick={() => handleDeleteContact(contact.id)}>
-                            <Trash2 className="h-3 w-3" />
-                          </Button>
-                        </div>
-                      </TableCell>
-                    </TableRow>
+                            ))}
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <span className="text-sm">{contact.source}</span>
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex items-center space-x-1">
+                            <Calendar className="h-3 w-3 text-muted-foreground" />
+                            <span className="text-sm">{contact.lastContacted}</span>
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex flex-wrap gap-1">
+                            {contact.purchasedProducts.length > 0 ? (
+                              contact.purchasedProducts.map((product) => (
+                                <Badge key={product.id} variant="default" className="text-xs bg-email-success/20 text-email-success">
+                                  {product.name} - ${product.price}
+                                </Badge>
+                              ))
+                            ) : (
+                              <Badge variant="outline" className="text-xs">
+                                No purchases
+                              </Badge>
+                            )}
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex items-center space-x-1">
+                            <Button variant="ghost" size="sm" onClick={() => handleEditContact(contact)}>
+                              <Pencil className="h-3 w-3" />
+                            </Button>
+                            <Button variant="ghost" size="sm" onClick={() => handleDeleteContact(contact.id)}>
+                              <Trash2 className="h-3 w-3" />
+                            </Button>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                      {editingContact && editingContact.id === contact.id && (
+                        <TableRow>
+                          <TableCell colSpan={7} className="bg-muted/50">
+                            <div className="animate-fade-in">
+                              <Card className="shadow-soft border-email-primary/20">
+                                <CardHeader>
+                                  <CardTitle>Edit Contact</CardTitle>
+                                </CardHeader>
+                                <CardContent>
+                                  <div className="grid grid-cols-2 gap-4">
+                                    <div>
+                                      <Label htmlFor="editEmail">Email</Label>
+                                      <Input
+                                        id="editEmail"
+                                        value={editingContact.email}
+                                        onChange={(e) => setEditingContact({...editingContact, email: e.target.value})}
+                                      />
+                                    </div>
+                                    <div>
+                                      <Label htmlFor="editName">Name</Label>
+                                      <Input
+                                        id="editName"
+                                        value={editingContact.name}
+                                        onChange={(e) => setEditingContact({...editingContact, name: e.target.value})}
+                                      />
+                                    </div>
+                                    <div>
+                                      <Label htmlFor="editTags">Tags (comma-separated)</Label>
+                                      <Input
+                                        id="editTags"
+                                        value={editingContact.tags.join(", ")}
+                                        onChange={(e) => setEditingContact({...editingContact, tags: e.target.value.split(",").map(tag => tag.trim())})}
+                                      />
+                                    </div>
+                                    <div>
+                                      <Label htmlFor="editSource">Source</Label>
+                                      <Input
+                                        id="editSource"
+                                        value={editingContact.source}
+                                        onChange={(e) => setEditingContact({...editingContact, source: e.target.value})}
+                                      />
+                                    </div>
+                                  </div>
+                                  <div className="mt-4">
+                                    <Label>Purchased Products</Label>
+                                    <div className="space-y-2 max-h-32 overflow-y-auto border rounded-md p-2">
+                                      {products.map((product) => (
+                                        <label key={product.id} className="flex items-center space-x-2">
+                                          <input
+                                            type="checkbox"
+                                            checked={editingContact.purchasedProducts.some(p => p.id === product.id)}
+                                            onChange={(e) => {
+                                              if (e.target.checked) {
+                                                setEditingContact({
+                                                  ...editingContact, 
+                                                  purchasedProducts: [...editingContact.purchasedProducts, product]
+                                                });
+                                              } else {
+                                                setEditingContact({
+                                                  ...editingContact, 
+                                                  purchasedProducts: editingContact.purchasedProducts.filter(p => p.id !== product.id)
+                                                });
+                                              }
+                                            }}
+                                            className="rounded"
+                                          />
+                                          <span className="text-sm">{product.name} - ${product.price}</span>
+                                        </label>
+                                      ))}
+                                    </div>
+                                  </div>
+                                  <div className="flex gap-2 mt-4">
+                                    <Button onClick={handleUpdateContact}>Update Contact</Button>
+                                    <Button variant="outline" onClick={() => setEditingContact(null)}>Cancel</Button>
+                                  </div>
+                                </CardContent>
+                              </Card>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      )}
+                    </>
                   ))}
                 </TableBody>
               </Table>
@@ -507,82 +590,6 @@ export const EmailListManager = () => {
               </Card>
             )}
 
-            {/* Edit Contact Dialog */}
-            {editingContact && (
-              <Card className="shadow-soft border-email-primary/20">
-                <CardHeader>
-                  <CardTitle>Edit Contact</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <Label htmlFor="editEmail">Email</Label>
-                      <Input
-                        id="editEmail"
-                        value={editingContact.email}
-                        onChange={(e) => setEditingContact({...editingContact, email: e.target.value})}
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="editName">Name</Label>
-                      <Input
-                        id="editName"
-                        value={editingContact.name}
-                        onChange={(e) => setEditingContact({...editingContact, name: e.target.value})}
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="editTags">Tags (comma-separated)</Label>
-                      <Input
-                        id="editTags"
-                        value={editingContact.tags.join(", ")}
-                        onChange={(e) => setEditingContact({...editingContact, tags: e.target.value.split(",").map(tag => tag.trim())})}
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="editSource">Source</Label>
-                      <Input
-                        id="editSource"
-                        value={editingContact.source}
-                        onChange={(e) => setEditingContact({...editingContact, source: e.target.value})}
-                      />
-                    </div>
-                  </div>
-                  <div className="mt-4">
-                    <Label>Purchased Products</Label>
-                    <div className="space-y-2 max-h-32 overflow-y-auto border rounded-md p-2">
-                      {products.map((product) => (
-                        <label key={product.id} className="flex items-center space-x-2">
-                          <input
-                            type="checkbox"
-                            checked={editingContact.purchasedProducts.some(p => p.id === product.id)}
-                            onChange={(e) => {
-                              if (e.target.checked) {
-                                setEditingContact({
-                                  ...editingContact, 
-                                  purchasedProducts: [...editingContact.purchasedProducts, product]
-                                });
-                              } else {
-                                setEditingContact({
-                                  ...editingContact, 
-                                  purchasedProducts: editingContact.purchasedProducts.filter(p => p.id !== product.id)
-                                });
-                              }
-                            }}
-                            className="rounded"
-                          />
-                          <span className="text-sm">{product.name} - ${product.price}</span>
-                        </label>
-                      ))}
-                    </div>
-                  </div>
-                  <div className="flex gap-2 mt-4">
-                    <Button onClick={handleUpdateContact}>Update Contact</Button>
-                    <Button variant="outline" onClick={() => setEditingContact(null)}>Cancel</Button>
-                  </div>
-                </CardContent>
-              </Card>
-            )}
         </TabsContent>
 
         {/* Product Management Tab */}
@@ -607,42 +614,89 @@ export const EmailListManager = () => {
             <CardContent>
               <div className="grid gap-4">
                 {products.map((product) => (
-                  <Card key={product.id} className="border-email-accent/20">
-                    <CardContent className="p-4">
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <h4 className="font-medium">{product.name}</h4>
-                          <div className="flex items-center space-x-4 text-sm text-muted-foreground">
-                            <span>${product.price}</span>
-                            <Badge variant="outline" className="border-email-accent text-email-accent">
-                              {product.category}
-                            </Badge>
+                  <div key={product.id}>
+                    <Card className="border-email-accent/20">
+                      <CardContent className="p-4">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <h4 className="font-medium">{product.name}</h4>
+                            <div className="flex items-center space-x-4 text-sm text-muted-foreground">
+                              <span>${product.price}</span>
+                              <Badge variant="outline" className="border-email-accent text-email-accent">
+                                {product.category}
+                              </Badge>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <span className="text-sm text-muted-foreground">
+                              {contacts.filter(c => c.purchasedProducts.some(p => p.id === product.id)).length} customers
+                            </span>
+                            <Button 
+                              variant="outline" 
+                              size="sm"
+                              onClick={() => handleEditProduct(product)}
+                              className="border-email-secondary hover:bg-email-secondary/10"
+                            >
+                              <Pencil className="h-4 w-4" />
+                            </Button>
+                            <Button 
+                              variant="outline" 
+                              size="sm"
+                              onClick={() => handleDeleteProduct(product.id)}
+                              className="border-destructive hover:bg-destructive hover:text-destructive-foreground"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
                           </div>
                         </div>
-                        <div className="flex items-center gap-2">
-                          <span className="text-sm text-muted-foreground">
-                            {contacts.filter(c => c.purchasedProducts.some(p => p.id === product.id)).length} customers
-                          </span>
-                          <Button 
-                            variant="outline" 
-                            size="sm"
-                            onClick={() => handleEditProduct(product)}
-                            className="border-email-secondary hover:bg-email-secondary/10"
-                          >
-                            <Pencil className="h-4 w-4" />
-                          </Button>
-                          <Button 
-                            variant="outline" 
-                            size="sm"
-                            onClick={() => handleDeleteProduct(product.id)}
-                            className="border-destructive hover:bg-destructive hover:text-destructive-foreground"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </div>
+                      </CardContent>
+                    </Card>
+                    {editingProduct && editingProduct.id === product.id && (
+                      <div className="mt-2 animate-fade-in">
+                        <Card className="shadow-soft border-email-secondary/20">
+                          <CardHeader>
+                            <CardTitle>Edit Product</CardTitle>
+                          </CardHeader>
+                          <CardContent>
+                            <div className="grid grid-cols-3 gap-4">
+                              <div>
+                                <Label htmlFor="editProductName">Product Name</Label>
+                                <Input
+                                  id="editProductName"
+                                  value={editingProduct.name}
+                                  onChange={(e) => setEditingProduct({ ...editingProduct, name: e.target.value })}
+                                  placeholder="Product name"
+                                />
+                              </div>
+                              <div>
+                                <Label htmlFor="editProductPrice">Price ($)</Label>
+                                <Input
+                                  id="editProductPrice"
+                                  type="number"
+                                  value={editingProduct.price}
+                                  onChange={(e) => setEditingProduct({ ...editingProduct, price: parseFloat(e.target.value) || 0 })}
+                                  placeholder="0"
+                                />
+                              </div>
+                              <div>
+                                <Label htmlFor="editProductCategory">Category</Label>
+                                <Input
+                                  id="editProductCategory"
+                                  value={editingProduct.category}
+                                  onChange={(e) => setEditingProduct({ ...editingProduct, category: e.target.value })}
+                                  placeholder="Category"
+                                />
+                              </div>
+                            </div>
+                            <div className="flex gap-2 mt-4">
+                              <Button onClick={handleUpdateProduct}>Update Product</Button>
+                              <Button variant="outline" onClick={() => setEditingProduct(null)}>Cancel</Button>
+                            </div>
+                          </CardContent>
+                        </Card>
                       </div>
-                    </CardContent>
-                  </Card>
+                    )}
+                  </div>
                 ))}
               </div>
             </CardContent>
@@ -688,49 +742,6 @@ export const EmailListManager = () => {
                 <div className="flex gap-2 mt-4">
                   <Button onClick={handleAddProduct}>Add Product</Button>
                   <Button variant="outline" onClick={() => setIsAddingProduct(false)}>Cancel</Button>
-                </div>
-              </CardContent>
-            </Card>
-          )}
-          {editingProduct && (
-            <Card className="shadow-soft border-email-secondary/20">
-              <CardHeader>
-                <CardTitle>Edit Product</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-3 gap-4">
-                  <div>
-                    <Label htmlFor="editProductName">Product Name</Label>
-                    <Input
-                      id="editProductName"
-                      value={editingProduct.name}
-                      onChange={(e) => setEditingProduct({ ...editingProduct, name: e.target.value })}
-                      placeholder="Product name"
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="editProductPrice">Price ($)</Label>
-                    <Input
-                      id="editProductPrice"
-                      type="number"
-                      value={editingProduct.price}
-                      onChange={(e) => setEditingProduct({ ...editingProduct, price: parseFloat(e.target.value) || 0 })}
-                      placeholder="0"
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="editProductCategory">Category</Label>
-                    <Input
-                      id="editProductCategory"
-                      value={editingProduct.category}
-                      onChange={(e) => setEditingProduct({ ...editingProduct, category: e.target.value })}
-                      placeholder="Category"
-                    />
-                  </div>
-                </div>
-                <div className="flex gap-2 mt-4">
-                  <Button onClick={handleUpdateProduct}>Update Product</Button>
-                  <Button variant="outline" onClick={() => setEditingProduct(null)}>Cancel</Button>
                 </div>
               </CardContent>
             </Card>
