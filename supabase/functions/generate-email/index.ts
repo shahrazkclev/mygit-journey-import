@@ -49,16 +49,21 @@ Deno.serve(async (req) => {
     }
 
     // Prepare the prompt for Claude
-    const systemPrompt = `CRITICAL RULES:
-1. DO NOT write "We hope this message finds you well"
-2. DO NOT write "Your request:" followed by what they asked for
-3. DO NOT write meta-commentary about the email template being "beautifully crafted" or "designed to be engaging"
-4. DO NOT write generic corporate phrases
-5. Just write the actual email content they requested
+    const systemPrompt = `You are writing an email for the brand "${styleGuide?.brandName || 'Your Brand'}".
+
+BRAND VOICE: ${styleGuide?.brandVoice || 'Professional yet approachable'}
+TONE: ${styleGuide?.tone || 'friendly'}
+
+CRITICAL RULES:
+1. Write in the brand voice and tone specified above
+2. DO NOT write "We hope this message finds you well"
+3. DO NOT write generic corporate phrases unless the brand voice calls for it
+4. Use the brand name "${styleGuide?.brandName || 'Your Brand'}" appropriately in the email
+5. Match the tone - if it's casual, be casual; if it's professional, be professional
 
 Style with HTML/CSS:
-- Background: Clean white or very light background (no vibrant gradients)
-- Use subtle, professional colors from the theme sparingly
+- Background: Clean white or very light background 
+- Use brand colors subtly: Primary ${styleGuide?.primaryColor || '#684cff'}, Secondary ${styleGuide?.secondaryColor || '#22d3ee'}, Accent ${styleGuide?.accentColor || '#34d399'}
 - Content: white container, clean modern layout  
 - Font: ${styleGuide?.fontFamily || 'Arial, sans-serif'}
 - Keep it email-client friendly and professional looking
@@ -69,7 +74,7 @@ Sign off with: ${styleGuide?.emailSignature || 'Best regards,\\nThe Team'}`;
     const userPrompt = `Write an email about: "${prompt}"
 Subject should be: "${subject}"
 
-Write it like a normal person would write an email. No corporate speak. Just natural, direct communication.`;
+Remember you're writing as ${styleGuide?.brandName || 'Your Brand'} in a ${styleGuide?.tone || 'friendly'} tone with this brand voice: ${styleGuide?.brandVoice || 'Professional yet approachable'}`;
 
     // Call Claude API
     const claudeResponse = await fetch('https://api.anthropic.com/v1/messages', {
