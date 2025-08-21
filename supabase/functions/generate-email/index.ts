@@ -15,12 +15,13 @@ serve(async (req) => {
 
   // Parse request body once and reuse
   const requestData = await req.json();
-  const { prompt, subject, themeColors, regenId, styleGuide } = requestData as { 
+  const { prompt, subject, themeColors, regenId, styleGuide, templatePreview } = requestData as { 
     prompt: string; 
     subject: string; 
     themeColors?: any; 
     regenId?: number; 
     styleGuide?: any;
+    templatePreview?: string;
   };
 
   try {
@@ -33,13 +34,20 @@ serve(async (req) => {
     const accent = styleGuide?.accentColor || themeColors?.accent || '#FCD34D';
     const fontFamily = styleGuide?.fontFamily || "Inter, Lato, 'Open Sans', Arial, sans-serif";
 
-    const systemPrompt = `You are an expert email template designer. You MUST create templates that EXACTLY match the provided brand style.
+    const systemPrompt = `You are an expert email template designer. You MUST create templates that EXACTLY match the provided brand style template.
+
+${templatePreview ? `REFERENCE TEMPLATE TO FOLLOW:
+Use this exact template structure and styling as your reference. Adapt the content but keep the exact same visual style, layout, colors, and branding:
+
+${templatePreview}
+
+CRITICAL: Use this template as your EXACT visual reference. Only change the content (subject, body text) but maintain all styling, colors, layout, and branding elements exactly as shown.` : ''}
 
 MANDATORY BRAND COLORS (use these EXACT hex values):
 - Background: #FFFFFF (pure white)
-- Primary: ${primary} (olive green - for buttons and header backgrounds)
-- Secondary: ${secondary} (warm off-white - for content cards only)
-- Accent: ${accent} (warm gold - ONLY for brand name highlights)
+- Primary: ${primary} (for buttons and header backgrounds)
+- Secondary: ${secondary} (for content cards only)
+- Accent: ${accent} (ONLY for brand name highlights)
 - Text: #333333 (dark gray)
 - Button Text: #FFFFFF (white)
 
@@ -55,7 +63,7 @@ FORBIDDEN:
 - Complex layouts or fancy styling
 - Multiple color schemes
 
-Create a clean, minimal, professional email that looks EXACTLY like the Cleverpoly brand preview.`;
+${templatePreview ? 'Follow the reference template structure EXACTLY while adapting only the content.' : 'Create a clean, minimal, professional email that matches the brand style.'}`;
 
     const response = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',

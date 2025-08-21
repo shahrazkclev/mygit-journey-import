@@ -248,7 +248,8 @@ export const CampaignComposer = () => {
             brandVoice: styleGuide.brand_voice,
             logoUrl: styleGuide.logo_url,
             emailSignature: styleGuide.email_signature,
-          } : null
+          } : null,
+          templatePreview: styleGuide?.template_preview
         }
       });
 
