@@ -129,32 +129,29 @@ export const StyleGuide = () => {
 
       if (checkError) throw checkError;
 
-      const styleGuideData = {
-        user_id: DEMO_USER_ID,
-        brand_name: brandIdentity.name,
-        primary_color: brandIdentity.primaryColor,
-        secondary_color: brandIdentity.secondaryColor,
-        accent_color: brandIdentity.accentColor,
-        font_family: brandIdentity.font,
-        tone: brandIdentity.voice,
-        brand_voice: brandIdentity.brandVoice,
-        logo_url: brandIdentity.logo,
-        email_signature: brandIdentity.signature,
-        page_theme_primary: colors.primary,
-        page_theme_secondary: colors.secondary,
-        page_theme_accent: colors.accent,
-      };
-
       let result;
       if (existingData && existingData.length > 0) {
+        // Only update page_theme_* fields — do NOT touch brand fields here
         result = await supabase
           .from('style_guides')
-          .update(styleGuideData)
+          .update({
+            page_theme_primary: colors.primary,
+            page_theme_secondary: colors.secondary,
+            page_theme_accent: colors.accent,
+          })
           .eq('id', existingData[0].id);
       } else {
+        // Insert minimal record relying on column defaults for brand fields
         result = await supabase
           .from('style_guides')
-          .insert([styleGuideData]);
+          .insert([
+            {
+              user_id: DEMO_USER_ID,
+              page_theme_primary: colors.primary,
+              page_theme_secondary: colors.secondary,
+              page_theme_accent: colors.accent,
+            }
+          ]);
       }
 
       if (result.error) throw result.error;
