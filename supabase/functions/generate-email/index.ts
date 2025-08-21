@@ -83,7 +83,7 @@ ${templatePreview ? 'Follow the reference template structure EXACTLY while adapt
 Subject: "${subject}"
 Content: ${prompt}
 
-Return ONLY the complete HTML email template that matches the brand exactly.`
+Return ONLY the complete HTML email template that matches the brand exactly. Do not use markdown code fences or triple backticks.`
           }
         ],
       }),
@@ -151,7 +151,7 @@ ${mobileCss}
           return primary; // Default problematic colors to primary
         });
 
-    htmlContent = ensureInjected(stripGradientsAndExcess(htmlContent));
+    htmlContent = templatePreview ? ensureInjected(htmlContent) : ensureInjected(stripGradientsAndExcess(htmlContent));
 
     console.log('Email template generated with strict brand compliance');
 

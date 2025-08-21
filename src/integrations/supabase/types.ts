@@ -242,6 +242,7 @@ export type Database = {
           page_theme_secondary: string
           primary_color: string
           secondary_color: string
+          template_preview: string | null
           tone: string
           updated_at: string
           user_id: string
@@ -260,6 +261,7 @@ export type Database = {
           page_theme_secondary?: string
           primary_color?: string
           secondary_color?: string
+          template_preview?: string | null
           tone?: string
           updated_at?: string
           user_id: string
@@ -278,6 +280,7 @@ export type Database = {
           page_theme_secondary?: string
           primary_color?: string
           secondary_color?: string
+          template_preview?: string | null
           tone?: string
           updated_at?: string
           user_id?: string
