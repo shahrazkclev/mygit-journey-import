@@ -494,7 +494,28 @@ export const CampaignComposer = () => {
 
           {/* Quick Color Theme Controls */}
           <div className="space-y-2">
-            <Label>Quick Theme Colors</Label>
+            <div className="flex items-center justify-between">
+              <Label>Campaign Colors</Label>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => {
+                  if (styleGuide) {
+                    setThemeColors({
+                      primary: styleGuide.primary_color,
+                      secondary: styleGuide.secondary_color,
+                      accent: styleGuide.accent_color,
+                    });
+                    if (generatedTemplate) {
+                      applyColorChangesToTemplate(styleGuide.primary_color, styleGuide.secondary_color, styleGuide.accent_color);
+                    }
+                  }
+                }}
+                className="text-xs"
+              >
+                Reset to Brand
+              </Button>
+            </div>
             <div className="flex space-x-4 items-center">
               <div className="flex items-center space-x-2">
                 <Label htmlFor="primary-color" className="text-sm">Primary</Label>
