@@ -144,22 +144,30 @@ Return ONLY the complete HTML email template, no explanations or code blocks.`
     let htmlContent = data.content[0]?.text || '';
 
     // Enforce strict Cleverpoly minimal style by sanitizing AI output
-    const injectReset = `<style id="cleverpoly-reset">
+    const cssReset = `
       body{margin:0 !important;background:#FFFFFF !important;color:#333333 !important;font-family:'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif !important;}
       .container{max-width:600px !important;width:100% !important;margin:0 auto !important;}
       .content{padding:40px !important;}
       .card{background:#F9F8F5 !important;border-radius:8px !important;}
       a.button,.button,button,.btn{background:#6A7059 !important;color:#FFFFFF !important;border-radius:6px !important;text-decoration:none !important;}
       *{background-image:none !important;box-shadow:none !important;}
-      @media only screen and (max-width: 600px){
-        .content{padding:20px !important;}
-        .header{padding:30px 20px 15px 20px !important;}
-        .main-title{font-size:24px !important;}
-        .section-title{font-size:16px !important;}
-        .body-text{font-size:14px !important;}
-        .card{padding:20px !important;margin:20px 0 !important;}
-      }
-    </style>`;
+    `.trim();
+
+    const mobileCss = `
+      .content{padding:20px !important;}
+      .header{padding:30px 20px 15px 20px !important;}
+      .main-title{font-size:24px !important;}
+      .section-title{font-size:16px !important;}
+      .body-text{font-size:14px !important;}
+      .card{padding:20px !important;margin:20px 0 !important;}
+    `.trim();
+
+    const injectReset = `<style id="cleverpoly-reset">
+${cssReset}
+@media only screen and (max-width: 600px) {
+${mobileCss}
+}
+</style>`;
 
     const ensureInjected = (s: string) => {
       if (s.includes('</head>')) {
