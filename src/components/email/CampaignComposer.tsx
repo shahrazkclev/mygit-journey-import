@@ -159,6 +159,32 @@ export const CampaignComposer = () => {
 
     return out;
   };
+
+  // Apply color changes to template in real-time
+  const applyColorChangesToTemplate = (primary: string, secondary: string, accent: string) => {
+    if (!generatedTemplate) return;
+
+    let updatedTemplate = generatedTemplate;
+    
+    // Replace color values in the HTML
+    updatedTemplate = updatedTemplate
+      .replace(/background:\s*linear-gradient\([^)]+\)/gi, `background: linear-gradient(135deg, ${primary}, ${secondary})`)
+      .replace(/background-color:\s*#[0-9a-fA-F]{6}/gi, `background-color: ${primary}`)
+      .replace(/background:\s*#[0-9a-fA-F]{6}/gi, `background: ${primary}`)
+      .replace(/"Take Action"[^>]*style="[^"]*background-color:[^;"]*;?/gi, (match) => {
+        return match.replace(/background-color:[^;"]*;?/gi, `background-color: ${accent};`);
+      });
+
+    // Update CSS custom properties if they exist
+    if (updatedTemplate.includes(':root')) {
+      updatedTemplate = updatedTemplate.replace(
+        /:root\s*{[^}]*}/gi,
+        `:root { --primary: ${primary}; --secondary: ${secondary}; --accent: ${accent}; }`
+      );
+    }
+
+    setGeneratedTemplate(updatedTemplate);
+  };
   const handleGenerateTemplate = async () => {
     if (!subject.trim() || !prompt.trim()) {
       toast({
@@ -451,6 +477,49 @@ export const CampaignComposer = () => {
             />
           </div>
 
+          {/* Quick Color Theme Controls */}
+          <div className="space-y-2">
+            <Label>Quick Theme Colors</Label>
+            <div className="flex space-x-4 items-center">
+              <div className="flex items-center space-x-2">
+                <Label htmlFor="primary-color" className="text-sm">Primary</Label>
+                <ColorPicker
+                  value={themeColors.primary}
+                  onChange={(color) => {
+                    setThemeColors(prev => ({ ...prev, primary: color }));
+                    if (generatedTemplate) {
+                      applyColorChangesToTemplate(color, themeColors.secondary, themeColors.accent);
+                    }
+                  }}
+                />
+              </div>
+              <div className="flex items-center space-x-2">
+                <Label htmlFor="secondary-color" className="text-sm">Secondary</Label>
+                <ColorPicker
+                  value={themeColors.secondary}
+                  onChange={(color) => {
+                    setThemeColors(prev => ({ ...prev, secondary: color }));
+                    if (generatedTemplate) {
+                      applyColorChangesToTemplate(themeColors.primary, color, themeColors.accent);
+                    }
+                  }}
+                />
+              </div>
+              <div className="flex items-center space-x-2">
+                <Label htmlFor="accent-color" className="text-sm">Accent</Label>
+                <ColorPicker
+                  value={themeColors.accent}
+                  onChange={(color) => {
+                    setThemeColors(prev => ({ ...prev, accent: color }));
+                    if (generatedTemplate) {
+                      applyColorChangesToTemplate(themeColors.primary, themeColors.secondary, color);
+                    }
+                  }}
+                />
+              </div>
+            </div>
+          </div>
+
           <Button 
             onClick={handleGenerateTemplate}
             disabled={isGenerating}
@@ -468,6 +537,33 @@ export const CampaignComposer = () => {
               </>
             )}
           </Button>
+
+          {/* AI Generated Template Preview */}
+          {generatedTemplate && (
+            <div className="mt-4 space-y-2">
+              <div className="flex justify-between items-center">
+                <Label>Generated Template</Label>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    navigator.clipboard.writeText(generatedTemplate);
+                    toast({
+                      title: "Copied!",
+                      description: "HTML template copied to clipboard.",
+                    });
+                  }}
+                >
+                  Copy HTML
+                </Button>
+              </div>
+              <div className="border rounded-lg p-4 bg-muted/50 max-h-32 overflow-y-auto">
+                <pre className="text-xs text-muted-foreground whitespace-pre-wrap">
+                  {generatedTemplate.substring(0, 300)}...
+                </pre>
+              </div>
+            </div>
+          )}
         </CardContent>
       </Card>
 

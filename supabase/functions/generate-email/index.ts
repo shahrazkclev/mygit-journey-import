@@ -104,8 +104,8 @@ Write 2-3 paragraphs of engaging content only. No subject, no greetings, no sign
         'anthropic-version': '2023-06-01',
       },
       body: JSON.stringify({
-        model: 'claude-3-5-haiku-20241022', // Faster model
-        max_tokens: 800, // Reduced token limit for speed
+        model: 'claude-3-5-sonnet-20241022', // Better model for quality responses
+        max_tokens: 2000,
         messages: [
           {
             role: 'user',

@@ -593,7 +593,7 @@ export const EmailListManager = () => {
                         <Button variant="outline" onClick={() => setIsAddingContact(false)}>
                           Cancel
                         </Button>
-                        <Button onClick={handleAddContact}>
+                        <Button onClick={handleAddContact} disabled={!newContact.email.trim()}>
                           Add Contact
                         </Button>
                       </DialogFooter>
@@ -747,9 +747,9 @@ export const EmailListManager = () => {
                       <Button variant="outline" onClick={() => setIsAddingProduct(false)}>
                         Cancel
                       </Button>
-                      <Button onClick={handleAddProduct}>
-                        Add Product
-                      </Button>
+                        <Button onClick={handleAddProduct} disabled={!newProduct.name.trim()}>
+                          Add Product
+                        </Button>
                     </DialogFooter>
                   </DialogContent>
                 </Dialog>
@@ -816,7 +816,7 @@ export const EmailListManager = () => {
                     onChange={(e) => setNewListDescription(e.target.value)}
                     className="w-48"
                   />
-                  <Button onClick={handleCreateList}>
+                  <Button onClick={handleCreateList} disabled={!newListName.trim()}>
                     <Plus className="h-4 w-4 mr-2" />
                     Create List
                   </Button>
