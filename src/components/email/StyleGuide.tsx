@@ -34,6 +34,7 @@ interface PageThemeColors {
 
 export const StyleGuide = () => {
   const [loading, setLoading] = useState(false);
+  const [brandInitialized, setBrandInitialized] = useState(false);
   const [brandIdentity, setBrandIdentity] = useState<BrandIdentity>({
     name: "Your Brand",
     primaryColor: "#684cff",
@@ -88,17 +89,22 @@ export const StyleGuide = () => {
 
       if (data && data.length > 0) {
         const guide = data[0];
-        setBrandIdentity({
-          name: guide.brand_name,
-          primaryColor: guide.primary_color,
-          secondaryColor: guide.secondary_color,
-          accentColor: guide.accent_color,
-          font: guide.font_family,
-          voice: guide.tone,
-          brandVoice: guide.brand_voice || '',
-          logo: guide.logo_url || '',
-          signature: guide.email_signature,
-        });
+        
+        // Only initialize if not already set by user changes
+        if (!brandInitialized) {
+          setBrandIdentity({
+            name: guide.brand_name,
+            primaryColor: guide.primary_color,
+            secondaryColor: guide.secondary_color,
+            accentColor: guide.accent_color,
+            font: guide.font_family,
+            voice: guide.tone,
+            brandVoice: guide.brand_voice || '',
+            logo: guide.logo_url || '',
+            signature: guide.email_signature,
+          });
+          setBrandInitialized(true);
+        }
 
         setPageThemeColors({
           primary: guide.page_theme_primary,
@@ -386,6 +392,7 @@ export const StyleGuide = () => {
                 value={brandIdentity.name}
                 onChange={(e) => {
                   setBrandIdentity({...brandIdentity, name: e.target.value});
+                  setBrandInitialized(true); // Mark as user-modified
                   // Auto-save brand changes
                   setTimeout(() => saveBrandToSupabase(), 1000);
                 }}
@@ -413,6 +420,7 @@ export const StyleGuide = () => {
                 value={brandIdentity.primaryColor}
                 onChange={(color) => {
                   setBrandIdentity({...brandIdentity, primaryColor: color});
+                  setBrandInitialized(true); // Mark as user-modified
                   setTimeout(() => saveBrandToSupabase(), 1000);
                 }}
                 label="Primary"
@@ -424,6 +432,7 @@ export const StyleGuide = () => {
                 value={brandIdentity.secondaryColor}
                 onChange={(color) => {
                   setBrandIdentity({...brandIdentity, secondaryColor: color});
+                  setBrandInitialized(true); // Mark as user-modified
                   setTimeout(() => saveBrandToSupabase(), 1000);
                 }}
                 label="Secondary"
@@ -435,6 +444,7 @@ export const StyleGuide = () => {
                 value={brandIdentity.accentColor}
                 onChange={(color) => {
                   setBrandIdentity({...brandIdentity, accentColor: color});
+                  setBrandInitialized(true); // Mark as user-modified
                   setTimeout(() => saveBrandToSupabase(), 1000);
                 }}
                 label="Accent"
