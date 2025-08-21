@@ -180,68 +180,23 @@ export const StyleGuide = () => {
 
       if (checkError) throw checkError;
 
-      // Build a full HTML template preview based on current brand settings
-      const templatePreviewHTML = `<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>${brandIdentity.name} – Style Template</title>
-  <style>
-    @media only screen and (max-width: 600px) {
-      .container { width: 100% !important; margin: 10px !important; }
-      .content { padding: 20px !important; }
-      .header { padding: 30px 20px 15px 20px !important; }
-      .main-title { font-size: 22px !important; }
-      .body-text { font-size: 14px !important; }
-      .card { padding: 20px !important; margin: 16px 0 !important; }
-    }
-    @media only screen and (min-width: 601px) {
-      .container { max-width: 600px; }
-      .content { padding: 40px; }
-      .header { padding: 40px; }
-      .main-title { font-size: 26px; }
-      .body-text { font-size: 16px; }
-      .card { padding: 30px; margin: 24px 0; }
-    }
-  </style>
-</head>
-<body style="margin:0;padding:0;background:#FFFFFF;color:#333333;font-family:${brandIdentity.font}">
-  <div style="padding:20px;">
-    <table class="container" role="presentation" cellspacing="0" cellpadding="0" border="0" style="max-width:600px;width:100%;margin:0 auto;background:#FFFFFF;">
-      <tr>
-        <td class="header" style="background:${brandIdentity.primaryColor};text-align:center;padding:40px;">
-          <h1 style="margin:0;color:#FFFFFF;font-size:24px;font-weight:600;">
-            <span style="background:${brandIdentity.accentColor};color:#333333;padding:2px 8px;border-radius:4px;">${brandIdentity.name.split('.')[0]}</span>${brandIdentity.name.includes('.') ? '.' + brandIdentity.name.split('.')[1] : ''}
-          </h1>
-          <p style="margin:8px 0 0 0;color:#FFFFFF;opacity:0.9;">Style Template Header</p>
-        </td>
-      </tr>
-      <tr>
-        <td class="content" style="padding:40px;background:#FFFFFF;">
-          <div class="card" style="background:${brandIdentity.secondaryColor};border-radius:8px;padding:30px;margin:24px 0;">
-            <p class="body-text" style="margin:0;font-size:16px;line-height:1.6;color:#333333;">${brandIdentity.brandVoice}</p>
-          </div>
-          <div style="text-align:center;margin:24px 0;">
-            <table role="presentation" cellspacing="0" cellpadding="0" border="0" style="margin:0 auto;">
-              <tr>
-                <td style="border-radius:6px;background:${brandIdentity.primaryColor};">
-                  <a href="#" style="display:inline-block;padding:14px 28px;font-size:16px;font-weight:500;color:#FFFFFF;text-decoration:none;border-radius:6px;">Primary Action</a>
-                </td>
-              </tr>
-            </table>
-          </div>
-        </td>
-      </tr>
-      <tr>
-        <td class="content" style="padding:40px;text-align:left;border-top:1px solid ${brandIdentity.secondaryColor};">
-          <pre style="margin:0;font-size:14px;line-height:1.6;color:#333333;white-space:pre-wrap;">${brandIdentity.signature}</pre>
-        </td>
-      </tr>
-    </table>
-  </div>
-</body>
-</html>`;
+      // Create a simple JSON style prompt instead of complex HTML
+      const stylePrompt = {
+        brandName: brandIdentity.name,
+        colors: {
+          primary: brandIdentity.primaryColor,
+          secondary: brandIdentity.secondaryColor,
+          accent: brandIdentity.accentColor
+        },
+        typography: {
+          fontFamily: brandIdentity.font
+        },
+        voice: {
+          tone: brandIdentity.voice,
+          description: brandIdentity.brandVoice
+        },
+        signature: brandIdentity.signature
+      };
 
       const styleGuideData = {
         user_id: DEMO_USER_ID,
@@ -257,7 +212,7 @@ export const StyleGuide = () => {
         page_theme_primary: pageThemeColors.primary,
         page_theme_secondary: pageThemeColors.secondary,
         page_theme_accent: pageThemeColors.accent,
-        template_preview: templatePreviewHTML,
+        template_preview: JSON.stringify(stylePrompt),
       };
 
       let result;

@@ -34,83 +34,47 @@ serve(async (req) => {
     const accent = styleGuide?.accentColor || themeColors?.accent || '#FCD34D';
     const fontFamily = styleGuide?.fontFamily || "Inter, Lato, 'Open Sans', Arial, sans-serif";
 
-    // Build a reference template from saved preview or generate one using brand tokens
-    const referenceTemplate = (typeof templatePreview === 'string' && templatePreview.trim().length > 0)
-      ? templatePreview
-      : `<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>${subject}</title>
-</head>
-<body style="margin:0;padding:0;background:#FFFFFF;color:#333333;font-family:${fontFamily}">
-  <div style="padding:20px;">
-    <table role="presentation" cellspacing="0" cellpadding="0" border="0" style="max-width:600px;width:100%;margin:0 auto;background:#FFFFFF;">
-      <tr>
-        <td class="header" style="background:${primary};text-align:center;padding:40px 40px 20px 40px;">
-          <h1 style="margin:0;color:#FFFFFF;font-size:24px;font-weight:600;">
-            <span style="background:${accent};color:#333333;padding:2px 8px;border-radius:4px;">${brandName.split('.')[0]}</span>${brandName.includes('.') ? '.' + brandName.split('.')[1] : ''}
-          </h1>
-          <p style="margin:8px 0 0 0;color:#FFFFFF;opacity:0.9;">Sample Email Header</p>
-        </td>
-      </tr>
-      <tr>
-        <td class="content" style="padding:40px;background:#FFFFFF;">
-          <div class="card" style="background:${secondary};border-radius:8px;padding:30px;margin:24px 0;">
-            <p class="body-text" style="margin:0;font-size:16px;line-height:1.6;color:#333333;">${prompt}</p>
-          </div>
-          <div style="text-align:center;margin:24px 0;">
-            <table role="presentation" cellspacing="0" cellpadding="0" border="0" style="margin:0 auto;">
-              <tr>
-                <td style="border-radius:6px;background:${primary};">
-                  <a href="#" style="display:inline-block;padding:14px 28px;font-size:16px;font-weight:500;color:#FFFFFF;text-decoration:none;border-radius:6px;">Take Action</a>
-                </td>
-              </tr>
-            </table>
-          </div>
-        </td>
-      </tr>
-      <tr>
-        <td class="content" style="padding:40px;text-align:left;border-top:1px solid ${secondary};">
-          <pre style="margin:0;font-size:14px;line-height:1.6;color:#333333;white-space:pre-wrap;">Best regards,\n${brandName}</pre>
-        </td>
-      </tr>
-    </table>
-  </div>
-</body>
-</html>`;
+    // Parse saved style prompt if available
+    let savedStylePrompt = null;
+    try {
+      if (templatePreview && templatePreview.trim().length > 0) {
+        savedStylePrompt = JSON.parse(templatePreview);
+      }
+    } catch (e) {
+      console.log('No valid style prompt found, using defaults');
+    }
 
-    const systemPrompt = `You are an expert email template designer. You MUST create templates that EXACTLY match the provided brand style template.
+    // Use saved style or fallback to passed values
+    const finalBrandName = savedStylePrompt?.brandName || brandName;
+    const finalPrimary = savedStylePrompt?.colors?.primary || primary;
+    const finalSecondary = savedStylePrompt?.colors?.secondary || secondary;
+    const finalAccent = savedStylePrompt?.colors?.accent || accent;
+    const finalFont = savedStylePrompt?.typography?.fontFamily || fontFamily;
+    const finalVoice = savedStylePrompt?.voice?.description || styleGuide?.brandVoice || 'Professional and clean';
+    const finalSignature = savedStylePrompt?.signature || styleGuide?.emailSignature || 'Best regards,\nThe Team';
 
-REFERENCE TEMPLATE TO FOLLOW:
-Use this exact template structure and styling as your reference. Adapt the content but keep the exact same visual style, layout, colors, and branding:
+    const systemPrompt = `You are an expert email template designer. Create clean, professional email templates using this EXACT brand style:
 
-${referenceTemplate}
+BRAND STYLE GUIDE:
+- Brand Name: ${finalBrandName}
+- Primary Color: ${finalPrimary} (use for headers, buttons, main branding)
+- Secondary Color: ${finalSecondary} (use for content cards, subtle backgrounds)
+- Accent Color: ${finalAccent} (use sparingly for highlights and brand name styling)
+- Font Family: ${finalFont}
+- Brand Voice: ${finalVoice}
+- Email Signature: ${finalSignature}
 
-CRITICAL: Use this template as your EXACT visual reference. Only change the content (subject, body text) but maintain all styling, colors, layout, and branding elements exactly as shown.
+TEMPLATE REQUIREMENTS:
+1. Use EXACTLY these colors: Primary ${finalPrimary}, Secondary ${finalSecondary}, Accent ${finalAccent}
+2. Header with brand name styled as: <span style="background:${finalAccent}">${finalBrandName.split('.')[0]}</span>${finalBrandName.includes('.') ? '.' + finalBrandName.split('.')[1] : ''}
+3. Content cards with ${finalSecondary} background
+4. Buttons with ${finalPrimary} background and white text
+5. Include the signature: ${finalSignature}
+6. Use font family: ${finalFont}
+7. Clean, minimal design - no gradients or fancy styling
+8. Mobile responsive with proper table structure
 
-MANDATORY BRAND COLORS (use these EXACT hex values):
-- Background: #FFFFFF (pure white)
-- Primary: ${primary} (for buttons and header backgrounds)
-- Secondary: ${secondary} (for content cards only)
-- Accent: ${accent} (ONLY for brand name highlights)
-- Text: #333333 (dark gray)
-- Button Text: #FFFFFF (white)
-
-REQUIRED STRUCTURE:
-1. Header: ${primary} background, white text, brand name with ${accent} highlight
-2. Main content: white background with ${secondary} content cards
-3. Buttons: ${primary} background, white text, rounded corners
-4. Footer: simple, clean layout
-
-FORBIDDEN:
-- Any colors not listed above
-- Gradients, shadows, or decorative elements
-- Complex layouts or fancy styling
-- Multiple color schemes
-
-Follow the reference template structure EXACTLY while adapting only the content.`;
+Generate a complete HTML email that matches this exact brand style.`;
 
     const response = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
@@ -147,11 +111,11 @@ Return ONLY the complete HTML email template that matches the brand exactly. Do 
 
     // Enforce strict brand compliance by sanitizing AI output
     const cssReset = `
-      body{margin:0 !important;background:#FFFFFF !important;color:#333333 !important;font-family:${fontFamily} !important;}
+      body{margin:0 !important;background:#FFFFFF !important;color:#333333 !important;font-family:${finalFont} !important;}
       .container{max-width:600px !important;width:100% !important;margin:0 auto !important;}
       .content{padding:40px !important;}
-      .card{background:${secondary} !important;border-radius:8px !important;}
-      a.button,.button,button,.btn{background:${primary} !important;color:#FFFFFF !important;border-radius:6px !important;text-decoration:none !important;}
+      .card{background:${finalSecondary} !important;border-radius:8px !important;}
+      a.button,.button,button,.btn{background:${finalPrimary} !important;color:#FFFFFF !important;border-radius:6px !important;text-decoration:none !important;}
       *{background-image:none !important;box-shadow:none !important;}
     `.trim();
 
@@ -188,14 +152,14 @@ ${mobileCss}
         // Normalize overly rounded corners and shadows
         .replace(/box-shadow:[^;>]*;?/gi, '')
         .replace(/border-radius:\s*(?:[1-9]\d|\d{3,})px/gi, 'border-radius:8px')
-        // Force brand colors
+        // Force brand colors using final values
         .replace(/#[0-9a-fA-F]{6}/gi, (match) => {
-          if (match.toLowerCase() === primary.toLowerCase()) return primary;
-          if (match.toLowerCase() === secondary.toLowerCase()) return secondary;
-          if (match.toLowerCase() === accent.toLowerCase()) return accent;
+          if (match.toLowerCase() === finalPrimary.toLowerCase()) return finalPrimary;
+          if (match.toLowerCase() === finalSecondary.toLowerCase()) return finalSecondary;
+          if (match.toLowerCase() === finalAccent.toLowerCase()) return finalAccent;
           if (match === '#FFFFFF' || match === '#ffffff') return '#FFFFFF';
           if (match === '#333333') return '#333333';
-          return primary; // Default problematic colors to primary
+          return finalPrimary; // Default problematic colors to primary
         });
 
     htmlContent = ensureInjected(stripGradientsAndExcess(htmlContent));
