@@ -118,6 +118,7 @@ export const StyleGuide = () => {
         .from('style_guides')
         .select('id')
         .eq('user_id', DEMO_USER_ID)
+        .order('created_at', { ascending: false })
         .limit(1);
 
       if (checkError) throw checkError;
@@ -189,7 +190,7 @@ export const StyleGuide = () => {
         result = await supabase
           .from('style_guides')
           .update(styleGuideData)
-          .eq('id', existingData[0].id);
+          .eq('user_id', DEMO_USER_ID);
       } else {
         result = await supabase
           .from('style_guides')
