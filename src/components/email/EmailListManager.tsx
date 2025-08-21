@@ -9,7 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { Plus, Upload, Edit, Trash2, Users, Package, List, Search, Filter, Download } from "lucide-react";
+import { Plus, Upload, Edit, Trash2, Users, Package, List, Search, Filter, Download, UserPlus, UserMinus, CheckSquare, Square } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { DEMO_USER_ID } from "@/lib/demo-auth";
@@ -40,12 +40,23 @@ type EmailList = {
   description?: string;
   created_at: string;
   updated_at: string;
+  contact_count?: number;
+};
+
+type ContactList = {
+  id: string;
+  contact_id: string;
+  list_id: string;
+  created_at: string;
 };
 
 export const EmailListManager = () => {
   const [lists, setLists] = useState<EmailList[]>([]);
   const [contacts, setContacts] = useState<Contact[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
+  const [contactLists, setContactLists] = useState<ContactList[]>([]);
+  const [selectedContacts, setSelectedContacts] = useState<string[]>([]);
+  const [selectedList, setSelectedList] = useState<EmailList | null>(null);
   
   // UI state
   const [isAddingContact, setIsAddingContact] = useState(false);
@@ -53,6 +64,7 @@ export const EmailListManager = () => {
   const [isAddingProduct, setIsAddingProduct] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
+  const [listSearchQuery, setListSearchQuery] = useState("");
   const [filterTag, setFilterTag] = useState<string>("all");
   const [filterProduct, setFilterProduct] = useState<string>("all");
   
@@ -83,10 +95,13 @@ export const EmailListManager = () => {
 
   const loadData = async () => {
     try {
-      // Load email lists
+      // Load email lists with contact count
       const { data: listsData, error: listsError } = await supabase
         .from('email_lists')
-        .select('*')
+        .select(`
+          *,
+          contact_count:contact_lists(count)
+        `)
         .order('created_at', { ascending: false });
 
       if (listsError) throw listsError;
@@ -107,9 +122,20 @@ export const EmailListManager = () => {
 
       if (productsError) throw productsError;
 
-      setLists(listsData || []);
+      // Load contact-list relationships
+      const { data: contactListsData, error: contactListsError } = await supabase
+        .from('contact_lists')
+        .select('*');
+
+      if (contactListsError) throw contactListsError;
+
+      setLists(listsData?.map(list => ({
+        ...list,
+        contact_count: list.contact_count?.[0]?.count || 0
+      })) || []);
       setContacts(contactsData || []);
       setProducts(productsData || []);
+      setContactLists(contactListsData || []);
     } catch (error: any) {
       toast({
         title: "Error loading data",
@@ -466,6 +492,119 @@ export const EmailListManager = () => {
     }
   };
 
+  // Contact list management functions
+  const addContactsToList = async (contactIds: string[], listId: string) => {
+    try {
+      const newContactLists = contactIds.map(contactId => ({
+        contact_id: contactId,
+        list_id: listId,
+      }));
+
+      const { data, error } = await supabase
+        .from('contact_lists')
+        .insert(newContactLists)
+        .select();
+
+      if (error) throw error;
+
+      setContactLists([...contactLists, ...data]);
+      toast({
+        title: "Contacts added to list",
+        description: `Added ${contactIds.length} contact(s) to the list.`,
+      });
+      loadData(); // Refresh to update counts
+    } catch (error: any) {
+      toast({
+        title: "Error adding contacts to list",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
+  };
+
+  const removeContactFromList = async (contactId: string, listId: string) => {
+    try {
+      const { error } = await supabase
+        .from('contact_lists')
+        .delete()
+        .eq('contact_id', contactId)
+        .eq('list_id', listId);
+
+      if (error) throw error;
+
+      setContactLists(contactLists.filter(
+        cl => !(cl.contact_id === contactId && cl.list_id === listId)
+      ));
+      toast({
+        title: "Contact removed from list",
+        description: "Contact has been removed from the list.",
+      });
+      loadData(); // Refresh to update counts
+    } catch (error: any) {
+      toast({
+        title: "Error removing contact from list",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleBulkAddToList = async () => {
+    if (selectedContacts.length === 0 || !selectedList) return;
+    
+    // Filter out contacts that are already in the list
+    const existingContactIds = contactLists
+      .filter(cl => cl.list_id === selectedList.id)
+      .map(cl => cl.contact_id);
+    
+    const newContactIds = selectedContacts.filter(id => !existingContactIds.includes(id));
+    
+    if (newContactIds.length === 0) {
+      toast({
+        title: "No new contacts to add",
+        description: "All selected contacts are already in this list.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    await addContactsToList(newContactIds, selectedList.id);
+    setSelectedContacts([]);
+    setSelectedList(null);
+  };
+
+  const toggleContactSelection = (contactId: string) => {
+    setSelectedContacts(prev => 
+      prev.includes(contactId) 
+        ? prev.filter(id => id !== contactId)
+        : [...prev, contactId]
+    );
+  };
+
+  const isContactInList = (contactId: string, listId: string) => {
+    return contactLists.some(cl => cl.contact_id === contactId && cl.list_id === listId);
+  };
+
+  const getContactsInList = (listId: string) => {
+    const contactIdsInList = contactLists
+      .filter(cl => cl.list_id === listId)
+      .map(cl => cl.contact_id);
+    
+    return contacts.filter(contact => contactIdsInList.includes(contact.id));
+  };
+
+  const getListContactsFiltered = (listId: string) => {
+    const listContacts = getContactsInList(listId);
+    return listContacts.filter(contact => {
+      const matchesSearch = !listSearchQuery || 
+        contact.email.toLowerCase().includes(listSearchQuery.toLowerCase()) ||
+        contact.first_name?.toLowerCase().includes(listSearchQuery.toLowerCase()) ||
+        contact.last_name?.toLowerCase().includes(listSearchQuery.toLowerCase());
+      
+      return matchesSearch;
+    });
+  };
+
   // Filter contacts based on search and filters
   const filteredContacts = contacts.filter(contact => {
     const matchesSearch = !searchQuery || 
@@ -603,6 +742,47 @@ export const EmailListManager = () => {
               </div>
             </CardHeader>
             <CardContent>
+              {/* Bulk Operations */}
+              {selectedContacts.length > 0 && (
+                <div className="mb-4 p-4 bg-blue-50 rounded-lg border border-blue-200">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm font-medium text-blue-900">
+                      {selectedContacts.length} contact(s) selected
+                    </span>
+                    <div className="flex space-x-2">
+                      <Select value={selectedList?.id || ""} onValueChange={(value) => {
+                        const list = lists.find(l => l.id === value);
+                        setSelectedList(list || null);
+                      }}>
+                        <SelectTrigger className="w-48">
+                          <SelectValue placeholder="Select list to add to" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {lists.map(list => (
+                            <SelectItem key={list.id} value={list.id}>{list.name}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <Button 
+                        size="sm" 
+                        onClick={handleBulkAddToList}
+                        disabled={!selectedList}
+                      >
+                        <UserPlus className="h-4 w-4 mr-2" />
+                        Add to List
+                      </Button>
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        onClick={() => setSelectedContacts([])}
+                      >
+                        Clear Selection
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              )}
+
               <div className="flex space-x-4 mb-4">
                 <div className="flex-1">
                   <Input
@@ -629,6 +809,24 @@ export const EmailListManager = () => {
                 <Table>
                   <TableHeader>
                     <TableRow>
+                      <TableHead className="w-12">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => {
+                            if (selectedContacts.length === filteredContacts.length) {
+                              setSelectedContacts([]);
+                            } else {
+                              setSelectedContacts(filteredContacts.map(c => c.id));
+                            }
+                          }}
+                        >
+                          {selectedContacts.length === filteredContacts.length && filteredContacts.length > 0 ? 
+                            <CheckSquare className="h-4 w-4" /> : 
+                            <Square className="h-4 w-4" />
+                          }
+                        </Button>
+                      </TableHead>
                       <TableHead>Contact</TableHead>
                       <TableHead>Tags</TableHead>
                       <TableHead>Status</TableHead>
@@ -639,6 +837,18 @@ export const EmailListManager = () => {
                   <TableBody>
                     {filteredContacts.map(contact => (
                       <TableRow key={contact.id}>
+                        <TableCell>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => toggleContactSelection(contact.id)}
+                          >
+                            {selectedContacts.includes(contact.id) ? 
+                              <CheckSquare className="h-4 w-4" /> : 
+                              <Square className="h-4 w-4" />
+                            }
+                          </Button>
+                        </TableCell>
                         <TableCell>
                           <div>
                             <div className="font-medium">{contact.email}</div>
@@ -838,7 +1048,137 @@ export const EmailListManager = () => {
                     {lists.map(list => (
                       <TableRow key={list.id}>
                         <TableCell className="font-medium">{list.name}</TableCell>
-                        <TableCell>0</TableCell>
+                        <TableCell>
+                          <Dialog>
+                            <DialogTrigger asChild>
+                              <Button variant="link" className="p-0">
+                                {list.contact_count || 0} contacts
+                              </Button>
+                            </DialogTrigger>
+                            <DialogContent className="max-w-4xl">
+                              <DialogHeader>
+                                <DialogTitle>Manage Contacts in "{list.name}"</DialogTitle>
+                                <DialogDescription>
+                                  Add or remove contacts from this list.
+                                </DialogDescription>
+                              </DialogHeader>
+                              
+                              <div className="space-y-4">
+                                <div className="flex space-x-4">
+                                  <Input
+                                    placeholder="Search contacts in this list..."
+                                    value={listSearchQuery}
+                                    onChange={(e) => setListSearchQuery(e.target.value)}
+                                    className="flex-1"
+                                  />
+                                </div>
+                                
+                                <div className="border rounded-lg max-h-96 overflow-y-auto">
+                                  <Table>
+                                    <TableHeader>
+                                      <TableRow>
+                                        <TableHead>Contact</TableHead>
+                                        <TableHead>Tags</TableHead>
+                                        <TableHead>Status</TableHead>
+                                        <TableHead>Actions</TableHead>
+                                      </TableRow>
+                                    </TableHeader>
+                                    <TableBody>
+                                      {getListContactsFiltered(list.id).map(contact => (
+                                        <TableRow key={contact.id}>
+                                          <TableCell>
+                                            <div>
+                                              <div className="font-medium">{contact.email}</div>
+                                              <div className="text-sm text-muted-foreground">
+                                                {contact.first_name} {contact.last_name}
+                                              </div>
+                                            </div>
+                                          </TableCell>
+                                          <TableCell>
+                                            <div className="flex flex-wrap gap-1">
+                                              {(contact.tags || []).map((tag: string, index: number) => (
+                                                <Badge key={index} variant="secondary" className="text-xs">
+                                                  {tag}
+                                                </Badge>
+                                              ))}
+                                            </div>
+                                          </TableCell>
+                                          <TableCell>
+                                            <Badge variant={contact.status === 'subscribed' ? 'default' : 'secondary'}>
+                                              {contact.status}
+                                            </Badge>
+                                          </TableCell>
+                                          <TableCell>
+                                            <Button 
+                                              variant="outline" 
+                                              size="sm"
+                                              onClick={() => removeContactFromList(contact.id, list.id)}
+                                            >
+                                              <UserMinus className="h-4 w-4" />
+                                            </Button>
+                                          </TableCell>
+                                        </TableRow>
+                                      ))}
+                                      {getListContactsFiltered(list.id).length === 0 && (
+                                        <TableRow>
+                                          <TableCell colSpan={4} className="text-center text-muted-foreground py-8">
+                                            No contacts in this list
+                                          </TableCell>
+                                        </TableRow>
+                                      )}
+                                    </TableBody>
+                                  </Table>
+                                </div>
+                                
+                                <div className="border-t pt-4">
+                                  <h4 className="font-medium mb-2">Add Contacts to List</h4>
+                                  <div className="max-h-48 overflow-y-auto border rounded-lg">
+                                    <Table>
+                                      <TableHeader>
+                                        <TableRow>
+                                          <TableHead className="w-12"></TableHead>
+                                          <TableHead>Contact</TableHead>
+                                          <TableHead>Status</TableHead>
+                                        </TableRow>
+                                      </TableHeader>
+                                      <TableBody>
+                                        {contacts
+                                          .filter(contact => !isContactInList(contact.id, list.id))
+                                          .slice(0, 10)
+                                          .map(contact => (
+                                          <TableRow key={contact.id}>
+                                            <TableCell>
+                                              <Button
+                                                variant="outline"
+                                                size="sm"
+                                                onClick={() => addContactsToList([contact.id], list.id)}
+                                              >
+                                                <UserPlus className="h-4 w-4" />
+                                              </Button>
+                                            </TableCell>
+                                            <TableCell>
+                                              <div>
+                                                <div className="font-medium">{contact.email}</div>
+                                                <div className="text-sm text-muted-foreground">
+                                                  {contact.first_name} {contact.last_name}
+                                                </div>
+                                              </div>
+                                            </TableCell>
+                                            <TableCell>
+                                              <Badge variant={contact.status === 'subscribed' ? 'default' : 'secondary'}>
+                                                {contact.status}
+                                              </Badge>
+                                            </TableCell>
+                                          </TableRow>
+                                        ))}
+                                      </TableBody>
+                                    </Table>
+                                  </div>
+                                </div>
+                              </div>
+                            </DialogContent>
+                          </Dialog>
+                        </TableCell>
                         <TableCell className="text-muted-foreground">{list.description}</TableCell>
                         <TableCell>
                           <div className="flex space-x-2">
