@@ -57,9 +57,11 @@ Deno.serve(async (req) => {
 5. Just write the actual email content they requested
 
 Style with HTML/CSS:
-- Background: gradient from ${styleGuide?.primaryColor || '#684cff'} to ${styleGuide?.secondaryColor || '#22d3ee'}
-- Content: white container, simple clean layout
+- Background: Clean white or very light background (no vibrant gradients)
+- Use subtle, professional colors from the theme sparingly
+- Content: white container, clean modern layout  
 - Font: ${styleGuide?.fontFamily || 'Arial, sans-serif'}
+- Keep it email-client friendly and professional looking
 
 Include {{name}} and {{unsubscribe_url}} placeholders
 Sign off with: ${styleGuide?.emailSignature || 'Best regards,\\nThe Team'}`;

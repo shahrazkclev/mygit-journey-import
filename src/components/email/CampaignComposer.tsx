@@ -313,18 +313,32 @@ export const CampaignComposer = () => {
     setIsEditingWithAI(true);
 
     try {
-      const updated = applyInstructionToHtml(generatedTemplate, aiEditPrompt);
-      setGeneratedTemplate(updated);
-      setAiEditPrompt("");
-      toast({
-        title: "Edit Applied",
-        description: "Your changes were applied to the draft.",
+      const { data, error } = await supabase.functions.invoke('edit-email', {
+        body: {
+          htmlContent: generatedTemplate,
+          editInstruction: aiEditPrompt,
+          themeColors: themeColors
+        }
       });
+
+      if (error) throw error;
+
+      if (data?.htmlContent) {
+        const cleaned = cleanHtmlContent(data.htmlContent);
+        setGeneratedTemplate(cleaned);
+        setAiEditPrompt("");
+        toast({
+          title: "AI Edit Applied",
+          description: "Your email has been updated successfully!",
+        });
+      } else {
+        throw new Error("No content received from AI editor");
+      }
     } catch (error) {
       console.error('Error editing with AI:', error);
       toast({
         title: "Edit Failed",
-        description: "Failed to apply edits. Please try again.",
+        description: "Failed to apply AI edits. Please try again.",
         variant: "destructive",
       });
     } finally {
