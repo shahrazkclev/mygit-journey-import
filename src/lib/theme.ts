@@ -31,16 +31,17 @@ export const hexToHsl = (hex: string): [number, number, number] => {
 
 export const setCssThemeFromHex = (primary?: string, secondary?: string, accent?: string) => {
   const root = document.documentElement;
-  if (primary && /^#([0-9a-f]{3}){1,2}$/i.test(primary)) {
-    const [h, s, l] = hexToHsl(primary);
-    root.style.setProperty('--primary', `${h} ${s}% ${l}%`);
-  }
-  if (secondary && /^#([0-9a-f]{3}){1,2}$/i.test(secondary)) {
-    const [h, s, l] = hexToHsl(secondary);
-    root.style.setProperty('--secondary', `${h} ${s}% ${l}%`);
-  }
-  if (accent && /^#([0-9a-f]{3}){1,2}$/i.test(accent)) {
-    const [h, s, l] = hexToHsl(accent);
-    root.style.setProperty('--accent', `${h} ${s}% ${l}%`);
-  }
+
+  const setColor = (name: 'primary' | 'secondary' | 'accent', hex?: string) => {
+    if (!hex || !/^#([0-9a-f]{3}){1,2}$/i.test(hex)) return;
+    const [h, s, l] = hexToHsl(hex);
+    root.style.setProperty(`--${name}`, `${h} ${s}% ${l}%`);
+    // Ensure good contrast by dynamically setting the foreground color
+    const foreground = l < 55 ? '0 0% 100%' : '220 15% 25%';
+    root.style.setProperty(`--${name}-foreground`, foreground);
+  };
+
+  setColor('primary', primary);
+  setColor('secondary', secondary);
+  setColor('accent', accent);
 };

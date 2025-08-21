@@ -102,62 +102,13 @@ export const StyleGuide = () => {
           accent: guide.page_theme_accent,
         });
 
-        // Apply the theme immediately
-        applyPageTheme(guide.page_theme_primary, guide.page_theme_secondary, guide.page_theme_accent);
+        // Theme is applied via global updateTheme on setPageThemeColors
       }
     } catch (error) {
       console.error('Error loading style guide:', error);
     }
   };
 
-  const hexToHsl = (hex: string) => {
-    const r = parseInt(hex.slice(1, 3), 16) / 255;
-    const g = parseInt(hex.slice(3, 5), 16) / 255;
-    const b = parseInt(hex.slice(5, 7), 16) / 255;
-
-    const max = Math.max(r, g, b);
-    const min = Math.min(r, g, b);
-    let h, s, l = (max + min) / 2;
-
-    if (max === min) {
-      h = s = 0;
-    } else {
-      const d = max - min;
-      s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
-      switch (max) {
-        case r: h = (g - b) / d + (g < b ? 6 : 0); break;
-        case g: h = (b - r) / d + 2; break;
-        case b: h = (r - g) / d + 4; break;
-        default: h = 0;
-      }
-      h /= 6;
-    }
-
-    return [
-      Math.round(h * 360),
-      Math.round(s * 100),
-      Math.round(l * 100)
-    ];
-  };
-
-  const applyPageTheme = (primary?: string, secondary?: string, accent?: string) => {
-    const root = document.documentElement;
-    
-    if (primary) {
-      const [h, s, l] = hexToHsl(primary);
-      root.style.setProperty('--primary', `${h} ${s}% ${l}%`);
-    }
-    
-    if (secondary) {
-      const [h, s, l] = hexToHsl(secondary);
-      root.style.setProperty('--secondary', `${h} ${s}% ${l}%`);
-    }
-    
-    if (accent) {
-      const [h, s, l] = hexToHsl(accent);
-      root.style.setProperty('--accent', `${h} ${s}% ${l}%`);
-    }
-  };
 
   const handleSaveStyleGuide = async () => {
     try {
@@ -327,8 +278,7 @@ export const StyleGuide = () => {
               <ColorPicker
                 value={pageThemeColors.primary}
                 onChange={(color) => {
-                  setPageThemeColors({...pageThemeColors, primary: color});
-                  applyPageTheme(color, undefined, undefined);
+                  setPageThemeColors({ primary: color });
                 }}
                 label="Primary"
               />
@@ -338,8 +288,7 @@ export const StyleGuide = () => {
               <ColorPicker
                 value={pageThemeColors.secondary}
                 onChange={(color) => {
-                  setPageThemeColors({...pageThemeColors, secondary: color});
-                  applyPageTheme(undefined, color, undefined);
+                  setPageThemeColors({ secondary: color });
                 }}
                 label="Secondary"
               />
@@ -349,8 +298,7 @@ export const StyleGuide = () => {
               <ColorPicker
                 value={pageThemeColors.accent}
                 onChange={(color) => {
-                  setPageThemeColors({...pageThemeColors, accent: color});
-                  applyPageTheme(undefined, undefined, color);
+                  setPageThemeColors({ accent: color });
                 }}
                 label="Accent"
               />

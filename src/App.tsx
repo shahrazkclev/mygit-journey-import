@@ -5,14 +5,22 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
+import { useGlobalTheme } from "@/hooks/useGlobalTheme";
 
 const queryClient = new QueryClient();
+
+const ThemeInitializer = () => {
+  // Triggers theme load on app start and applies CSS variables
+  useGlobalTheme();
+  return null;
+};
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
       <Toaster />
       <Sonner />
+      <ThemeInitializer />
       <BrowserRouter>
         <Routes>
           <Route path="/" element={<Index />} />

@@ -5,9 +5,9 @@ import { setCssThemeFromHex } from "@/lib/theme";
 
 // Global state for theme persistence across tab switches
 let globalThemeState = {
-  primary: "#684cff",
-  secondary: "#22d3ee",
-  accent: "#34d399",
+  primary: "#111827",
+  secondary: "#e5e7eb",
+  accent: "#2563eb",
   initialized: false
 };
 
@@ -47,9 +47,9 @@ export const useGlobalTheme = () => {
         
         // Update global state with loaded theme
         globalThemeState = {
-          primary: guide.page_theme_primary || "#684cff",
-          secondary: guide.page_theme_secondary || "#22d3ee", 
-          accent: guide.page_theme_accent || "#34d399",
+          primary: guide.page_theme_primary || globalThemeState.primary,
+          secondary: guide.page_theme_secondary || globalThemeState.secondary, 
+          accent: guide.page_theme_accent || globalThemeState.accent,
           initialized: true
         };
         
