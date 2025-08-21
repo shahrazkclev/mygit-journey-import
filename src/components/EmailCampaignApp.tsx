@@ -13,14 +13,14 @@ export const EmailCampaignApp = () => {
   const [activeTab, setActiveTab] = useState("compose");
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background via-background to-email-primary/5">
+    <div className="min-h-screen bg-gradient-to-br from-background via-background to-primary/5">
       <div className="container mx-auto p-6 space-y-6">
         {/* Header */}
-        <Card className="shadow-soft border-email-primary/20 bg-gradient-soft">
+        <Card className="shadow-soft border-primary/20 bg-gradient-to-r from-primary/10 via-primary/5 to-secondary/10">
           <CardHeader>
             <div className="flex flex-col md:flex-row md:items-center md:justify-between space-y-4 md:space-y-0">
               <div>
-                <CardTitle className="text-2xl font-bold text-email-primary flex items-center space-x-2">
+                <CardTitle className="text-2xl font-bold text-primary flex items-center space-x-2">
                   <Mail className="h-6 w-6" />
                   <span>AI Email Campaign Manager</span>
                 </CardTitle>
@@ -30,7 +30,7 @@ export const EmailCampaignApp = () => {
               </div>
               <Badge 
                 variant="outline" 
-                className="border-email-success text-email-success bg-email-success/10"
+                className="border-accent text-accent bg-accent/10"
               >
                 <Wifi className="h-3 w-3 mr-1" />
                 Ready
@@ -63,10 +63,10 @@ export const EmailCampaignApp = () => {
             </TabsList>
 
             <TabsContent value="compose" className="space-y-6">
-              <Card className="shadow-soft border-email-primary/20">
+              <Card className="shadow-soft border-primary/20">
                 <CardHeader>
                   <CardTitle className="flex items-center space-x-2">
-                    <Sparkles className="h-5 w-5 text-email-primary" />
+                    <Sparkles className="h-5 w-5 text-primary" />
                     <span>AI Email Composer</span>
                   </CardTitle>
                   <CardDescription>
@@ -80,10 +80,10 @@ export const EmailCampaignApp = () => {
             </TabsContent>
 
             <TabsContent value="lists" className="space-y-6">
-              <Card className="shadow-soft border-email-secondary/20">
+              <Card className="shadow-soft border-secondary/20">
                 <CardHeader>
                   <CardTitle className="flex items-center space-x-2">
-                    <Users className="h-5 w-5 text-email-secondary" />
+                    <Users className="h-5 w-5 text-secondary" />
                     <span>Email Lists</span>
                   </CardTitle>
                   <CardDescription>
@@ -97,10 +97,10 @@ export const EmailCampaignApp = () => {
             </TabsContent>
 
             <TabsContent value="settings" className="space-y-6">
-              <Card className="shadow-soft border-email-accent/20">
+              <Card className="shadow-soft border-accent/20">
                 <CardHeader>
                   <CardTitle className="flex items-center space-x-2">
-                    <Settings className="h-5 w-5 text-email-accent" />
+                    <Settings className="h-5 w-5 text-accent" />
                     <span>Campaign Settings</span>
                   </CardTitle>
                   <CardDescription>
@@ -131,10 +131,10 @@ export const EmailCampaignApp = () => {
             </TabsContent>
 
             <TabsContent value="style" className="space-y-6">
-              <Card className="shadow-soft border-email-warning/20">
+              <Card className="shadow-soft border-primary/20">
                 <CardHeader>
                   <CardTitle className="flex items-center space-x-2">
-                    <Send className="h-5 w-5 text-email-warning" />
+                    <Send className="h-5 w-5 text-primary" />
                     <span>Style Guide</span>
                   </CardTitle>
                   <CardDescription>
