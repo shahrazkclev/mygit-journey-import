@@ -12,6 +12,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Sparkles, Send, Eye, Wand2, MessageSquare, Palette, Monitor, Smartphone } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { DEMO_USER_ID } from "@/lib/demo-auth";
 
 export const CampaignComposer = () => {
   const [subject, setSubject] = useState("");
@@ -45,13 +46,10 @@ export const CampaignComposer = () => {
 
   const loadEmailLists = async () => {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
-
       const { data, error } = await supabase
         .from('email_lists')
         .select('*')
-        .eq('user_id', user.id)
+        .eq('user_id', DEMO_USER_ID)
         .order('created_at', { ascending: false });
 
       if (error) throw error;
@@ -63,13 +61,10 @@ export const CampaignComposer = () => {
 
   const loadStyleGuide = async () => {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
-
       const { data, error } = await supabase
         .from('style_guides')
         .select('*')
-        .eq('user_id', user.id)
+        .eq('user_id', DEMO_USER_ID)
         .order('created_at', { ascending: false })
         .limit(1);
 
@@ -271,16 +266,6 @@ export const CampaignComposer = () => {
     }
 
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
-        toast({
-          title: "Error",
-          description: "You must be logged in to save campaigns.",
-          variant: "destructive",
-        });
-        return;
-      }
-
       // Calculate current sender number
       const senderNumber = getCurrentSenderNumber();
       
@@ -289,7 +274,7 @@ export const CampaignComposer = () => {
         .from('campaigns')
         .insert([
           {
-            user_id: user.id,
+            user_id: DEMO_USER_ID,
             name: `Campaign: ${subject}`,
             subject: subject,
             html_content: generatedTemplate,

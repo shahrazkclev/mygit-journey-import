@@ -10,6 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Palette, Type, Image, Sparkles, Save, Eye, Settings } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { DEMO_USER_ID } from "@/lib/demo-auth";
 
 interface BrandIdentity {
   name: string;
@@ -59,13 +60,10 @@ export const StyleGuide = () => {
 
   const loadStyleGuide = async () => {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
-
       const { data, error } = await supabase
         .from('style_guides')
         .select('*')
-        .eq('user_id', user.id)
+        .eq('user_id', DEMO_USER_ID)
         .order('created_at', { ascending: false })
         .limit(1);
 
@@ -150,27 +148,17 @@ export const StyleGuide = () => {
 
   const handleSaveStyleGuide = async () => {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
-        toast({
-          title: "Error",
-          description: "You must be logged in to save style guide.",
-          variant: "destructive",
-        });
-        return;
-      }
-
       // Check if a style guide already exists for this user
       const { data: existingData, error: checkError } = await supabase
         .from('style_guides')
         .select('id')
-        .eq('user_id', user.id)
+        .eq('user_id', DEMO_USER_ID)
         .limit(1);
 
       if (checkError) throw checkError;
 
       const styleGuideData = {
-        user_id: user.id,
+        user_id: DEMO_USER_ID,
         brand_name: brandIdentity.name,
         primary_color: brandIdentity.primaryColor,
         secondary_color: brandIdentity.secondaryColor,

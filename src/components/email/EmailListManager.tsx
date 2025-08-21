@@ -12,6 +12,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Plus, Upload, Edit, Trash2, Users, Package, List, Search, Filter, Download } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { DEMO_USER_ID } from "@/lib/demo-auth";
 
 // Data types matching our Supabase schema
 type Product = {
@@ -195,14 +196,11 @@ export const EmailListManager = () => {
   const handleCreateList = async () => {
     if (newListName.trim()) {
       try {
-        const { data: { user } } = await supabase.auth.getUser();
-        if (!user) return;
-
         const { data, error } = await supabase
           .from('email_lists')
           .insert([
             {
-              user_id: user.id,
+              user_id: DEMO_USER_ID,
               name: newListName.trim(),
               description: newListDescription.trim() || null,
             }
@@ -262,14 +260,11 @@ export const EmailListManager = () => {
   const handleAddProduct = async () => {
     if (newProduct.name.trim()) {
       try {
-        const { data: { user } } = await supabase.auth.getUser();
-        if (!user) return;
-
         const { data, error } = await supabase
           .from('products')
           .insert([
             {
-              user_id: user.id,
+              user_id: DEMO_USER_ID,
               name: newProduct.name.trim(),
               price: newProduct.price || null,
               category: newProduct.category.trim() || null,
@@ -300,14 +295,11 @@ export const EmailListManager = () => {
   const handleAddContact = async () => {
     if (newContact.email.trim()) {
       try {
-        const { data: { user } } = await supabase.auth.getUser();
-        if (!user) return;
-
         const { data, error } = await supabase
           .from('contacts')
           .insert([
             {
-              user_id: user.id,
+              user_id: DEMO_USER_ID,
               email: newContact.email.trim(),
               first_name: newContact.firstName.trim() || null,
               last_name: newContact.lastName.trim() || null,

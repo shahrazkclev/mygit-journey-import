@@ -1,12 +1,7 @@
 import { EmailCampaignApp } from "@/components/EmailCampaignApp";
-import { AuthWrapper } from "@/components/auth/AuthWrapper";
 
 const Index = () => {
-  return (
-    <AuthWrapper>
-      <EmailCampaignApp />
-    </AuthWrapper>
-  );
+  return <EmailCampaignApp />;
 };
 
 export default Index;
