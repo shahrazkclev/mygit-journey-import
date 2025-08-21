@@ -202,8 +202,14 @@ export const StyleGuide = () => {
 
       if (result.error) throw result.error;
 
-      // Apply page theme immediately and update local state
-      applyPageTheme(pageThemeColors.primary, pageThemeColors.secondary, pageThemeColors.accent);
+      // Update global theme state to sync with saved data
+      updateTheme({
+        primary: pageThemeColors.primary,
+        secondary: pageThemeColors.secondary,
+        accent: pageThemeColors.accent
+      });
+
+      console.log('Theme saved to Supabase:', pageThemeColors);
 
       toast({
         title: "Style Guide Saved",
