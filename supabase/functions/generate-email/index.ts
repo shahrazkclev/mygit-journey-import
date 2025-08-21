@@ -63,7 +63,7 @@ Return ONLY the complete HTML email template, no explanations or code blocks.`;
       },
       body: JSON.stringify({
         model: 'claude-sonnet-4-20250514',
-        max_tokens: 3000,
+        max_tokens: 4000,
         messages: [
           {
             role: 'user',
@@ -74,6 +74,8 @@ Create a stunning email template for: "${subject}"
 Content prompt: ${prompt}
 
 Layout variant: ${chosenVariant}. Design MUST differ materially between variants (structure, section order, and components). Use email-safe HTML/CSS only.
+
+IMPORTANT: If the prompt contains a list of features or updates, make sure to include ALL of them in the email template. Do not truncate or skip any items from the list.
 
 Return ONLY the complete HTML email template, no explanations or code blocks.`
           }
