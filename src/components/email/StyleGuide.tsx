@@ -58,6 +58,13 @@ export const StyleGuide = () => {
     loadStyleGuide();
   }, []);
 
+  // Keep browser tab title in sync with brand name
+  useEffect(() => {
+    if (brandIdentity.name) {
+      document.title = `${brandIdentity.name} – Email Campaign Manager`;
+    }
+  }, [brandIdentity.name]);
+
   const loadStyleGuide = async () => {
     try {
       const { data, error } = await supabase
@@ -336,6 +343,13 @@ export const StyleGuide = () => {
                 label="Accent"
               />
             </div>
+          </div>
+
+          <div className="mt-4">
+            <Button onClick={handleSaveStyleGuide} size="sm" variant="outline" className="flex items-center space-x-2">
+              <Save className="h-4 w-4" />
+              <span>Save Theme</span>
+            </Button>
           </div>
         </CardContent>
       </Card>
