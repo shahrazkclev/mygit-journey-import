@@ -591,10 +591,15 @@ export const CampaignComposer = () => {
                   </Button>
                 </div>
               </div>
-              <div className="border rounded-lg p-4 bg-muted/50 max-h-32 overflow-y-auto">
-                <pre className="text-xs text-muted-foreground whitespace-pre-wrap">
-                  {generatedTemplate.substring(0, 300)}...
-                </pre>
+              
+              {/* Inline Email Preview */}
+              <div className="border rounded-lg bg-white overflow-hidden">
+                <iframe
+                  title="Email inline preview"
+                  srcDoc={generatedTemplate}
+                  className="w-full h-64 border-0"
+                  sandbox="allow-same-origin"
+                />
               </div>
               
               {/* AI Edit Controls */}
