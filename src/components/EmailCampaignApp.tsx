@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -8,9 +8,35 @@ import { EmailListManager } from "./email/EmailListManager";
 import { CampaignSettings } from "./email/CampaignSettings";
 import { UnsubscribeManager } from "./email/UnsubscribeManager";
 import { StyleGuide } from "./email/StyleGuide";
+import { supabase } from "@/integrations/supabase/client";
+import { DEMO_USER_ID } from "@/lib/demo-auth";
+import { setCssThemeFromHex } from "@/lib/theme";
 
 export const EmailCampaignApp = () => {
   const [activeTab, setActiveTab] = useState("compose");
+
+  // Apply latest saved theme globally on app mount
+  useEffect(() => {
+    const applySavedTheme = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('style_guides')
+          .select('page_theme_primary, page_theme_secondary, page_theme_accent, brand_name')
+          .eq('user_id', DEMO_USER_ID)
+          .order('created_at', { ascending: false })
+          .limit(1);
+        if (error) return;
+        if (data && data.length > 0) {
+          const g = data[0];
+          setCssThemeFromHex(g.page_theme_primary, g.page_theme_secondary, g.page_theme_accent);
+          if (g.brand_name) {
+            document.title = `${g.brand_name} – Email Campaign Manager`;
+          }
+        }
+      } catch {}
+    };
+    applySavedTheme();
+  }, []);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-background to-primary/5">
