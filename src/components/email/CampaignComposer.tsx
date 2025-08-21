@@ -553,15 +553,27 @@ export const CampaignComposer = () => {
                     </DialogTrigger>
                     <DialogContent className="max-w-4xl max-h-[80vh] overflow-auto" aria-describedby="email-preview-desc">
                       <DialogHeader>
-                        <DialogTitle>Email Preview</DialogTitle>
+                        <div className="flex justify-between items-center">
+                          <DialogTitle>Email Preview</DialogTitle>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setViewMode(viewMode === 'desktop' ? 'mobile' : 'desktop')}
+                          >
+                            {viewMode === 'desktop' ? <Smartphone className="h-4 w-4 mr-2" /> : <Monitor className="h-4 w-4 mr-2" />}
+                            {viewMode === 'desktop' ? 'Mobile View' : 'Desktop View'}
+                          </Button>
+                        </div>
                       </DialogHeader>
                       <p id="email-preview-desc" className="sr-only">Full email preview content in an isolated iframe.</p>
-                      <iframe
-                        title="Email full preview"
-                        srcDoc={generatedTemplate}
-                        className="w-full h-[70vh] border rounded"
-                        sandbox="allow-same-origin"
-                      />
+                      <div className={`mx-auto ${viewMode === 'mobile' ? 'max-w-sm' : 'w-full'}`}>
+                        <iframe
+                          title="Email full preview"
+                          srcDoc={generatedTemplate}
+                          className={`w-full border rounded ${viewMode === 'mobile' ? 'h-[60vh]' : 'h-[70vh]'}`}
+                          sandbox="allow-same-origin"
+                        />
+                      </div>
                     </DialogContent>
                   </Dialog>
                   <Button
