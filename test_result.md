@@ -102,7 +102,7 @@
 # Testing Data - Main Agent and testing sub agent both should log testing data below this section
 #====================================================================================================
 
-user_problem_statement: "User wants to enhance Email Campaign Manager with: 1) Edit tags of contacts with relevant products showing as suggested tags, 2) Make.com Integration area collapsible and collapsed by default, 3) Add contacts to lists (individual/bulk) in both lists and contact tabs, 4) Add tags (individual/bulk), 5) Consistent theme across all pages like compose page, 6) Searchable contact management in lists, 7) Editable lists including dynamic list rules, 8) Enhanced bulk operations (manage = add/remove), 9) Duplicate dynamic lists as static lists, 10) Individual contact editing"
+user_problem_statement: "User wants enhanced Email Campaign Manager with: 1) Edit tags with product suggestions, 2) Collapsible Make.com Integration, 3) Bulk contact/list management, 4) Global theme consistency, 5) Searchable contact management, 6) Editable lists with dynamic rules, 7) Enhanced bulk operations (add/remove), 8) Duplicate dynamic lists as static, 9) Individual contact editing, 10) Show contact lists, 11) Improved manage lists logic, 12) Simplified product-tag integration, 13) Dynamic lists rules-only management"
 
 backend:
   - task: "FastAPI Health Check Endpoint"
