@@ -20,23 +20,27 @@ serve(async (req) => {
 
   // Parse request body once and reuse
   const requestData = await req.json();
-  const { prompt, subject, themeColors, regenId, styleGuide, templatePreview } = requestData as { 
+  const { prompt, subject, themeColors, regenId, styleGuide, templatePreview, userId } = requestData as { 
     prompt: string; 
     subject: string; 
     themeColors?: any; 
     regenId?: number; 
     styleGuide?: any;
     templatePreview?: string;
+    userId?: string;
   };
 
   try {
     console.log('Generating clean, minimal email template with strict brand compliance');
 
+    const resolvedUserId = userId || '550e8400-e29b-41d4-a716-446655440000';
+    console.log('Using userId to fetch style guide:', resolvedUserId);
+
     // Fetch fresh style guide data from database
     const { data: styleGuideData, error } = await supabase
       .from('style_guides')
       .select('*')
-      .eq('user_id', 'demo-user')
+      .eq('user_id', resolvedUserId)
       .order('created_at', { ascending: false })
       .limit(1)
       .maybeSingle();
@@ -105,10 +109,11 @@ TEMPLATE REQUIREMENTS:
 4. Buttons with ${finalPrimary} background and white text
 5. Include the signature: ${finalSignature}
 6. Use font family: ${finalFont}
-7. Clean, minimal design - no gradients or fancy styling
-8. Mobile responsive with proper table structure
-
-Generate a complete HTML email that matches this exact brand style.`;
+    7. Clean, minimal design unless the JSON style prompt specifies otherwise; prioritize the JSON instructions over defaults
+    8. Mobile responsive with proper table structure
+    9. If the JSON includes layout/sections/modules, follow them EXACTLY (headings, order, and component presence)
+ 
+ Generate a complete HTML email that matches this exact brand style and structure.`;
 
     const response = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
