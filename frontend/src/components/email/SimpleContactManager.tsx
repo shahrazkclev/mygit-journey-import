@@ -11,6 +11,7 @@ import { Trash2, Plus, Tag, Users, Link, ChevronDown, ChevronRight, Edit } from 
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { DEMO_USER_ID } from "@/lib/demo-auth";
+import { EditContactDialog } from "./EditContactDialog";
 
 interface Contact {
   id: string;
