@@ -175,10 +175,10 @@ export const CampaignHistory: React.FC = () => {
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
-        <h2 className="text-2xl font-bold">Campaign History</h2>
+        <h2 className="text-2xl font-bold text-email-primary">Campaign History</h2>
       </div>
 
-      <Card>
+      <Card className="shadow-soft bg-gradient-to-br from-email-background to-background border-email-primary/20">
         <CardHeader>
           <CardTitle className="flex items-center">
             <History className="h-5 w-5 mr-2" />
