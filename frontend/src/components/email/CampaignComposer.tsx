@@ -71,6 +71,7 @@ export const CampaignComposer: React.FC<CampaignComposerProps> = ({ onSave }) =>
   }, [subject, prompt, generatedTemplate, selectedLists, themeColors]);
 
   const [emailLists, setEmailLists] = useState<any[]>([]);
+  const [products, setProducts] = useState<any[]>([]);
 
   useEffect(() => {
     loadEmailLists();
