@@ -69,15 +69,19 @@ Return ONLY the email body content (no HTML tags, just the text content).`;
     const primaryColor = styleGuide?.primaryColor || '#6A7059';
     const fontFamily = styleGuide?.fontFamily || 'Inter, Lato, \'Open Sans\', Arial, sans-serif';
     const emailSignature = styleGuide?.emailSignature || 'Best regards,\nCleverpoly';
-    const signatureFont = styleGuide?.signatureFont || '\'Dancing Script\', cursive';
+    const signatureFont = styleGuide?.signatureFont || "'Inter', sans-serif";
 
-    // Import Google Fonts for signature if needed
-    const googleFontsImport = signatureFont.includes('Dancing Script') ? '@import url(\'https://fonts.googleapis.com/css2?family=Dancing+Script:wght@400;700&display=swap\');' :
+    // Import Google Fonts for signature if needed (only for Google Fonts)
+    const googleFontsImport = signatureFont.includes('Inter') ? '@import url(\'https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap\');' :
+                             signatureFont.includes('Roboto') ? '@import url(\'https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap\');' :
+                             signatureFont.includes('Open Sans') ? '@import url(\'https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;500;600&display=swap\');' :
+                             signatureFont.includes('Lato') ? '@import url(\'https://fonts.googleapis.com/css2?family=Lato:wght@400;700&display=swap\');' :
+                             signatureFont.includes('Playfair Display') ? '@import url(\'https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&display=swap\');' :
+                             signatureFont.includes('Merriweather') ? '@import url(\'https://fonts.googleapis.com/css2?family=Merriweather:wght@400;700&display=swap\');' :
+                             signatureFont.includes('Source Code Pro') ? '@import url(\'https://fonts.googleapis.com/css2?family=Source+Code+Pro:wght@400;500&display=swap\');' :
+                             signatureFont.includes('Dancing Script') ? '@import url(\'https://fonts.googleapis.com/css2?family=Dancing+Script:wght@400;700&display=swap\');' :
                              signatureFont.includes('Pacifico') ? '@import url(\'https://fonts.googleapis.com/css2?family=Pacifico&display=swap\');' :
-                             signatureFont.includes('Great Vibes') ? '@import url(\'https://fonts.googleapis.com/css2?family=Great+Vibes&display=swap\');' :
-                             signatureFont.includes('Satisfy') ? '@import url(\'https://fonts.googleapis.com/css2?family=Satisfy&display=swap\');' :
-                             signatureFont.includes('Lobster') ? '@import url(\'https://fonts.googleapis.com/css2?family=Lobster&display=swap\');' :
-                             signatureFont.includes('Caveat') ? '@import url(\'https://fonts.googleapis.com/css2?family=Caveat:wght@400;700&display=swap\');' : '';
+                             signatureFont.includes('Lobster') ? '@import url(\'https://fonts.googleapis.com/css2?family=Lobster&display=swap\');' : '';
 
     const htmlContent = `<!DOCTYPE html>
 <html lang="en">
@@ -148,7 +152,7 @@ Return ONLY the email body content (no HTML tags, just the text content).`;
     const primaryColor = styleGuide?.primaryColor || '#6A7059';
     const fontFamily = styleGuide?.fontFamily || 'Inter, sans-serif';
     const emailSignature = styleGuide?.emailSignature || 'Best regards,\nCleverpoly';
-    const signatureFont = styleGuide?.signatureFont || '\'Dancing Script\', cursive';
+    const signatureFont = styleGuide?.signatureFont || "'Inter', sans-serif";
 
     const fallbackHtml = `<!DOCTYPE html>
 <html lang="en">

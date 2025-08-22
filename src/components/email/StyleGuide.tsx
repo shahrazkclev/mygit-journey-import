@@ -67,7 +67,7 @@ export const StyleGuide = () => {
     brandVoice: "Clean and professional aesthetic using generous white space and a card-based design to create an organized and user-friendly experience. The tone should be helpful and direct.",
     logo: "",
     signature: "Best regards,\nCleverpoly\n\nIf you have any questions or need assistance, feel free to contact us at cleverpoly.store@gmail.com",
-    signatureFont: "'Dancing Script', cursive"
+    signatureFont: "'Inter', sans-serif"
   });
 
   const [jsonPrompt, setJsonPrompt] = useState<string>("");
@@ -129,7 +129,7 @@ export const StyleGuide = () => {
             brandVoice: guide.brand_voice || '',
             logo: guide.logo_url || '',
             signature: guide.email_signature,
-            signatureFont: guide.signature_font || "'Dancing Script', cursive",
+            signatureFont: guide.signature_font || "'Inter', sans-serif",
           });
           setBrandInitialized(true);
         }
@@ -596,16 +596,22 @@ export const StyleGuide = () => {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="'Dancing Script', cursive">Dancing Script (Handwritten)</SelectItem>
-                  <SelectItem value="'Pacifico', cursive">Pacifico (Friendly Script)</SelectItem>
-                  <SelectItem value="'Great Vibes', cursive">Great Vibes (Elegant Script)</SelectItem>
-                  <SelectItem value="'Satisfy', cursive">Satisfy (Casual Script)</SelectItem>
-                  <SelectItem value="'Lobster', cursive">Lobster (Bold Script)</SelectItem>
-                  <SelectItem value="'Caveat', cursive">Caveat (Handwriting)</SelectItem>
+                  <SelectItem value="'Inter', sans-serif">Inter (Modern Clean)</SelectItem>
+                  <SelectItem value="'Roboto', sans-serif">Roboto (Professional)</SelectItem>
+                  <SelectItem value="'Helvetica', sans-serif">Helvetica (Classic Sans)</SelectItem>
+                  <SelectItem value="Arial, sans-serif">Arial (Standard Sans)</SelectItem>
+                  <SelectItem value="'Segoe UI', sans-serif">Segoe UI (System Default)</SelectItem>
+                  <SelectItem value="'Open Sans', sans-serif">Open Sans (Friendly)</SelectItem>
+                  <SelectItem value="'Lato', sans-serif">Lato (Elegant)</SelectItem>
                   <SelectItem value="Georgia, serif">Georgia (Classic Serif)</SelectItem>
                   <SelectItem value="'Times New Roman', serif">Times New Roman (Traditional)</SelectItem>
-                  <SelectItem value="Arial, sans-serif">Arial (Clean Sans-serif)</SelectItem>
-                  <SelectItem value="'Segoe UI', sans-serif">Segoe UI (Modern Sans-serif)</SelectItem>
+                  <SelectItem value="'Playfair Display', serif">Playfair Display (Elegant Serif)</SelectItem>
+                  <SelectItem value="'Merriweather', serif">Merriweather (Readable Serif)</SelectItem>
+                  <SelectItem value="'Source Code Pro', monospace">Source Code Pro (Monospace)</SelectItem>
+                  <SelectItem value="'Courier New', monospace">Courier New (Typewriter)</SelectItem>
+                  <SelectItem value="'Dancing Script', cursive">Dancing Script (Handwritten)</SelectItem>
+                  <SelectItem value="'Pacifico', cursive">Pacifico (Casual Script)</SelectItem>
+                  <SelectItem value="'Lobster', cursive">Lobster (Bold Script)</SelectItem>
                 </SelectContent>
               </Select>
             </div>
