@@ -413,6 +413,7 @@ export const CampaignComposer: React.FC<CampaignComposerProps> = ({ onSave }) =>
           subject: subject,
           regenId: Date.now(),
           themeColors: themeColors,
+          includeUnsubscribe: includeUnsubscribe,
           styleGuide: styleGuide ? {
             brandName: styleGuide.brand_name,
             primaryColor: styleGuide.primary_color,
