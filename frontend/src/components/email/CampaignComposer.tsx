@@ -329,6 +329,99 @@ export const CampaignComposer: React.FC<CampaignComposerProps> = ({ onSave }) =>
     }
   };
 
+  // Inline CSS styles for better email client compatibility
+  const inlineCssStyles = (htmlContent: string): string => {
+    try {
+      // Extract CSS from <style> blocks
+      const styleRegex = /<style[^>]*>([\s\S]*?)<\/style>/gi;
+      const styles: string[] = [];
+      let match;
+
+      while ((match = styleRegex.exec(htmlContent)) !== null) {
+        styles.push(match[1]);
+      }
+
+      if (styles.length === 0) return htmlContent;
+
+      // Parse CSS rules
+      const cssRules: { [selector: string]: { [property: string]: string } } = {};
+      
+      styles.forEach(styleContent => {
+        // Simple CSS parser for basic rules
+        const ruleRegex = /([^{]+)\{([^}]+)\}/g;
+        let ruleMatch;
+        
+        while ((ruleMatch = ruleRegex.exec(styleContent)) !== null) {
+          const selector = ruleMatch[1].trim();
+          const declarations = ruleMatch[2].trim();
+          
+          if (!cssRules[selector]) {
+            cssRules[selector] = {};
+          }
+          
+          // Parse declarations
+          declarations.split(';').forEach(decl => {
+            const [property, value] = decl.split(':').map(s => s.trim());
+            if (property && value) {
+              cssRules[selector][property] = value;
+            }
+          });
+        }
+      });
+
+      // Apply styles inline
+      let inlinedHtml = htmlContent;
+
+      // Remove style blocks
+      inlinedHtml = inlinedHtml.replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '');
+
+      // Apply inline styles
+      Object.keys(cssRules).forEach(selector => {
+        const styles = cssRules[selector];
+        const styleString = Object.entries(styles)
+          .map(([prop, val]) => `${prop}: ${val}`)
+          .join('; ');
+
+        // Simple selector matching for common cases
+        if (selector.startsWith('.')) {
+          // Class selector
+          const className = selector.substring(1);
+          const classRegex = new RegExp(`<([^>]+)class=["'][^"']*\\b${className}\\b[^"']*["']([^>]*)>`, 'gi');
+          inlinedHtml = inlinedHtml.replace(classRegex, (match, beforeClass, afterClass) => {
+            const existingStyle = match.match(/style=["']([^"']*)["']/i);
+            const existingStyles = existingStyle ? existingStyle[1] : '';
+            const newStyle = existingStyles ? `${existingStyles}; ${styleString}` : styleString;
+            
+            if (existingStyle) {
+              return match.replace(/style=["'][^"']*["']/i, `style="${newStyle}"`);
+            } else {
+              return match.replace('>', ` style="${styleString}">`);
+            }
+          });
+        } else if (selector.match(/^[a-zA-Z]+$/)) {
+          // Element selector
+          const tagRegex = new RegExp(`<${selector}([^>]*)>`, 'gi');
+          inlinedHtml = inlinedHtml.replace(tagRegex, (match, attributes) => {
+            const existingStyle = match.match(/style=["']([^"']*)["']/i);
+            const existingStyles = existingStyle ? existingStyle[1] : '';
+            const newStyle = existingStyles ? `${existingStyles}; ${styleString}` : styleString;
+            
+            if (existingStyle) {
+              return match.replace(/style=["'][^"']*["']/i, `style="${newStyle}"`);
+            } else {
+              return `<${selector}${attributes} style="${styleString}">`;
+            }
+          });
+        }
+      });
+
+      return inlinedHtml;
+    } catch (error) {
+      console.error('Error inlining CSS:', error);
+      return htmlContent; // Return original if inlining fails
+    }
+  };
+
   const handleEditorSave = (elements: EmailElement[], htmlContent: string) => {
     setEmailElements(elements);
     setGeneratedTemplate(htmlContent);
