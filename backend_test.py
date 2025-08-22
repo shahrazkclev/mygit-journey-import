@@ -547,6 +547,15 @@ def run_all_tests():
     results["campaign_error_handling"] = test_campaign_error_handling()
     results["campaign_background_processing"] = test_campaign_background_processing()
     
+    # Run sender sequence rotation tests
+    print("\n" + "=" * 40)
+    print("🔄 Testing Sender Sequence Rotation Features")
+    print("=" * 40)
+    
+    results["sender_sequence_rotation"] = test_sender_sequence_rotation()
+    results["webhook_payload_sender_sequence"] = test_webhook_payload_sender_sequence()
+    results["sender_sequence_logic"] = test_sender_sequence_with_custom_settings()
+    
     print("\n" + "=" * 60)
     print("📊 Test Results Summary")
     print("=" * 60)
