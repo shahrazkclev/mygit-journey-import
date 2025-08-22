@@ -210,16 +210,46 @@ export const CampaignComposer: React.FC<CampaignComposerProps> = ({ onSave }) =>
   };
 
   const addUnsubscribeLink = (htmlContent: string): string => {
-    // Create the unsubscribe link that will be dynamically replaced during sending
+    // Create the unsubscribe link that will trigger a JavaScript POST request
     const unsubscribeLink = `
       <div style="margin: 40px 0 20px; padding: 20px; background-color: #f8f9fa; border-top: 1px solid #e9ecef; text-align: center; font-family: Arial, sans-serif;">
         <p style="margin: 0 0 10px; font-size: 12px; color: #6c757d;">
           Don't want to receive these emails anymore?
         </p>
-        <a href="https://mixifcnokcmxarpzwfiy.supabase.co/functions/v1/sync-contacts?email={{RECIPIENT_EMAIL}}&action=unsubscribe" 
-           style="font-size: 12px; color: #dc3545; text-decoration: underline;">
+        <a href="#" onclick="unsubscribeUser('{{RECIPIENT_EMAIL}}')" 
+           style="font-size: 12px; color: #dc3545; text-decoration: underline; cursor: pointer;">
           Unsubscribe
         </a>
+        <script>
+          function unsubscribeUser(email) {
+            if (!email || email === '{{RECIPIENT_EMAIL}}') {
+              alert('Invalid email address');
+              return;
+            }
+            
+            fetch('https://mixifcnokcmxarpzwfiy.supabase.co/functions/v1/sync-contacts', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json'
+              },
+              body: JSON.stringify({
+                email: email,
+                action: 'unsubscribe'
+              })
+            })
+            .then(response => {
+              if (response.ok) {
+                alert('You have been successfully unsubscribed.');
+              } else {
+                alert('Error processing unsubscribe request. Please try again.');
+              }
+            })
+            .catch(error => {
+              console.error('Unsubscribe error:', error);
+              alert('Error processing unsubscribe request. Please try again.');
+            });
+          }
+        </script>
       </div>
     `;
 
