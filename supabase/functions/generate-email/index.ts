@@ -1,6 +1,11 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.52.1";
 
 const claudeApiKey = Deno.env.get('CLAUDE_API_KEY');
+const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+
+const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -27,31 +32,60 @@ serve(async (req) => {
   try {
     console.log('Generating clean, minimal email template with strict brand compliance');
 
-    // Resolve brand tokens from style guide or theme colors
-    const brandName = styleGuide?.brandName || 'Cleverpoly';
-    const primary = styleGuide?.primaryColor || themeColors?.primary || '#6A7059';
-    const secondary = styleGuide?.secondaryColor || themeColors?.secondary || '#F9F8F5';
-    const accent = styleGuide?.accentColor || themeColors?.accent || '#FCD34D';
-    const fontFamily = styleGuide?.fontFamily || "Inter, Lato, 'Open Sans', Arial, sans-serif";
+    // Fetch fresh style guide data from database
+    const { data: styleGuideData, error } = await supabase
+      .from('style_guides')
+      .select('*')
+      .eq('user_id', 'demo-user')
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle();
 
-    // Parse saved style prompt if available
-    let savedStylePrompt = null;
-    try {
-      if (templatePreview && templatePreview.trim().length > 0) {
-        savedStylePrompt = JSON.parse(templatePreview);
-      }
-    } catch (e) {
-      console.log('No valid style prompt found, using defaults');
+    if (error) {
+      console.error('Error fetching style guide:', error);
     }
 
-    // Use saved style or fallback to passed values
+    console.log('Fetched style guide from DB:', styleGuideData);
+
+    // Resolve brand tokens from fresh database data first, then fallback to passed data
+    const brandName = styleGuideData?.brand_name || styleGuide?.brandName || 'Cleverpoly';
+    const primary = styleGuideData?.primary_color || styleGuide?.primaryColor || themeColors?.primary || '#6A7059';
+    const secondary = styleGuideData?.secondary_color || styleGuide?.secondaryColor || themeColors?.secondary || '#F9F8F5';
+    const accent = styleGuideData?.accent_color || styleGuide?.accentColor || themeColors?.accent || '#FCD34D';
+    const fontFamily = styleGuideData?.font_family || styleGuide?.fontFamily || "Inter, Lato, 'Open Sans', Arial, sans-serif";
+
+    // Parse saved style prompt from database template_preview field
+    let savedStylePrompt = null;
+    try {
+      const templatePreviewFromDB = styleGuideData?.template_preview;
+      if (templatePreviewFromDB && templatePreviewFromDB.trim().length > 0) {
+        savedStylePrompt = JSON.parse(templatePreviewFromDB);
+        console.log('Found and parsed JSON style prompt from DB:', savedStylePrompt);
+      } else {
+        console.log('No valid JSON style prompt in template_preview field');
+      }
+    } catch (e) {
+      console.log('Failed to parse template_preview JSON, using defaults:', e.message);
+    }
+
+    // Use saved JSON style prompt first, then database fields, then passed values
     const finalBrandName = savedStylePrompt?.brandName || brandName;
     const finalPrimary = savedStylePrompt?.colors?.primary || primary;
     const finalSecondary = savedStylePrompt?.colors?.secondary || secondary;
     const finalAccent = savedStylePrompt?.colors?.accent || accent;
     const finalFont = savedStylePrompt?.typography?.fontFamily || fontFamily;
-    const finalVoice = savedStylePrompt?.voice?.description || styleGuide?.brandVoice || 'Professional and clean';
-    const finalSignature = savedStylePrompt?.signature || styleGuide?.emailSignature || 'Best regards,\nThe Team';
+    const finalVoice = savedStylePrompt?.voice?.description || styleGuideData?.brand_voice || styleGuide?.brandVoice || 'Professional and clean';
+    const finalSignature = savedStylePrompt?.signature || styleGuideData?.email_signature || styleGuide?.emailSignature || 'Best regards,\nThe Team';
+
+    console.log('Final brand style being used:', {
+      brandName: finalBrandName,
+      primary: finalPrimary,
+      secondary: finalSecondary,
+      accent: finalAccent,
+      font: finalFont,
+      voice: finalVoice,
+      signature: finalSignature
+    });
 
     const systemPrompt = `You are an expert email template designer. Create clean, professional email templates using this EXACT brand style:
 
