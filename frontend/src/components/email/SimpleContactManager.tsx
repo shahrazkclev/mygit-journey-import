@@ -403,6 +403,7 @@ export const SimpleContactManager = () => {
       setSelectedBulkListsToRemove([]);
       setSelectedContacts(new Set());
       setShowBulkListDialog(false);
+      loadContactLists(); // Reload to show updated lists
     } catch (error) {
       console.error('Error managing contacts in lists:', error);
       toast.error("Failed to manage contacts in lists");
