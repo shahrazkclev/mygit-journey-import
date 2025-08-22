@@ -63,8 +63,33 @@ serve(async (req) => {
       brandName, primaryColor, secondaryColor, accentColor, fontFamily, brandVoice, signature
     });
 
-    // Create the AI prompt
-    const systemPrompt = `You are an expert email designer. Create a professional HTML email template.
+    // Create the AI prompt - STRICTLY follow JSON if it exists
+    let systemPrompt;
+    
+    if (jsonStyle) {
+      console.log('USING JSON STYLE PROMPT - Ignoring all defaults');
+      systemPrompt = `You are an expert email designer. Follow this JSON style guide EXACTLY. Do not add any default styling or assumptions.
+
+JSON STYLE GUIDE TO FOLLOW EXACTLY:
+${JSON.stringify(jsonStyle, null, 2)}
+
+STRICT REQUIREMENTS:
+1. Follow the JSON structure EXACTLY as specified
+2. Use ONLY the colors, fonts, and styling defined in the JSON
+3. Implement ONLY the sections/components listed in the JSON
+4. Do not add any default email elements unless specified in the JSON
+5. If the JSON specifies layout, sections, modules - follow them precisely
+6. If the JSON specifies specific HTML structure - use it exactly
+7. Ignore all email template defaults - use ONLY what's in the JSON
+
+Create the HTML email for:
+Subject: ${subject}
+Content: ${prompt}
+
+Return ONLY the HTML that matches the JSON specification exactly.`;
+    } else {
+      console.log('NO JSON STYLE - Using basic database fields');
+      systemPrompt = `You are an expert email designer. Create a professional HTML email template.
 
 BRAND STYLE:
 - Brand: ${brandName}
@@ -75,16 +100,10 @@ BRAND STYLE:
 - Voice: ${brandVoice}
 - Signature: ${signature}
 
-REQUIREMENTS:
-1. Use these exact colors and fonts
-2. Mobile responsive HTML email structure
-3. Clean, professional design
-4. Include the signature at the bottom
-5. Use proper email-safe HTML structure
-
 Create the HTML email for:
 Subject: ${subject}
 Content: ${prompt}`;
+    }
 
     // Call Claude API
     const response = await fetch('https://api.anthropic.com/v1/messages', {
