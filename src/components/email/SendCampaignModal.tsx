@@ -53,7 +53,7 @@ export const SendCampaignModal: React.FC<SendCampaignModalProps> = ({
       return;
     }
 
-    const webhookUrl = settings?.[0]?.webhook_url;
+    const webhookUrl = (settings?.[0] as any)?.webhook_url as string | undefined;
     if (!webhookUrl) {
       toast.error('Please set webhook URL in Settings first');
       return;
