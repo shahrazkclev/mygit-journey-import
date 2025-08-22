@@ -734,15 +734,17 @@ export const SmartListManager = () => {
                   </div>
                 </div>
                 <div className="flex items-center space-x-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => handleManageContacts(list)}
-                    className="border-email-primary text-email-primary hover:bg-email-primary/10"
-                  >
-                    <UserPlus className="h-4 w-4 mr-1" />
-                    Manage
-                  </Button>
+                  {list.list_type === 'static' && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleManageContacts(list)}
+                      className="border-email-primary text-email-primary hover:bg-email-primary/10"
+                    >
+                      <UserPlus className="h-4 w-4 mr-1" />
+                      Manage
+                    </Button>
+                  )}
                   <Button
                     variant="outline"
                     size="sm"
