@@ -25,6 +25,12 @@ mongo_url = os.environ['MONGO_URL']
 client = AsyncIOMotorClient(mongo_url)
 db = client[os.environ['DB_NAME']]
 
+# Security setup
+security = HTTPBearer()
+AUTH_EMAIL = os.environ.get('AUTH_EMAIL', 'cgdora4@gmail.com')
+AUTH_PASSWORD = os.environ.get('AUTH_PASSWORD', 'shahzrp11')
+JWT_SECRET_KEY = os.environ.get('JWT_SECRET_KEY', 'your-super-secret-jwt-key-change-in-production')
+
 # Create the main app without a prefix
 app = FastAPI()
 
