@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -8,6 +8,8 @@ import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 import { Settings, Clock, Zap, Link, AlertCircle } from "lucide-react";
 import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
+import { DEMO_USER_ID } from "@/lib/demo-auth";
 
 export const CampaignSettings = () => {
   const [webhookUrl, setWebhookUrl] = useState("");
@@ -16,13 +18,59 @@ export const CampaignSettings = () => {
   const [delayBetweenBatches, setDelayBetweenBatches] = useState([5]);
   const [enableRetries, setEnableRetries] = useState(true);
   const [maxRetries, setMaxRetries] = useState([3]);
+  const [isLoading, setIsLoading] = useState(false);
 
-  const handleSaveSettings = () => {
+  useEffect(() => {
+    loadSettings();
+  }, []);
+
+  const loadSettings = async () => {
+    // For now, we'll just use local storage until the types are updated
+    try {
+      const savedSettings = localStorage.getItem('campaign_settings');
+      if (savedSettings) {
+        const settings = JSON.parse(savedSettings);
+        setWebhookUrl(settings.webhook_url || "");
+        setSendingSpeed([settings.sending_speed || 50]);
+        setBatchSize([settings.batch_size || 10]);
+        setDelayBetweenBatches([settings.delay_between_batches || 5]);
+        setEnableRetries(settings.enable_retries !== false);
+        setMaxRetries([settings.max_retries || 3]);
+      }
+    } catch (error) {
+      console.error('Error loading settings:', error);
+    }
+  };
+
+  const handleSaveSettings = async () => {
     if (!webhookUrl.trim()) {
       toast.error("Please enter your Make.com webhook URL");
       return;
     }
-    toast.success("Campaign settings saved successfully!");
+
+    setIsLoading(true);
+    try {
+      const settings = {
+        user_id: DEMO_USER_ID,
+        webhook_url: webhookUrl,
+        sending_speed: sendingSpeed[0],
+        batch_size: batchSize[0],
+        delay_between_batches: delayBetweenBatches[0],
+        enable_retries: enableRetries,
+        max_retries: maxRetries[0],
+        updated_at: new Date().toISOString()
+      };
+
+      // Save to localStorage for now
+      localStorage.setItem('campaign_settings', JSON.stringify(settings));
+
+      toast.success("Campaign settings saved successfully!");
+    } catch (error) {
+      console.error('Error saving settings:', error);
+      toast.error("Failed to save settings. Please try again.");
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleTestWebhook = () => {
@@ -69,9 +117,10 @@ export const CampaignSettings = () => {
             </Button>
             <Button 
               onClick={handleSaveSettings}
+              disabled={isLoading}
               className="bg-email-primary hover:bg-email-primary/80 text-primary-foreground"
             >
-              Save Settings
+              {isLoading ? "Saving..." : "Save Settings"}
             </Button>
           </div>
         </CardContent>
