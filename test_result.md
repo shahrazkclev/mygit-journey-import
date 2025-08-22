@@ -188,10 +188,13 @@ test_plan:
     - "Make Make.com Integration sections collapsible and collapsed by default"
     - "Enhance contact tag editing with product suggestions"
     - "Add bulk tag operations to contacts"
+    - "Add individual/bulk contact-to-list assignment in contacts tab"
+    - "Add individual/bulk contact-to-list assignment in lists tab"
+    - "Apply consistent theme across all components"
   stuck_tasks: []
   test_all: false
   test_priority: "high_first"
 
 agent_communication:
     -agent: "main"
-    -message: "Starting implementation of Email Campaign Manager enhancements. Will implement features incrementally and test each phase."
+    -message: "Successfully implemented all requested Email Campaign Manager enhancements: 1) Made Make.com integration sections collapsible and collapsed by default, 2) Added product suggestions when editing contact tags, 3) Added bulk operations for tags and list assignments, 4) Added contact management in both contacts and lists tabs, 5) Applied consistent email theme across all components. Ready for testing."
