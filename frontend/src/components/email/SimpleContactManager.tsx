@@ -80,6 +80,7 @@ export const SimpleContactManager = () => {
   useEffect(() => {
     loadContacts();
     loadEmailLists();
+    loadContactLists();
   }, []);
 
   useEffect(() => {
