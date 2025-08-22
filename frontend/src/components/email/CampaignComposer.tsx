@@ -45,7 +45,6 @@ export const CampaignComposer: React.FC<CampaignComposerProps> = ({ onSave }) =>
   const [originalTemplate, setOriginalTemplate] = useState<string | null>(null);
   const [emailElements, setEmailElements] = useState<EmailElement[]>([]);
   const [showSendModal, setShowSendModal] = useState(false);
-  const [includeUnsubscribe, setIncludeUnsubscribe] = useState(true);
 
   const DRAFT_KEY = 'campaign_draft';
 
