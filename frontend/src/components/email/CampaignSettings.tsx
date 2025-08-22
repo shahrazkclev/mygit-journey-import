@@ -92,13 +92,44 @@ export const CampaignSettings = () => {
     }
   };
 
-  const handleTestWebhook = () => {
+  const handleTestWebhook = async () => {
     if (!webhookUrl.trim()) {
-      toast.error("Please enter webhook URL first");
+      toast.error('Please enter a webhook URL first');
       return;
     }
-    // Simulate webhook test
-    toast.info("Webhook testing requires Supabase backend integration");
+
+    setIsTestingWebhook(true);
+
+    try {
+      const testPayload = {
+        to: "test@example.com",
+        name: "Test User",
+        subject: "Webhook Test Email",
+        html: "<h1>This is a test email from your Email Campaign Manager</h1><p>If you receive this, your webhook is working correctly!</p>",
+        timestamp: new Date().toISOString(),
+        test: true
+      };
+
+      const response = await fetch(webhookUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(testPayload)
+      });
+
+      if (response.ok) {
+        toast.success(`Webhook test successful! Response: ${response.status}`);
+      } else {
+        toast.error(`Webhook test failed: ${response.status} - ${response.statusText}`);
+      }
+
+    } catch (error: any) {
+      console.error('Webhook test error:', error);
+      toast.error(`Webhook test failed: ${error.message}`);
+    } finally {
+      setIsTestingWebhook(false);
+    }
   };
 
   return (
