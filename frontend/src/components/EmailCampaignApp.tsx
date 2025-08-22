@@ -1,6 +1,7 @@
 
 import { useState } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useGlobalTheme } from "@/hooks/useGlobalTheme";
 import { CampaignComposer } from "./email/CampaignComposer";
 import { SimpleContactManager } from "./email/SimpleContactManager";
 import { SmartListManager } from "./email/SmartListManager";
