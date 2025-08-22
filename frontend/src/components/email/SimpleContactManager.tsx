@@ -147,6 +147,35 @@ export const SimpleContactManager = () => {
     }
   };
 
+  const loadContactLists = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('contact_lists')
+        .select(`
+          contact_id,
+          email_lists!inner(id, name, list_type)
+        `);
+
+      if (error) {
+        console.error('Error loading contact lists:', error);
+        return;
+      }
+
+      // Group lists by contact ID
+      const contactListsMap: Record<string, any[]> = {};
+      data?.forEach((item: any) => {
+        if (!contactListsMap[item.contact_id]) {
+          contactListsMap[item.contact_id] = [];
+        }
+        contactListsMap[item.contact_id].push(item.email_lists);
+      });
+
+      setContactLists(contactListsMap);
+    } catch (error) {
+      console.error('Error loading contact lists:', error);
+    }
+  };
+
   const filterContacts = () => {
     let filtered = contacts;
 
