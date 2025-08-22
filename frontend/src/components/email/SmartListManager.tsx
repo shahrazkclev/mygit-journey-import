@@ -556,18 +556,19 @@ export const SmartListManager = () => {
             {lists.map(list => (
               <div
                 key={list.id}
-                className="flex items-center justify-between p-4 border rounded-lg hover:bg-gray-50"
+                className="flex items-center justify-between p-4 border rounded-lg hover:bg-email-muted/20 transition-colors border-email-primary/10"
               >
                 <div className="flex-1">
                   <div className="flex items-center space-x-3">
                     <div className="flex items-center space-x-2">
                       {list.list_type === 'dynamic' ? (
-                        <Zap className="h-4 w-4 text-blue-600" />
+                        <Zap className="h-4 w-4 text-email-accent" />
                       ) : (
-                        <Users className="h-4 w-4 text-gray-600" />
+                        <Users className="h-4 w-4 text-email-secondary" />
                       )}
-                      <h3 className="font-medium">{list.name}</h3>
-                      <Badge variant={list.list_type === 'dynamic' ? 'default' : 'secondary'}>
+                      <h3 className="font-medium text-email-primary">{list.name}</h3>
+                      <Badge variant={list.list_type === 'dynamic' ? 'default' : 'secondary'} 
+                             className={list.list_type === 'dynamic' ? 'bg-email-accent/20 text-email-accent' : 'bg-email-secondary/20 text-email-secondary'}>
                         {list.list_type}
                       </Badge>
                     </div>
@@ -582,7 +583,7 @@ export const SmartListManager = () => {
                     {list.list_type === 'dynamic' && list.rule_config?.requiredTags && (
                       <div className="flex flex-wrap gap-1">
                         {list.rule_config.requiredTags.map((tag: string) => (
-                          <Badge key={tag} variant="outline" className="text-xs">
+                          <Badge key={tag} variant="outline" className="text-xs border-email-accent/30 text-email-accent">
                             {tag}
                           </Badge>
                         ))}
@@ -591,12 +592,21 @@ export const SmartListManager = () => {
                   </div>
                 </div>
                 <div className="flex items-center space-x-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleManageContacts(list)}
+                    className="border-email-primary text-email-primary hover:bg-email-primary/10"
+                  >
+                    <UserPlus className="h-4 w-4 mr-1" />
+                    Manage
+                  </Button>
                   {list.list_type === 'dynamic' && (
                     <Button
                       variant="outline"
                       size="sm"
                       onClick={() => handleRefreshDynamicList(list)}
-                      className="text-blue-600 hover:text-blue-700"
+                      className="text-email-accent hover:text-email-accent/80 border-email-accent/30 hover:bg-email-accent/10"
                     >
                       <Zap className="h-4 w-4 mr-1" />
                       Refresh
