@@ -316,12 +316,13 @@ async def send_email_via_webhook(webhook_url: str, recipient: Dict[str, Any], su
         # Replace dynamic placeholders in HTML content
         personalized_html = html_content.replace('{{RECIPIENT_EMAIL}}', recipient["email"])
         personalized_html = personalized_html.replace('{{RECIPIENT_NAME}}', recipient.get("name", ""))
+        personalized_html = personalized_html.replace('{{WEBHOOK_URL}}', webhook_url)
         
         payload = {
             "to": recipient["email"],
             "name": recipient.get("name", ""),
             "subject": subject,
-            "html": personalized_html,  # Use personalized HTML
+            "html": personalized_html,  # Use personalized HTML with webhook URL and email
             "sender_sequence": sender_sequence,  # Add sender sequence to payload
             "timestamp": datetime.utcnow().isoformat()
         }
