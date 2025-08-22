@@ -134,6 +134,7 @@ export const CampaignComposer: React.FC<CampaignComposerProps> = ({ onSave }) =>
   };
 
   const loadProducts = async () => {
+    console.log('🔄 Loading products...');
     try {
       const { data, error } = await supabase
         .from('products')
@@ -142,13 +143,15 @@ export const CampaignComposer: React.FC<CampaignComposerProps> = ({ onSave }) =>
         .order('created_at', { ascending: false });
 
       if (error) {
-        console.error('Error loading products:', error);
+        console.error('❌ Error loading products:', error);
         return;
       }
 
+      console.log('✅ Products loaded:', data?.length || 0);
+      console.log('📦 Product names:', data?.map(p => p.name) || []);
       setProducts(data || []);
     } catch (error) {
-      console.error('Error loading products:', error);
+      console.error('❌ Error loading products:', error);
     }
   };
 
