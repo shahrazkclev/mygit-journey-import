@@ -502,6 +502,18 @@ frontend:
         -agent: "main"
         -comment: "Added sender sequence rotation system. Users can set emails-per-sender (default 50) and max-sender-sequence (default 3). System automatically rotates sender sequence in webhook payload: 1→2→3→1. Shows current sender # in campaign progress. Backend calculates: sequence = (sent_count // emails_per_sender) % max_sequence + 1"
         
+  - task: "Dynamic Unsubscribe Links in Email Campaigns"
+    implemented: true
+    working: true
+    file: "/app/frontend/src/components/email/CampaignComposer.tsx, /app/backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+        -working: true
+        -agent: "main"
+        -comment: "Successfully implemented dynamic unsubscribe functionality. Added toggle in CampaignComposer to include unsubscribe links. When enabled, adds unsubscribe link with {{RECIPIENT_EMAIL}} placeholder to email templates. Backend personalizes each email by replacing placeholder with actual recipient email during sending. Unsubscribe link calls the same Supabase Edge Function (sync-contacts) with email parameter and unsubscribe action."
+
   - task: "Authentication System Implementation"
     implemented: true
     working: true
