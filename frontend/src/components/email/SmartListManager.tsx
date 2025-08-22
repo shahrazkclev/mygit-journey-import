@@ -816,14 +816,25 @@ export const SmartListManager = () => {
                 )}
               </div>
               
+              {/* Search Input */}
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                <Input
+                  value={contactSearchTerm}
+                  onChange={(e) => setContactSearchTerm(e.target.value)}
+                  placeholder="Search contacts by name, email, or tags..."
+                  className="pl-10"
+                />
+              </div>
+              
               <div className="border rounded-lg p-4 max-h-80 overflow-y-auto bg-email-muted/10">
-                {availableContacts.length === 0 ? (
+                {filteredAvailableContacts.length === 0 ? (
                   <p className="text-muted-foreground text-center py-4">
-                    All contacts are already in this list
+                    {contactSearchTerm ? "No contacts found matching search" : "All contacts are already in this list"}
                   </p>
                 ) : (
                   <div className="space-y-2">
-                    {availableContacts.map((contact) => (
+                    {filteredAvailableContacts.map((contact) => (
                       <div key={contact.id} className="flex items-center space-x-3 p-2 rounded hover:bg-email-primary/10">
                         <Checkbox
                           id={`add-${contact.id}`}
