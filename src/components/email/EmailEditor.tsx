@@ -1,9 +1,9 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import { DndContext, DragEndEvent, DragOverlay, DragStartEvent, closestCenter } from '@dnd-kit/core';
 import { SortableContext, arrayMove, rectSortingStrategy } from '@dnd-kit/sortable';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Plus, Eye, Save, Type, Square, Image as ImageIcon } from 'lucide-react';
+import { Plus, Eye, Save, Type, Square, Image as ImageIcon, Undo, Redo, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { DraggableElement } from './editor/DraggableElement';
 import { ElementToolbar } from './editor/ElementToolbar';
@@ -41,6 +41,7 @@ interface EmailEditorProps {
 
 export const EmailEditor: React.FC<EmailEditorProps> = ({ 
   onSave, 
+  onChange,
   initialElements = [],
   htmlContent
 }) => {
@@ -189,6 +190,74 @@ export const EmailEditor: React.FC<EmailEditorProps> = ({
   const [activeId, setActiveId] = useState<string | null>(null);
   const [selectedElement, setSelectedElement] = useState<string | null>(null);
   const [showPreview, setShowPreview] = useState(false);
+  const [history, setHistory] = useState<EmailElement[][]>([]);
+  const [historyIndex, setHistoryIndex] = useState(-1);
+
+  // Save to history when elements change
+  useEffect(() => {
+    if (elements.length > 0) {
+      const newHistory = history.slice(0, historyIndex + 1);
+      newHistory.push([...elements]);
+      setHistory(newHistory);
+      setHistoryIndex(newHistory.length - 1);
+      
+      // Limit history to 50 steps
+      if (newHistory.length > 50) {
+        newHistory.shift();
+        setHistoryIndex(newHistory.length - 1);
+      }
+    }
+  }, [elements]);
+
+  // Sync changes to parent
+  useEffect(() => {
+    if (onChange && elements.length > 0) {
+      const htmlContent = generateHTML(elements);
+      onChange(elements, htmlContent);
+    }
+  }, [elements, onChange]);
+
+  // Keyboard shortcuts
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Delete key
+      if (e.key === 'Delete' && selectedElement) {
+        e.preventDefault();
+        deleteElement(selectedElement);
+      }
+      
+      // Undo (Ctrl+Z)
+      if (e.ctrlKey && e.key === 'z' && !e.shiftKey) {
+        e.preventDefault();
+        undo();
+      }
+      
+      // Redo (Ctrl+Shift+Z or Ctrl+Y)
+      if (e.ctrlKey && ((e.shiftKey && e.key === 'Z') || e.key === 'y')) {
+        e.preventDefault();
+        redo();
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [selectedElement, historyIndex, history]);
+
+  const undo = () => {
+    if (historyIndex > 0) {
+      setHistoryIndex(historyIndex - 1);
+      setElements(history[historyIndex - 1]);
+      toast.success('Undone');
+    }
+  };
+
+  const redo = () => {
+    if (historyIndex < history.length - 1) {
+      setHistoryIndex(historyIndex + 1);
+      setElements(history[historyIndex + 1]);
+      toast.success('Redone');
+    }
+  };
 
   const handleDragStart = (event: DragStartEvent) => {
     setActiveId(event.active.id as string);
@@ -353,6 +422,46 @@ export const EmailEditor: React.FC<EmailEditorProps> = ({
                 <Plus className="h-4 w-4 mr-2" />
                 Spacer
               </Button>
+            </CardContent>
+          </Card>
+
+          {/* Action Buttons */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-sm">Actions</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-2">
+              <div className="flex gap-1">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={undo}
+                  disabled={historyIndex <= 0}
+                  className="flex-1"
+                >
+                  <Undo className="h-4 w-4" />
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={redo}
+                  disabled={historyIndex >= history.length - 1}
+                  className="flex-1"
+                >
+                  <Redo className="h-4 w-4" />
+                </Button>
+              </div>
+              {selectedElement && (
+                <Button
+                  variant="destructive"
+                  size="sm"
+                  onClick={() => deleteElement(selectedElement)}
+                  className="w-full"
+                >
+                  <Trash2 className="h-4 w-4 mr-2" />
+                  Delete Selected
+                </Button>
+              )}
             </CardContent>
           </Card>
 

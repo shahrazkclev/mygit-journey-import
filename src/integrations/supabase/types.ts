@@ -14,6 +14,44 @@ export type Database = {
   }
   public: {
     Tables: {
+      campaign_sends: {
+        Row: {
+          campaign_id: string
+          contact_email: string
+          created_at: string
+          error_message: string | null
+          id: string
+          sent_at: string | null
+          status: string | null
+        }
+        Insert: {
+          campaign_id: string
+          contact_email: string
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          sent_at?: string | null
+          status?: string | null
+        }
+        Update: {
+          campaign_id?: string
+          contact_email?: string
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          sent_at?: string | null
+          status?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "campaign_sends_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "campaigns"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       campaigns: {
         Row: {
           created_at: string
@@ -21,11 +59,15 @@ export type Database = {
           id: string
           list_ids: string[] | null
           name: string
+          sender_sequence_number: number | null
           sent_at: string | null
+          sent_count: number | null
           status: string
           subject: string
+          total_recipients: number | null
           updated_at: string
           user_id: string
+          webhook_url: string | null
         }
         Insert: {
           created_at?: string
@@ -33,11 +75,15 @@ export type Database = {
           id?: string
           list_ids?: string[] | null
           name: string
+          sender_sequence_number?: number | null
           sent_at?: string | null
+          sent_count?: number | null
           status?: string
           subject: string
+          total_recipients?: number | null
           updated_at?: string
           user_id: string
+          webhook_url?: string | null
         }
         Update: {
           created_at?: string
@@ -45,11 +91,15 @@ export type Database = {
           id?: string
           list_ids?: string[] | null
           name?: string
+          sender_sequence_number?: number | null
           sent_at?: string | null
+          sent_count?: number | null
           status?: string
           subject?: string
+          total_recipients?: number | null
           updated_at?: string
           user_id?: string
+          webhook_url?: string | null
         }
         Relationships: []
       }

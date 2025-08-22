@@ -11,6 +11,7 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { EmailEditor, EmailElement } from "./EmailEditor";
 import { InlineEmailEditor } from "./editor/InlineEmailEditor";
+import { SendCampaignModal } from "./SendCampaignModal";
 import { DEMO_USER_ID } from "@/lib/demo-auth";
 
 interface CampaignComposerProps {
@@ -41,8 +42,8 @@ export const CampaignComposer: React.FC<CampaignComposerProps> = ({ onSave }) =>
   const [viewMode, setViewMode] = useState<'desktop' | 'mobile'>('desktop');
   const [colorsInitialized, setColorsInitialized] = useState(false);
   const [originalTemplate, setOriginalTemplate] = useState<string | null>(null);
-
   const [emailElements, setEmailElements] = useState<EmailElement[]>([]);
+  const [showSendModal, setShowSendModal] = useState(false);
 
   const DRAFT_KEY = 'campaign_draft';
 
@@ -149,6 +150,11 @@ export const CampaignComposer: React.FC<CampaignComposerProps> = ({ onSave }) =>
     setEmailElements(elements);
     setGeneratedTemplate(htmlContent);
     toast.success('Email design saved!');
+  };
+
+  const handleEditorChange = (elements: EmailElement[], htmlContent: string) => {
+    setEmailElements(elements);
+    setGeneratedTemplate(htmlContent);
   };
 
   
@@ -589,6 +595,7 @@ export const CampaignComposer: React.FC<CampaignComposerProps> = ({ onSave }) =>
                 <div className="rounded-lg border overflow-hidden">
                   <EmailEditor
                     onSave={handleEditorSave}
+                    onChange={handleEditorChange}
                     initialElements={emailElements}
                     htmlContent={generatedTemplate}
                   />
@@ -683,26 +690,20 @@ export const CampaignComposer: React.FC<CampaignComposerProps> = ({ onSave }) =>
             Save Campaign
           </Button>
           
-          <Button onClick={() => {
-            if (selectedLists.length === 0) {
-              toast.error('Please select at least one email list');
-              return;
-            }
-            const campaignData = {
-              subject,
-              htmlContent: generatedTemplate,
-              selectedLists,
-              emailElements,
-              status: 'ready'
-            };
-            console.log('Campaign ready to send:', campaignData);
-            toast.success(`Campaign "${subject}" is ready! Send it from the Lists tab.`);
-          }}>
+          <Button onClick={() => setShowSendModal(true)}>
             <Send className="h-4 w-4 mr-2" />
             Prepare for Sending
           </Button>
         </div>
       )}
+
+      <SendCampaignModal
+        isOpen={showSendModal}
+        onClose={() => setShowSendModal(false)}
+        subject={subject}
+        htmlContent={generatedTemplate}
+        selectedLists={selectedLists}
+      />
     </div>
   );
 };
