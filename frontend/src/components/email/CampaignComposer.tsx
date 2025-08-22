@@ -6,8 +6,9 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Wand2, Send, Eye, Save, Palette, Code, Edit } from "lucide-react";
+import { Wand2, Send, Eye, Save, Palette, Code, Edit, Type } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { EmailEditor, EmailElement } from "./EmailEditor";
@@ -33,6 +34,11 @@ export const CampaignComposer: React.FC<CampaignComposerProps> = ({ onSave }) =>
   const [currentEmailCount, setCurrentEmailCount] = useState(0);
   const [styleGuide, setStyleGuide] = useState<any>(null);
   
+  // Font customization options
+  const [emailFontFamily, setEmailFontFamily] = useState("Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif");
+  const [emailFontSize, setEmailFontSize] = useState("16");
+  const [emailLineHeight, setEmailLineHeight] = useState("1.6");
+  
   // Theme colors (can override style guide colors)
   const [themeColors, setThemeColors] = useState({
     primary: "#684cff",
@@ -48,6 +54,17 @@ export const CampaignComposer: React.FC<CampaignComposerProps> = ({ onSave }) =>
 
   const DRAFT_KEY = 'campaign_draft';
 
+  // Font options
+  const fontOptions = [
+    { value: "Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif", label: "Inter (Modern)" },
+    { value: "system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif", label: "System UI" },
+    { value: "'Helvetica Neue', Helvetica, Arial, sans-serif", label: "Helvetica" },
+    { value: "Georgia, 'Times New Roman', Times, serif", label: "Georgia (Serif)" },
+    { value: "'Courier New', Courier, monospace", label: "Courier (Monospace)" },
+    { value: "'Arial Black', Arial, sans-serif", label: "Arial Black" },
+    { value: "'Trebuchet MS', Arial, sans-serif", label: "Trebuchet" }
+  ];
+
   // Load draft from localStorage on mount (before fetching lists/styles)
   useEffect(() => {
     try {
@@ -59,17 +76,29 @@ export const CampaignComposer: React.FC<CampaignComposerProps> = ({ onSave }) =>
         if (typeof d.generatedTemplate === 'string') setGeneratedTemplate(d.generatedTemplate);
         if (Array.isArray(d.selectedLists)) setSelectedLists(d.selectedLists);
         if (d.themeColors) { setThemeColors(d.themeColors); setColorsInitialized(true); }
+        if (d.emailFontFamily) setEmailFontFamily(d.emailFontFamily);
+        if (d.emailFontSize) setEmailFontSize(d.emailFontSize);
+        if (d.emailLineHeight) setEmailLineHeight(d.emailLineHeight);
       }
     } catch {}
   }, []);
 
   // Persist draft locally so switching tabs doesn't lose progress
   useEffect(() => {
-    const draft = { subject, prompt, generatedTemplate, selectedLists, themeColors };
+    const draft = { 
+      subject, 
+      prompt, 
+      generatedTemplate, 
+      selectedLists, 
+      themeColors,
+      emailFontFamily,
+      emailFontSize,
+      emailLineHeight
+    };
     try {
       localStorage.setItem(DRAFT_KEY, JSON.stringify(draft));
     } catch {}
-  }, [subject, prompt, generatedTemplate, selectedLists, themeColors]);
+  }, [subject, prompt, generatedTemplate, selectedLists, themeColors, emailFontFamily, emailFontSize, emailLineHeight]);
 
   const [emailLists, setEmailLists] = useState<any[]>([]);
   const [products, setProducts] = useState<any[]>([]);
@@ -329,6 +358,38 @@ export const CampaignComposer: React.FC<CampaignComposerProps> = ({ onSave }) =>
     }
   };
 
+  // Apply font customization to HTML template
+  const applyFontCustomization = (htmlContent: string): string => {
+    try {
+      // Add font customization CSS to the HTML
+      const fontStyles = `
+        <style>
+          body, body * {
+            font-family: ${emailFontFamily} !important;
+            font-size: ${emailFontSize}px !important;
+            line-height: ${emailLineHeight} !important;
+          }
+          h1, h2, h3, h4, h5, h6 {
+            font-family: ${emailFontFamily} !important;
+            line-height: 1.3 !important;
+          }
+        </style>
+      `;
+      
+      // Insert the styles into the head or before body
+      if (htmlContent.includes('</head>')) {
+        return htmlContent.replace('</head>', `${fontStyles}</head>`);
+      } else if (htmlContent.includes('<body')) {
+        return htmlContent.replace('<body', `${fontStyles}<body`);
+      } else {
+        return `${fontStyles}${htmlContent}`;
+      }
+    } catch (error) {
+      console.error('Error applying font customization:', error);
+      return htmlContent;
+    }
+  };
+
   // Inline CSS styles for better email client compatibility
   const inlineCssStyles = (htmlContent: string): string => {
     try {
@@ -488,6 +549,7 @@ export const CampaignComposer: React.FC<CampaignComposerProps> = ({ onSave }) =>
       }
     }
   }, [themeColors, originalTemplate]);
+
   const handleGenerateTemplate = async () => {
     if (!subject.trim() || !prompt.trim()) {
       toast.error("Please provide both a subject and prompt for the email.");
@@ -511,13 +573,21 @@ export const CampaignComposer: React.FC<CampaignComposerProps> = ({ onSave }) =>
             primaryColor: styleGuide.primary_color,
             secondaryColor: styleGuide.secondary_color,
             accentColor: styleGuide.accent_color,
-            fontFamily: styleGuide.font_family,
+            fontFamily: emailFontFamily, // Use selected font family
             tone: styleGuide.tone,
             brandVoice: styleGuide.brand_voice,
             logoUrl: styleGuide.logo_url,
             emailSignature: styleGuide.email_signature,
-          } : null,
-          templatePreview: styleGuide?.template_preview
+          } : {
+            fontFamily: emailFontFamily, // Fallback font family
+          },
+          templatePreview: styleGuide?.template_preview,
+          // Add font customization to the AI generation request
+          fontOptions: {
+            fontFamily: emailFontFamily,
+            fontSize: emailFontSize,
+            lineHeight: emailLineHeight
+          }
         }
       });
 
@@ -525,6 +595,8 @@ export const CampaignComposer: React.FC<CampaignComposerProps> = ({ onSave }) =>
 
       if (data?.htmlContent) {
         let cleaned = cleanHtmlContent(data.htmlContent);
+        // Apply font customization
+        cleaned = applyFontCustomization(cleaned);
         // Just inline CSS styles - don't mess with anything else
         cleaned = inlineCssStyles(cleaned);
         
@@ -554,9 +626,18 @@ export const CampaignComposer: React.FC<CampaignComposerProps> = ({ onSave }) =>
                     .hero-title { font-size: 24px !important; }
                     .button { width: 90% !important; }
                 }
+                body, body * {
+                    font-family: ${emailFontFamily} !important;
+                    font-size: ${emailFontSize}px !important;
+                    line-height: ${emailLineHeight} !important;
+                }
+                h1, h2, h3, h4, h5, h6 {
+                    font-family: ${emailFontFamily} !important;
+                    line-height: 1.3 !important;
+                }
             </style>
         </head>
-        <body style="margin: 0; padding: 0; font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%); min-height: 100vh;">
+        <body style="margin: 0; padding: 0; font-family: ${emailFontFamily}; background: linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%); min-height: 100vh;">
             <div style="padding: 30px 15px;">
                 <table class="container" role="presentation" cellspacing="0" cellpadding="0" border="0" style="max-width: 600px; width: 100%; margin: 0 auto; background: #ffffff; border-radius: 20px; box-shadow: 0 25px 50px rgba(0,0,0,0.1); overflow: hidden;">
                     
@@ -570,9 +651,9 @@ export const CampaignComposer: React.FC<CampaignComposerProps> = ({ onSave }) =>
                         <td class="header" style="background: linear-gradient(135deg, ${themeColors.primary}12 0%, ${themeColors.secondary}08 100%); padding: 50px 40px; text-align: center; position: relative;">
                             <div style="position: absolute; top: 20px; right: 30px; width: 32px; height: 32px; background: ${themeColors.accent}25; border-radius: 50%; opacity: 0.6;"></div>
                             
-                            <h1 style="margin: 0 0 10px 0; color: #1e293b; font-size: 26px; font-weight: 700; letter-spacing: -0.5px;">${styleGuide?.brand_name || 'Your Brand'}</h1>
+                            <h1 style="margin: 0 0 10px 0; color: #1e293b; font-size: 26px; font-weight: 700; letter-spacing: -0.5px; font-family: ${emailFontFamily};">${styleGuide?.brand_name || 'Your Brand'}</h1>
                             <div style="width: 60px; height: 3px; background: linear-gradient(90deg, ${themeColors.primary}, ${themeColors.accent}); margin: 16px auto; border-radius: 2px;"></div>
-                            <h2 class="hero-title" style="margin: 20px 0 0 0; color: #334155; font-size: 28px; font-weight: 600; line-height: 1.3; letter-spacing: -0.3px;">${subject}</h2>
+                            <h2 class="hero-title" style="margin: 20px 0 0 0; color: #334155; font-size: 28px; font-weight: 600; line-height: 1.3; letter-spacing: -0.3px; font-family: ${emailFontFamily};">${subject}</h2>
                         </td>
                     </tr>
                     
@@ -582,48 +663,48 @@ export const CampaignComposer: React.FC<CampaignComposerProps> = ({ onSave }) =>
                             
                             <!-- Welcome Box -->
                             <div style="background: linear-gradient(135deg, ${themeColors.primary}08 0%, ${themeColors.accent}05 100%); border-radius: 16px; padding: 30px; margin-bottom: 35px; border: 1px solid ${themeColors.primary}15;">
-                                <h3 style="margin: 0 0 16px 0; color: #1e293b; font-size: 18px; font-weight: 600;">Hello there! 👋</h3>
-                                <p style="margin: 0; font-size: 16px; line-height: 1.7; color: #475569;">${prompt}</p>
+                                <h3 style="margin: 0 0 16px 0; color: #1e293b; font-size: 18px; font-weight: 600; font-family: ${emailFontFamily};">Hello there! 👋</h3>
+                                <p style="margin: 0; font-size: ${emailFontSize}px; line-height: ${emailLineHeight}; color: #475569; font-family: ${emailFontFamily};">${prompt}</p>
                             </div>
                             
                             <!-- Value Proposition -->
                             <div style="margin-bottom: 40px;">
-                                <p style="margin: 0 0 20px 0; font-size: 16px; line-height: 1.7; color: #475569;">We're excited to share this with you and believe it will make a meaningful impact. Our team has carefully crafted this experience with you in mind.</p>
+                                <p style="margin: 0 0 20px 0; font-size: ${emailFontSize}px; line-height: ${emailLineHeight}; color: #475569; font-family: ${emailFontFamily};">We're excited to share this with you and believe it will make a meaningful impact. Our team has carefully crafted this experience with you in mind.</p>
                                 
                                 <div style="display: flex; gap: 15px; margin: 25px 0;">
                                     <div style="flex: 1; background: #f8fafc; border-radius: 12px; padding: 20px; text-align: center; border: 1px solid #e2e8f0;">
                                         <div style="width: 40px; height: 40px; background: linear-gradient(135deg, ${themeColors.primary}, ${themeColors.accent}); border-radius: 10px; margin: 0 auto 12px; display: flex; align-items: center; justify-content: center;">
                                             <span style="color: white; font-size: 16px;">✨</span>
                                         </div>
-                                        <h4 style="margin: 0 0 6px 0; color: #334155; font-size: 13px; font-weight: 600;">Premium</h4>
-                                        <p style="margin: 0; color: #64748b; font-size: 12px;">Quality first</p>
+                                        <h4 style="margin: 0 0 6px 0; color: #334155; font-size: 13px; font-weight: 600; font-family: ${emailFontFamily};">Premium</h4>
+                                        <p style="margin: 0; color: #64748b; font-size: 12px; font-family: ${emailFontFamily};">Quality first</p>
                                     </div>
                                     <div style="flex: 1; background: #f8fafc; border-radius: 12px; padding: 20px; text-align: center; border: 1px solid #e2e8f0;">
                                         <div style="width: 40px; height: 40px; background: linear-gradient(135deg, ${themeColors.accent}, ${themeColors.secondary}); border-radius: 10px; margin: 0 auto 12px; display: flex; align-items: center; justify-content: center;">
                                             <span style="color: white; font-size: 16px;">🚀</span>
                                         </div>
-                                        <h4 style="margin: 0 0 6px 0; color: #334155; font-size: 13px; font-weight: 600;">Fast</h4>
-                                        <p style="margin: 0; color: #64748b; font-size: 12px;">Built for speed</p>
+                                        <h4 style="margin: 0 0 6px 0; color: #334155; font-size: 13px; font-weight: 600; font-family: ${emailFontFamily};">Fast</h4>
+                                        <p style="margin: 0; color: #64748b; font-size: 12px; font-family: ${emailFontFamily};">Built for speed</p>
                                     </div>
                                 </div>
                             </div>
                             
                             <!-- CTA Section -->
                             <div style="text-align: center; margin: 40px 0; padding: 35px 20px; background: linear-gradient(135deg, ${themeColors.primary}05 0%, ${themeColors.secondary}03 100%); border-radius: 18px; border: 1px solid ${themeColors.primary}10;">
-                                <h3 style="margin: 0 0 12px 0; color: #1e293b; font-size: 18px; font-weight: 600;">Ready to dive in?</h3>
-                                <p style="margin: 0 0 28px 0; color: #64748b; font-size: 14px; line-height: 1.6;">Take the next step and discover what we have to offer.</p>
+                                <h3 style="margin: 0 0 12px 0; color: #1e293b; font-size: 18px; font-weight: 600; font-family: ${emailFontFamily};">Ready to dive in?</h3>
+                                <p style="margin: 0 0 28px 0; color: #64748b; font-size: 14px; line-height: 1.6; font-family: ${emailFontFamily};">Take the next step and discover what we have to offer.</p>
                                 
                                 <table role="presentation" cellspacing="0" cellpadding="0" border="0" style="margin: 0 auto;">
                                     <tr>
                                         <td style="border-radius: 50px; background: linear-gradient(135deg, ${themeColors.accent} 0%, ${themeColors.primary} 100%); box-shadow: 0 10px 20px ${themeColors.accent}40;">
-                                            <a href="#" class="button" style="display: inline-block; padding: 16px 32px; font-size: 15px; font-weight: 600; color: #ffffff; text-decoration: none; border-radius: 50px; letter-spacing: 0.3px;">
+                                            <a href="#" class="button" style="display: inline-block; padding: 16px 32px; font-size: 15px; font-weight: 600; color: #ffffff; text-decoration: none; border-radius: 50px; letter-spacing: 0.3px; font-family: ${emailFontFamily};">
                                                 Take Action Now →
                                             </a>
                                         </td>
                                     </tr>
                                 </table>
                                 
-                                <p style="margin: 20px 0 0 0; color: #94a3b8; font-size: 12px;">No spam, unsubscribe anytime</p>
+                                <p style="margin: 20px 0 0 0; color: #94a3b8; font-size: 12px; font-family: ${emailFontFamily};">No spam, unsubscribe anytime</p>
                             </div>
                             
                         </td>
@@ -633,15 +714,15 @@ export const CampaignComposer: React.FC<CampaignComposerProps> = ({ onSave }) =>
                     <tr>
                         <td style="background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%); padding: 35px; text-align: center; border-top: 1px solid #e2e8f0;">
                             <div style="margin-bottom: 20px;">
-                                <pre style="margin: 0; font-family: 'Inter', sans-serif; font-size: 14px; color: #475569; white-space: pre-line; font-weight: 500;">${styleGuide?.email_signature || 'Best regards,\nThe Team'}</pre>
+                                <pre style="margin: 0; font-family: ${emailFontFamily}; font-size: 14px; color: #475569; white-space: pre-line; font-weight: 500;">${styleGuide?.email_signature || 'Best regards,\nThe Team'}</pre>
                             </div>
                             
                             <div style="border-top: 1px solid #d1d5db; padding-top: 20px;">
-                                <p style="margin: 0 0 10px 0; font-size: 13px; color: #64748b; font-weight: 500;">© 2024 ${styleGuide?.brand_name || 'Your Brand'}. All rights reserved.</p>
+                                <p style="margin: 0 0 10px 0; font-size: 13px; color: #64748b; font-weight: 500; font-family: ${emailFontFamily};">© 2024 ${styleGuide?.brand_name || 'Your Brand'}. All rights reserved.</p>
                                 <div style="margin-top: 12px;">
-                                    <a href="#" style="color: #6366f1; text-decoration: none; font-size: 12px; font-weight: 500; margin: 0 10px;">Preferences</a>
+                                    <a href="#" style="color: #6366f1; text-decoration: none; font-size: 12px; font-weight: 500; margin: 0 10px; font-family: ${emailFontFamily};">Preferences</a>
                                     <span style="color: #cbd5e1;">|</span>
-                                    <a href="#" style="color: #6366f1; text-decoration: none; font-size: 12px; font-weight: 500; margin: 0 10px;">Unsubscribe</a>
+                                    <a href="#" style="color: #6366f1; text-decoration: none; font-size: 12px; font-weight: 500; margin: 0 10px; font-family: ${emailFontFamily};">Unsubscribe</a>
                                 </div>
                             </div>
                         </td>
@@ -688,19 +769,29 @@ export const CampaignComposer: React.FC<CampaignComposerProps> = ({ onSave }) =>
             primaryColor: themeColors.primary,
             secondaryColor: themeColors.secondary,
             accentColor: themeColors.accent,
-            fontFamily: styleGuide.font_family,
+            fontFamily: emailFontFamily,
             tone: styleGuide.tone,
             brandVoice: styleGuide.brand_voice,
             logoUrl: styleGuide.logo_url,
             emailSignature: styleGuide.email_signature,
-          } : null
+          } : {
+            fontFamily: emailFontFamily
+          },
+          // Add font options to AI editing
+          fontOptions: {
+            fontFamily: emailFontFamily,
+            fontSize: emailFontSize,
+            lineHeight: emailLineHeight
+          }
         }
       });
 
       if (error) throw error;
 
       if (data?.htmlContent) {
-        const cleaned = cleanHtmlContent(data.htmlContent);
+        let cleaned = cleanHtmlContent(data.htmlContent);
+        // Apply font customization to edited content
+        cleaned = applyFontCustomization(cleaned);
         setGeneratedTemplate(cleaned);
         setAiEditPrompt("");
         toast.success("Your email has been updated successfully!");
@@ -809,6 +900,63 @@ export const CampaignComposer: React.FC<CampaignComposerProps> = ({ onSave }) =>
               className="border-email-primary/30 focus:border-email-primary"
             />
           </div>
+
+          {/* Font Customization Section */}
+          <Card className="bg-email-muted/20 border-email-primary/10">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-sm text-email-primary flex items-center">
+                <Type className="h-4 w-4 mr-2" />
+                Font Customization
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium text-email-primary">Font Family</Label>
+                  <Select value={emailFontFamily} onValueChange={setEmailFontFamily}>
+                    <SelectTrigger className="text-xs border-email-primary/30">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {fontOptions.map(font => (
+                        <SelectItem key={font.value} value={font.value} className="text-xs">
+                          {font.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium text-email-primary">Font Size (px)</Label>
+                  <Select value={emailFontSize} onValueChange={setEmailFontSize}>
+                    <SelectTrigger className="text-xs border-email-primary/30">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {['12', '13', '14', '15', '16', '17', '18', '20', '22', '24'].map(size => (
+                        <SelectItem key={size} value={size} className="text-xs">{size}px</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium text-email-primary">Line Height</Label>
+                  <Select value={emailLineHeight} onValueChange={setEmailLineHeight}>
+                    <SelectTrigger className="text-xs border-email-primary/30">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {['1.2', '1.3', '1.4', '1.5', '1.6', '1.7', '1.8', '2.0'].map(height => (
+                        <SelectItem key={height} value={height} className="text-xs">{height}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
 
           <div className="space-y-2">
             <Label htmlFor="prompt" className="text-email-primary font-medium">AI Prompt</Label>
@@ -1023,7 +1171,7 @@ export const CampaignComposer: React.FC<CampaignComposerProps> = ({ onSave }) =>
 
       {/* Save Campaign */}
       {generatedTemplate && (
-        <div className="flex justify-end space-x-3">
+        <div className="flex flex-col sm:flex-row justify-end space-y-2 sm:space-y-0 sm:space-x-3">
           <Button variant="outline" onClick={() => {
             const campaignData = {
               subject,
@@ -1034,7 +1182,7 @@ export const CampaignComposer: React.FC<CampaignComposerProps> = ({ onSave }) =>
             console.log('Campaign data to save:', campaignData);
             toast.success('Campaign saved! You can now send it from the Lists tab.');
           }}
-          className="border-email-secondary text-email-secondary hover:bg-email-secondary/10"
+          className="border-email-secondary text-email-secondary hover:bg-email-secondary/10 w-full sm:w-auto"
           >
             <Save className="h-4 w-4 mr-2" />
             Save Campaign
@@ -1042,7 +1190,7 @@ export const CampaignComposer: React.FC<CampaignComposerProps> = ({ onSave }) =>
           
           <Button 
             onClick={() => setShowSendModal(true)}
-            className="bg-email-accent hover:bg-email-accent/80 text-primary-foreground"
+            className="bg-email-accent hover:bg-email-accent/80 text-primary-foreground w-full sm:w-auto"
           >
             <Send className="h-4 w-4 mr-2" />
             Prepare for Sending
