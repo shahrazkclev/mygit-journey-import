@@ -158,7 +158,7 @@ async def get_campaign(campaign_id: str):
     return Campaign(**campaign_doc)
 
 @api_router.get("/campaigns/{campaign_id}/progress", response_model=CampaignProgress)
-async def get_campaign_progress(campaign_id: str, current_user: str = Depends(verify_token)):
+async def get_campaign_progress(campaign_id: str):
     campaign_doc = await db.campaigns.find_one({"id": campaign_id})
     if not campaign_doc:
         raise HTTPException(status_code=404, detail="Campaign not found")
