@@ -249,9 +249,10 @@ export const ProductManager: React.FC = () => {
                   </div>
                   <div className="flex space-x-2">
                     <Button
-                      variant="ghost"
+                      variant="outline"
                       size="sm"
                       onClick={() => setEditingProduct(product)}
+                      className="border-email-secondary text-email-secondary hover:bg-email-secondary/10"
                     >
                       <Edit className="h-4 w-4" />
                     </Button>
@@ -259,6 +260,7 @@ export const ProductManager: React.FC = () => {
                       variant="ghost"
                       size="sm"
                       onClick={() => deleteProduct(product.id)}
+                      className="text-red-600 hover:text-red-700 hover:bg-red-50"
                     >
                       <Trash2 className="h-4 w-4" />
                     </Button>
