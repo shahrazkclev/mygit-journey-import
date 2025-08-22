@@ -143,20 +143,20 @@ async def verify_auth(current_user: str = Depends(verify_token)):
     return {"email": current_user, "authenticated": True}
 
 @api_router.post("/status", response_model=StatusCheck)
-async def create_status_check(input: StatusCheckCreate):
+async def create_status_check(input: StatusCheckCreate, current_user: str = Depends(verify_token)):
     status_dict = input.dict()
     status_obj = StatusCheck(**status_dict)
     _ = await db.status_checks.insert_one(status_obj.dict())
     return status_obj
 
 @api_router.get("/status", response_model=List[StatusCheck])
-async def get_status_checks():
+async def get_status_checks(current_user: str = Depends(verify_token)):
     status_checks = await db.status_checks.find().to_list(1000)
     return [StatusCheck(**status_check) for status_check in status_checks]
 
 # Campaign Management Endpoints
 @api_router.post("/campaigns", response_model=Campaign)
-async def create_campaign(campaign_data: CampaignCreate, background_tasks: BackgroundTasks):
+async def create_campaign(campaign_data: CampaignCreate, background_tasks: BackgroundTasks, current_user: str = Depends(verify_token)):
     campaign_dict = campaign_data.dict()
     campaign = Campaign(**campaign_dict)
     
@@ -169,14 +169,14 @@ async def create_campaign(campaign_data: CampaignCreate, background_tasks: Backg
     return campaign
 
 @api_router.get("/campaigns/{campaign_id}", response_model=Campaign)
-async def get_campaign(campaign_id: str):
+async def get_campaign(campaign_id: str, current_user: str = Depends(verify_token)):
     campaign_doc = await db.campaigns.find_one({"id": campaign_id})
     if not campaign_doc:
         raise HTTPException(status_code=404, detail="Campaign not found")
     return Campaign(**campaign_doc)
 
 @api_router.get("/campaigns/{campaign_id}/progress", response_model=CampaignProgress)
-async def get_campaign_progress(campaign_id: str):
+async def get_campaign_progress(campaign_id: str, current_user: str = Depends(verify_token)):
     campaign_doc = await db.campaigns.find_one({"id": campaign_id})
     if not campaign_doc:
         raise HTTPException(status_code=404, detail="Campaign not found")
@@ -197,7 +197,7 @@ async def get_campaign_progress(campaign_id: str):
     )
 
 @api_router.post("/campaigns/{campaign_id}/pause")
-async def pause_campaign(campaign_id: str):
+async def pause_campaign(campaign_id: str, current_user: str = Depends(verify_token)):
     result = await db.campaigns.update_one(
         {"id": campaign_id},
         {"$set": {"status": "paused"}}
@@ -207,7 +207,7 @@ async def pause_campaign(campaign_id: str):
     return {"message": "Campaign paused"}
 
 @api_router.post("/campaigns/{campaign_id}/resume")
-async def resume_campaign(campaign_id: str, background_tasks: BackgroundTasks):
+async def resume_campaign(campaign_id: str, background_tasks: BackgroundTasks, current_user: str = Depends(verify_token)):
     result = await db.campaigns.update_one(
         {"id": campaign_id, "status": "paused"},
         {"$set": {"status": "sending"}}
@@ -221,7 +221,7 @@ async def resume_campaign(campaign_id: str, background_tasks: BackgroundTasks):
 
 # Webhook endpoint for receiving contact data
 @api_router.post("/webhook/contacts")
-async def webhook_contacts(payload: WebhookPayload):
+async def webhook_contacts(payload: WebhookPayload, current_user: str = Depends(verify_token)):
     try:
         # Log the webhook call
         logging.info(f"Webhook received: {payload.dict()}")
