@@ -31,7 +31,6 @@ export const ProductManager: React.FC = () => {
   });
   const [showAddProduct, setShowAddProduct] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
-  const [isBulkImporting, setIsBulkImporting] = useState(false);
 
   useEffect(() => {
     loadProducts();
