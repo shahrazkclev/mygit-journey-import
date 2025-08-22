@@ -78,6 +78,10 @@ export const EmailCampaignApp = () => {
             <SmartListManager />
           </TabsContent>
 
+          <TabsContent value="products">
+            <ProductManager />
+          </TabsContent>
+
           <TabsContent value="settings">
             <CampaignSettings />
           </TabsContent>
