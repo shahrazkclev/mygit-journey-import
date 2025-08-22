@@ -57,6 +57,7 @@ export const EmailListManager = () => {
   const [contacts, setContacts] = useState<Contact[]>([]);
   const [contactLists, setContactLists] = useState<ContactList[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
+  const [contactProductMap, setContactProductMap] = useState<Record<string, string[]>>({});
   const [selectedContacts, setSelectedContacts] = useState<string[]>([]);
   const [selectedList, setSelectedList] = useState<EmailList | null>(null);
   const [editingList, setEditingList] = useState<EmailList | null>(null);
@@ -1091,8 +1092,7 @@ export const EmailListManager = () => {
                                             </TableCell>
                                             <TableCell>
                                               <div className="text-xs text-muted-foreground">
-                                                {/* Show product count for this contact */}
-                                                Products: 0
+                                                Products: {contactProductMap[contact.id]?.length || 0}
                                               </div>
                                             </TableCell>
                                           </TableRow>

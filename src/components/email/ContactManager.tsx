@@ -74,6 +74,8 @@ export const ContactManager: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [filterByProduct, setFilterByProduct] = useState<string>('');
   const [filterByList, setFilterByList] = useState<string>('');
+  const [filterByPurchase, setFilterByPurchase] = useState<'all' | 'purchased' | 'not_purchased'>('all');
+  const [bulkListId, setBulkListId] = useState<string>('');
 
   useEffect(() => {
     loadContacts();
@@ -312,7 +314,7 @@ export const ContactManager: React.FC = () => {
     setShowContactDetails(true);
   };
 
-  // Filter contacts based on search query, product, and list
+  // Filter contacts based on search query, product, list, and purchase status
   const filteredContacts = contacts.filter(contact => {
     // Search filter
     const matchesSearch = searchQuery === '' || 
@@ -321,14 +323,20 @@ export const ContactManager: React.FC = () => {
       (contact.last_name && contact.last_name.toLowerCase().includes(searchQuery.toLowerCase()));
 
     // Product filter
-    const matchesProduct = filterByProduct === '' || 
-      allContactProducts.some(cp => cp.contact_id === contact.id && cp.product_id === filterByProduct);
+    const hasSpecificProduct = allContactProducts.some(cp => cp.contact_id === contact.id && cp.product_id === filterByProduct);
+    const matchesProduct = filterByProduct === '' || hasSpecificProduct;
 
     // List filter
     const matchesList = filterByList === '' || 
       allContactLists.some(cl => cl.contact_id === contact.id && cl.list_id === filterByList);
 
-    return matchesSearch && matchesProduct && matchesList;
+    // Purchase status filter
+    const hasAnyPurchase = allContactProducts.some(cp => cp.contact_id === contact.id);
+    const matchesPurchase = filterByPurchase === 'all' ||
+      (filterByPurchase === 'purchased' && hasAnyPurchase) ||
+      (filterByPurchase === 'not_purchased' && !hasAnyPurchase);
+
+    return matchesSearch && matchesProduct && matchesList && matchesPurchase;
   });
 
   return (
@@ -394,7 +402,7 @@ export const ContactManager: React.FC = () => {
           <CardTitle>Filters</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             <div className="space-y-2">
               <Label htmlFor="search">Search Contacts</Label>
               <Input
@@ -436,6 +444,57 @@ export const ContactManager: React.FC = () => {
                 </SelectContent>
               </Select>
             </div>
+            <div className="space-y-2">
+              <Label htmlFor="purchase-filter">Purchase Status</Label>
+              <Select value={filterByPurchase} onValueChange={(v) => setFilterByPurchase(v as any)}>
+                <SelectTrigger>
+                  <SelectValue placeholder="All" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All</SelectItem>
+                  <SelectItem value="purchased">Has purchased</SelectItem>
+                  <SelectItem value="not_purchased">Has not purchased</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
+          {/* Bulk add filtered to list */}
+          <div className="mt-4 flex items-center gap-2">
+            <Select value={bulkListId} onValueChange={setBulkListId}>
+              <SelectTrigger className="w-60">
+                <SelectValue placeholder="Select list to add filtered" />
+              </SelectTrigger>
+              <SelectContent>
+                {emailLists.map((list) => (
+                  <SelectItem key={list.id} value={list.id}>
+                    {list.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Button
+              variant="outline"
+              onClick={async () => {
+                if (!bulkListId) return toast.error('Select a list first');
+                const filteredIds = filteredContacts.map(c => c.id);
+                const existingIds = allContactLists.filter(cl => cl.list_id === bulkListId).map(cl => cl.contact_id);
+                const toAdd = filteredIds.filter(id => !existingIds.includes(id));
+                if (toAdd.length === 0) return toast.error('No new contacts to add');
+                try {
+                  const rows = toAdd.map(id => ({ contact_id: id, list_id: bulkListId }));
+                  const { error } = await supabase.from('contact_lists').insert(rows);
+                  if (error) throw error;
+                  await loadAllContactLists();
+                  toast.success(`Added ${toAdd.length} contact(s) to list`);
+                } catch (err) {
+                  console.error(err);
+                  toast.error('Failed to add contacts');
+                }
+              }}
+            >
+              Add Filtered to List
+            </Button>
           </div>
         </CardContent>
       </Card>
