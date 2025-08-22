@@ -116,31 +116,14 @@ export const EmailCampaignApp = () => {
                 <CardHeader>
                   <CardTitle className="flex items-center space-x-2">
                     <Users className="h-5 w-5 text-secondary" />
-                    <span>Email Lists</span>
+                    <span>Email Lists & Contacts</span>
                   </CardTitle>
                   <CardDescription>
-                    Manage your email lists and subscriber data
+                    Manage your email lists, subscriber data, and contact filtering
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
                   <EmailListManager />
-                </CardContent>
-              </Card>
-            </TabsContent>
-
-            <TabsContent value="contacts" className="space-y-6">
-              <Card className="shadow-soft border-blue-200">
-                <CardHeader>
-                  <CardTitle className="flex items-center space-x-2">
-                    <User className="h-5 w-5 text-blue-600" />
-                    <span>Contact Management</span>
-                  </CardTitle>
-                  <CardDescription>
-                    Manage contacts, track purchases, and assign to lists
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <ContactManager />
                 </CardContent>
               </Card>
             </TabsContent>

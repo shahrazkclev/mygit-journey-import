@@ -15,13 +15,6 @@ import { supabase } from "@/integrations/supabase/client";
 import { DEMO_USER_ID } from "@/lib/demo-auth";
 
 // Data types matching our Supabase schema
-type Product = {
-  id: string;
-  name: string;
-  price: number;
-  category: string;
-  description?: string;
-};
 
 type Contact = {
   id: string;
@@ -53,7 +46,6 @@ type ContactList = {
 export const EmailListManager = () => {
   const [lists, setLists] = useState<EmailList[]>([]);
   const [contacts, setContacts] = useState<Contact[]>([]);
-  const [products, setProducts] = useState<Product[]>([]);
   const [contactLists, setContactLists] = useState<ContactList[]>([]);
   const [selectedContacts, setSelectedContacts] = useState<string[]>([]);
   const [selectedList, setSelectedList] = useState<EmailList | null>(null);
@@ -62,23 +54,13 @@ export const EmailListManager = () => {
   // UI state
   const [isAddingContact, setIsAddingContact] = useState(false);
   const [editingContact, setEditingContact] = useState<Contact | null>(null);
-  const [isAddingProduct, setIsAddingProduct] = useState(false);
-  const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [listSearchQuery, setListSearchQuery] = useState("");
   const [filterTag, setFilterTag] = useState<string>("all");
-  const [filterProduct, setFilterProduct] = useState<string>("all");
-  const [contactProducts, setContactProducts] = useState<any[]>([]);
   
   // Form state
   const [newListName, setNewListName] = useState("");
   const [newListDescription, setNewListDescription] = useState("");
-  const [newProduct, setNewProduct] = useState({
-    name: "",
-    price: 0,
-    category: "",
-    description: ""
-  });
   const [newContact, setNewContact] = useState({
     email: "",
     firstName: "",
@@ -113,27 +95,12 @@ export const EmailListManager = () => {
 
       if (contactsError) throw contactsError;
 
-      // Load products
-      const { data: productsData, error: productsError } = await supabase
-        .from('products')
-        .select('*')
-        .order('created_at', { ascending: false });
-
-      if (productsError) throw productsError;
-
       // Load contact-list relationships
       const { data: contactListsData, error: contactListsError } = await supabase
         .from('contact_lists')
         .select('*');
 
       if (contactListsError) throw contactListsError;
-
-      // Load contact-product relationships
-      const { data: contactProductsData, error: contactProductsError } = await supabase
-        .from('contact_products')
-        .select('*');
-
-      if (contactProductsError) throw contactProductsError;
 
       // Calculate contact count for each list
       const listsWithCounts = (listsData || []).map(list => ({
@@ -143,9 +110,7 @@ export const EmailListManager = () => {
 
       setLists(listsWithCounts);
       setContacts(contactsData || []);
-      setProducts(productsData || []);
       setContactLists(contactListsData || []);
-      setContactProducts(contactProductsData || []);
     } catch (error: any) {
       toast({
         title: "Error loading data",
@@ -332,42 +297,6 @@ export const EmailListManager = () => {
     }
   };
 
-  const handleAddProduct = async () => {
-    if (newProduct.name.trim()) {
-      try {
-        const { data, error } = await supabase
-          .from('products')
-          .insert([
-            {
-              user_id: DEMO_USER_ID,
-              name: newProduct.name.trim(),
-              price: newProduct.price || null,
-              category: newProduct.category.trim() || null,
-              description: newProduct.description.trim() || null,
-            }
-          ])
-          .select()
-          .single();
-
-        if (error) throw error;
-
-        setProducts([...products, data]);
-        setNewProduct({ name: "", price: 0, category: "", description: "" });
-        setIsAddingProduct(false);
-        toast({
-          title: "Product added",
-          description: `"${data.name}" has been added to your catalog.`,
-        });
-      } catch (error: any) {
-        toast({
-          title: "Error adding product",
-          description: error.message,
-          variant: "destructive",
-        });
-      }
-    }
-  };
-
   const handleAddContact = async () => {
     if (newContact.email.trim()) {
       try {
@@ -474,72 +403,6 @@ export const EmailListManager = () => {
     }
   };
 
-  const handleEditProduct = (product: Product) => {
-    setEditingProduct(product);
-    setNewProduct({
-      name: product.name,
-      price: product.price,
-      category: product.category,
-      description: product.description || "",
-    });
-  };
-
-  const handleUpdateProduct = async () => {
-    if (!editingProduct) return;
-
-    try {
-      const { data, error } = await supabase
-        .from('products')
-        .update({
-          name: newProduct.name.trim(),
-          price: newProduct.price || null,
-          category: newProduct.category.trim() || null,
-          description: newProduct.description.trim() || null,
-        })
-        .eq('id', editingProduct.id)
-        .select()
-        .single();
-
-      if (error) throw error;
-
-      setProducts(products.map(p => p.id === editingProduct.id ? data : p));
-      setEditingProduct(null);
-      setNewProduct({ name: "", price: 0, category: "", description: "" });
-      toast({
-        title: "Product updated",
-        description: "Product has been updated successfully.",
-      });
-    } catch (error: any) {
-      toast({
-        title: "Error updating product",
-        description: error.message,
-        variant: "destructive",
-      });
-    }
-  };
-
-  const handleDeleteProduct = async (productId: string) => {
-    try {
-      const { error } = await supabase
-        .from('products')
-        .delete()
-        .eq('id', productId);
-
-      if (error) throw error;
-
-      setProducts(products.filter(p => p.id !== productId));
-      toast({
-        title: "Product deleted",
-        description: "Product has been removed successfully.",
-      });
-    } catch (error: any) {
-      toast({
-        title: "Error deleting product",
-        description: error.message,
-        variant: "destructive",
-      });
-    }
-  };
 
   // Contact list management functions
   const addContactsToList = async (contactIds: string[], listId: string) => {
@@ -664,10 +527,7 @@ export const EmailListManager = () => {
     const matchesTag = filterTag === "all" || 
       (contact.tags && contact.tags.includes(filterTag));
     
-    const matchesProduct = filterProduct === "all" || 
-      contactProducts.some(cp => cp.contact_id === contact.id && cp.product_id === filterProduct);
-    
-    return matchesSearch && matchesTag && matchesProduct;
+    return matchesSearch && matchesTag;
   });
 
   // Get lists that a contact belongs to
@@ -685,14 +545,10 @@ export const EmailListManager = () => {
   return (
     <div className="space-y-6">
       <Tabs defaultValue="contacts" className="space-y-4">
-        <TabsList className="grid w-full grid-cols-3">
+        <TabsList className="grid w-full grid-cols-2">
           <TabsTrigger value="contacts" className="flex items-center space-x-2">
             <Users className="h-4 w-4" />
             <span>Contacts</span>
-          </TabsTrigger>
-          <TabsTrigger value="products" className="flex items-center space-x-2">
-            <Package className="h-4 w-4" />
-            <span>Products</span>
           </TabsTrigger>
           <TabsTrigger value="lists" className="flex items-center space-x-2">
             <List className="h-4 w-4" />
@@ -864,17 +720,6 @@ export const EmailListManager = () => {
                     ))}
                   </SelectContent>
                 </Select>
-                <Select value={filterProduct} onValueChange={setFilterProduct}>
-                  <SelectTrigger className="w-48">
-                    <SelectValue placeholder="Filter by product" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Products</SelectItem>
-                    {products.map(product => (
-                      <SelectItem key={product.id} value={product.id}>{product.name}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
               </div>
 
               <div className="border rounded-lg">
@@ -974,115 +819,6 @@ export const EmailListManager = () => {
           </Card>
         </TabsContent>
 
-        <TabsContent value="products" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <div className="flex justify-between items-center">
-                <div>
-                  <CardTitle>Product Catalog</CardTitle>
-                  <p className="text-sm text-muted-foreground">
-                    {products.length} products in catalog
-                  </p>
-                </div>
-                <Dialog open={isAddingProduct} onOpenChange={setIsAddingProduct}>
-                  <DialogTrigger asChild>
-                    <Button>
-                      <Plus className="h-4 w-4 mr-2" />
-                      Add Product
-                    </Button>
-                  </DialogTrigger>
-                  <DialogContent>
-                    <DialogHeader>
-                      <DialogTitle>Add New Product</DialogTitle>
-                    </DialogHeader>
-                    <div className="space-y-4">
-                      <div>
-                        <Label htmlFor="productName">Product Name</Label>
-                        <Input
-                          id="productName"
-                          value={newProduct.name}
-                          onChange={(e) => setNewProduct({...newProduct, name: e.target.value})}
-                          placeholder="Premium Course"
-                        />
-                      </div>
-                      <div>
-                        <Label htmlFor="price">Price</Label>
-                        <Input
-                          id="price"
-                          type="number"
-                          value={newProduct.price}
-                          onChange={(e) => setNewProduct({...newProduct, price: parseFloat(e.target.value) || 0})}
-                          placeholder="299"
-                        />
-                      </div>
-                      <div>
-                        <Label htmlFor="category">Category</Label>
-                        <Input
-                          id="category"
-                          value={newProduct.category}
-                          onChange={(e) => setNewProduct({...newProduct, category: e.target.value})}
-                          placeholder="Education"
-                        />
-                      </div>
-                      <div>
-                        <Label htmlFor="description">Description</Label>
-                        <Textarea
-                          id="description"
-                          value={newProduct.description}
-                          onChange={(e) => setNewProduct({...newProduct, description: e.target.value})}
-                          placeholder="Product description..."
-                        />
-                      </div>
-                    </div>
-                    <DialogFooter>
-                      <Button variant="outline" onClick={() => setIsAddingProduct(false)}>
-                        Cancel
-                      </Button>
-                        <Button onClick={handleAddProduct} disabled={!newProduct.name.trim()}>
-                          Add Product
-                        </Button>
-                    </DialogFooter>
-                  </DialogContent>
-                </Dialog>
-              </div>
-            </CardHeader>
-            <CardContent>
-              <div className="border rounded-lg">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Name</TableHead>
-                      <TableHead>Category</TableHead>
-                      <TableHead>Price</TableHead>
-                      <TableHead>Description</TableHead>
-                      <TableHead>Actions</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {products.map(product => (
-                      <TableRow key={product.id}>
-                        <TableCell className="font-medium">{product.name}</TableCell>
-                        <TableCell>{product.category}</TableCell>
-                        <TableCell>${product.price}</TableCell>
-                        <TableCell className="text-muted-foreground">{product.description}</TableCell>
-                        <TableCell>
-                          <div className="flex space-x-2">
-                            <Button variant="outline" size="sm" onClick={() => handleEditProduct(product)}>
-                              <Edit className="h-4 w-4" />
-                            </Button>
-                            <Button variant="outline" size="sm" onClick={() => handleDeleteProduct(product.id)}>
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
 
         <TabsContent value="lists" className="space-y-4">
           <Card>
@@ -1402,108 +1138,6 @@ export const EmailListManager = () => {
         </DialogContent>
       </Dialog>
 
-      {/* Edit Product Dialog */}
-      <Dialog open={editingProduct !== null} onOpenChange={(open) => !open && setEditingProduct(null)}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Edit Product</DialogTitle>
-            <DialogDescription>
-              Update the product information below.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4">
-            <div>
-              <Label htmlFor="editProductName">Product Name</Label>
-              <Input
-                id="editProductName"
-                value={newProduct.name}
-                onChange={(e) => setNewProduct({...newProduct, name: e.target.value})}
-                placeholder="Premium Course"
-              />
-            </div>
-            <div>
-              <Label htmlFor="editPrice">Price</Label>
-              <Input
-                id="editPrice"
-                type="number"
-                value={newProduct.price}
-                onChange={(e) => setNewProduct({...newProduct, price: parseFloat(e.target.value) || 0})}
-                placeholder="299"
-              />
-            </div>
-            <div>
-              <Label htmlFor="editCategory">Category</Label>
-              <Input
-                id="editCategory"
-                value={newProduct.category}
-                onChange={(e) => setNewProduct({...newProduct, category: e.target.value})}
-                placeholder="Education"
-              />
-            </div>
-            <div>
-              <Label htmlFor="editDescription">Description</Label>
-              <Textarea
-                id="editDescription"
-                value={newProduct.description}
-                onChange={(e) => setNewProduct({...newProduct, description: e.target.value})}
-                placeholder="Product description..."
-              />
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setEditingProduct(null)}>
-              Cancel
-            </Button>
-            <Button onClick={handleUpdateProduct}>
-              Update Product
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      {/* Edit List Dialog */}
-      <Dialog open={editingList !== null} onOpenChange={(open) => !open && setEditingList(null)}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Edit Email List</DialogTitle>
-            <DialogDescription>
-              Update the list information below.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4">
-            <div>
-              <Label htmlFor="editListName">List Name</Label>
-              <Input
-                id="editListName"
-                value={newListName}
-                onChange={(e) => setNewListName(e.target.value)}
-                placeholder="Newsletter Subscribers"
-              />
-            </div>
-            <div>
-              <Label htmlFor="editListDescription">Description</Label>
-              <Textarea
-                id="editListDescription"
-                value={newListDescription}
-                onChange={(e) => setNewListDescription(e.target.value)}
-                placeholder="List description..."
-              />
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => {
-              setEditingList(null);
-              setNewListName("");
-              setNewListDescription("");
-            }}>
-              Cancel
-            </Button>
-            <Button onClick={handleUpdateList} disabled={!newListName.trim()}>
-              Update List
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 };
