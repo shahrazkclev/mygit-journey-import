@@ -64,6 +64,7 @@ export const EditContactDialog: React.FC<EditContactDialogProps> = ({
   const [selectedProducts, setSelectedProducts] = useState<Set<string>>(new Set());
   const [productPrices, setProductPrices] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(false);
+  const [showProductSuggestions, setShowProductSuggestions] = useState(false);
 
   // Load data when contact changes
   useEffect(() => {
