@@ -249,70 +249,125 @@ export const SimpleContactManager = () => {
   };
 
   const handleBulkAddTags = async () => {
-    if (selectedContacts.size === 0 || !bulkTags.trim()) {
-      toast.error("Please select contacts and enter tags");
+    if (selectedContacts.size === 0) {
+      toast.error("Please select contacts");
+      return;
+    }
+
+    if (bulkTagOperation === 'add' && !bulkTags.trim()) {
+      toast.error("Please enter tags to add");
+      return;
+    }
+
+    if (bulkTagOperation === 'remove' && !bulkTagsToRemove.trim()) {
+      toast.error("Please enter tags to remove");
       return;
     }
 
     try {
-      const tagsToAdd = bulkTags.split(',').map(tag => tag.trim()).filter(tag => tag.length > 0);
-      
-      for (const contactId of selectedContacts) {
-        const contact = contacts.find(c => c.id === contactId);
-        if (contact) {
-          const existingTags = contact.tags || [];
-          const newTags = [...new Set([...existingTags, ...tagsToAdd])];
-          
-          const { error } = await supabase
-            .from('contacts')
-            .update({ tags: newTags })
-            .eq('id', contactId);
+      if (bulkTagOperation === 'add') {
+        const tagsToAdd = bulkTags.split(',').map(tag => tag.trim()).filter(tag => tag.length > 0);
+        
+        for (const contactId of selectedContacts) {
+          const contact = contacts.find(c => c.id === contactId);
+          if (contact) {
+            const existingTags = contact.tags || [];
+            const newTags = [...new Set([...existingTags, ...tagsToAdd])];
+            
+            const { error } = await supabase
+              .from('contacts')
+              .update({ tags: newTags })
+              .eq('id', contactId);
 
-          if (error) throw error;
+            if (error) throw error;
+          }
         }
+        toast.success(`Added tags to ${selectedContacts.size} contacts`);
+      } else {
+        const tagsToRemove = bulkTagsToRemove.split(',').map(tag => tag.trim()).filter(tag => tag.length > 0);
+        
+        for (const contactId of selectedContacts) {
+          const contact = contacts.find(c => c.id === contactId);
+          if (contact) {
+            const existingTags = contact.tags || [];
+            const newTags = existingTags.filter(tag => !tagsToRemove.includes(tag));
+            
+            const { error } = await supabase
+              .from('contacts')
+              .update({ tags: newTags })
+              .eq('id', contactId);
+
+            if (error) throw error;
+          }
+        }
+        toast.success(`Removed tags from ${selectedContacts.size} contacts`);
       }
 
-      toast.success(`Added tags to ${selectedContacts.size} contacts`);
       setBulkTags('');
+      setBulkTagsToRemove('');
       setSelectedContacts(new Set());
       setShowBulkTagDialog(false);
       loadContacts();
     } catch (error) {
-      console.error('Error adding bulk tags:', error);
-      toast.error("Failed to add tags");
+      console.error('Error managing bulk tags:', error);
+      toast.error("Failed to manage tags");
     }
   };
 
   const handleBulkAddToLists = async () => {
-    if (selectedContacts.size === 0 || selectedBulkLists.length === 0) {
-      toast.error("Please select contacts and lists");
+    if (selectedContacts.size === 0) {
+      toast.error("Please select contacts");
+      return;
+    }
+
+    const listsToProcess = bulkListOperation === 'add' ? selectedBulkLists : selectedBulkListsToRemove;
+    
+    if (listsToProcess.length === 0) {
+      toast.error(`Please select lists to ${bulkListOperation}`);
       return;
     }
 
     try {
-      const memberships = [];
-      for (const contactId of selectedContacts) {
-        for (const listId of selectedBulkLists) {
-          memberships.push({
-            contact_id: contactId,
-            list_id: listId
-          });
+      if (bulkListOperation === 'add') {
+        const memberships = [];
+        for (const contactId of selectedContacts) {
+          for (const listId of selectedBulkLists) {
+            memberships.push({
+              contact_id: contactId,
+              list_id: listId
+            });
+          }
         }
+
+        const { error } = await supabase
+          .from('contact_lists')
+          .upsert(memberships, { onConflict: 'contact_id,list_id' });
+
+        if (error) throw error;
+        toast.success(`Added ${selectedContacts.size} contacts to ${selectedBulkLists.length} lists`);
+      } else {
+        // Remove from lists
+        for (const contactId of selectedContacts) {
+          for (const listId of selectedBulkListsToRemove) {
+            const { error } = await supabase
+              .from('contact_lists')
+              .delete()
+              .eq('contact_id', contactId)
+              .eq('list_id', listId);
+
+            if (error) throw error;
+          }
+        }
+        toast.success(`Removed ${selectedContacts.size} contacts from ${selectedBulkListsToRemove.length} lists`);
       }
 
-      const { error } = await supabase
-        .from('contact_lists')
-        .upsert(memberships, { onConflict: 'contact_id,list_id' });
-
-      if (error) throw error;
-
-      toast.success(`Added ${selectedContacts.size} contacts to ${selectedBulkLists.length} lists`);
       setSelectedBulkLists([]);
+      setSelectedBulkListsToRemove([]);
       setSelectedContacts(new Set());
       setShowBulkListDialog(false);
     } catch (error) {
-      console.error('Error adding contacts to lists:', error);
-      toast.error("Failed to add contacts to lists");
+      console.error('Error managing contacts in lists:', error);
+      toast.error("Failed to manage contacts in lists");
     }
   };
 
