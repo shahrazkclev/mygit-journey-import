@@ -763,12 +763,38 @@ export const SimpleContactManager = () => {
       <Dialog open={showBulkListDialog} onOpenChange={setShowBulkListDialog}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Add Contacts to Lists</DialogTitle>
+            <DialogTitle>Manage Contacts in Lists</DialogTitle>
             <DialogDescription>
-              Add {selectedContacts.size} selected contacts to email lists
+              Add or remove {selectedContacts.size} selected contacts from email lists
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
+            <div className="space-y-3">
+              <Label>Operation</Label>
+              <div className="flex space-x-4">
+                <div className="flex items-center space-x-2">
+                  <input
+                    type="radio"
+                    id="add-to-lists"
+                    name="listOperation"
+                    checked={bulkListOperation === 'add'}
+                    onChange={() => setBulkListOperation('add')}
+                  />
+                  <Label htmlFor="add-to-lists">Add to Lists</Label>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <input
+                    type="radio"
+                    id="remove-from-lists"
+                    name="listOperation"
+                    checked={bulkListOperation === 'remove'}
+                    onChange={() => setBulkListOperation('remove')}
+                  />
+                  <Label htmlFor="remove-from-lists">Remove from Lists</Label>
+                </div>
+              </div>
+            </div>
+            
             <div className="space-y-2">
               <Label>Select Lists:</Label>
               <div className="space-y-2 max-h-48 overflow-y-auto border rounded-lg p-3">
@@ -781,18 +807,30 @@ export const SimpleContactManager = () => {
                     <div key={list.id} className="flex items-center space-x-3">
                       <input
                         type="checkbox"
-                        id={`bulk-list-${list.id}`}
-                        checked={selectedBulkLists.includes(list.id)}
+                        id={`bulk-list-${bulkListOperation}-${list.id}`}
+                        checked={
+                          bulkListOperation === 'add' 
+                            ? selectedBulkLists.includes(list.id)
+                            : selectedBulkListsToRemove.includes(list.id)
+                        }
                         onChange={(e) => {
-                          if (e.target.checked) {
-                            setSelectedBulkLists([...selectedBulkLists, list.id]);
+                          if (bulkListOperation === 'add') {
+                            if (e.target.checked) {
+                              setSelectedBulkLists([...selectedBulkLists, list.id]);
+                            } else {
+                              setSelectedBulkLists(selectedBulkLists.filter(id => id !== list.id));
+                            }
                           } else {
-                            setSelectedBulkLists(selectedBulkLists.filter(id => id !== list.id));
+                            if (e.target.checked) {
+                              setSelectedBulkListsToRemove([...selectedBulkListsToRemove, list.id]);
+                            } else {
+                              setSelectedBulkListsToRemove(selectedBulkListsToRemove.filter(id => id !== list.id));
+                            }
                           }
                         }}
                         className="h-4 w-4 text-email-primary focus:ring-email-primary border-gray-300 rounded"
                       />
-                      <Label htmlFor={`bulk-list-${list.id}`} className="flex-1 cursor-pointer">
+                      <Label htmlFor={`bulk-list-${bulkListOperation}-${list.id}`} className="flex-1 cursor-pointer">
                         <div className="font-medium">{list.name}</div>
                         {list.description && (
                           <div className="text-sm text-muted-foreground">{list.description}</div>
@@ -810,15 +848,20 @@ export const SimpleContactManager = () => {
               <Button 
                 onClick={handleBulkAddToLists} 
                 className="flex-1 bg-email-secondary hover:bg-email-secondary/80"
-                disabled={selectedBulkLists.length === 0 || emailLists.length === 0}
+                disabled={
+                  (bulkListOperation === 'add' && selectedBulkLists.length === 0) || 
+                  (bulkListOperation === 'remove' && selectedBulkListsToRemove.length === 0) ||
+                  emailLists.length === 0
+                }
               >
-                Add to Lists
+                {bulkListOperation === 'add' ? 'Add to Lists' : 'Remove from Lists'}
               </Button>
               <Button 
                 variant="outline" 
                 onClick={() => {
                   setShowBulkListDialog(false);
                   setSelectedBulkLists([]);
+                  setSelectedBulkListsToRemove([]);
                 }}
                 className="flex-1"
               >
