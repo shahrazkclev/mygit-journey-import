@@ -934,12 +934,17 @@ export const CampaignComposer: React.FC<CampaignComposerProps> = ({ onSave }) =>
             };
             console.log('Campaign data to save:', campaignData);
             toast.success('Campaign saved! You can now send it from the Lists tab.');
-          }}>
+          }}
+          className="border-email-secondary text-email-secondary hover:bg-email-secondary/10"
+          >
             <Save className="h-4 w-4 mr-2" />
             Save Campaign
           </Button>
           
-          <Button onClick={() => setShowSendModal(true)}>
+          <Button 
+            onClick={() => setShowSendModal(true)}
+            className="bg-email-accent hover:bg-email-accent/80 text-primary-foreground"
+          >
             <Send className="h-4 w-4 mr-2" />
             Prepare for Sending
           </Button>
