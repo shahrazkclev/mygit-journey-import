@@ -204,34 +204,45 @@ export const SimpleContactManager = () => {
   return (
     <div className="space-y-6">
       {/* Make.com Integration Info */}
-      <Card className="shadow-soft border-email-primary/20">
-        <CardHeader>
-          <CardTitle className="flex items-center space-x-2">
-            <Link className="h-5 w-5 text-email-primary" />
-            <span>Make.com Integration</span>
-          </CardTitle>
-          <CardDescription>
-            Use this webhook URL in Make.com to automatically sync contacts from Google Sheets
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="flex items-center space-x-2">
-            <Input
-              value={webhookUrl}
-              readOnly
-              className="border-email-primary/30"
-            />
-            <Button
-              onClick={copyWebhookUrl}
-              variant="outline"
-              className="border-email-primary hover:bg-email-primary/10"
-            >
-              Copy
-            </Button>
-          </div>
-          <div className="text-sm text-muted-foreground">
-            <p><strong>Expected JSON format:</strong></p>
-            <pre className="bg-gray-100 p-2 rounded text-xs mt-2">
+      <Card className="shadow-soft border-email-primary/20 bg-gradient-to-br from-email-background to-background">
+        <Collapsible open={isMakeIntegrationOpen} onOpenChange={setIsMakeIntegrationOpen}>
+          <CollapsibleTrigger asChild>
+            <CardHeader className="cursor-pointer hover:bg-email-muted/50 transition-colors">
+              <CardTitle className="flex items-center justify-between">
+                <div className="flex items-center space-x-2">
+                  <Link className="h-5 w-5 text-email-primary" />
+                  <span className="text-email-primary">Make.com Integration</span>
+                </div>
+                {isMakeIntegrationOpen ? (
+                  <ChevronDown className="h-4 w-4 text-email-primary" />
+                ) : (
+                  <ChevronRight className="h-4 w-4 text-email-primary" />
+                )}
+              </CardTitle>
+              <CardDescription>
+                Use this webhook URL in Make.com to automatically sync contacts from Google Sheets
+              </CardDescription>
+            </CardHeader>
+          </CollapsibleTrigger>
+          <CollapsibleContent>
+            <CardContent className="space-y-4">
+              <div className="flex items-center space-x-2">
+                <Input
+                  value={webhookUrl}
+                  readOnly
+                  className="border-email-primary/30"
+                />
+                <Button
+                  onClick={copyWebhookUrl}
+                  variant="outline"
+                  className="border-email-primary hover:bg-email-primary/10 text-email-primary"
+                >
+                  Copy
+                </Button>
+              </div>
+              <div className="text-sm text-muted-foreground">
+                <p><strong>Expected JSON format:</strong></p>
+                <pre className="bg-email-muted/30 p-2 rounded text-xs mt-2 border border-email-primary/10">
 {`{
   "email": "customer@example.com",
   "name": "John Doe",
@@ -239,9 +250,11 @@ export const SimpleContactManager = () => {
   "tags": ["customer", "premium", "lazy-motion-library"],
   "action": "create"
 }`}
-            </pre>
-          </div>
-        </CardContent>
+                </pre>
+              </div>
+            </CardContent>
+          </CollapsibleContent>
+        </Collapsible>
       </Card>
 
       {/* Contacts Management */}
