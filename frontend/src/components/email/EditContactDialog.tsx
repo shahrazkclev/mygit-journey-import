@@ -280,7 +280,7 @@ export const EditContactDialog: React.FC<EditContactDialogProps> = ({
                   placeholder="customer, premium, newsletter"
                 />
                 {showProductSuggestions && products.length > 0 && (
-                  <div className="absolute top-full left-0 right-0 z-10 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-48 overflow-y-auto">
+                  <div className="absolute top-full left-0 right-0 z-50 mt-1 bg-white border border-gray-200 rounded-lg shadow-xl max-h-48 overflow-y-auto">
                     <div className="p-2 border-b bg-gray-50">
                       <p className="text-sm font-medium text-gray-700">Product Suggestions:</p>
                     </div>
@@ -289,22 +289,22 @@ export const EditContactDialog: React.FC<EditContactDialogProps> = ({
                         <div
                           key={product.id}
                           onClick={() => addProductAsTag(product.name)}
-                          className="flex items-center p-2 rounded hover:bg-email-primary/10 cursor-pointer"
+                          className="flex items-center p-2 rounded hover:bg-email-primary/10 cursor-pointer transition-colors"
                         >
-                          <ShoppingCart className="h-4 w-4 mr-2 text-email-primary" />
-                          <span className="text-sm">{product.name}</span>
+                          <ShoppingCart className="h-4 w-4 mr-2 text-email-primary flex-shrink-0" />
+                          <span className="text-sm flex-1">{product.name}</span>
                           {product.category && (
-                            <Badge variant="outline" className="ml-auto text-xs">
+                            <Badge variant="outline" className="ml-2 text-xs flex-shrink-0">
                               {product.category}
                             </Badge>
                           )}
                         </div>
                       ))}
                     </div>
-                    <div className="p-2 border-t">
+                    <div className="p-2 border-t bg-gray-50">
                       <button
                         onClick={() => setShowProductSuggestions(false)}
-                        className="text-xs text-gray-500 hover:text-gray-700"
+                        className="text-xs text-gray-500 hover:text-gray-700 w-full text-left"
                       >
                         Close suggestions
                       </button>
