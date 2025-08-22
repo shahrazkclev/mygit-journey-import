@@ -776,24 +776,6 @@ export const CampaignComposer: React.FC<CampaignComposerProps> = ({ onSave }) =>
             </div>
           </div>
 
-          {/* Unsubscribe Options */}
-          <div className="flex items-center space-x-3 p-4 bg-email-muted/20 rounded-lg border border-email-primary/20">
-            <Switch
-              id="include-unsubscribe"
-              checked={includeUnsubscribe}
-              onCheckedChange={setIncludeUnsubscribe}
-              className="data-[state=checked]:bg-email-primary"
-            />
-            <div className="flex-1">
-              <Label htmlFor="include-unsubscribe" className="text-sm font-medium text-email-primary">
-                Include Unsubscribe Link
-              </Label>
-              <p className="text-xs text-muted-foreground mt-1">
-                Automatically add an unsubscribe link to the bottom of each email that dynamically includes the recipient's email
-              </p>
-            </div>
-          </div>
-
           <Button 
             onClick={handleGenerateTemplate}
             disabled={isGenerating}
