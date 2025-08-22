@@ -451,13 +451,7 @@ export const CampaignComposer: React.FC<CampaignComposerProps> = ({ onSave }) =>
       if (error) throw error;
 
       if (data?.htmlContent) {
-        let cleaned = cleanHtmlContent(data.htmlContent);
-        
-        // Add unsubscribe link if enabled
-        if (includeUnsubscribe) {
-          cleaned = addUnsubscribeLink(cleaned);
-        }
-        
+        const cleaned = cleanHtmlContent(data.htmlContent);
         setOriginalTemplate(cleaned); // Store original for color changes
         setGeneratedTemplate(cleaned);
         toast.success("Your email template has been generated successfully!");
