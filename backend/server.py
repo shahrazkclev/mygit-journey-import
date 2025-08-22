@@ -138,7 +138,7 @@ async def get_status_checks():
 
 # Campaign Management Endpoints
 @api_router.post("/campaigns", response_model=Campaign)
-async def create_campaign(campaign_data: CampaignCreate, background_tasks: BackgroundTasks, current_user: str = Depends(verify_token)):
+async def create_campaign(campaign_data: CampaignCreate, background_tasks: BackgroundTasks):
     campaign_dict = campaign_data.dict()
     campaign = Campaign(**campaign_dict)
     
