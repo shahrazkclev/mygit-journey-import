@@ -489,6 +489,30 @@ frontend:
         -working: "NA"
         -agent: "main"
         -comment: "Added intelligent autocomplete in AI prompt textarea. When typing product names (3+ chars), shows greyed preview with product details. Tab/Enter key inserts full product info format: 'Product Name (category - $price)'. Includes real-time matching, positioning, and keyboard navigation."
+        
+  - task: "Sender sequence rotation controller"
+    implemented: true
+    working: "NA"
+    file: "/app/backend/server.py, /app/frontend/src/components/email/CampaignSettings.tsx, /app/frontend/src/components/email/SendCampaignModal.tsx"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+        -working: "NA"
+        -agent: "main"
+        -comment: "Added sender sequence rotation system. Users can set emails-per-sender (default 50) and max-sender-sequence (default 3). System automatically rotates sender sequence in webhook payload: 1→2→3→1. Shows current sender # in campaign progress. Backend calculates: sequence = (sent_count // emails_per_sender) % max_sequence + 1"
+        
+  - task: "Netlify deployment configuration"
+    implemented: true
+    working: "NA"
+    file: "/app/netlify.toml, /app/frontend/_redirects, /app/frontend/public/_redirects, /app/frontend/.env.production, /app/build-netlify.sh, /app/NETLIFY_DEPLOYMENT.md"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+        -working: "NA"
+        -agent: "main"
+        -comment: "Created comprehensive Netlify deployment configuration including netlify.toml, SPA redirects, production environment variables, build script, and detailed deployment guide. Fixes 'Page not found' errors and build issues."
 
 metadata:
   created_by: "main_agent"
