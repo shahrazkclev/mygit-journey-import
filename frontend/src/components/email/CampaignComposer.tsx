@@ -795,18 +795,18 @@ export const CampaignComposer: React.FC<CampaignComposerProps> = ({ onSave }) =>
 
       {/* Email Template Tabs */}
       {generatedTemplate && (
-        <Card>
+        <Card className="shadow-soft bg-gradient-to-br from-email-background to-background border-email-primary/20">
           <CardHeader>
-            <CardTitle>Email Template</CardTitle>
+            <CardTitle className="text-email-primary">Email Template</CardTitle>
             <CardDescription>
               Preview and edit your email template
             </CardDescription>
           </CardHeader>
           <CardContent>
             <Tabs value={previewMode} onValueChange={(value) => setPreviewMode(value as 'code' | 'visual')}>
-              <TabsList className="grid w-full grid-cols-2">
-                <TabsTrigger value="visual">Preview</TabsTrigger>
-                <TabsTrigger value="code">
+              <TabsList className="grid w-full grid-cols-2 bg-email-muted/30">
+                <TabsTrigger value="visual" className="data-[state=active]:bg-email-primary data-[state=active]:text-primary-foreground">Preview</TabsTrigger>
+                <TabsTrigger value="code" className="data-[state=active]:bg-email-primary data-[state=active]:text-primary-foreground">
                   <Code className="h-4 w-4 mr-2" />
                   HTML Code
                 </TabsTrigger>
