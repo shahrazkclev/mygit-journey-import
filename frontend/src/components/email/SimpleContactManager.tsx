@@ -459,7 +459,7 @@ export const SimpleContactManager = () => {
                     className="border-email-accent text-email-accent hover:bg-email-accent/10"
                   >
                     <Tag className="h-4 w-4 mr-1" />
-                    Add Tags
+                    Manage Tags
                   </Button>
                   <Button
                     variant="outline"
@@ -468,7 +468,7 @@ export const SimpleContactManager = () => {
                     className="border-email-secondary text-email-secondary hover:bg-email-secondary/10"
                   >
                     <Users className="h-4 w-4 mr-1" />
-                    Add to Lists
+                    Manage Lists
                   </Button>
                 </>
               )}
