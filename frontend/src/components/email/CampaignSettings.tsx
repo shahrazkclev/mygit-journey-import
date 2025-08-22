@@ -103,45 +103,58 @@ export const CampaignSettings = () => {
   return (
     <div className="space-y-6">
       {/* Make.com Integration */}
-      <Card className="shadow-soft border-email-primary/20">
-        <CardHeader>
-          <CardTitle className="flex items-center space-x-2">
-            <Link className="h-5 w-5 text-email-primary" />
-            <span>Make.com Integration</span>
-          </CardTitle>
-          <CardDescription>
-            Connect your Make.com webhook to send emails through your preferred service
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="webhook">Webhook URL</Label>
-            <Input
-              id="webhook"
-              placeholder="https://hook.eu1.make.com/your-webhook-url"
-              value={webhookUrl}
-              onChange={(e) => setWebhookUrl(e.target.value)}
-              className="border-email-primary/30 focus:border-email-primary"
-            />
-          </div>
-          <div className="flex gap-3">
-            <Button 
-              onClick={handleTestWebhook}
-              variant="outline"
-              className="border-email-secondary hover:bg-email-secondary"
-            >
-              <Zap className="h-4 w-4 mr-2" />
-              Test Connection
-            </Button>
-            <Button 
-              onClick={handleSaveSettings}
-              disabled={isLoading}
-              className="bg-email-primary hover:bg-email-primary/80 text-primary-foreground"
-            >
-              {isLoading ? "Saving..." : "Save Settings"}
-            </Button>
-          </div>
-        </CardContent>
+      <Card className="shadow-soft border-email-primary/20 bg-gradient-to-br from-email-background to-background">
+        <Collapsible open={isMakeIntegrationOpen} onOpenChange={setIsMakeIntegrationOpen}>
+          <CollapsibleTrigger asChild>
+            <CardHeader className="cursor-pointer hover:bg-email-muted/50 transition-colors">
+              <CardTitle className="flex items-center justify-between">
+                <div className="flex items-center space-x-2">
+                  <Link className="h-5 w-5 text-email-primary" />
+                  <span className="text-email-primary">Make.com Integration</span>
+                </div>
+                {isMakeIntegrationOpen ? (
+                  <ChevronDown className="h-4 w-4 text-email-primary" />
+                ) : (
+                  <ChevronRight className="h-4 w-4 text-email-primary" />
+                )}
+              </CardTitle>
+              <CardDescription>
+                Connect your Make.com webhook to send emails through your preferred service
+              </CardDescription>
+            </CardHeader>
+          </CollapsibleTrigger>
+          <CollapsibleContent>
+            <CardContent className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="webhook">Webhook URL</Label>
+                <Input
+                  id="webhook"
+                  placeholder="https://hook.eu1.make.com/your-webhook-url"
+                  value={webhookUrl}
+                  onChange={(e) => setWebhookUrl(e.target.value)}
+                  className="border-email-primary/30 focus:border-email-primary"
+                />
+              </div>
+              <div className="flex gap-3">
+                <Button 
+                  onClick={handleTestWebhook}
+                  variant="outline"
+                  className="border-email-secondary hover:bg-email-secondary/10 text-email-secondary"
+                >
+                  <Zap className="h-4 w-4 mr-2" />
+                  Test Connection
+                </Button>
+                <Button 
+                  onClick={handleSaveSettings}
+                  disabled={isLoading}
+                  className="bg-email-primary hover:bg-email-primary/80 text-primary-foreground"
+                >
+                  {isLoading ? "Saving..." : "Save Settings"}
+                </Button>
+              </div>
+            </CardContent>
+          </CollapsibleContent>
+        </Collapsible>
       </Card>
 
       {/* Sending Speed Control */}
