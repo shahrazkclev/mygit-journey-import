@@ -138,6 +138,65 @@ export const CampaignSettings = () => {
 
   return (
     <div className="space-y-6">
+      {/* Sender Rotation Settings */}
+      <Card className="shadow-soft bg-gradient-to-br from-email-background to-background border-email-primary/20">
+        <CardHeader>
+          <CardTitle className="flex items-center space-x-2">
+            <Settings className="h-5 w-5 text-email-accent" />
+            <span className="text-email-accent">Sender Rotation</span>
+          </CardTitle>
+          <CardDescription>
+            Control how sender sequence numbers rotate to use different email addresses in Make.com
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="emails-per-sender">Emails per Sender Sequence</Label>
+              <Input
+                id="emails-per-sender"
+                type="number"
+                min="1"
+                max="1000"
+                value={emailsPerSender}
+                onChange={(e) => setEmailsPerSender(parseInt(e.target.value) || 50)}
+                className="border-email-primary/30 focus:border-email-primary"
+              />
+              <p className="text-xs text-muted-foreground">
+                How many emails to send before switching to next sequence number
+              </p>
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="max-sequence">Max Sender Sequence</Label>
+              <Input
+                id="max-sequence"
+                type="number"
+                min="1"
+                max="10"
+                value={maxSenderSequence}
+                onChange={(e) => setMaxSenderSequence(parseInt(e.target.value) || 3)}
+                className="border-email-primary/30 focus:border-email-primary"
+              />
+              <p className="text-xs text-muted-foreground">
+                Highest sequence number before rolling back to 1
+              </p>
+            </div>
+          </div>
+          
+          <div className="bg-email-muted/30 p-4 rounded-lg border border-email-primary/10">
+            <h4 className="font-medium text-email-primary mb-2">Rotation Example:</h4>
+            <div className="text-sm text-muted-foreground space-y-1">
+              <p>• Emails 1-{emailsPerSender}: Sender Sequence = 1</p>
+              <p>• Emails {emailsPerSender + 1}-{emailsPerSender * 2}: Sender Sequence = 2</p>
+              <p>• Emails {emailsPerSender * 2 + 1}-{emailsPerSender * 3}: Sender Sequence = 3</p>
+              {maxSenderSequence > 3 && <p>• ... (continues to {maxSenderSequence})</p>}
+              <p>• Then rolls back to Sequence 1</p>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
       {/* Make.com Integration */}
       <Card className="shadow-soft border-email-primary/20 bg-gradient-to-br from-email-background to-background">
         <Collapsible open={isMakeIntegrationOpen} onOpenChange={setIsMakeIntegrationOpen}>
