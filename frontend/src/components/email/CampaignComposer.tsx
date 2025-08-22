@@ -270,9 +270,12 @@ export const CampaignComposer: React.FC<CampaignComposerProps> = ({ onSave }) =>
     setIsGenerating(true);
 
     try {
+      // Enhance the prompt with product details if products are mentioned
+      const enhancedPrompt = enhancePromptWithProductDetails(prompt);
+      
       const { data, error } = await supabase.functions.invoke('generate-email', {
         body: {
-          prompt: prompt,
+          prompt: enhancedPrompt,
           subject: subject,
           regenId: Date.now(),
           themeColors: themeColors,
