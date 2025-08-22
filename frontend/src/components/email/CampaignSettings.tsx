@@ -22,6 +22,10 @@ export const CampaignSettings = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [isMakeIntegrationOpen, setIsMakeIntegrationOpen] = useState(false);
   const [isTestingWebhook, setIsTestingWebhook] = useState(false);
+  
+  // Sender rotation settings
+  const [emailsPerSender, setEmailsPerSender] = useState(50);
+  const [maxSenderSequence, setMaxSenderSequence] = useState(3);
 
   useEffect(() => {
     loadSettings();
