@@ -852,9 +852,9 @@ export const CampaignComposer: React.FC<CampaignComposerProps> = ({ onSave }) =>
 
       {/* Edit with AI (Claude) */}
       {generatedTemplate && (
-        <Card>
+        <Card className="shadow-soft bg-gradient-to-br from-email-background to-background border-email-primary/20">
           <CardHeader>
-            <CardTitle>Edit with AI</CardTitle>
+            <CardTitle className="text-email-primary">Edit with AI</CardTitle>
             <CardDescription>Make specific changes to the current HTML (uses Claude)</CardDescription>
           </CardHeader>
           <CardContent className="space-y-3">
@@ -863,9 +863,14 @@ export const CampaignComposer: React.FC<CampaignComposerProps> = ({ onSave }) =>
               onChange={(e) => setAiEditPrompt(e.target.value)}
               rows={3}
               placeholder="e.g., Add a primary CTA button below the hero, lighten background, increase body text to 16px, replace the second emoji with 🚀"
+              className="border-email-primary/30 focus:border-email-primary"
             />
             <div className="flex justify-end">
-              <Button onClick={handleEditWithAI} disabled={isEditingWithAI}>
+              <Button 
+                onClick={handleEditWithAI} 
+                disabled={isEditingWithAI}
+                className="bg-email-accent hover:bg-email-accent/80 text-primary-foreground"
+              >
                 <Edit className="h-4 w-4 mr-2" />
                 {isEditingWithAI ? 'Applying Edits...' : 'Edit with AI'}
               </Button>
