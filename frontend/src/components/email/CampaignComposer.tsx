@@ -153,30 +153,47 @@ export const CampaignComposer: React.FC<CampaignComposerProps> = ({ onSave }) =>
   };
 
   const enhancePromptWithProductDetails = (originalPrompt: string): string => {
-    if (!products.length) return originalPrompt;
+    console.log('🔍 Enhancing prompt with product details');
+    console.log('📝 Original prompt:', originalPrompt);
+    console.log('📦 Available products:', products.length);
+    
+    if (!products.length) {
+      console.log('❌ No products loaded');
+      return originalPrompt;
+    }
 
     // Find product names mentioned in the prompt (case insensitive)
-    const mentionedProducts = products.filter(product => 
-      originalPrompt.toLowerCase().includes(product.name.toLowerCase())
-    );
+    const mentionedProducts = products.filter(product => {
+      const isMatch = originalPrompt.toLowerCase().includes(product.name.toLowerCase());
+      if (isMatch) {
+        console.log('✅ Found product match:', product.name);
+      }
+      return isMatch;
+    });
 
-    if (mentionedProducts.length === 0) return originalPrompt;
+    console.log('🎯 Mentioned products found:', mentionedProducts.length);
+
+    if (mentionedProducts.length === 0) {
+      console.log('❌ No product names found in prompt');
+      return originalPrompt;
+    }
 
     // Add product details to the prompt
     let enhancedPrompt = originalPrompt;
     
-    enhancedPrompt += "\n\n--- Product Details ---\n";
-    enhancedPrompt += "The following products are mentioned in this email. Use these details for accurate information:\n\n";
+    enhancedPrompt += "\n\n--- PRODUCT DETAILS FOR AI ---\n";
+    enhancedPrompt += "The following products are mentioned in this email. Please use these exact details when referring to them:\n\n";
 
     mentionedProducts.forEach(product => {
-      enhancedPrompt += `• ${product.name}:\n`;
-      if (product.description) enhancedPrompt += `  Description: ${product.description}\n`;
-      if (product.price) enhancedPrompt += `  Price: $${product.price}\n`;
-      if (product.category) enhancedPrompt += `  Category: ${product.category}\n`;
-      if (product.sku) enhancedPrompt += `  SKU: ${product.sku}\n`;
+      enhancedPrompt += `📦 PRODUCT: ${product.name}\n`;
+      if (product.description) enhancedPrompt += `   Description: ${product.description}\n`;
+      if (product.price) enhancedPrompt += `   Price: $${product.price}\n`;
+      if (product.category) enhancedPrompt += `   Category: ${product.category}\n`;
+      if (product.sku) enhancedPrompt += `   SKU: ${product.sku}\n`;
       enhancedPrompt += "\n";
     });
 
+    console.log('🚀 Enhanced prompt:', enhancedPrompt);
     return enhancedPrompt;
   };
 
