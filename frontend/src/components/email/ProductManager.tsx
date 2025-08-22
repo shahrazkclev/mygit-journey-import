@@ -213,9 +213,9 @@ export const ProductManager: React.FC = () => {
         </Dialog>
       </div>
 
-      <Card>
+      <Card className="shadow-soft bg-gradient-to-br from-email-background to-background">
         <CardHeader>
-          <CardTitle className="flex items-center">
+          <CardTitle className="flex items-center text-email-secondary">
             <Package className="h-5 w-5 mr-2" />
             Products ({products.length})
           </CardTitle>
@@ -228,13 +228,13 @@ export const ProductManager: React.FC = () => {
               </p>
             ) : (
               products.map((product) => (
-                <div key={product.id} className="flex items-center justify-between p-4 border rounded-lg">
+                <div key={product.id} className="flex items-center justify-between p-4 border rounded-lg hover:bg-email-muted/20 transition-colors border-email-primary/10">
                   <div className="flex items-center space-x-3">
-                    <div className="w-10 h-10 bg-orange-100 rounded-full flex items-center justify-center">
-                      <Package className="h-5 w-5 text-orange-600" />
+                    <div className="w-10 h-10 bg-email-accent/20 rounded-full flex items-center justify-center">
+                      <Package className="h-5 w-5 text-email-accent" />
                     </div>
                     <div>
-                      <div className="font-medium">{product.name}</div>
+                      <div className="font-medium text-email-primary">{product.name}</div>
                       <div className="text-sm text-muted-foreground">
                         {product.category && `${product.category} • `}
                         {product.sku && `SKU: ${product.sku} • `}
