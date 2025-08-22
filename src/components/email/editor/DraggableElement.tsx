@@ -34,14 +34,21 @@ export const DraggableElement: React.FC<DraggableElementProps> = ({
 
   const style = {
     transform: CSS.Transform.toString(transform),
-    transition,
+    transition: transition,
+    opacity: isDragging ? 0.5 : 1,
   };
 
-  const handleDoubleClick = () => {
+  const handleDoubleClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
     if (element.type === 'text' || element.type === 'button') {
       setIsEditing(true);
       setEditValue(element.content);
     }
+  };
+
+  const handleClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    onSelect();
   };
 
   const handleSaveEdit = () => {
@@ -65,25 +72,29 @@ export const DraggableElement: React.FC<DraggableElementProps> = ({
       cursor: isDragging ? 'grabbing' : 'pointer',
     };
 
-    if (isEditing && (element.type === 'text' || element.type === 'button')) {
-      const EditComponent = element.type === 'text' && element.content.length > 50 ? Textarea : Input;
-      
-      return (
-        <EditComponent
-          value={editValue}
-          onChange={(e) => setEditValue(e.target.value)}
-          onBlur={handleSaveEdit}
-          onKeyDown={handleKeyDown}
-          autoFocus
-          className="w-full"
-          style={{
-            fontSize: element.styles.fontSize,
-            fontWeight: element.styles.fontWeight,
-            color: element.styles.color,
-            textAlign: element.styles.textAlign,
-          }}
-        />
-      );
+      if (isEditing && (element.type === 'text' || element.type === 'button' || element.type === 'image')) {
+        const EditComponent = element.type === 'image' ? Input : 
+                            (element.type === 'text' && element.content.length > 50) ? Textarea : Input;
+        
+        return (
+          <div className="bg-white border-2 border-blue-300 rounded p-2">
+            <EditComponent
+              value={editValue}
+              onChange={(e) => setEditValue(e.target.value)}
+              onBlur={handleSaveEdit}
+              onKeyDown={handleKeyDown}
+              autoFocus
+              className="w-full border-0 focus:ring-0 focus:outline-none"
+              placeholder={element.type === 'image' ? 'Enter image URL...' : 'Enter text...'}
+              style={{
+                fontSize: element.type !== 'image' ? element.styles.fontSize : undefined,
+                fontWeight: element.type !== 'image' ? element.styles.fontWeight : undefined,
+                color: element.type !== 'image' ? element.styles.color : undefined,
+                textAlign: element.type !== 'image' ? element.styles.textAlign : undefined,
+              }}
+            />
+          </div>
+        );
     }
 
     switch (element.type) {
@@ -108,16 +119,26 @@ export const DraggableElement: React.FC<DraggableElementProps> = ({
       
       case 'image':
         return (
-          <div style={{ textAlign: element.styles.textAlign || 'center' }}>
+          <div style={{ textAlign: element.styles.textAlign || 'center', position: 'relative' }}>
             <img
-              src={element.content || 'https://via.placeholder.com/400x200'}
+              src={element.content || 'https://via.placeholder.com/400x200?text=Click+to+edit+image+URL'}
               alt="Email content"
-              style={commonStyles}
-              className="max-w-full h-auto"
+              style={{
+                ...commonStyles,
+                maxWidth: '100%',
+                height: 'auto',
+                display: 'block',
+                margin: element.styles.textAlign === 'center' ? '0 auto' : '0'
+              }}
               onError={(e) => {
-                e.currentTarget.src = 'https://via.placeholder.com/400x200/cccccc/666666?text=Image';
+                e.currentTarget.src = 'https://via.placeholder.com/400x200/f0f0f0/999999?text=Image+Not+Found';
               }}
             />
+            {isSelected && (
+              <div className="absolute top-2 left-2 bg-blue-600 text-white text-xs px-2 py-1 rounded">
+                Double-click to edit image URL
+              </div>
+            )}
           </div>
         );
       
@@ -147,21 +168,27 @@ export const DraggableElement: React.FC<DraggableElementProps> = ({
       style={style}
       {...attributes}
       {...listeners}
-      onClick={onSelect}
+      onClick={handleClick}
       onDoubleClick={handleDoubleClick}
       className={cn(
-        "relative group mb-2 rounded transition-all",
-        isSelected && "ring-2 ring-primary ring-offset-2",
-        isDragging && "opacity-50",
-        "hover:ring-1 hover:ring-gray-300"
+        "relative group mb-3 rounded-lg transition-all cursor-pointer",
+        isSelected && "ring-2 ring-blue-500 ring-offset-2 bg-blue-50/30",
+        isDragging && "opacity-50 z-50",
+        "hover:ring-1 hover:ring-gray-300 hover:shadow-sm",
+        !isDragging && "active:scale-[0.98]"
       )}
     >
       {isSelected && !isEditing && (
-        <div className="absolute -top-6 left-0 text-xs bg-primary text-primary-foreground px-2 py-1 rounded">
-          {element.type.charAt(0).toUpperCase() + element.type.slice(1)}
+        <div className="absolute -top-8 left-0 bg-blue-600 text-white text-xs px-2 py-1 rounded shadow-sm z-10">
+          {element.type === 'text' || element.type === 'button' || element.type === 'image' 
+            ? 'Double-click to edit' 
+            : element.type.charAt(0).toUpperCase() + element.type.slice(1)
+          }
         </div>
       )}
-      {renderElement()}
+      <div className="p-2">
+        {renderElement()}
+      </div>
     </div>
   );
 };

@@ -22,7 +22,7 @@ export const CampaignComposer: React.FC<CampaignComposerProps> = ({ onSave }) =>
   const [prompt, setPrompt] = useState("");
   const [generatedTemplate, setGeneratedTemplate] = useState("");
   const [isGenerating, setIsGenerating] = useState(false);
-  const [previewMode, setPreviewMode] = useState<'code' | 'visual' | 'editor' | 'inline'>('visual');
+  const [previewMode, setPreviewMode] = useState<'code' | 'visual' | 'editor'>('visual');
   const [selectedLists, setSelectedLists] = useState<string[]>([]);
   const [isEditingWithAI, setIsEditingWithAI] = useState(false);
   const [aiEditPrompt, setAiEditPrompt] = useState("");
@@ -561,13 +561,9 @@ export const CampaignComposer: React.FC<CampaignComposerProps> = ({ onSave }) =>
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <Tabs value={previewMode} onValueChange={(value) => setPreviewMode(value as 'code' | 'visual' | 'editor' | 'inline')}>
-              <TabsList className="grid w-full grid-cols-4">
+            <Tabs value={previewMode} onValueChange={(value) => setPreviewMode(value as 'code' | 'visual' | 'editor')}>
+              <TabsList className="grid w-full grid-cols-3">
                 <TabsTrigger value="visual">Preview</TabsTrigger>
-                <TabsTrigger value="inline">
-                  <Edit className="h-4 w-4 mr-2" />
-                  Quick Edit
-                </TabsTrigger>
                 <TabsTrigger value="editor">
                   <Palette className="h-4 w-4 mr-2" />
                   Visual Editor
@@ -589,13 +585,6 @@ export const CampaignComposer: React.FC<CampaignComposerProps> = ({ onSave }) =>
                 </div>
               </TabsContent>
               
-              <TabsContent value="inline" className="mt-4">
-                <InlineEmailEditor
-                  htmlContent={generatedTemplate}
-                  onUpdate={setGeneratedTemplate}
-                />
-              </TabsContent>
-
               <TabsContent value="editor" className="mt-4">
                 <div className="rounded-lg border overflow-hidden">
                   <EmailEditor
@@ -633,12 +622,83 @@ export const CampaignComposer: React.FC<CampaignComposerProps> = ({ onSave }) =>
         </Card>
       )}
 
+      {/* Email Lists Selection */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Target Email Lists</CardTitle>
+          <CardDescription>
+            Select which email lists to send this campaign to
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          {emailLists.length === 0 ? (
+            <p className="text-muted-foreground">
+              No email lists found. Create some email lists in the Lists tab first.
+            </p>
+          ) : (
+            <div className="space-y-2 max-h-48 overflow-y-auto">
+              {emailLists.map(list => (
+                <div key={list.id} className="flex items-center space-x-3 p-3 border rounded-lg hover:bg-gray-50">
+                  <input
+                    type="checkbox"
+                    id={list.id}
+                    checked={selectedLists.includes(list.id)}
+                    onChange={() => {
+                      setSelectedLists(prev => 
+                        prev.includes(list.id) 
+                          ? prev.filter(id => id !== list.id)
+                          : [...prev, list.id]
+                      );
+                    }}
+                    className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                  />
+                  <Label htmlFor={list.id} className="flex-1 cursor-pointer">
+                    <div className="font-medium">{list.name}</div>
+                    {list.description && (
+                      <div className="text-sm text-muted-foreground">{list.description}</div>
+                    )}
+                  </Label>
+                </div>
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
       {/* Save Campaign */}
       {generatedTemplate && (
-        <div className="flex justify-end">
-          <Button onClick={handleSave}>
+        <div className="flex justify-end space-x-3">
+          <Button variant="outline" onClick={() => {
+            const campaignData = {
+              subject,
+              htmlContent: generatedTemplate,
+              selectedLists,
+              emailElements
+            };
+            console.log('Campaign data to save:', campaignData);
+            toast.success('Campaign saved! You can now send it from the Lists tab.');
+          }}>
             <Save className="h-4 w-4 mr-2" />
             Save Campaign
+          </Button>
+          
+          <Button onClick={() => {
+            if (selectedLists.length === 0) {
+              toast.error('Please select at least one email list');
+              return;
+            }
+            const campaignData = {
+              subject,
+              htmlContent: generatedTemplate,
+              selectedLists,
+              emailElements,
+              status: 'ready'
+            };
+            console.log('Campaign ready to send:', campaignData);
+            toast.success(`Campaign "${subject}" is ready! Send it from the Lists tab.`);
+          }}>
+            <Send className="h-4 w-4 mr-2" />
+            Prepare for Sending
           </Button>
         </div>
       )}

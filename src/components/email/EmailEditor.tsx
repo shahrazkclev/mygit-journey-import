@@ -290,7 +290,10 @@ export const EmailEditor: React.FC<EmailEditorProps> = ({
                         key={element.id}
                         element={element}
                         isSelected={selectedElement === element.id}
-                        onSelect={() => setSelectedElement(element.id)}
+                        onSelect={() => {
+                          // Clear previous selection first
+                          setSelectedElement(selectedElement === element.id ? null : element.id);
+                        }}
                         onUpdate={(updates) => updateElement(element.id, updates)}
                       />
                     ))}
