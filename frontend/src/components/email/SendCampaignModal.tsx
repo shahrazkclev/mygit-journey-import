@@ -135,7 +135,9 @@ export const SendCampaignModal: React.FC<SendCampaignModalProps> = ({
         if (campaign) {
           setTotalRecipients(campaign.total_recipients || 0);
           setSentCount(campaign.sent_count || 0);
+          setFailedCount(campaign.failed_count || 0);
           setCurrentSenderSequence(campaign.current_sender_sequence || 1);
+          setCurrentRecipient(campaign.current_recipient || '');
           setStatus(campaign.status as any);
           
           if (campaign.total_recipients > 0) {
@@ -146,8 +148,8 @@ export const SendCampaignModal: React.FC<SendCampaignModalProps> = ({
             clearInterval(interval);
             toast.success(
               campaign.status === 'sent' 
-                ? `Campaign completed! Sent to ${campaign.sent_count} recipients.`
-                : `Campaign failed. Sent to ${campaign.sent_count} out of ${campaign.total_recipients} recipients.`
+                ? `✅ Campaign completed! Sent to ${campaign.sent_count} recipients.`
+                : `❌ Campaign failed. Sent to ${campaign.sent_count} out of ${campaign.total_recipients} recipients.`
             );
           }
         }
