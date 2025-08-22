@@ -89,6 +89,22 @@ export const EditContactDialog: React.FC<EditContactDialogProps> = ({
     }
   }, [isOpen]);
 
+  // Handle click outside to close dropdown
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setShowProductSuggestions(false);
+      }
+    };
+
+    if (showProductSuggestions) {
+      document.addEventListener('mousedown', handleClickOutside);
+      return () => {
+        document.removeEventListener('mousedown', handleClickOutside);
+      };
+    }
+  }, [showProductSuggestions]);
+
   const loadProducts = async () => {
     try {
       const { data, error } = await supabase
