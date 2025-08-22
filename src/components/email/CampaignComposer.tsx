@@ -10,7 +10,7 @@ import { Wand2, Send, Eye, Save, Palette, Code, Edit } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { EmailEditor, EmailElement } from "./EmailEditor";
-import { InlineEmailEditor } from "./editor/InlineEmailEditor";
+import { EditablePreview } from "./editor/EditablePreview";
 import { SendCampaignModal } from "./SendCampaignModal";
 import { DEMO_USER_ID } from "@/lib/demo-auth";
 
@@ -567,13 +567,9 @@ export const CampaignComposer: React.FC<CampaignComposerProps> = ({ onSave }) =>
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <Tabs value={previewMode} onValueChange={(value) => setPreviewMode(value as 'code' | 'visual' | 'editor')}>
-              <TabsList className="grid w-full grid-cols-3">
+            <Tabs value={previewMode} onValueChange={(value) => setPreviewMode(value as 'code' | 'visual')}>
+              <TabsList className="grid w-full grid-cols-2">
                 <TabsTrigger value="visual">Preview</TabsTrigger>
-                <TabsTrigger value="editor">
-                  <Palette className="h-4 w-4 mr-2" />
-                  Visual Editor
-                </TabsTrigger>
                 <TabsTrigger value="code">
                   <Code className="h-4 w-4 mr-2" />
                   HTML Code
@@ -581,25 +577,12 @@ export const CampaignComposer: React.FC<CampaignComposerProps> = ({ onSave }) =>
               </TabsList>
 
               <TabsContent value="visual" className="mt-4">
-                <div className="border rounded-lg bg-white overflow-hidden">
-                  <iframe
-                    title="Email preview"
-                    srcDoc={generatedTemplate}
-                    className="w-full h-[600px] border-0"
-                    sandbox="allow-same-origin"
-                  />
-                </div>
-              </TabsContent>
-              
-              <TabsContent value="editor" className="mt-4">
-                <div className="rounded-lg border overflow-hidden">
-                  <EmailEditor
-                    onSave={handleEditorSave}
-                    onChange={handleEditorChange}
-                    initialElements={emailElements}
-                    htmlContent={generatedTemplate}
-                  />
-                </div>
+                <EditablePreview 
+                  htmlContent={generatedTemplate}
+                  onContentUpdate={(newContent) => {
+                    setGeneratedTemplate(newContent);
+                  }}
+                />
               </TabsContent>
 
               <TabsContent value="code" className="mt-4">

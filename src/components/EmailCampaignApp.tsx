@@ -67,7 +67,7 @@ export const EmailCampaignApp = () => {
           </CardHeader>
         </Card>
           <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-            <TabsList className="grid w-full grid-cols-7 lg:w-fit lg:grid-cols-7 bg-card shadow-soft">
+            <TabsList className="grid w-full grid-cols-6 lg:w-fit lg:grid-cols-6 bg-card shadow-soft">
               <TabsTrigger value="compose" className="flex items-center space-x-2">
                 <Sparkles className="h-4 w-4" />
                 <span className="hidden sm:inline">Compose</span>
@@ -75,10 +75,6 @@ export const EmailCampaignApp = () => {
               <TabsTrigger value="lists" className="flex items-center space-x-2">
                 <Users className="h-4 w-4" />
                 <span className="hidden sm:inline">Lists</span>
-              </TabsTrigger>
-              <TabsTrigger value="contacts" className="flex items-center space-x-2">
-                <User className="h-4 w-4" />
-                <span className="hidden sm:inline">Contacts</span>
               </TabsTrigger>
                <TabsTrigger value="products" className="flex items-center space-x-2">
                  <Package className="h-4 w-4" />

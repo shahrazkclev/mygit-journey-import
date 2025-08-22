@@ -27,7 +27,6 @@ export const SendCampaignModal: React.FC<SendCampaignModalProps> = ({
   const [campaignTitle, setCampaignTitle] = useState(subject);
   const [campaignName, setCampaignName] = useState('Campaign ' + new Date().toLocaleDateString());
   const [senderSequence, setSenderSequence] = useState(1);
-  const [webhookUrl, setWebhookUrl] = useState('');
   const [isStarting, setIsStarting] = useState(false);
   const [campaignId, setCampaignId] = useState<string | null>(null);
   const [progress, setProgress] = useState(0);
@@ -36,13 +35,27 @@ export const SendCampaignModal: React.FC<SendCampaignModalProps> = ({
   const [sentCount, setSentCount] = useState(0);
 
   const startCampaign = async () => {
-    if (!webhookUrl.trim()) {
-      toast.error('Please provide a webhook URL');
+    if (selectedLists.length === 0) {
+      toast.error('Please select at least one email list');
       return;
     }
 
-    if (selectedLists.length === 0) {
-      toast.error('Please select at least one email list');
+    // Get webhook URL from settings
+    const { data: settings, error: settingsError } = await supabase
+      .from('style_guides')
+      .select('*')
+      .eq('user_id', DEMO_USER_ID)
+      .order('created_at', { ascending: false })
+      .limit(1);
+
+    if (settingsError) {
+      toast.error('Failed to load settings');
+      return;
+    }
+
+    const webhookUrl = settings?.[0]?.webhook_url;
+    if (!webhookUrl) {
+      toast.error('Please set webhook URL in Settings first');
       return;
     }
 
@@ -218,25 +231,12 @@ export const SendCampaignModal: React.FC<SendCampaignModalProps> = ({
                 />
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="webhook">Webhook URL</Label>
-                <Input
-                  id="webhook"
-                  value={webhookUrl}
-                  onChange={(e) => setWebhookUrl(e.target.value)}
-                  placeholder="https://your-domain.com/webhook"
-                />
-                <p className="text-sm text-muted-foreground">
-                  Your webhook will receive: title, html, name, senderSequenceNumber, recipient, campaignId
-                </p>
-              </div>
-
               <div className="bg-blue-50 p-3 rounded-lg">
                 <div className="flex items-start gap-2">
                   <AlertCircle className="h-4 w-4 text-blue-600 mt-0.5" />
                   <div className="text-sm text-blue-800">
                     <p className="font-medium">Background Processing</p>
-                    <p>This campaign will run in the background even if you close your browser or turn off your PC.</p>
+                    <p>This campaign will run in the background using the webhook URL from Settings.</p>
                   </div>
                 </div>
               </div>
