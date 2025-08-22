@@ -524,7 +524,10 @@ export const CampaignComposer: React.FC<CampaignComposerProps> = ({ onSave }) =>
       if (error) throw error;
 
       if (data?.htmlContent) {
-        const cleaned = cleanHtmlContent(data.htmlContent);
+        let cleaned = cleanHtmlContent(data.htmlContent);
+        // Inline CSS styles for better email client compatibility
+        cleaned = inlineCssStyles(cleaned);
+        
         setOriginalTemplate(cleaned); // Store original for color changes
         setGeneratedTemplate(cleaned);
         toast.success("Your email template has been generated successfully!");
