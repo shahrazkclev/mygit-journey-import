@@ -189,7 +189,7 @@ async def pause_campaign(campaign_id: str):
     return {"message": "Campaign paused"}
 
 @api_router.post("/campaigns/{campaign_id}/resume")
-async def resume_campaign(campaign_id: str, background_tasks: BackgroundTasks, current_user: str = Depends(verify_token)):
+async def resume_campaign(campaign_id: str, background_tasks: BackgroundTasks):
     result = await db.campaigns.update_one(
         {"id": campaign_id, "status": "paused"},
         {"$set": {"status": "sending"}}
