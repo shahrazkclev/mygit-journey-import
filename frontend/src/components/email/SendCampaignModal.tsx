@@ -38,6 +38,7 @@ export const SendCampaignModal: React.FC<SendCampaignModalProps> = ({
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [webhookUrl, setWebhookUrl] = useState('');
   const [currentSenderSequence, setCurrentSenderSequence] = useState(1);
+  const [currentRecipient, setCurrentRecipient] = useState<string>('');
 
   const startCampaign = async () => {
     if (selectedLists.length === 0) {
