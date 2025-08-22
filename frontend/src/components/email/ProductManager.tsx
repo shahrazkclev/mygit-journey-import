@@ -243,6 +243,7 @@ export const ProductManager: React.FC = () => {
           </DialogContent>
         </Dialog>
       </div>
+      </div>
 
       <Card className="shadow-soft bg-gradient-to-br from-email-background to-background">
         <CardHeader>
