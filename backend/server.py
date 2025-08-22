@@ -128,6 +128,20 @@ def authenticate_user(email: str, password: str) -> bool:
 async def root():
     return {"message": "Hello World"}
 
+@api_router.post("/auth/login", response_model=LoginResponse)
+async def login(login_request: LoginRequest):
+    """Authenticate user and return JWT token"""
+    if not authenticate_user(login_request.email, login_request.password):
+        raise HTTPException(status_code=401, detail="Invalid email or password")
+    
+    access_token = create_access_token(login_request.email)
+    return LoginResponse(access_token=access_token)
+
+@api_router.get("/auth/verify")
+async def verify_auth(current_user: str = Depends(verify_token)):
+    """Verify if user is authenticated"""
+    return {"email": current_user, "authenticated": True}
+
 @api_router.post("/status", response_model=StatusCheck)
 async def create_status_check(input: StatusCheckCreate):
     status_dict = input.dict()
