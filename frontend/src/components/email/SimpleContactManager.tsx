@@ -865,44 +865,63 @@ export const SimpleContactManager = () => {
                     No email lists found. Create some lists first.
                   </p>
                 ) : (
-                  emailLists.map(list => (
-                    <div key={list.id} className="flex items-center space-x-3">
-                      <input
-                        type="checkbox"
-                        id={`bulk-list-${bulkListOperation}-${list.id}`}
-                        checked={
-                          bulkListOperation === 'add' 
-                            ? selectedBulkLists.includes(list.id)
-                            : selectedBulkListsToRemove.includes(list.id)
-                        }
-                        onChange={(e) => {
-                          if (bulkListOperation === 'add') {
-                            if (e.target.checked) {
-                              setSelectedBulkLists([...selectedBulkLists, list.id]);
-                            } else {
-                              setSelectedBulkLists(selectedBulkLists.filter(id => id !== list.id));
+                  emailLists
+                    .filter(list => {
+                      if (bulkListOperation === 'remove') {
+                        // For remove, only show lists that at least one selected contact is in
+                        return Array.from(selectedContacts).some(contactId => 
+                          contactLists[contactId]?.some(cl => cl.id === list.id)
+                        );
+                      }
+                      return true; // For add, show all lists
+                    })
+                    .map(list => {
+                      const isContactInList = Array.from(selectedContacts).some(contactId => 
+                        contactLists[contactId]?.some(cl => cl.id === list.id)
+                      );
+                      const isDisabled = bulkListOperation === 'add' && isContactInList;
+                      
+                      return (
+                        <div key={list.id} className={`flex items-center space-x-3 ${isDisabled ? 'opacity-50' : ''}`}>
+                          <input
+                            type="checkbox"
+                            id={`bulk-list-${bulkListOperation}-${list.id}`}
+                            disabled={isDisabled}
+                            checked={
+                              bulkListOperation === 'add' 
+                                ? selectedBulkLists.includes(list.id)
+                                : selectedBulkListsToRemove.includes(list.id)
                             }
-                          } else {
-                            if (e.target.checked) {
-                              setSelectedBulkListsToRemove([...selectedBulkListsToRemove, list.id]);
-                            } else {
-                              setSelectedBulkListsToRemove(selectedBulkListsToRemove.filter(id => id !== list.id));
-                            }
-                          }
-                        }}
-                        className="h-4 w-4 text-email-primary focus:ring-email-primary border-gray-300 rounded"
-                      />
-                      <Label htmlFor={`bulk-list-${bulkListOperation}-${list.id}`} className="flex-1 cursor-pointer">
-                        <div className="font-medium">{list.name}</div>
-                        {list.description && (
-                          <div className="text-sm text-muted-foreground">{list.description}</div>
-                        )}
-                        <div className="text-xs text-email-secondary">
-                          {list.list_type === 'dynamic' ? 'Dynamic' : 'Static'} List
+                            onChange={(e) => {
+                              if (bulkListOperation === 'add') {
+                                if (e.target.checked) {
+                                  setSelectedBulkLists([...selectedBulkLists, list.id]);
+                                } else {
+                                  setSelectedBulkLists(selectedBulkLists.filter(id => id !== list.id));
+                                }
+                              } else {
+                                if (e.target.checked) {
+                                  setSelectedBulkListsToRemove([...selectedBulkListsToRemove, list.id]);
+                                } else {
+                                  setSelectedBulkListsToRemove(selectedBulkListsToRemove.filter(id => id !== list.id));
+                                }
+                              }
+                            }}
+                            className="h-4 w-4 text-email-primary focus:ring-email-primary border-gray-300 rounded"
+                          />
+                          <Label htmlFor={`bulk-list-${bulkListOperation}-${list.id}`} className="flex-1 cursor-pointer">
+                            <div className="font-medium">{list.name}</div>
+                            {list.description && (
+                              <div className="text-sm text-muted-foreground">{list.description}</div>
+                            )}
+                            <div className="text-xs text-email-secondary">
+                              {list.list_type === 'dynamic' ? 'Dynamic' : 'Static'} List
+                              {isDisabled && ' (Already added)'}
+                            </div>
+                          </Label>
                         </div>
-                      </Label>
-                    </div>
-                  ))
+                      );
+                    })
                 )}
               </div>
             </div>
