@@ -655,21 +655,60 @@ export const SimpleContactManager = () => {
       <Dialog open={showBulkTagDialog} onOpenChange={setShowBulkTagDialog}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Add Tags to Selected Contacts</DialogTitle>
+            <DialogTitle>Manage Tags for Selected Contacts</DialogTitle>
             <DialogDescription>
-              Add tags to {selectedContacts.size} selected contacts
+              Add or remove tags for {selectedContacts.size} selected contacts
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="bulkTags">Tags (comma-separated)</Label>
-              <Input
-                id="bulkTags"
-                value={bulkTags}
-                onChange={(e) => setBulkTags(e.target.value)}
-                placeholder="premium, newsletter, product-customer"
-              />
+            <div className="space-y-3">
+              <Label>Operation</Label>
+              <div className="flex space-x-4">
+                <div className="flex items-center space-x-2">
+                  <input
+                    type="radio"
+                    id="add-tags"
+                    name="tagOperation"
+                    checked={bulkTagOperation === 'add'}
+                    onChange={() => setBulkTagOperation('add')}
+                  />
+                  <Label htmlFor="add-tags">Add Tags</Label>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <input
+                    type="radio"
+                    id="remove-tags"
+                    name="tagOperation"
+                    checked={bulkTagOperation === 'remove'}
+                    onChange={() => setBulkTagOperation('remove')}
+                  />
+                  <Label htmlFor="remove-tags">Remove Tags</Label>
+                </div>
+              </div>
             </div>
+            
+            {bulkTagOperation === 'add' ? (
+              <div className="space-y-2">
+                <Label htmlFor="bulkTags">Tags to Add (comma-separated)</Label>
+                <Input
+                  id="bulkTags"
+                  value={bulkTags}
+                  onChange={(e) => setBulkTags(e.target.value)}
+                  placeholder="premium, newsletter, product-customer"
+                />
+              </div>
+            ) : (
+              <div className="space-y-2">
+                <Label htmlFor="bulkTagsRemove">Tags to Remove (comma-separated)</Label>
+                <Input
+                  id="bulkTagsRemove"
+                  value={bulkTagsToRemove}
+                  onChange={(e) => setBulkTagsToRemove(e.target.value)}
+                  placeholder="premium, newsletter, product-customer"
+                />
+              </div>
+            )}
+            
             {allTags.length > 0 && (
               <div className="space-y-2">
                 <Label className="text-sm font-medium">Available Tags:</Label>
@@ -680,9 +719,16 @@ export const SimpleContactManager = () => {
                       variant="outline"
                       className="cursor-pointer hover:bg-email-accent/10 border-email-accent/30"
                       onClick={() => {
-                        const currentTags = bulkTags.split(',').map(t => t.trim()).filter(t => t.length > 0);
-                        if (!currentTags.includes(tag)) {
-                          setBulkTags(currentTags.length > 0 ? `${bulkTags}, ${tag}` : tag);
+                        if (bulkTagOperation === 'add') {
+                          const currentTags = bulkTags.split(',').map(t => t.trim()).filter(t => t.length > 0);
+                          if (!currentTags.includes(tag)) {
+                            setBulkTags(currentTags.length > 0 ? `${bulkTags}, ${tag}` : tag);
+                          }
+                        } else {
+                          const currentTags = bulkTagsToRemove.split(',').map(t => t.trim()).filter(t => t.length > 0);
+                          if (!currentTags.includes(tag)) {
+                            setBulkTagsToRemove(currentTags.length > 0 ? `${bulkTagsToRemove}, ${tag}` : tag);
+                          }
                         }
                       }}
                     >
@@ -695,13 +741,14 @@ export const SimpleContactManager = () => {
             )}
             <div className="flex space-x-2">
               <Button onClick={handleBulkAddTags} className="flex-1 bg-email-accent hover:bg-email-accent/80">
-                Add Tags
+                {bulkTagOperation === 'add' ? 'Add Tags' : 'Remove Tags'}
               </Button>
               <Button 
                 variant="outline" 
                 onClick={() => {
                   setShowBulkTagDialog(false);
                   setBulkTags('');
+                  setBulkTagsToRemove('');
                 }}
                 className="flex-1"
               >
