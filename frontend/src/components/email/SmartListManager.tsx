@@ -948,6 +948,153 @@ export const SmartListManager = () => {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Edit List Dialog */}
+      <Dialog open={showEditListDialog} onOpenChange={setShowEditListDialog}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Edit List</DialogTitle>
+            <DialogDescription>
+              Modify list settings and rules
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="editListName">List Name</Label>
+              <Input
+                id="editListName"
+                value={editListForm.name}
+                onChange={(e) => setEditListForm({...editListForm, name: e.target.value})}
+                placeholder="e.g., Lazy Motion Library Buyers"
+              />
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="editListDescription">Description</Label>
+              <Textarea
+                id="editListDescription"
+                value={editListForm.description}
+                onChange={(e) => setEditListForm({...editListForm, description: e.target.value})}
+                placeholder="Describe what this list is for..."
+              />
+            </div>
+
+            <div className="space-y-3">
+              <Label>List Type</Label>
+              <div className="space-y-3">
+                <div className="flex items-center space-x-3">
+                  <input
+                    type="radio"
+                    id="edit-static"
+                    name="editListType"
+                    checked={editListForm.list_type === 'static'}
+                    onChange={() => setEditListForm({...editListForm, list_type: 'static'})}
+                  />
+                  <Label htmlFor="edit-static" className="flex items-center space-x-2">
+                    <Users className="h-4 w-4" />
+                    <span>Static List - I'll manage contacts manually</span>
+                  </Label>
+                </div>
+                <div className="flex items-center space-x-3">
+                  <input
+                    type="radio"
+                    id="edit-dynamic"
+                    name="editListType"
+                    checked={editListForm.list_type === 'dynamic'}
+                    onChange={() => setEditListForm({...editListForm, list_type: 'dynamic'})}
+                  />
+                  <Label htmlFor="edit-dynamic" className="flex items-center space-x-2">
+                    <Zap className="h-4 w-4" />
+                    <span>Dynamic List - Auto-update based on tags</span>
+                  </Label>
+                </div>
+              </div>
+            </div>
+
+            {editListForm.list_type === 'dynamic' && (
+              <div className="space-y-3 p-4 bg-blue-50 rounded-lg border">
+                <Label>Tag Rules</Label>
+                <p className="text-sm text-gray-600">
+                  Contacts with any of these tags will automatically be added to this list
+                </p>
+                
+                <div className="space-y-2">
+                  <div className="flex space-x-2">
+                    <Input
+                      value={editListForm.tagInput}
+                      onChange={(e) => setEditListForm({...editListForm, tagInput: e.target.value})}
+                      placeholder="Type a tag and press Enter"
+                      onKeyPress={(e) => {
+                        if (e.key === 'Enter' && editListForm.tagInput.trim()) {
+                          addTagToEditList(editListForm.tagInput.trim());
+                        }
+                      }}
+                    />
+                    <Button
+                      type="button"
+                      onClick={() => {
+                        if (editListForm.tagInput.trim()) {
+                          addTagToEditList(editListForm.tagInput.trim());
+                        }
+                      }}
+                      variant="outline"
+                    >
+                      Add
+                    </Button>
+                  </div>
+
+                  {editListForm.requiredTags.length > 0 && (
+                    <div className="flex flex-wrap gap-2">
+                      {editListForm.requiredTags.map(tag => (
+                        <Badge
+                          key={tag}
+                          variant="secondary"
+                          className="cursor-pointer"
+                          onClick={() => removeTagFromEditList(tag)}
+                        >
+                          {tag} ×
+                        </Badge>
+                      ))}
+                    </div>
+                  )}
+
+                  {allTags.length > 0 && (
+                    <div className="space-y-2">
+                      <Label className="text-sm">Available Tags:</Label>
+                      <div className="flex flex-wrap gap-1">
+                        {allTags.map(tag => (
+                          <Badge
+                            key={tag}
+                            variant="outline"
+                            className="cursor-pointer text-xs hover:bg-blue-100"
+                            onClick={() => addTagToEditList(tag)}
+                          >
+                            <Tag className="h-3 w-3 mr-1" />
+                            {tag}
+                          </Badge>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
+            <div className="flex space-x-2">
+              <Button onClick={handleUpdateList} className="flex-1">
+                Update List
+              </Button>
+              <Button 
+                variant="outline" 
+                onClick={() => setShowEditListDialog(false)}
+                className="flex-1"
+              >
+                Cancel
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
