@@ -11,7 +11,7 @@ from datetime import datetime
 import uuid
 
 # Get backend URL from environment
-BACKEND_URL = "https://tag-wizard-2.preview.emergentagent.com/api"
+BACKEND_URL = "https://email-flow-master.preview.emergentagent.com/api"
 
 def test_health_check():
     """Test the basic health check endpoint"""
