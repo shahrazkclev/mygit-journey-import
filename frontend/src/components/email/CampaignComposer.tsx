@@ -75,6 +75,7 @@ export const CampaignComposer: React.FC<CampaignComposerProps> = ({ onSave }) =>
 
   useEffect(() => {
     loadEmailLists();
+    loadProducts();
     loadStyleGuide();
   }, []);
 
