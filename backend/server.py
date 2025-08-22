@@ -98,6 +98,31 @@ class CampaignProgress(BaseModel):
     current_recipient: Optional[str] = None
     error_message: Optional[str] = None
 
+# Authentication functions
+def create_access_token(email: str) -> str:
+    """Create a simple JWT token that never expires"""
+    payload = {
+        "email": email,
+        "iat": datetime.utcnow(),
+        "persistent": True  # Mark as persistent login
+    }
+    return jwt.encode(payload, JWT_SECRET_KEY, algorithm="HS256")
+
+def verify_token(credentials: HTTPAuthorizationCredentials = Depends(security)) -> str:
+    """Verify JWT token"""
+    try:
+        payload = jwt.decode(credentials.credentials, JWT_SECRET_KEY, algorithms=["HS256"])
+        email = payload.get("email")
+        if email is None:
+            raise HTTPException(status_code=401, detail="Invalid token")
+        return email
+    except jwt.InvalidTokenError:
+        raise HTTPException(status_code=401, detail="Invalid token")
+
+def authenticate_user(email: str, password: str) -> bool:
+    """Simple authentication check"""
+    return email == AUTH_EMAIL and password == AUTH_PASSWORD
+
 # Add your routes to the router instead of directly to app
 @api_router.get("/")
 async def root():
