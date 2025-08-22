@@ -504,15 +504,15 @@ frontend:
         
   - task: "Netlify deployment configuration"
     implemented: true
-    working: "NA"
-    file: "/app/netlify.toml, /app/frontend/_redirects, /app/frontend/public/_redirects, /app/frontend/.env.production, /app/build-netlify.sh, /app/NETLIFY_DEPLOYMENT.md"
+    working: true
+    file: "/app/netlify.toml, /app/frontend/_redirects, /app/frontend/public/_redirects, /app/frontend/.env.production, /app/build-netlify.sh, /app/NETLIFY_DEPLOYMENT.md, /app/frontend/vite.config.ts"
     stuck_count: 0
     priority: "high"
     needs_retesting: false
     status_history:
-        -working: "NA"
+        -working: true
         -agent: "main"
-        -comment: "Created comprehensive Netlify deployment configuration including netlify.toml, SPA redirects, production environment variables, build script, and detailed deployment guide. Fixes 'Page not found' errors and build issues."
+        -comment: "FIXED Netlify build error - removed problematic @radix-ui/react-button manual chunk that doesn't exist. Build now works locally and ready for Netlify deployment. Updated vite.config.ts, netlify.toml build command, and comprehensive deployment guide with troubleshooting."
 
 metadata:
   created_by: "main_agent"
