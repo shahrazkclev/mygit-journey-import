@@ -20,6 +20,7 @@ export const CampaignSettings = () => {
   const [enableRetries, setEnableRetries] = useState(true);
   const [maxRetries, setMaxRetries] = useState([3]);
   const [isLoading, setIsLoading] = useState(false);
+  const [isMakeIntegrationOpen, setIsMakeIntegrationOpen] = useState(false);
 
   useEffect(() => {
     loadSettings();
