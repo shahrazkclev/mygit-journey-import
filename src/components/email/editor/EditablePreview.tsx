@@ -223,182 +223,213 @@ export const EditablePreview: React.FC<EditablePreviewProps> = ({
   }, []);
 
   return (
-    <div className="w-full px-1 sm:px-3 lg:px-6">
-      <div className="bg-gradient-to-br from-primary/5 via-muted/40 to-secondary/5 p-2 sm:p-4 lg:p-6 rounded-2xl shadow-sm border border-border/20">
-        {/* Mobile-Optimized Header */}
-        <div className="flex flex-col gap-3 mb-4">
+    <div className="w-full px-1 sm:px-2 lg:px-4">
+      <div className="bg-gradient-to-br from-primary/3 via-muted/30 to-secondary/3 p-1.5 sm:p-3 lg:p-4 rounded-xl shadow-sm border border-border/20">
+        {/* Compact Mobile Header */}
+        <div className="flex flex-col gap-2 mb-3">
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <Type className="h-4 w-4 text-primary" />
-              <span className="text-sm font-semibold text-foreground">Email Editor</span>
+            <div className="flex items-center gap-1.5">
+              <Type className="h-3.5 w-3.5 text-primary" />
+              <span className="text-xs sm:text-sm font-semibold text-foreground">Email Editor</span>
             </div>
             
-            {/* Compact Device Toggle */}
-            <div className="flex items-center gap-0.5 bg-background/80 p-0.5 rounded-lg border shadow-sm">
+            {/* Ultra-Compact Device Toggle */}
+            <div className="flex items-center gap-0 bg-background/90 p-0.5 rounded-md border shadow-sm">
               <Button 
                 size="sm" 
                 variant={mode === 'mobile' ? 'default' : 'ghost'} 
                 onClick={() => setMode('mobile')}
-                className="h-7 px-2 text-xs font-medium"
+                className="h-6 px-1.5 text-xs font-medium"
               >
-                <Smartphone className="h-3 w-3 sm:mr-1" />
-                <span className="hidden sm:inline">Mobile</span>
+                <Smartphone className="h-2.5 w-2.5 sm:mr-1" />
+                <span className="hidden sm:inline text-xs">Mobile</span>
               </Button>
               <Button 
                 size="sm" 
                 variant={mode === 'desktop' ? 'default' : 'ghost'} 
                 onClick={() => setMode('desktop')}
-                className="h-7 px-2 text-xs font-medium"
+                className="h-6 px-1.5 text-xs font-medium"
               >
-                <Monitor className="h-3 w-3 sm:mr-1" />
-                <span className="hidden sm:inline">Desktop</span>
+                <Monitor className="h-2.5 w-2.5 sm:mr-1" />
+                <span className="hidden sm:inline text-xs">Desktop</span>
               </Button>
             </div>
           </div>
 
-          {/* Mobile-First Formatting Toolbar */}
-          <div className="bg-background/90 backdrop-blur-sm p-1.5 sm:p-2 rounded-xl border shadow-lg overflow-x-auto scrollbar-hide">
-            <div className="flex items-center gap-0.5 sm:gap-1 min-w-max">
-              {/* Undo/Redo */}
+          {/* Compact Mobile-First Toolbar */}
+          <div className="bg-background/95 backdrop-blur-sm p-1 sm:p-1.5 rounded-lg border shadow-sm overflow-x-auto scrollbar-hide">
+            <div className="flex items-center gap-0.5 min-w-max">
+              {/* Undo/Redo - Ultra Compact */}
               <Button 
                 size="sm" 
                 variant="ghost" 
-                className="h-7 px-1.5 sm:px-2 text-xs hover:bg-primary/10 mobile-focus"
+                className="h-6 px-1 text-xs hover:bg-primary/10 mobile-focus"
                 onClick={undo}
                 disabled={undoStack.length === 0}
+                title="Undo"
               >
-                <Undo className="h-3 w-3" />
+                <Undo className="h-2.5 w-2.5" />
               </Button>
               <Button 
                 size="sm" 
                 variant="ghost" 
-                className="h-7 px-1.5 sm:px-2 text-xs hover:bg-primary/10 mobile-focus"
+                className="h-6 px-1 text-xs hover:bg-primary/10 mobile-focus"
                 onClick={redo}
                 disabled={redoStack.length === 0}
+                title="Redo"
               >
-                <Redo className="h-3 w-3" />
+                <Redo className="h-2.5 w-2.5" />
               </Button>
               
-              <div className="h-5 w-px bg-border/50 mx-0.5" />
+              <div className="h-4 w-px bg-border/50 mx-0.5" />
               
-              {/* Text Formatting */}
+              {/* Text Formatting - Compact */}
               <Button 
                 size="sm" 
                 variant="ghost" 
-                className="h-7 px-1.5 sm:px-2 text-xs hover:bg-primary/10 mobile-focus"
+                className="h-6 px-1 sm:px-1.5 text-xs hover:bg-primary/10 mobile-focus"
                 onClick={() => executeCommand('bold')}
+                title="Bold (Ctrl+B)"
               >
-                <Bold className="h-3 w-3 sm:mr-1" />
-                <span className="hidden sm:inline">Bold</span>
+                <Bold className="h-2.5 w-2.5 sm:mr-0.5" />
+                <span className="hidden md:inline text-xs">B</span>
               </Button>
               <Button 
                 size="sm" 
                 variant="ghost" 
-                className="h-7 px-1.5 sm:px-2 text-xs hover:bg-primary/10 mobile-focus"
+                className="h-6 px-1 sm:px-1.5 text-xs hover:bg-primary/10 mobile-focus"
                 onClick={() => executeCommand('italic')}
+                title="Italic (Ctrl+I)"
               >
-                <Italic className="h-3 w-3 sm:mr-1" />
-                <span className="hidden sm:inline">Italic</span>
+                <Italic className="h-2.5 w-2.5 sm:mr-0.5" />
+                <span className="hidden md:inline text-xs">I</span>
               </Button>
               
-              {/* Color Picker */}
+              {/* Stabilized Color Picker */}
               <div className="relative">
                 <Button 
                   size="sm" 
                   variant="ghost" 
-                  className="h-7 px-1.5 sm:px-2 text-xs hover:bg-primary/10 mobile-focus"
-                  onClick={() => setShowColorPicker(!showColorPicker)}
+                  className="h-6 px-1 sm:px-1.5 text-xs hover:bg-primary/10 mobile-focus"
+                  onClick={() => {
+                    setShowColorPicker(!showColorPicker);
+                    setShowEmojiPicker(false); // Close other pickers
+                  }}
+                  title="Text Color"
                 >
-                  <Palette className="h-3 w-3 sm:mr-1" />
-                  <span className="hidden sm:inline">Color</span>
+                  <Palette className="h-2.5 w-2.5 sm:mr-0.5" />
+                  <span className="hidden md:inline text-xs">Color</span>
                 </Button>
                 
                 {showColorPicker && (
-                  <div className="absolute top-8 left-0 z-50 bg-background border rounded-lg shadow-xl p-2 grid grid-cols-5 gap-1 w-40">
-                    {colors.map((color, index) => (
-                      <button
-                        key={index}
-                        className="w-6 h-6 rounded border-2 border-border hover:scale-110 transition-transform"
-                        style={{ backgroundColor: color }}
-                        onClick={() => changeTextColor(color)}
-                      />
-                    ))}
-                  </div>
+                  <>
+                    {/* Backdrop */}
+                    <div 
+                      className="fixed inset-0 z-40" 
+                      onClick={() => setShowColorPicker(false)}
+                    />
+                    {/* Color Picker Panel */}
+                    <div className="absolute top-7 left-0 z-50 bg-background border rounded-lg shadow-2xl p-2 grid grid-cols-5 gap-1 w-32 sm:w-36">
+                      {colors.map((color, index) => (
+                        <button
+                          key={index}
+                          className="w-5 h-5 sm:w-6 sm:h-6 rounded border-2 border-border hover:scale-110 transition-transform active:scale-95"
+                          style={{ backgroundColor: color }}
+                          onClick={() => changeTextColor(color)}
+                          title={`Color: ${color}`}
+                        />
+                      ))}
+                    </div>
+                  </>
                 )}
               </div>
               
               <Button 
                 size="sm" 
                 variant="ghost" 
-                className="h-7 px-1.5 sm:px-2 text-xs hover:bg-primary/10 mobile-focus"
+                className="h-6 px-1 sm:px-1.5 text-xs hover:bg-primary/10 mobile-focus"
                 onClick={insertBulletList}
+                title="Bullet List"
               >
-                <List className="h-3 w-3 sm:mr-1" />
-                <span className="hidden sm:inline">List</span>
+                <List className="h-2.5 w-2.5 sm:mr-0.5" />
+                <span className="hidden md:inline text-xs">List</span>
               </Button>
               
-              {/* Enhanced Emoji Picker */}
+              {/* Stabilized Emoji Picker */}
               <div className="relative">
                 <Button 
                   size="sm" 
                   variant="ghost" 
-                  className="h-7 px-1.5 sm:px-2 text-xs hover:bg-primary/10 mobile-focus"
-                  onClick={() => setShowEmojiPicker(!showEmojiPicker)}
+                  className="h-6 px-1 sm:px-1.5 text-xs hover:bg-primary/10 mobile-focus"
+                  onClick={() => {
+                    setShowEmojiPicker(!showEmojiPicker);
+                    setShowColorPicker(false); // Close other pickers
+                  }}
+                  title="Insert Emoji"
                 >
-                  <Smile className="h-3 w-3 sm:mr-1" />
-                  <span className="hidden sm:inline">Emoji</span>
+                  <Smile className="h-2.5 w-2.5 sm:mr-0.5" />
+                  <span className="hidden md:inline text-xs">😀</span>
                 </Button>
                 
                 {showEmojiPicker && (
-                  <div className="absolute top-8 left-0 z-50 bg-background border rounded-lg shadow-xl p-3 grid grid-cols-5 gap-1 w-48 max-h-32 overflow-y-auto scrollbar-hide">
-                    {emojis.map((emoji, index) => (
-                      <button
-                        key={index}
-                        className="hover:bg-muted/70 p-1.5 rounded-lg text-base transition-all hover:scale-110 mobile-focus"
-                        onClick={() => insertEmoji(emoji)}
-                      >
-                        {emoji}
-                      </button>
-                    ))}
-                  </div>
+                  <>
+                    {/* Backdrop */}
+                    <div 
+                      className="fixed inset-0 z-40" 
+                      onClick={() => setShowEmojiPicker(false)}
+                    />
+                    {/* Emoji Panel */}
+                    <div className="absolute top-7 left-0 z-50 bg-background border rounded-lg shadow-2xl p-2 grid grid-cols-4 sm:grid-cols-5 gap-1 w-36 sm:w-40 max-h-28 overflow-y-auto scrollbar-hide">
+                      {emojis.map((emoji, index) => (
+                        <button
+                          key={index}
+                          className="hover:bg-muted/70 p-1 rounded text-sm sm:text-base transition-all hover:scale-110 mobile-focus active:scale-95"
+                          onClick={() => insertEmoji(emoji)}
+                          title={`Insert ${emoji}`}
+                        >
+                          {emoji}
+                        </button>
+                      ))}
+                    </div>
+                  </>
                 )}
               </div>
               
-              <div className="h-5 w-px bg-border/50 mx-1 hidden lg:block" />
-              <span className="text-xs text-muted-foreground px-1 hidden lg:inline whitespace-nowrap">
-                Tap to edit • Ctrl+B/I • Ctrl+Z/Y to undo/redo
+              <div className="h-4 w-px bg-border/50 mx-1 hidden lg:block" />
+              <span className="text-xs text-muted-foreground px-1 hidden xl:inline whitespace-nowrap">
+                Tap to edit • Ctrl+B/I • Ctrl+Z/Y
               </span>
             </div>
           </div>
         </div>
 
-        {/* Ultra-Responsive Preview Container */}
-        <div className="bg-background rounded-2xl overflow-hidden shadow-2xl border border-border/30 relative email-editor-gradient">
-          {/* Enhanced Device Frame */}
-          <div className="bg-gradient-to-r from-muted/50 to-muted/30 px-3 py-2 text-xs text-muted-foreground border-b border-border/20 flex items-center justify-between backdrop-blur-sm">
-            <span className="flex items-center gap-1">
-              {mode === 'mobile' ? <Smartphone className="h-3 w-3" /> : <Monitor className="h-3 w-3" />}
-              {mode === 'mobile' ? 'Mobile View (390px)' : 'Desktop View (1200px)'}
+        {/* Compact Preview Container */}
+        <div className="bg-background rounded-xl overflow-hidden shadow-lg border border-border/30 relative">
+          {/* Minimalist Device Frame */}
+          <div className="bg-gradient-to-r from-muted/40 to-muted/20 px-2 py-1 text-xs text-muted-foreground border-b border-border/20 flex items-center justify-between">
+            <span className="flex items-center gap-1 text-xs">
+              {mode === 'mobile' ? <Smartphone className="h-2.5 w-2.5" /> : <Monitor className="h-2.5 w-2.5" />}
+              {mode === 'mobile' ? 'Mobile (390px)' : 'Desktop (1200px)'}
             </span>
-            <div className="flex gap-1">
-              <div className="w-2 h-2 rounded-full bg-red-400"></div>
-              <div className="w-2 h-2 rounded-full bg-yellow-400"></div>
-              <div className="w-2 h-2 rounded-full bg-green-400"></div>
+            <div className="flex gap-0.5">
+              <div className="w-1.5 h-1.5 rounded-full bg-red-400"></div>
+              <div className="w-1.5 h-1.5 rounded-full bg-yellow-400"></div>
+              <div className="w-1.5 h-1.5 rounded-full bg-green-400"></div>
             </div>
           </div>
           
-          <div className={`mx-auto transition-all duration-700 ease-in-out ${
+          <div className={`mx-auto transition-all duration-500 ease-in-out ${
             mode === 'mobile' 
-              ? 'w-full max-w-[390px] border-l-2 border-r-2 border-primary/10' 
-              : 'w-full max-w-[1200px]'
+              ? 'w-full max-w-[375px] border-l border-r border-primary/5' 
+              : 'w-full max-w-[1100px]'
           }`}>
             <iframe
               ref={iframeRef}
               srcDoc={initialHtmlRef.current}
-              className={`w-full border-0 transition-all duration-700 ease-in-out ${
+              className={`w-full border-0 transition-all duration-500 ease-in-out ${
                 mode === 'mobile' 
-                  ? 'h-[450px] sm:h-[550px]' 
-                  : 'h-[550px] sm:h-[650px] lg:h-[750px]'
+                  ? 'h-[400px] sm:h-[480px]' 
+                  : 'h-[500px] sm:h-[580px] lg:h-[650px]'
               }`}
               title="Interactive Email Editor"
               style={{ 
@@ -409,14 +440,14 @@ export const EditablePreview: React.FC<EditablePreviewProps> = ({
           </div>
         </div>
         
-        {/* Enhanced Mobile Helper Text */}
-        <div className="mt-4 text-xs text-muted-foreground text-center sm:hidden bg-muted/20 py-2 px-3 rounded-lg">
-          💡 Swipe toolbar horizontally • Tap any text to edit • Use formatting buttons for style
+        {/* Compact Mobile Helper */}
+        <div className="mt-2 text-xs text-muted-foreground text-center sm:hidden bg-muted/10 py-1.5 px-2 rounded-lg">
+          💡 Swipe toolbar • Tap text to edit
         </div>
         
-        {/* Desktop Helper Text */}
-        <div className="mt-3 text-xs text-muted-foreground text-center hidden sm:block">
-          🎨 Professional email editor with live preview • Use Ctrl+B/I for quick formatting • Undo/Redo available
+        {/* Desktop Helper */}
+        <div className="mt-2 text-xs text-muted-foreground text-center hidden sm:block">
+          🎨 Professional email editor • Ctrl+B/I shortcuts • Undo/Redo available
         </div>
       </div>
     </div>
