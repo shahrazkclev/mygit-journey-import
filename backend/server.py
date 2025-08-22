@@ -323,24 +323,24 @@ async def send_email_via_webhook(webhook_url: str, recipient: Dict[str, Any], su
         # Debug: Log original HTML content
         logging.info(f"📧 Sending email to: {recipient['email']}")
         logging.info(f"🔗 Webhook URL: {webhook_url}")
-        logging.info(f"📝 Original HTML contains {{{{RECIPIENT_EMAIL}}}}: {'{{RECIPIENT_EMAIL}}' in html_content}")
-        logging.info(f"📝 Original HTML contains {{{{WEBHOOK_URL}}}}: {'{{WEBHOOK_URL}}' in html_content}")
         
-        # Replace dynamic placeholders in HTML content
-        personalized_html = html_content.replace('{{RECIPIENT_EMAIL}}', recipient["email"])
-        personalized_html = personalized_html.replace('{{RECIPIENT_NAME}}', recipient.get("name", ""))
-        personalized_html = personalized_html.replace('{{WEBHOOK_URL}}', webhook_url)
+        # Remove the unsubscribe section from HTML before sending to Make.com
+        # This allows Make.com to add its own unsubscribe link with proper email variables
+        clean_html = html_content
         
-        # Debug: Check if replacement worked
-        logging.info(f"✅ After replacement - contains email: {recipient['email'] in personalized_html}")
-        logging.info(f"✅ After replacement - contains webhook: {webhook_url in personalized_html}")
+        # Remove the unsubscribe div section
+        import re
+        unsubscribe_pattern = r'<div style="margin: 40px 0 20px.*?</div>\s*(?=</body>|$)'
+        clean_html = re.sub(unsubscribe_pattern, '', clean_html, flags=re.DOTALL)
+        
+        logging.info(f"✅ Removed unsubscribe section - HTML ready for Make.com")
         
         payload = {
             "to": recipient["email"],
             "name": recipient.get("name", ""),
             "subject": subject,
-            "html": personalized_html,  # Use personalized HTML with webhook URL and email
-            "sender_sequence": sender_sequence,  # Add sender sequence to payload
+            "html": clean_html,  # Send clean HTML without unsubscribe section
+            "sender_sequence": sender_sequence,
             "timestamp": datetime.utcnow().isoformat()
         }
         
