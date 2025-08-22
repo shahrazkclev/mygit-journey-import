@@ -14,7 +14,6 @@ import httpx
 import asyncio
 import json
 import jwt
-import hashlib
 
 
 ROOT_DIR = Path(__file__).parent
