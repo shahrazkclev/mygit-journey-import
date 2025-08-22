@@ -31,7 +31,7 @@ export const EmailCampaignApp = () => {
         </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="grid w-full grid-cols-7 bg-email-muted">
+          <TabsList className="grid w-full grid-cols-8 bg-email-muted">
             <TabsTrigger value="compose" className="flex items-center space-x-2">
               <Mail className="h-4 w-4" />
               <span>Compose</span>
@@ -43,6 +43,10 @@ export const EmailCampaignApp = () => {
             <TabsTrigger value="lists" className="flex items-center space-x-2">
               <List className="h-4 w-4" />
               <span>Lists</span>
+            </TabsTrigger>
+            <TabsTrigger value="products" className="flex items-center space-x-2">
+              <Package className="h-4 w-4" />
+              <span>Products</span>
             </TabsTrigger>
             <TabsTrigger value="settings" className="flex items-center space-x-2">
               <Settings className="h-4 w-4" />
