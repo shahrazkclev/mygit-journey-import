@@ -297,6 +297,54 @@ frontend:
         -working: "NA"
         -agent: "main"
         -comment: "Added edit button to each contact row that opens EditContactDialog for individual contact management"
+        
+  - task: "Show contact lists and improve manage lists logic"
+    implemented: true
+    working: "NA"
+    file: "/app/frontend/src/components/email/SimpleContactManager.tsx"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+        -working: "NA"
+        -agent: "main"
+        -comment: "Contacts now show which lists they belong to. Manage lists logic improved: remove shows only relevant lists, add shows existing lists as greyed out"
+        
+  - task: "Simplified product-tag integration"
+    implemented: true
+    working: "NA"
+    file: "/app/frontend/src/components/email/EditContactDialog.tsx"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+        -working: "NA"
+        -agent: "main"
+        -comment: "Removed complex product selection UI, now only shows product names as suggested tags when typing"
+        
+  - task: "Dynamic lists rules-only management"
+    implemented: true
+    working: "NA"   
+    file: "/app/frontend/src/components/email/SmartListManager.tsx"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+        -working: "NA"
+        -agent: "main"
+        -comment: "Dynamic lists now only show 'Edit' and 'Refresh' buttons, no manual contact management since they auto-populate based on rules"
+        
+  - task: "Fixed global theme application"
+    implemented: true
+    working: "NA"
+    file: "/app/frontend/src/lib/theme.ts, /app/frontend/src/hooks/useGlobalTheme.ts, /app/frontend/src/components/EmailCampaignApp.tsx"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+        -working: "NA"
+        -agent: "main"
+        -comment: "Fixed theme system to apply consistently across all components. Updated colors to match user's image (dark gray, light orange, dark blue). Added useGlobalTheme to main app component."
 
 metadata:
   created_by: "main_agent"
