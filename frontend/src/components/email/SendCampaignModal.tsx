@@ -134,6 +134,7 @@ export const SendCampaignModal: React.FC<SendCampaignModalProps> = ({
         if (campaign) {
           setTotalRecipients(campaign.total_recipients || 0);
           setSentCount(campaign.sent_count || 0);
+          setCurrentSenderSequence(campaign.current_sender_sequence || 1);
           setStatus(campaign.status as any);
           
           if (campaign.total_recipients > 0) {
