@@ -6,6 +6,7 @@ import { CampaignComposer } from "./email/CampaignComposer";
 import { SimpleContactManager } from "./email/SimpleContactManager";
 import { SmartListManager } from "./email/SmartListManager";
 import { CampaignSettings } from "./email/CampaignSettings";
+import { ProductManager } from "./email/ProductManager";
 import { CampaignHistory } from "./email/CampaignHistory";
 import { UnsubscribeManager } from "./email/UnsubscribeManager";
 import { StyleGuide } from "./email/StyleGuide";
