@@ -5,9 +5,9 @@ import { setCssThemeFromHex } from "@/lib/theme";
 
 // Global state for theme persistence across tab switches
 let globalThemeState = {
-  primary: "#111827",
-  secondary: "#e5e7eb",
-  accent: "#2563eb",
+  primary: "#374151", // Dark gray from the image
+  secondary: "#fed7aa", // Light orange/peach from the image  
+  accent: "#0e4a6e", // Dark blue from the image
   initialized: false
 };
 
