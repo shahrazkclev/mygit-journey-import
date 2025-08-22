@@ -11,6 +11,7 @@ import { Plus, Edit, Trash2, ShoppingCart, User, Users, Tag } from 'lucide-react
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { DEMO_USER_ID } from '@/lib/demo-auth';
+import { EditContactDialog } from './EditContactDialog';
 
 interface Contact {
   id: string;
@@ -67,6 +68,7 @@ export const ContactManager: React.FC = () => {
   const [newContact, setNewContact] = useState({ email: '', first_name: '', last_name: '' });
   const [showAddContact, setShowAddContact] = useState(false);
   const [showContactDetails, setShowContactDetails] = useState(false);
+  const [editingContact, setEditingContact] = useState<Contact | null>(null);
   
   // Filter states
   const [searchQuery, setSearchQuery] = useState('');
@@ -473,22 +475,32 @@ export const ContactManager: React.FC = () => {
                     </div>
                   </div>
                   <div className="flex items-center space-x-2">
-                    <Badge variant={contact.status === 'subscribed' ? 'default' : 'secondary'}>
-                      {contact.status}
-                    </Badge>
-                    {contact.tags && contact.tags.length > 0 && (
-                      <Badge variant="outline">
-                        <Tag className="h-3 w-3 mr-1" />
-                        {contact.tags.length}
-                      </Badge>
-                    )}
-                  </div>
-                </div>
-              ))
-            )}
-          </div>
-        </CardContent>
-      </Card>
+                     <Badge variant={contact.status === 'subscribed' ? 'default' : 'secondary'}>
+                       {contact.status}
+                     </Badge>
+                     {contact.tags && contact.tags.length > 0 && (
+                       <Badge variant="outline">
+                         <Tag className="h-3 w-3 mr-1" />
+                         {contact.tags.length}
+                       </Badge>
+                     )}
+                     <Button
+                       variant="ghost"
+                       size="sm"
+                       onClick={(e) => {
+                         e.stopPropagation();
+                         setEditingContact(contact);
+                       }}
+                     >
+                       <Edit className="h-4 w-4" />
+                     </Button>
+                   </div>
+                 </div>
+               ))
+             )}
+           </div>
+         </CardContent>
+       </Card>
 
       {/* Contact Details Dialog */}
       <Dialog open={showContactDetails} onOpenChange={setShowContactDetails}>
@@ -630,6 +642,20 @@ export const ContactManager: React.FC = () => {
           )}
         </DialogContent>
       </Dialog>
+
+      {/* Edit Contact Dialog */}
+      <EditContactDialog
+        contact={editingContact}
+        isOpen={!!editingContact}
+        onClose={() => setEditingContact(null)}
+        onContactUpdated={() => {
+          loadContacts();
+          loadAllContactProducts();
+          if (selectedContact && editingContact?.id === selectedContact.id) {
+            loadContactProducts(selectedContact.id);
+          }
+        }}
+      />
     </div>
   );
 };

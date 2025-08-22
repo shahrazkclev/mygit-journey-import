@@ -949,34 +949,50 @@ export const EmailListManager = () => {
                                 
                                 <div className="border-t pt-4">
                                   <h4 className="font-medium mb-2">Add Contacts to List</h4>
-                                  <div className="mb-4 p-3 bg-muted rounded-lg">
-                                    <h5 className="text-sm font-medium mb-2">Smart Filtering</h5>
-                                    <div className="grid grid-cols-2 gap-2">
-                                      <Select>
-                                        <SelectTrigger>
-                                          <SelectValue placeholder="Product condition" />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                          <SelectItem value="any">Any product</SelectItem>
-                                          <SelectItem value="none">No products</SelectItem>
-                                          <SelectItem value="specific">Specific product...</SelectItem>
-                                        </SelectContent>
-                                      </Select>
-                                      <Select>
-                                        <SelectTrigger>
-                                          <SelectValue placeholder="Status filter" />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                          <SelectItem value="all">All statuses</SelectItem>
-                                          <SelectItem value="subscribed">Subscribed only</SelectItem>
-                                          <SelectItem value="unsubscribed">Unsubscribed only</SelectItem>
-                                        </SelectContent>
-                                      </Select>
-                                    </div>
-                                    <p className="text-xs text-muted-foreground mt-2">
-                                      Use filters to add contacts based on purchase history and status
-                                    </p>
-                                  </div>
+                                   <div className="mb-4 p-3 bg-muted rounded-lg">
+                                     <h5 className="text-sm font-medium mb-2">Smart Filtering</h5>
+                                     <div className="grid grid-cols-3 gap-2">
+                                       <Select>
+                                         <SelectTrigger>
+                                           <SelectValue placeholder="Product condition" />
+                                         </SelectTrigger>
+                                         <SelectContent>
+                                           <SelectItem value="any">Any product</SelectItem>
+                                           <SelectItem value="none">No products purchased</SelectItem>
+                                           <SelectItem value="has_products">Has purchased products</SelectItem>
+                                         </SelectContent>
+                                       </Select>
+                                       <Select>
+                                         <SelectTrigger>
+                                           <SelectValue placeholder="Status filter" />
+                                         </SelectTrigger>
+                                         <SelectContent>
+                                           <SelectItem value="all">All statuses</SelectItem>
+                                           <SelectItem value="subscribed">Subscribed only</SelectItem>
+                                           <SelectItem value="unsubscribed">Unsubscribed only</SelectItem>
+                                         </SelectContent>
+                                       </Select>
+                                       <Button 
+                                         variant="outline" 
+                                         size="sm"
+                                         onClick={() => {
+                                           // Add all filtered contacts to list
+                                           const eligibleContacts = contacts
+                                             .filter(contact => !isContactInList(contact.id, list.id))
+                                             .slice(0, 50); // Limit for performance
+                                           if (eligibleContacts.length > 0) {
+                                             addContactsToList(eligibleContacts.map(c => c.id), list.id);
+                                           }
+                                         }}
+                                       >
+                                         <UserPlus className="h-4 w-4 mr-1" />
+                                         Add Filtered
+                                       </Button>
+                                     </div>
+                                     <p className="text-xs text-muted-foreground mt-2">
+                                       Filter contacts by purchase history, status, or use "Add Filtered" to bulk add
+                                     </p>
+                                   </div>
                                   <div className="max-h-48 overflow-y-auto border rounded-lg">
                                     <Table>
                                       <TableHeader>
@@ -1116,6 +1132,19 @@ export const EmailListManager = () => {
                   <SelectItem value="unsubscribed">Unsubscribed</SelectItem>
                 </SelectContent>
               </Select>
+            </div>
+            
+            <div className="border-t pt-4">
+              <Label>Purchased Products</Label>
+              <p className="text-sm text-muted-foreground mb-2">
+                Select products this contact has purchased:
+              </p>
+              <div className="space-y-2 max-h-32 overflow-y-auto">
+                {/* Product selection will be managed through Contact Manager */}
+                <p className="text-xs text-muted-foreground italic">
+                  Use the Contact Manager tab to manage product purchases for this contact.
+                </p>
+              </div>
             </div>
           </div>
           <DialogFooter>
