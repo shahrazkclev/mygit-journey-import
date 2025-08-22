@@ -267,7 +267,7 @@ export const UnsubscribeManager = () => {
                           <div className="text-sm text-muted-foreground space-y-1">
                             <p className="flex items-center space-x-2">
                               <Calendar className="h-3 w-3" />
-                              <span>Unsubscribed: {formatDate(user.unsubscribed_at)}</span>
+                              <span>Unsubscribed: {formatDate(user.unsubscribed_at || user.created_at || '')}</span>
                             </p>
                             {user.reason && (
                               <p>Reason: {user.reason}</p>
