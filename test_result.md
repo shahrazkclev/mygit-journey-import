@@ -236,7 +236,67 @@ frontend:
     status_history:
         -working: "NA"
         -agent: "main"
-        -comment: "Applied email theme colors, gradients, and consistent styling across all components to match compose page theme"
+        -comment: "Applied email theme colors, gradients, and consistent styling across all components to match compose page theme. Theme is globally controlled from Style > Page Theme Control"
+
+  - task: "Add searchable contact management in lists"
+    implemented: true
+    working: "NA"
+    file: "/app/frontend/src/components/email/SmartListManager.tsx"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+        -working: "NA"
+        -agent: "main"
+        -comment: "Added search functionality in manage contacts dialog to filter contacts by name, email, or tags"
+
+  - task: "Add editable lists including dynamic list rules"
+    implemented: true
+    working: "NA"
+    file: "/app/frontend/src/components/email/SmartListManager.tsx"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+        -working: "NA"
+        -agent: "main"
+        -comment: "Added edit functionality for both static and dynamic lists, including ability to modify tag rules for dynamic lists"
+
+  - task: "Enhanced bulk operations (manage = add/remove)"
+    implemented: true
+    working: "NA"
+    file: "/app/frontend/src/components/email/SimpleContactManager.tsx"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+        -working: "NA"
+        -agent: "main"
+        -comment: "Enhanced bulk operations to allow both adding and removing tags/lists with radio button selection for operation type"
+
+  - task: "Duplicate dynamic lists as static lists"
+    implemented: true
+    working: "NA"
+    file: "/app/frontend/src/components/email/SmartListManager.tsx"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+        -working: "NA"
+        -agent: "main"
+        -comment: "Added duplicate functionality for dynamic lists to create static copies with all existing contacts"
+
+  - task: "Individual contact editing"
+    implemented: true
+    working: "NA"
+    file: "/app/frontend/src/components/email/SimpleContactManager.tsx"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+        -working: "NA"
+        -agent: "main"
+        -comment: "Added edit button to each contact row that opens EditContactDialog for individual contact management"
 
 metadata:
   created_by: "main_agent"
