@@ -27,6 +27,27 @@ interface BrandIdentity {
   signatureFont: string;
 }
 
+interface StyleGuideResponse {
+  id: string;
+  user_id: string;
+  created_at: string;
+  updated_at: string;
+  brand_name: string;
+  primary_color: string;
+  secondary_color: string;
+  accent_color: string;
+  font_family: string;
+  tone: string;
+  brand_voice: string | null;
+  logo_url: string | null;
+  email_signature: string;
+  signature_font?: string; // Optional for backward compatibility
+  page_theme_primary: string;
+  page_theme_secondary: string;
+  page_theme_accent: string;
+  template_preview: string | null;
+}
+
 interface PageThemeColors {
   primary: string;
   secondary: string;
@@ -92,7 +113,7 @@ export const StyleGuide = () => {
       if (error) throw error;
 
       if (data && data.length > 0) {
-        const guide = data[0];
+        const guide = data[0] as StyleGuideResponse;
         
         // Only load from database if it's not the default values - otherwise keep Cleverpoly defaults
         const isDefaultData = guide.brand_name === 'Your Brand' || guide.brand_name === 'Cleverpoly';
@@ -108,7 +129,7 @@ export const StyleGuide = () => {
             brandVoice: guide.brand_voice || '',
             logo: guide.logo_url || '',
             signature: guide.email_signature,
-            signatureFont: (guide as any).signature_font || "'Dancing Script', cursive",
+            signatureFont: guide.signature_font || "'Dancing Script', cursive",
           });
           setBrandInitialized(true);
         }
