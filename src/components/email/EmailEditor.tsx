@@ -275,7 +275,7 @@ export const EmailEditor: React.FC<EmailEditorProps> = ({
             <EmailPreview htmlContent={generateHTML()} />
           ) : (
             <div className="max-w-2xl mx-auto">
-              <div className="bg-white border border-gray-200 rounded-lg min-h-96 p-4">
+              <div className="bg-background border border-border rounded-lg min-h-96 p-4" onClick={() => setSelectedElement(null)}>
                 <DndContext
                   collisionDetection={closestCenter}
                   onDragStart={handleDragStart}
