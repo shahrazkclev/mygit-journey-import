@@ -1,6 +1,6 @@
 import React, { useRef, useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { Smartphone, Monitor, Bold, Italic, List, Smile, Type, Palette, Undo, Redo } from 'lucide-react';
+import { Smartphone, Monitor, Bold, Italic, List, Smile, Type, Palette, Undo, Redo, Plus, Minus } from 'lucide-react';
 
 interface EditablePreviewProps {
   htmlContent: string;
@@ -19,8 +19,9 @@ export const EditablePreview: React.FC<EditablePreviewProps> = ({
   const [undoStack, setUndoStack] = useState<string[]>([]);
   const [redoStack, setRedoStack] = useState<string[]>([]);
   
-  const emojis = ['😀', '😍', '🎉', '👍', '❤️', '🔥', '💯', '⭐', '🚀', '💼', '📧', '✅', '❗', '💡', '🎯', '📱', '✨', '🌟', '💎', '🎪'];
-  const colors = ['#000000', '#FF0000', '#00FF00', '#0000FF', '#FFFF00', '#FF00FF', '#00FFFF', '#FFA500', '#800080', '#008000'];
+  const emojis = ['😀', '😍', '🎉', '👍', '❤️', '🔥', '💯', '⭐', '🚀', '💼', '📧', '✅', '❗', '💡', '🎯', '📱'];
+  const colors = ['#000000', '#FF0000', '#00FF00', '#0000FF', '#FFFF00', '#FF00FF', '#00FFFF', '#FFA500'];
+  const fontSizes = ['12px', '14px', '16px', '18px', '20px', '24px', '28px', '32px'];
 
   const saveToHistory = () => {
     const iframe = iframeRef.current;
@@ -141,6 +142,11 @@ export const EditablePreview: React.FC<EditablePreviewProps> = ({
     setShowColorPicker(false);
   };
 
+  const changeFontSize = (size: string) => {
+    saveToHistory();
+    executeCommand('fontSize', size);
+  };
+
   useEffect(() => {
     const iframe = iframeRef.current;
     if (!iframe) return;
@@ -149,26 +155,22 @@ export const EditablePreview: React.FC<EditablePreviewProps> = ({
       const doc = iframe.contentDocument || iframe.contentWindow?.document;
       if (!doc) return;
 
-      // Make the whole body editable like a notepad
       doc.designMode = 'on';
       const body = doc.body;
       body.setAttribute('contenteditable', 'true');
       body.style.outline = 'none';
-      body.style.caretColor = 'auto';
 
-      // Disable transitions/animations to avoid jumpiness and prevent link navigation
       const styleEl = doc.createElement('style');
       styleEl.textContent = '*,*::before,*::after{animation:none!important;transition:none!important} a{pointer-events:none!important}';
       doc.head.appendChild(styleEl);
 
-      // Simple debounced update without cursor manipulation
       let updateTimer: number | undefined;
       const scheduleUpdate = () => {
         if (updateTimer) clearTimeout(updateTimer);
         updateTimer = window.setTimeout(() => {
           const newHtml = doc.documentElement.outerHTML;
           onContentUpdate(newHtml);
-        }, 500); // Longer delay to reduce updates
+        }, 500);
       };
 
       const onInput = () => scheduleUpdate();
@@ -179,7 +181,6 @@ export const EditablePreview: React.FC<EditablePreviewProps> = ({
         scheduleUpdate();
       };
       const onKeyDown = (e: KeyboardEvent) => {
-        // Enhanced formatting shortcuts
         if (e.ctrlKey || e.metaKey) {
           switch (e.key.toLowerCase()) {
             case 'b':
@@ -190,11 +191,6 @@ export const EditablePreview: React.FC<EditablePreviewProps> = ({
             case 'i':
               e.preventDefault();
               doc.execCommand('italic', false);
-              scheduleUpdate();
-              break;
-            case 'u':
-              e.preventDefault();
-              doc.execCommand('underline', false);
               scheduleUpdate();
               break;
           }
@@ -212,242 +208,159 @@ export const EditablePreview: React.FC<EditablePreviewProps> = ({
     };
 
     iframe.addEventListener('load', handleLoad);
-
     if (iframe.contentDocument?.readyState === 'complete') {
       handleLoad();
     }
 
+    // Close pickers when clicking outside
+    const handleOutsideClick = () => {
+      setShowColorPicker(false);
+      setShowEmojiPicker(false);
+    };
+    
+    document.addEventListener('click', handleOutsideClick);
+
     return () => {
       iframe.removeEventListener('load', handleLoad);
+      document.removeEventListener('click', handleOutsideClick);
     };
-  }, []);
+  }, [onContentUpdate]);
 
   return (
-    <div className="w-full px-1 sm:px-2 lg:px-4">
-      <div className="bg-gradient-to-br from-primary/3 via-muted/30 to-secondary/3 p-1.5 sm:p-3 lg:p-4 rounded-xl shadow-sm border border-border/20">
-        {/* Compact Mobile Header */}
-        <div className="flex flex-col gap-2 mb-3">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-1.5">
-              <Type className="h-3.5 w-3.5 text-primary" />
-              <span className="text-xs sm:text-sm font-semibold text-foreground">Email Editor</span>
-            </div>
-            
-            {/* Ultra-Compact Device Toggle */}
-            <div className="flex items-center gap-0 bg-background/90 p-0.5 rounded-md border shadow-sm">
-              <Button 
-                size="sm" 
-                variant={mode === 'mobile' ? 'default' : 'ghost'} 
-                onClick={() => setMode('mobile')}
-                className="h-6 px-1.5 text-xs font-medium"
-              >
-                <Smartphone className="h-2.5 w-2.5 sm:mr-1" />
-                <span className="hidden sm:inline text-xs">Mobile</span>
-              </Button>
-              <Button 
-                size="sm" 
-                variant={mode === 'desktop' ? 'default' : 'ghost'} 
-                onClick={() => setMode('desktop')}
-                className="h-6 px-1.5 text-xs font-medium"
-              >
-                <Monitor className="h-2.5 w-2.5 sm:mr-1" />
-                <span className="hidden sm:inline text-xs">Desktop</span>
-              </Button>
-            </div>
-          </div>
-
-          {/* Compact Mobile-First Toolbar */}
-          <div className="bg-background/95 backdrop-blur-sm p-1 sm:p-1.5 rounded-lg border shadow-sm overflow-x-auto scrollbar-hide">
-            <div className="flex items-center gap-0.5 min-w-max">
-              {/* Undo/Redo - Ultra Compact */}
-              <Button 
-                size="sm" 
-                variant="ghost" 
-                className="h-6 px-1 text-xs hover:bg-primary/10 mobile-focus"
-                onClick={undo}
-                disabled={undoStack.length === 0}
-                title="Undo"
-              >
-                <Undo className="h-2.5 w-2.5" />
-              </Button>
-              <Button 
-                size="sm" 
-                variant="ghost" 
-                className="h-6 px-1 text-xs hover:bg-primary/10 mobile-focus"
-                onClick={redo}
-                disabled={redoStack.length === 0}
-                title="Redo"
-              >
-                <Redo className="h-2.5 w-2.5" />
-              </Button>
-              
-              <div className="h-4 w-px bg-border/50 mx-0.5" />
-              
-              {/* Text Formatting - Compact */}
-              <Button 
-                size="sm" 
-                variant="ghost" 
-                className="h-6 px-1 sm:px-1.5 text-xs hover:bg-primary/10 mobile-focus"
-                onClick={() => executeCommand('bold')}
-                title="Bold (Ctrl+B)"
-              >
-                <Bold className="h-2.5 w-2.5 sm:mr-0.5" />
-                <span className="hidden md:inline text-xs">B</span>
-              </Button>
-              <Button 
-                size="sm" 
-                variant="ghost" 
-                className="h-6 px-1 sm:px-1.5 text-xs hover:bg-primary/10 mobile-focus"
-                onClick={() => executeCommand('italic')}
-                title="Italic (Ctrl+I)"
-              >
-                <Italic className="h-2.5 w-2.5 sm:mr-0.5" />
-                <span className="hidden md:inline text-xs">I</span>
-              </Button>
-              
-              {/* Stabilized Color Picker */}
-              <div className="relative">
-                <Button 
-                  size="sm" 
-                  variant="ghost" 
-                  className="h-6 px-1 sm:px-1.5 text-xs hover:bg-primary/10 mobile-focus"
-                  onClick={() => {
-                    setShowColorPicker(!showColorPicker);
-                    setShowEmojiPicker(false); // Close other pickers
-                  }}
-                  title="Text Color"
-                >
-                  <Palette className="h-2.5 w-2.5 sm:mr-0.5" />
-                  <span className="hidden md:inline text-xs">Color</span>
-                </Button>
-                
-                {showColorPicker && (
-                  <>
-                    {/* Backdrop */}
-                    <div 
-                      className="fixed inset-0 z-40" 
-                      onClick={() => setShowColorPicker(false)}
-                    />
-                    {/* Color Picker Panel */}
-                    <div className="absolute top-7 left-0 z-50 bg-background border rounded-lg shadow-2xl p-2 grid grid-cols-5 gap-1 w-32 sm:w-36">
-                      {colors.map((color, index) => (
-                        <button
-                          key={index}
-                          className="w-5 h-5 sm:w-6 sm:h-6 rounded border-2 border-border hover:scale-110 transition-transform active:scale-95"
-                          style={{ backgroundColor: color }}
-                          onClick={() => changeTextColor(color)}
-                          title={`Color: ${color}`}
-                        />
-                      ))}
-                    </div>
-                  </>
-                )}
-              </div>
-              
-              <Button 
-                size="sm" 
-                variant="ghost" 
-                className="h-6 px-1 sm:px-1.5 text-xs hover:bg-primary/10 mobile-focus"
-                onClick={insertBulletList}
-                title="Bullet List"
-              >
-                <List className="h-2.5 w-2.5 sm:mr-0.5" />
-                <span className="hidden md:inline text-xs">List</span>
-              </Button>
-              
-              {/* Stabilized Emoji Picker */}
-              <div className="relative">
-                <Button 
-                  size="sm" 
-                  variant="ghost" 
-                  className="h-6 px-1 sm:px-1.5 text-xs hover:bg-primary/10 mobile-focus"
-                  onClick={() => {
-                    setShowEmojiPicker(!showEmojiPicker);
-                    setShowColorPicker(false); // Close other pickers
-                  }}
-                  title="Insert Emoji"
-                >
-                  <Smile className="h-2.5 w-2.5 sm:mr-0.5" />
-                  <span className="hidden md:inline text-xs">😀</span>
-                </Button>
-                
-                {showEmojiPicker && (
-                  <>
-                    {/* Backdrop */}
-                    <div 
-                      className="fixed inset-0 z-40" 
-                      onClick={() => setShowEmojiPicker(false)}
-                    />
-                    {/* Emoji Panel */}
-                    <div className="absolute top-7 left-0 z-50 bg-background border rounded-lg shadow-2xl p-2 grid grid-cols-4 sm:grid-cols-5 gap-1 w-36 sm:w-40 max-h-28 overflow-y-auto scrollbar-hide">
-                      {emojis.map((emoji, index) => (
-                        <button
-                          key={index}
-                          className="hover:bg-muted/70 p-1 rounded text-sm sm:text-base transition-all hover:scale-110 mobile-focus active:scale-95"
-                          onClick={() => insertEmoji(emoji)}
-                          title={`Insert ${emoji}`}
-                        >
-                          {emoji}
-                        </button>
-                      ))}
-                    </div>
-                  </>
-                )}
-              </div>
-              
-              <div className="h-4 w-px bg-border/50 mx-1 hidden lg:block" />
-              <span className="text-xs text-muted-foreground px-1 hidden xl:inline whitespace-nowrap">
-                Tap to edit • Ctrl+B/I • Ctrl+Z/Y
-              </span>
-            </div>
+    <div className="w-full px-2 sm:px-4">
+      <div className="bg-muted/20 p-2 rounded-lg border">
+        {/* Simple Header */}
+        <div className="flex items-center justify-between mb-2">
+          <span className="text-sm font-medium">Email Editor</span>
+          <div className="flex gap-1 bg-background p-0.5 rounded border">
+            <Button size="sm" variant={mode === 'mobile' ? 'default' : 'ghost'} onClick={() => setMode('mobile')} className="h-6 px-2 text-xs">
+              <Smartphone className="h-3 w-3" />
+            </Button>
+            <Button size="sm" variant={mode === 'desktop' ? 'default' : 'ghost'} onClick={() => setMode('desktop')} className="h-6 px-2 text-xs">
+              <Monitor className="h-3 w-3" />
+            </Button>
           </div>
         </div>
 
-        {/* Compact Preview Container */}
-        <div className="bg-background rounded-xl overflow-hidden shadow-lg border border-border/30 relative">
-          {/* Minimalist Device Frame */}
-          <div className="bg-gradient-to-r from-muted/40 to-muted/20 px-2 py-1 text-xs text-muted-foreground border-b border-border/20 flex items-center justify-between">
-            <span className="flex items-center gap-1 text-xs">
-              {mode === 'mobile' ? <Smartphone className="h-2.5 w-2.5" /> : <Monitor className="h-2.5 w-2.5" />}
-              {mode === 'mobile' ? 'Mobile (390px)' : 'Desktop (1200px)'}
-            </span>
-            <div className="flex gap-0.5">
-              <div className="w-1.5 h-1.5 rounded-full bg-red-400"></div>
-              <div className="w-1.5 h-1.5 rounded-full bg-yellow-400"></div>
-              <div className="w-1.5 h-1.5 rounded-full bg-green-400"></div>
+        {/* Simplified Toolbar */}
+        <div className="bg-background p-1.5 rounded border mb-2 overflow-x-auto">
+          <div className="flex items-center gap-1 min-w-max">
+            {/* Undo/Redo */}
+            <Button size="sm" variant="ghost" className="h-7 px-2" onClick={undo} disabled={undoStack.length === 0}>
+              <Undo className="h-3 w-3" />
+            </Button>
+            <Button size="sm" variant="ghost" className="h-7 px-2" onClick={redo} disabled={redoStack.length === 0}>
+              <Redo className="h-3 w-3" />
+            </Button>
+            
+            <div className="h-4 w-px bg-border mx-1" />
+            
+            {/* Text Formatting */}
+            <Button size="sm" variant="ghost" className="h-7 px-2" onClick={() => executeCommand('bold')}>
+              <Bold className="h-3 w-3" />
+            </Button>
+            <Button size="sm" variant="ghost" className="h-7 px-2" onClick={() => executeCommand('italic')}>
+              <Italic className="h-3 w-3" />
+            </Button>
+            
+            {/* Font Size */}
+            <Button size="sm" variant="ghost" className="h-7 px-2" onClick={() => changeFontSize('4')}>
+              <Plus className="h-3 w-3" />
+            </Button>
+            <Button size="sm" variant="ghost" className="h-7 px-2" onClick={() => changeFontSize('2')}>
+              <Minus className="h-3 w-3" />
+            </Button>
+            
+            {/* Color Picker */}
+            <div className="relative">
+              <Button 
+                size="sm" 
+                variant="ghost" 
+                className="h-7 px-2"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setShowColorPicker(!showColorPicker);
+                  setShowEmojiPicker(false);
+                }}
+              >
+                <Palette className="h-3 w-3" />
+              </Button>
+              
+              {showColorPicker && (
+                <div className="absolute top-8 left-0 z-50 bg-background border rounded-lg shadow-lg p-2 grid grid-cols-4 gap-1 w-32">
+                  {colors.map((color, index) => (
+                    <button
+                      key={index}
+                      className="w-6 h-6 rounded border hover:scale-110 transition-transform"
+                      style={{ backgroundColor: color }}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        changeTextColor(color);
+                      }}
+                    />
+                  ))}
+                </div>
+              )}
             </div>
+            
+            <Button size="sm" variant="ghost" className="h-7 px-2" onClick={insertBulletList}>
+              <List className="h-3 w-3" />
+            </Button>
+            
+            {/* Single Emoji Picker */}
+            <div className="relative">
+              <Button 
+                size="sm" 
+                variant="ghost" 
+                className="h-7 px-2"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setShowEmojiPicker(!showEmojiPicker);
+                  setShowColorPicker(false);
+                }}
+              >
+                😀
+              </Button>
+              
+              {showEmojiPicker && (
+                <div className="absolute top-8 left-0 z-50 bg-background border rounded-lg shadow-lg p-2 grid grid-cols-4 gap-1 w-36 max-h-32 overflow-y-auto">
+                  {emojis.map((emoji, index) => (
+                    <button
+                      key={index}
+                      className="hover:bg-muted p-1 rounded text-base transition-colors"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        insertEmoji(emoji);
+                      }}
+                    >
+                      {emoji}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+            
+            <span className="text-xs text-muted-foreground ml-2 hidden md:inline">
+              Click text to edit
+            </span>
+          </div>
+        </div>
+
+        {/* Simple Preview */}
+        <div className="bg-background rounded border">
+          <div className="bg-muted/20 px-2 py-1 text-xs text-muted-foreground border-b flex items-center justify-between">
+            <span>{mode === 'mobile' ? 'Mobile (375px)' : 'Desktop (1100px)'}</span>
           </div>
           
-          <div className={`mx-auto transition-all duration-500 ease-in-out ${
-            mode === 'mobile' 
-              ? 'w-full max-w-[375px] border-l border-r border-primary/5' 
-              : 'w-full max-w-[1100px]'
-          }`}>
+          <div className={`mx-auto ${mode === 'mobile' ? 'w-full max-w-[375px]' : 'w-full max-w-[1100px]'}`}>
             <iframe
               ref={iframeRef}
               srcDoc={initialHtmlRef.current}
-              className={`w-full border-0 transition-all duration-500 ease-in-out ${
-                mode === 'mobile' 
-                  ? 'h-[400px] sm:h-[480px]' 
-                  : 'h-[500px] sm:h-[580px] lg:h-[650px]'
-              }`}
-              title="Interactive Email Editor"
-              style={{ 
-                colorScheme: 'normal',
-                background: 'linear-gradient(135deg, #ffffff 0%, #fafafa 100%)'
-              }}
+              className={`w-full border-0 ${mode === 'mobile' ? 'h-[400px]' : 'h-[500px]'}`}
+              title="Email Editor"
+              style={{ colorScheme: 'normal' }}
             />
           </div>
-        </div>
-        
-        {/* Compact Mobile Helper */}
-        <div className="mt-2 text-xs text-muted-foreground text-center sm:hidden bg-muted/10 py-1.5 px-2 rounded-lg">
-          💡 Swipe toolbar • Tap text to edit
-        </div>
-        
-        {/* Desktop Helper */}
-        <div className="mt-2 text-xs text-muted-foreground text-center hidden sm:block">
-          🎨 Professional email editor • Ctrl+B/I shortcuts • Undo/Redo available
         </div>
       </div>
     </div>
