@@ -47,6 +47,8 @@ export const StyleGuide = () => {
     signature: "Best regards,\nCleverpoly\n\nIf you have any questions or need assistance, feel free to contact us at cleverpoly.store@gmail.com"
   });
 
+  const [jsonPrompt, setJsonPrompt] = useState<string>("");
+
   // Page theme colors (separate from brand colors) - use global state
   const { themeColors, updateTheme } = useGlobalTheme();
   const pageThemeColors = {
@@ -113,6 +115,7 @@ export const StyleGuide = () => {
           secondary: guide.page_theme_secondary,
           accent: guide.page_theme_accent,
         });
+        setJsonPrompt(guide.template_preview || '');
       } else {
         // No data exists, save the Cleverpoly defaults to database
         setBrandInitialized(true);
@@ -212,7 +215,7 @@ export const StyleGuide = () => {
         page_theme_primary: pageThemeColors.primary,
         page_theme_secondary: pageThemeColors.secondary,
         page_theme_accent: pageThemeColors.accent,
-        template_preview: JSON.stringify(stylePrompt),
+        template_preview: (jsonPrompt && jsonPrompt.trim()) ? jsonPrompt : JSON.stringify(stylePrompt),
       };
 
       let result;
@@ -559,110 +562,38 @@ export const StyleGuide = () => {
         </CardContent>
       </Card>
 
-      {/* Style Preview */}
+      {/* Style JSON Prompt */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center space-x-2">
             <Eye className="h-5 w-5" />
-            <span>Style Preview</span>
+            <span>Style JSON Prompt</span>
           </CardTitle>
           <CardDescription>
-            Preview how your brand style will look in emails
+            Paste or edit the JSON prompt that defines your email style. This is saved as template_preview.
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div 
-            className="rounded-lg border"
-            style={{
-              fontFamily: brandIdentity.font,
-              background: '#FFFFFF',
-              border: '1px solid #F9F8F5'
-            }}
-          >
-            {/* Cleverpoly Header */}
-            <div 
-              className="text-center p-6 text-white"
-              style={{ backgroundColor: '#6A7059' }}
-            >
-              <h3 className="text-xl font-bold" style={{ color: 'white' }}>
-                Cleverpoly.Store
-              </h3>
-              <p className="opacity-90 mt-2" style={{ color: 'white' }}>Sample Email Header</p>
-            </div>
-            
-            {/* Content Area */}
-            <div className="p-6 space-y-4" style={{ background: '#FFFFFF', color: '#333333' }}>
-              <p style={{ color: '#333333', fontSize: '16px' }}>Hello [Name],</p>
-              
-              <p style={{ color: '#333333', fontSize: '16px', lineHeight: '1.6' }}>
-                This is how your emails will look with the current brand settings. The tone is {brandIdentity.voice}.
-              </p>
-              
-              {/* Brand Voice Card */}
-              <div 
-                style={{ 
-                  background: '#F9F8F5',
-                  padding: '20px',
-                  borderRadius: '8px',
-                  margin: '20px 0'
-                }}
-              >
-                <p style={{ color: '#333333', fontSize: '16px', lineHeight: '1.6', margin: '0' }}>
-                  {brandIdentity.brandVoice}
-                </p>
-              </div>
-              
-              {/* CTA Button */}
-              <div className="flex space-x-3">
-                <button 
-                  className="px-6 py-3 rounded font-medium transition-colors"
-                  style={{ 
-                    backgroundColor: '#6A7059',
-                    color: '#FFFFFF',
-                    border: 'none',
-                    borderRadius: '6px',
-                    fontSize: '16px',
-                    fontWeight: '500'
-                  }}
-                >
-                  Call to Action
-                </button>
-                <a 
-                  href="#"
-                  style={{ 
-                    color: '#333333',
-                    textDecoration: 'none',
-                    fontSize: '16px',
-                    alignSelf: 'center'
-                  }}
-                >
-                  Secondary Action →
-                </a>
-              </div>
-              
-              {/* Footer */}
-              <div 
-                className="mt-8 pt-6"
-                style={{ 
-                  borderTop: '1px solid #F9F8F5',
-                  marginTop: '40px',
-                  paddingTop: '24px'
-                }}
-              >
-                <div style={{ color: '#333333', fontSize: '16px', lineHeight: '1.6' }}>
-                  <p style={{ margin: '0 0 16px 0' }}>
-                    If you have any questions or need assistance, feel free to contact us at cleverpoly.store@gmail.com
-                  </p>
-                  
-                  <div style={{ marginTop: '20px' }}>
-                    <p style={{ margin: '0', fontSize: '16px' }}>Best regards,</p>
-                    <p style={{ margin: '0', fontSize: '16px', fontWeight: '500' }}>
-                      Cleverpoly
-                    </p>
-                  </div>
-                </div>
-              </div>
-            </div>
+          <div className="space-y-2">
+            <Label htmlFor="jsonPrompt">JSON Style Prompt</Label>
+            <Textarea
+              id="jsonPrompt"
+              className="font-mono text-sm"
+              value={jsonPrompt}
+              onChange={(e) => {
+                setJsonPrompt(e.target.value);
+                setTimeout(() => saveBrandToSupabase(), 1000);
+              }}
+              placeholder={`{
+  "brandName": "Your Brand",
+  "colors": { "primary": "#6A7059", "secondary": "#F9F8F5", "accent": "#FCD34D" },
+  "typography": { "fontFamily": "Inter, sans-serif" },
+  "voice": { "tone": "friendly", "description": "Clean and professional aesthetic..." },
+  "signature": "Best regards,\\nYour Brand"
+}`}
+              rows={12}
+            />
+            <p className="text-xs text-muted-foreground">Tip: Provide valid JSON. We will use this directly when generating emails.</p>
           </div>
         </CardContent>
       </Card>
