@@ -16,6 +16,15 @@ import { DEMO_USER_ID } from "@/lib/demo-auth";
 
 // Data types matching our Supabase schema
 
+type Product = {
+  id: string;
+  name: string;
+  description?: string;
+  price?: number;
+  category?: string;
+  sku?: string;
+};
+
 type Contact = {
   id: string;
   email: string;
@@ -47,6 +56,7 @@ export const EmailListManager = () => {
   const [lists, setLists] = useState<EmailList[]>([]);
   const [contacts, setContacts] = useState<Contact[]>([]);
   const [contactLists, setContactLists] = useState<ContactList[]>([]);
+  const [products, setProducts] = useState<Product[]>([]);
   const [selectedContacts, setSelectedContacts] = useState<string[]>([]);
   const [selectedList, setSelectedList] = useState<EmailList | null>(null);
   const [editingList, setEditingList] = useState<EmailList | null>(null);
@@ -57,6 +67,7 @@ export const EmailListManager = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [listSearchQuery, setListSearchQuery] = useState("");
   const [filterTag, setFilterTag] = useState<string>("all");
+  const [selectedProducts, setSelectedProducts] = useState<string[]>([]);
   
   // Form state
   const [newListName, setNewListName] = useState("");
@@ -79,6 +90,13 @@ export const EmailListManager = () => {
 
   const loadData = async () => {
     try {
+      // Load products
+      const { data: productsData, error: productsError } = await supabase
+        .from('products')
+        .select('*')
+        .order('name');
+
+      if (productsError) throw productsError;
       // Load email lists
       const { data: listsData, error: listsError } = await supabase
         .from('email_lists')
@@ -111,6 +129,7 @@ export const EmailListManager = () => {
       setLists(listsWithCounts);
       setContacts(contactsData || []);
       setContactLists(contactListsData || []);
+      setProducts(productsData || []);
     } catch (error: any) {
       toast({
         title: "Error loading data",
@@ -334,7 +353,7 @@ export const EmailListManager = () => {
     }
   };
 
-  const handleEditContact = (contact: Contact) => {
+  const handleEditContact = async (contact: Contact) => {
     setEditingContact(contact);
     setNewContact({
       email: contact.email,
@@ -343,12 +362,27 @@ export const EmailListManager = () => {
       tags: (contact.tags || []).join(", "),
       status: contact.status,
     });
+    
+    // Load contact's products
+    try {
+      const { data, error } = await supabase
+        .from('contact_products')
+        .select('product_id')
+        .eq('contact_id', contact.id);
+      
+      if (error) throw error;
+      setSelectedProducts(data?.map(cp => cp.product_id) || []);
+    } catch (error) {
+      console.error('Error loading contact products:', error);
+      setSelectedProducts([]);
+    }
   };
 
   const handleUpdateContact = async () => {
     if (!editingContact) return;
 
     try {
+      // Update contact info
       const { data, error } = await supabase
         .from('contacts')
         .update({
@@ -364,9 +398,33 @@ export const EmailListManager = () => {
 
       if (error) throw error;
 
+      // Update contact products
+      // First, remove all existing contact products
+      const { error: deleteError } = await supabase
+        .from('contact_products')
+        .delete()
+        .eq('contact_id', editingContact.id);
+
+      if (deleteError) throw deleteError;
+
+      // Then add selected products
+      if (selectedProducts.length > 0) {
+        const productInserts = selectedProducts.map(productId => ({
+          contact_id: editingContact.id,
+          product_id: productId,
+        }));
+
+        const { error: insertError } = await supabase
+          .from('contact_products')
+          .insert(productInserts);
+
+        if (insertError) throw insertError;
+      }
+
       setContacts(contacts.map(c => c.id === editingContact.id ? data : c));
       setEditingContact(null);
       setNewContact({ email: "", firstName: "", lastName: "", tags: "", status: "subscribed" });
+      setSelectedProducts([]);
       toast({
         title: "Contact updated",
         description: "Contact has been updated successfully.",
@@ -1139,11 +1197,36 @@ export const EmailListManager = () => {
               <p className="text-sm text-muted-foreground mb-2">
                 Select products this contact has purchased:
               </p>
-              <div className="space-y-2 max-h-32 overflow-y-auto">
-                {/* Product selection will be managed through Contact Manager */}
-                <p className="text-xs text-muted-foreground italic">
-                  Use the Contact Manager tab to manage product purchases for this contact.
-                </p>
+              <div className="space-y-2 max-h-32 overflow-y-auto border rounded-lg p-2">
+                {products.length === 0 ? (
+                  <p className="text-xs text-muted-foreground text-center py-4">
+                    No products available
+                  </p>
+                ) : (
+                  products.map((product) => (
+                    <div key={product.id} className="flex items-center space-x-2">
+                      <input
+                        type="checkbox"
+                        id={`product-${product.id}`}
+                        checked={selectedProducts.includes(product.id)}
+                        onChange={(e) => {
+                          if (e.target.checked) {
+                            setSelectedProducts([...selectedProducts, product.id]);
+                          } else {
+                            setSelectedProducts(selectedProducts.filter(id => id !== product.id));
+                          }
+                        }}
+                        className="rounded"
+                      />
+                      <label htmlFor={`product-${product.id}`} className="text-sm flex-1 cursor-pointer">
+                        {product.name}
+                        {product.price && (
+                          <span className="text-muted-foreground ml-2">${product.price}</span>
+                        )}
+                      </label>
+                    </div>
+                  ))
+                )}
               </div>
             </div>
           </div>
