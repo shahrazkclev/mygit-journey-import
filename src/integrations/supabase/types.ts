@@ -242,6 +242,7 @@ export type Database = {
           page_theme_secondary: string
           primary_color: string
           secondary_color: string
+          signature_font: string | null
           template_preview: string | null
           tone: string
           updated_at: string
@@ -261,6 +262,7 @@ export type Database = {
           page_theme_secondary?: string
           primary_color?: string
           secondary_color?: string
+          signature_font?: string | null
           template_preview?: string | null
           tone?: string
           updated_at?: string
@@ -280,6 +282,7 @@ export type Database = {
           page_theme_secondary?: string
           primary_color?: string
           secondary_color?: string
+          signature_font?: string | null
           template_preview?: string | null
           tone?: string
           updated_at?: string

@@ -108,7 +108,7 @@ export const StyleGuide = () => {
             brandVoice: guide.brand_voice || '',
             logo: guide.logo_url || '',
             signature: guide.email_signature,
-            signatureFont: guide.signature_font || "'Dancing Script', cursive",
+            signatureFont: (guide as any).signature_font || "'Dancing Script', cursive",
           });
           setBrandInitialized(true);
         }
