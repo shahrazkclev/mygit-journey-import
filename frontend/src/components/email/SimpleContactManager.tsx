@@ -55,6 +55,10 @@ export const SimpleContactManager = () => {
   const [bulkTagOperation, setBulkTagOperation] = useState<'add' | 'remove'>('add');
   const [bulkListOperation, setBulkListOperation] = useState<'add' | 'remove'>('add');
 
+  // Edit contact state
+  const [showEditContactDialog, setShowEditContactDialog] = useState(false);
+  const [editingContact, setEditingContact] = useState<Contact | null>(null);
+
   // Add contact form state
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [newContact, setNewContact] = useState({
