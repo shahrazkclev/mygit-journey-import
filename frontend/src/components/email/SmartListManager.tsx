@@ -44,6 +44,18 @@ export const SmartListManager = () => {
   const [availableContacts, setAvailableContacts] = useState<Contact[]>([]);
   const [listContacts, setListContacts] = useState<Contact[]>([]);
   const [selectedContactsToAdd, setSelectedContactsToAdd] = useState<Set<string>>(new Set());
+  const [contactSearchTerm, setContactSearchTerm] = useState('');
+  
+  // Edit list state
+  const [showEditListDialog, setShowEditListDialog] = useState(false);
+  const [editingList, setEditingList] = useState<EmailList | null>(null);
+  const [editListForm, setEditListForm] = useState({
+    name: '',
+    description: '',
+    list_type: 'static' as 'static' | 'dynamic',
+    requiredTags: [] as string[],
+    tagInput: ''
+  });
 
   // Create list dialog state
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
