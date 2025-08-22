@@ -38,6 +38,48 @@ class StatusCheck(BaseModel):
 class StatusCheckCreate(BaseModel):
     client_name: str
 
+class CampaignCreate(BaseModel):
+    title: str
+    subject: str
+    html_content: str
+    selected_lists: List[str]
+    sender_sequence: int = 1
+    webhook_url: Optional[str] = None
+
+class Campaign(BaseModel):
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    title: str
+    subject: str
+    html_content: str
+    selected_lists: List[str]
+    sender_sequence: int
+    webhook_url: Optional[str]
+    status: str = "queued"  # queued, sending, sent, failed, paused
+    total_recipients: int = 0
+    sent_count: int = 0
+    failed_count: int = 0
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+    started_at: Optional[datetime] = None
+    completed_at: Optional[datetime] = None
+    error_message: Optional[str] = None
+
+class WebhookPayload(BaseModel):
+    action: str
+    email: str
+    name: str
+    phone: Optional[str] = None
+    tags: List[str] = []
+
+class CampaignProgress(BaseModel):
+    campaign_id: str
+    total_recipients: int
+    sent_count: int
+    failed_count: int
+    status: str
+    progress_percentage: float
+    current_recipient: Optional[str] = None
+    error_message: Optional[str] = None
+
 # Add your routes to the router instead of directly to app
 @api_router.get("/")
 async def root():
