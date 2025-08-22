@@ -158,11 +158,11 @@ export const CampaignSettings = () => {
       </Card>
 
       {/* Sending Speed Control */}
-      <Card className="shadow-soft border-email-secondary/20">
+      <Card className="shadow-soft bg-gradient-to-br from-email-background to-background border-email-secondary/20">
         <CardHeader>
           <CardTitle className="flex items-center space-x-2">
             <Clock className="h-5 w-5 text-email-secondary" />
-            <span>Sending Patterns</span>
+            <span className="text-email-secondary">Sending Patterns</span>
           </CardTitle>
           <CardDescription>
             Control how your emails are sent to avoid being marked as spam
