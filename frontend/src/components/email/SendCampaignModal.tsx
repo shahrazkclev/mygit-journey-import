@@ -304,6 +304,18 @@ export const SendCampaignModal: React.FC<SendCampaignModalProps> = ({
                 </div>
               </div>
 
+              {currentRecipient && status === 'sending' && (
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                  <div className="flex items-center gap-2">
+                    <Send className="h-4 w-4 text-blue-600" />
+                    <div className="text-sm">
+                      <span className="text-blue-800 font-medium">Currently sending to: </span>
+                      <span className="text-blue-600">{currentRecipient}</span>
+                    </div>
+                  </div>
+                </div>
+              )}
+
               {errorMessage && (
                 <div className="bg-red-50 border border-red-200 rounded-lg p-3">
                   <div className="flex items-start gap-2">
