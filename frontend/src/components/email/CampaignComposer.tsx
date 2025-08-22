@@ -207,27 +207,7 @@ export const CampaignComposer: React.FC<CampaignComposerProps> = ({ onSave }) =>
     return enhancedPrompt;
   };
 
-  const addUnsubscribeLink = (htmlContent: string): string => {
-    // Create a working unsubscribe link with hardcoded webhook URL
-    const unsubscribeLink = `
-      <div style="margin: 40px 0 20px; padding: 20px; background-color: #f8f9fa; border-top: 1px solid #e9ecef; text-align: center; font-family: Arial, sans-serif;">
-        <p style="margin: 0 0 10px; font-size: 12px; color: #6c757d;">
-          Don't want to receive these emails anymore?
-        </p>
-        <a href="https://hook.eu2.make.com/YOUR_WEBHOOK_ID?email=RECIPIENT_EMAIL_HERE&action=unsubscribe" 
-           style="font-size: 12px; color: #dc3545; text-decoration: underline;">
-          Unsubscribe
-        </a>
-      </div>
-    `;
 
-    // Try to insert before closing body tag, fallback to end of content
-    if (htmlContent.includes('</body>')) {
-      return htmlContent.replace('</body>', unsubscribeLink + '</body>');
-    } else {
-      return htmlContent + unsubscribeLink;
-    }
-  };
 
   // Product autocomplete functionality
   const findProductMatch = (text: string, cursorPosition: number) => {
