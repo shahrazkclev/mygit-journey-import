@@ -386,13 +386,13 @@ export const SmartListManager = () => {
 
   return (
     <div className="space-y-6">
-      <Card className="shadow-soft">
+      <Card className="shadow-soft bg-gradient-to-br from-email-background to-background">
         <CardHeader>
           <div className="flex items-center justify-between">
             <div>
               <CardTitle className="flex items-center space-x-2">
                 <List className="h-5 w-5 text-email-secondary" />
-                <span>Smart Lists ({lists.length})</span>
+                <span className="text-email-secondary">Smart Lists ({lists.length})</span>
               </CardTitle>
               <CardDescription>
                 Create static lists you control manually, or dynamic lists that auto-update based on tags
