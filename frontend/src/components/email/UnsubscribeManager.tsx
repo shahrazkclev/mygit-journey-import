@@ -25,6 +25,35 @@ export const UnsubscribeManager = () => {
     loadUnsubscribeData();
   }, []);
 
+  // Add a test button for debugging
+  const addTestUnsubscribe = async () => {
+    try {
+      const testData = {
+        email: 'test@example.com',
+        unsubscribed_at: new Date().toISOString(),
+        user_id: '550e8400-e29b-41d4-a716-446655440000',
+        reason: 'Testing unsubscribe display'
+      };
+      
+      console.log('🧪 Adding test unsubscribe:', testData);
+      
+      const { data, error } = await supabase
+        .from('unsubscribes')
+        .insert(testData)
+        .select();
+
+      console.log('📊 Insert result:', { data, error });
+
+      if (error) throw error;
+
+      toast.success("Test unsubscribe added!");
+      loadUnsubscribeData(); // Reload data
+    } catch (error: any) {
+      console.error('❌ Error adding test unsubscribe:', error);
+      toast.error("Failed to add test unsubscribe: " + error.message);
+    }
+  };
+
   const loadUnsubscribeData = async () => {
     try {
       console.log('🔍 Loading unsubscribe data from Supabase...');
