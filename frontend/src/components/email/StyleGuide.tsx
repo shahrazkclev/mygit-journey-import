@@ -368,12 +368,21 @@ export const StyleGuide = () => {
 
   return (
     <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-2xl font-bold text-email-primary">Style Guide & Theme Control</h2>
+          <p className="text-muted-foreground">
+            Customize your brand identity and application theme
+          </p>
+        </div>
+      </div>
+
       {/* Page Theme Control */}
-      <Card>
+      <Card className="shadow-soft bg-gradient-to-br from-email-background to-background border-email-primary/20">
         <CardHeader>
           <CardTitle className="flex items-center space-x-2">
-            <Settings className="h-5 w-5" />
-            <span>Page Theme Control</span>
+            <Settings className="h-5 w-5 text-email-primary" />
+            <span className="text-email-primary">Page Theme Control</span>
           </CardTitle>
           <CardDescription>
             Control the color theme of this application interface (separate from email brand colors)
