@@ -225,6 +225,92 @@ export const SimpleContactManager = () => {
     toast.success("Webhook URL copied to clipboard!");
   };
 
+  const handleSelectContact = (contactId: string, isSelected: boolean) => {
+    const newSelected = new Set(selectedContacts);
+    if (isSelected) {
+      newSelected.add(contactId);
+    } else {
+      newSelected.delete(contactId);
+    }
+    setSelectedContacts(newSelected);
+  };
+
+  const handleSelectAll = (isSelected: boolean) => {
+    if (isSelected) {
+      setSelectedContacts(new Set(filteredContacts.map(c => c.id)));
+    } else {
+      setSelectedContacts(new Set());
+    }
+  };
+
+  const handleBulkAddTags = async () => {
+    if (selectedContacts.size === 0 || !bulkTags.trim()) {
+      toast.error("Please select contacts and enter tags");
+      return;
+    }
+
+    try {
+      const tagsToAdd = bulkTags.split(',').map(tag => tag.trim()).filter(tag => tag.length > 0);
+      
+      for (const contactId of selectedContacts) {
+        const contact = contacts.find(c => c.id === contactId);
+        if (contact) {
+          const existingTags = contact.tags || [];
+          const newTags = [...new Set([...existingTags, ...tagsToAdd])];
+          
+          const { error } = await supabase
+            .from('contacts')
+            .update({ tags: newTags })
+            .eq('id', contactId);
+
+          if (error) throw error;
+        }
+      }
+
+      toast.success(`Added tags to ${selectedContacts.size} contacts`);
+      setBulkTags('');
+      setSelectedContacts(new Set());
+      setShowBulkTagDialog(false);
+      loadContacts();
+    } catch (error) {
+      console.error('Error adding bulk tags:', error);
+      toast.error("Failed to add tags");
+    }
+  };
+
+  const handleBulkAddToLists = async () => {
+    if (selectedContacts.size === 0 || selectedBulkLists.length === 0) {
+      toast.error("Please select contacts and lists");
+      return;
+    }
+
+    try {
+      const memberships = [];
+      for (const contactId of selectedContacts) {
+        for (const listId of selectedBulkLists) {
+          memberships.push({
+            contact_id: contactId,
+            list_id: listId
+          });
+        }
+      }
+
+      const { error } = await supabase
+        .from('contact_lists')
+        .upsert(memberships, { onConflict: 'contact_id,list_id' });
+
+      if (error) throw error;
+
+      toast.success(`Added ${selectedContacts.size} contacts to ${selectedBulkLists.length} lists`);
+      setSelectedBulkLists([]);
+      setSelectedContacts(new Set());
+      setShowBulkListDialog(false);
+    } catch (error) {
+      console.error('Error adding contacts to lists:', error);
+      toast.error("Failed to add contacts to lists");
+    }
+  };
+
   if (isLoading) {
     return <div className="p-6">Loading contacts...</div>;
   }
