@@ -581,39 +581,41 @@ export const CampaignComposer: React.FC<CampaignComposerProps> = ({ onSave }) =>
   return (
     <div className="space-y-6">
       {/* Email Content Form */}
-      <Card>
+      <Card className="shadow-soft bg-gradient-to-br from-email-background to-background border-email-primary/20">
         <CardHeader>
-          <CardTitle>Email Content</CardTitle>
+          <CardTitle className="text-email-primary">Email Content</CardTitle>
           <CardDescription>
             Create your email campaign with AI assistance
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="subject">Email Subject</Label>
+            <Label htmlFor="subject" className="text-email-primary font-medium">Email Subject</Label>
             <Input
               id="subject"
               value={subject}
               onChange={(e) => setSubject(e.target.value)}
               placeholder="Enter your email subject line..."
+              className="border-email-primary/30 focus:border-email-primary"
             />
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="prompt">AI Prompt</Label>
+            <Label htmlFor="prompt" className="text-email-primary font-medium">AI Prompt</Label>
             <Textarea
               id="prompt"
               value={prompt}
               onChange={(e) => setPrompt(e.target.value)}
               placeholder="Describe the email you want to create (e.g., 'Write a promotional email about our new product launch with a 20% discount offer')"
               rows={4}
+              className="border-email-primary/30 focus:border-email-primary"
             />
           </div>
 
           <Button 
             onClick={handleGenerateTemplate}
             disabled={isGenerating}
-            className="w-full"
+            className="w-full bg-email-primary hover:bg-email-primary/80 text-primary-foreground"
           >
             {isGenerating ? (
               <>
