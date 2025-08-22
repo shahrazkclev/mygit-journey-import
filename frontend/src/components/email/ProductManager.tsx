@@ -159,23 +159,13 @@ export const ProductManager: React.FC = () => {
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <h2 className="text-2xl font-bold text-email-primary">Product Management</h2>
-        <div className="flex space-x-3">
-          <Button 
-            onClick={handleBulkImport}
-            disabled={isBulkImporting}
-            variant="outline"
-            className="border-email-accent text-email-accent hover:bg-email-accent/10"
-          >
-            <Upload className="h-4 w-4 mr-2" />
-            {isBulkImporting ? 'Importing...' : 'Import All Products'}
-          </Button>
-          <Dialog open={showAddProduct} onOpenChange={setShowAddProduct}>
-            <DialogTrigger asChild>
-              <Button className="bg-email-primary hover:bg-email-primary/80">
-                <Plus className="h-4 w-4 mr-2" />
-                Add Product
-              </Button>
-            </DialogTrigger>
+        <Dialog open={showAddProduct} onOpenChange={setShowAddProduct}>
+          <DialogTrigger asChild>
+            <Button className="bg-email-primary hover:bg-email-primary/80">
+              <Plus className="h-4 w-4 mr-2" />
+              Add Product
+            </Button>
+          </DialogTrigger>
           <DialogContent>
             <DialogHeader>
               <DialogTitle>Add New Product</DialogTitle>
