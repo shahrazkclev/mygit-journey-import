@@ -176,34 +176,11 @@ export const CampaignComposer = () => {
     return out;
   };
 
-  // Apply color changes to template in real-time
+  // Apply color changes to template in real-time (DISABLED to preserve design fidelity)
   const applyColorChangesToTemplate = (primary: string, secondary: string, accent: string) => {
-    if (!originalTemplate) return originalTemplate;
-
-    console.log('Applying color changes:', { primary, secondary, accent });
-
-    // Create a more comprehensive color replacement using the original template
-    let updatedTemplate = originalTemplate
-      // Replace various background color formats
-      .replace(/background-color:\s*#[0-9a-fA-F]{6}/gi, `background-color: ${primary}`)
-      .replace(/background:\s*#[0-9a-fA-F]{6}/gi, `background: ${primary}`)
-      .replace(/background:\s*linear-gradient\([^)]*#[0-9a-fA-F]{6}[^)]*\)/gi, 
-        `background: linear-gradient(135deg, ${primary} 0%, ${secondary} 100%)`)
-      
-      // Replace specific default colors
-      .replace(/#684cff/gi, primary)
-      .replace(/#22d3ee/gi, secondary) 
-      .replace(/#34d399/gi, accent)
-      
-      // Replace button backgrounds specifically
-      .replace(/("Take Action"[^>]*style="[^"]*background[^;"]*);?/gi, (match) => {
-        return match.replace(/background[^;"]*;?/gi, `background: ${accent};`);
-      })
-
-      // Replace gradients with current colors
-      .replace(/linear-gradient\([^)]*\)/gi, `linear-gradient(135deg, ${primary} 0%, ${secondary} 100%)`);
-
-    return updatedTemplate;
+    // We intentionally do not override colors of the generated HTML to avoid corrupting
+    // the email's own styling (e.g., turning the background green). Return the original.
+    return originalTemplate;
   };
 
   // Update template when colors change
