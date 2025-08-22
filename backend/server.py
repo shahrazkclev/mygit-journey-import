@@ -320,26 +320,14 @@ async def send_campaign_background(campaign_id: str):
 
 async def send_email_via_webhook(webhook_url: str, recipient: Dict[str, Any], subject: str, html_content: str, sender_sequence: int = 1) -> bool:
     try:
-        # Debug: Log original HTML content
-        logging.info(f"📧 Sending email to: {recipient['email']}")
-        logging.info(f"🔗 Webhook URL: {webhook_url}")
-        
-        # Remove the unsubscribe section from HTML before sending to Make.com
-        # This allows Make.com to add its own unsubscribe link with proper email variables
-        clean_html = html_content
-        
-        # Remove the unsubscribe div section
-        import re
-        unsubscribe_pattern = r'<div style="margin: 40px 0 20px.*?</div>\s*(?=</body>|$)'
-        clean_html = re.sub(unsubscribe_pattern, '', clean_html, flags=re.DOTALL)
-        
-        logging.info(f"✅ Removed unsubscribe section - HTML ready for Make.com")
+        # Debug: Log sending details
+        logging.info(f"📧 Sending email to: {recipient['email']} with sender sequence {sender_sequence}")
         
         payload = {
             "to": recipient["email"],
             "name": recipient.get("name", ""),
             "subject": subject,
-            "html": clean_html,  # Send clean HTML without unsubscribe section
+            "html": html_content,  # Send clean HTML directly to Make.com
             "sender_sequence": sender_sequence,
             "timestamp": datetime.utcnow().isoformat()
         }
