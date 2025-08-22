@@ -114,6 +114,25 @@ export const SimpleContactManager = () => {
     }
   };
 
+  const loadEmailLists = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('email_lists')
+        .select('*')
+        .eq('user_id', DEMO_USER_ID)
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        console.error('Error loading email lists:', error);
+        return;
+      }
+
+      setEmailLists(data || []);
+    } catch (error) {
+      console.error('Error loading email lists:', error);
+    }
+  };
+
   const filterContacts = () => {
     let filtered = contacts;
 
