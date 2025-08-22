@@ -34,6 +34,7 @@ export interface EmailElement {
 
 interface EmailEditorProps {
   onSave?: (elements: EmailElement[], htmlContent: string) => void;
+  onChange?: (elements: EmailElement[], htmlContent: string) => void;
   initialElements?: EmailElement[];
   htmlContent?: string;
 }
@@ -248,8 +249,8 @@ export const EmailEditor: React.FC<EmailEditorProps> = ({
     toast.success('Element deleted');
   };
 
-  const generateHTML = useCallback(() => {
-    const sortedElements = [...elements].sort((a, b) => 
+  const generateHTML = useCallback((list: EmailElement[] = elements) => {
+    const sortedElements = [...list].sort((a, b) => 
       a.gridPosition.y - b.gridPosition.y || a.gridPosition.x - b.gridPosition.x
     );
 

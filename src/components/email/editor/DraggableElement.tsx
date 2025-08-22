@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { cn } from '@/lib/utils';
@@ -23,6 +23,57 @@ export const DraggableElement: React.FC<DraggableElementProps> = ({
 }) => {
   const [isEditing, setIsEditing] = useState(false);
   const [editValue, setEditValue] = useState(element.content);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [isResizing, setIsResizing] = useState(false);
+  const startXRef = useRef(0);
+  const startYRef = useRef(0);
+  const startSizeRef = useRef<{ width: number; height: number }>({ width: 0, height: 0 });
+  const resizeModeRef = useRef<'width' | 'height' | null>(null);
+
+  useEffect(() => {
+    if (!isResizing) return;
+
+    const onMove = (e: MouseEvent) => {
+      if (!containerRef.current) return;
+      const dx = e.clientX - startXRef.current;
+      const dy = e.clientY - startYRef.current;
+
+      if (resizeModeRef.current === 'width' && (element.type === 'button' || element.type === 'image')) {
+        const newW = Math.max(80, startSizeRef.current.width + dx);
+        onUpdate({ styles: { ...element.styles, width: `${Math.min(newW, 600)}px` } });
+      } else if (resizeModeRef.current === 'height' && element.type === 'spacer') {
+        const newH = Math.max(8, startSizeRef.current.height + dy);
+        onUpdate({ styles: { ...element.styles, height: `${Math.min(newH, 200)}px` } });
+      }
+    };
+
+    const onUp = () => {
+      setIsResizing(false);
+      resizeModeRef.current = null;
+      document.removeEventListener('mousemove', onMove);
+      document.removeEventListener('mouseup', onUp);
+    };
+
+    document.addEventListener('mousemove', onMove);
+    document.addEventListener('mouseup', onUp);
+
+    return () => {
+      document.removeEventListener('mousemove', onMove);
+      document.removeEventListener('mouseup', onUp);
+    };
+  }, [isResizing, element, onUpdate]);
+
+  const startResize = (e: React.MouseEvent, mode: 'width' | 'height') => {
+    e.stopPropagation();
+    e.preventDefault();
+    if (!containerRef.current) return;
+    resizeModeRef.current = mode;
+    setIsResizing(true);
+    startXRef.current = e.clientX;
+    startYRef.current = e.clientY;
+    const rect = containerRef.current.getBoundingClientRect();
+    startSizeRef.current = { width: rect.width, height: rect.height };
+  };
 
   const {
     attributes,
@@ -167,7 +218,7 @@ export const DraggableElement: React.FC<DraggableElementProps> = ({
       ref={setNodeRef}
       style={style}
       {...attributes}
-      {...(!isEditing ? listeners : {})}
+      {...(!isEditing && !isResizing ? listeners : {})}
       onClick={handleClick}
       onDoubleClick={handleDoubleClick}
       className={cn(
@@ -186,8 +237,24 @@ export const DraggableElement: React.FC<DraggableElementProps> = ({
           }
         </div>
       )}
-      <div className="p-2">
+      <div ref={containerRef} className="p-2 relative">
         {renderElement()}
+
+        {/* Resize handles */}
+        {isSelected && (element.type === 'button' || element.type === 'image') && (
+          <div
+            className="absolute right-0 top-1/2 -translate-y-1/2 w-2 h-6 bg-primary/30 rounded cursor-ew-resize z-20"
+            onMouseDown={(e) => startResize(e, 'width')}
+            aria-label="Resize width"
+          />
+        )}
+        {isSelected && element.type === 'spacer' && (
+          <div
+            className="absolute left-1/2 -translate-x-1/2 bottom-0 w-10 h-2 bg-primary/30 rounded cursor-ns-resize z-20"
+            onMouseDown={(e) => startResize(e, 'height')}
+            aria-label="Resize height"
+          />
+        )}
       </div>
     </div>
   );
