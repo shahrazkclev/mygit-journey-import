@@ -361,14 +361,14 @@ frontend:
   - task: "Added Products tab and management"
     implemented: true
     working: "NA"
-    file: "/app/frontend/src/components/EmailCampaignApp.tsx, /app/frontend/src/components/email/ProductManager.tsx"
+    file: "/app/frontend/src/components/EmailCampaignApp.tsx, /app/frontend/src/components/email/ProductManager.tsx, /app/frontend/src/utils/bulkImportProducts.ts"
     stuck_count: 0
     priority: "high"
     needs_retesting: true
     status_history:
         -working: "NA"
         -agent: "main"
-        -comment: "Added Products tab to main navigation, integrated ProductManager component with consistent email theming, users can now add products that show as tag suggestions"
+        -comment: "Added Products tab to main navigation, integrated ProductManager component with consistent email theming, users can now add products that show as tag suggestions. Added bulk import functionality with all 36 user products from image (The Lazy Motion Library, Advanced 3d Product Animation Course, etc.) with proper categories and pricing."
 
 metadata:
   created_by: "main_agent"
