@@ -713,14 +713,64 @@ export const CampaignComposer: React.FC<CampaignComposerProps> = ({ onSave }) =>
 
           <div className="space-y-2">
             <Label htmlFor="prompt" className="text-email-primary font-medium">AI Prompt</Label>
-            <Textarea
-              id="prompt"
-              value={prompt}
-              onChange={(e) => setPrompt(e.target.value)}
-              placeholder="Describe the email you want to create (e.g., 'Write a promotional email about our new product launch with a 20% discount offer')"
-              rows={4}
-              className="border-email-primary/30 focus:border-email-primary"
-            />
+            <div className="relative">
+              <Textarea
+                ref={promptTextareaRef}
+                id="prompt"
+                value={prompt}
+                onChange={handlePromptChange}
+                onKeyDown={handleKeyDown}
+                placeholder="Describe the email you want to create (e.g., 'Write a promotional email about our new product launch with a 20% discount offer')"
+                rows={4}
+                className="border-email-primary/30 focus:border-email-primary"
+              />
+              
+              {/* Product Autocomplete Dropdown */}
+              {showProductAutocomplete && currentMatch && (
+                <div 
+                  className="absolute z-50 bg-white border border-email-primary/30 rounded-lg shadow-xl p-3 min-w-64"
+                  style={{
+                    top: `${autocompletePosition.top}px`,
+                    left: `${autocompletePosition.left}px`
+                  }}
+                >
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-xs text-gray-500 font-medium">Press Tab or Enter to insert</span>
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      onClick={() => setShowProductAutocomplete(false)}
+                      className="p-1 h-auto"
+                    >
+                      ×
+                    </Button>
+                  </div>
+                  
+                  <div className="bg-email-primary/5 border border-email-primary/20 rounded-lg p-3">
+                    <div className="font-medium text-email-primary text-sm">
+                      {currentMatch.product.name}
+                    </div>
+                    <div className="text-xs text-gray-600 mt-1">
+                      <span className="inline-block mr-3">
+                        <Badge variant="outline" className="text-xs">{currentMatch.product.category}</Badge>
+                      </span>
+                      <span className="font-medium text-email-accent">${currentMatch.product.price}</span>
+                    </div>
+                    {currentMatch.product.description && (
+                      <div className="text-xs text-gray-500 mt-2">
+                        {currentMatch.product.description}
+                      </div>
+                    )}
+                  </div>
+                  
+                  <div className="mt-2 text-xs text-gray-500">
+                    Will insert: <span className="font-mono bg-gray-100 px-1 rounded">
+                      {currentMatch.product.name} ({currentMatch.product.category} - ${currentMatch.product.price})
+                    </span>
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
 
           <Button 
