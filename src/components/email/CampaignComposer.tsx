@@ -1,26 +1,28 @@
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Slider } from "@/components/ui/slider";
-import { ColorPicker } from "@/components/ui/color-picker";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Sparkles, Send, Eye, Wand2, MessageSquare, Palette, Monitor, Smartphone } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Wand2, Send, Eye, Save, Palette, Code } from "lucide-react";
+import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+import { EmailEditor, EmailElement } from "./EmailEditor";
 import { DEMO_USER_ID } from "@/lib/demo-auth";
 
-export const CampaignComposer = () => {
+interface CampaignComposerProps {
+  onSave?: (campaignData: any) => void;
+}
+
+export const CampaignComposer: React.FC<CampaignComposerProps> = ({ onSave }) => {
   const [subject, setSubject] = useState("");
   const [prompt, setPrompt] = useState("");
   const [generatedTemplate, setGeneratedTemplate] = useState("");
   const [isGenerating, setIsGenerating] = useState(false);
+  const [previewMode, setPreviewMode] = useState<'code' | 'visual' | 'editor'>('visual');
   const [selectedLists, setSelectedLists] = useState<string[]>([]);
-  const [emailLists, setEmailLists] = useState<any[]>([]);
   const [isEditingWithAI, setIsEditingWithAI] = useState(false);
   const [aiEditPrompt, setAiEditPrompt] = useState("");
   const [showPreview, setShowPreview] = useState(false);
@@ -39,7 +41,7 @@ export const CampaignComposer = () => {
   const [colorsInitialized, setColorsInitialized] = useState(false);
   const [originalTemplate, setOriginalTemplate] = useState<string | null>(null);
 
-  const { toast } = useToast();
+  const [emailElements, setEmailElements] = useState<EmailElement[]>([]);
 
   const DRAFT_KEY = 'campaign_draft';
 
@@ -65,6 +67,8 @@ export const CampaignComposer = () => {
       localStorage.setItem(DRAFT_KEY, JSON.stringify(draft));
     } catch {}
   }, [subject, prompt, generatedTemplate, selectedLists, themeColors]);
+
+  const [emailLists, setEmailLists] = useState<any[]>([]);
 
   useEffect(() => {
     loadEmailLists();
@@ -140,16 +144,23 @@ export const CampaignComposer = () => {
     }
   };
 
-  // Apply simple in-app edits without external AI
-  const applyInstructionToHtml = (html: string, instruction: string) => {
-    let out = html;
+  const handleEditorSave = (elements: EmailElement[], htmlContent: string) => {
+    setEmailElements(elements);
+    setGeneratedTemplate(htmlContent);
+    toast.success('Email design saved!');
+  };
+
+  
+  const applyInstructionToHtml = (originalHtml: string, instruction: string) => {
     const instr = instruction.toLowerCase();
+    let out = originalHtml;
 
     const injectOverride = (css: string) => {
+      const styleTag = `<style>${css}</style>`;
       if (out.includes('</head>')) {
-        out = out.replace('</head>', `<style id="lovable-overrides">${css}</style></head>`);
-      } else {
-        out = `<!DOCTYPE html><html><head><style id="lovable-overrides">${css}</style></head>` + out.replace(/^<!DOCTYPE[^>]*>/i, '').replace(/^<html[^>]*>/i, '').replace(/<\/html>$/i, '') + '</html>';
+        out = out.replace('</head>', `${styleTag}</head>`);
+      } else if (out.includes('<body')) {
+        out = out.replace('<body', `${styleTag}<body`);
       }
     };
 
@@ -198,11 +209,7 @@ export const CampaignComposer = () => {
   }, [themeColors, originalTemplate]);
   const handleGenerateTemplate = async () => {
     if (!subject.trim() || !prompt.trim()) {
-      toast({
-        title: "Missing Information",
-        description: "Please provide both a subject and prompt for the email.",
-        variant: "destructive",
-      });
+      toast.error("Please provide both a subject and prompt for the email.");
       return;
     }
 
@@ -236,10 +243,7 @@ export const CampaignComposer = () => {
         const cleaned = cleanHtmlContent(data.htmlContent);
         setOriginalTemplate(cleaned); // Store original for color changes
         setGeneratedTemplate(cleaned);
-        toast({
-          title: "Template Generated",
-          description: "Your email template has been generated successfully!",
-        });
+        toast.success("Your email template has been generated successfully!");
       } else {
         throw new Error("No content received from AI generator");
       }
@@ -363,10 +367,7 @@ export const CampaignComposer = () => {
       
       setOriginalTemplate(fallbackHTML); // Store original for color changes
       setGeneratedTemplate(fallbackHTML);
-      toast({
-        title: "Template Generated",
-        description: "Used fallback template generator. Your email is ready!",
-      });
+      toast.success("Used fallback template generator. Your email is ready!");
     } finally {
       setIsGenerating(false);
     }
@@ -379,11 +380,7 @@ export const CampaignComposer = () => {
 
   const handleEditWithAI = async () => {
     if (!aiEditPrompt.trim() || !generatedTemplate) {
-      toast({
-        title: "Missing Information", 
-        description: "Please provide editing instructions and ensure you have a generated template.",
-        variant: "destructive",
-      });
+      toast.error("Please provide editing instructions and ensure you have a generated template.");
       return;
     }
 
@@ -416,20 +413,13 @@ export const CampaignComposer = () => {
         const cleaned = cleanHtmlContent(data.htmlContent);
         setGeneratedTemplate(cleaned);
         setAiEditPrompt("");
-        toast({
-          title: "AI Edit Applied",
-          description: "Your email has been updated successfully!",
-        });
+        toast.success("Your email has been updated successfully!");
       } else {
         throw new Error("No content received from AI editor");
       }
     } catch (error) {
       console.error('Error editing with AI:', error);
-      toast({
-        title: "Edit Failed",
-        description: "Failed to apply AI edits. Please try again.",
-        variant: "destructive",
-      });
+      toast.error("Failed to apply AI edits. Please try again.");
     } finally {
       setIsEditingWithAI(false);
     }
@@ -437,11 +427,7 @@ export const CampaignComposer = () => {
 
   const handleSendCampaign = async () => {
     if (!subject.trim() || !generatedTemplate || selectedLists.length === 0) {
-      toast({
-        title: "Missing Information",
-        description: "Please ensure you have a subject, generated template, and selected email lists.",
-        variant: "destructive",
-      });
+      toast.error("Please ensure you have a subject, generated template, and selected email lists.");
       return;
     }
 
@@ -478,10 +464,7 @@ export const CampaignComposer = () => {
         created_at: new Date().toISOString(),
       };
 
-      toast({
-        title: "Campaign Saved",
-        description: `Your campaign "${subject}" has been saved and is ready for sending.`,
-      });
+      toast.success(`Your campaign "${subject}" has been saved and is ready for sending.`);
 
       // Reset form
       setSubject("");
@@ -492,11 +475,7 @@ export const CampaignComposer = () => {
 
     } catch (error) {
       console.error('Error saving campaign:', error);
-      toast({
-        title: "Error",
-        description: "Failed to save campaign. Please try again.",
-        variant: "destructive",
-      });
+      toast.error("Failed to save campaign. Please try again.");
     }
   };
 
@@ -506,6 +485,17 @@ export const CampaignComposer = () => {
         ? prev.filter(id => id !== listId)
         : [...prev, listId]
     );
+  };
+
+  const handleSave = () => {
+    const campaignData = {
+      subject,
+      htmlContent: generatedTemplate,
+      selectedLists,
+      themeColors,
+      emailElements
+    };
+    onSave?.(campaignData);
   };
 
   return (
@@ -540,70 +530,6 @@ export const CampaignComposer = () => {
             />
           </div>
 
-          {/* Quick Color Theme Controls */}
-          <div className="space-y-2">
-            <div className="flex items-center justify-between">
-              <Label>Campaign Colors</Label>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => {
-                  if (styleGuide) {
-                    setThemeColors({
-                      primary: styleGuide.primary_color,
-                      secondary: styleGuide.secondary_color,
-                      accent: styleGuide.accent_color,
-                    });
-                    if (generatedTemplate) {
-                      applyColorChangesToTemplate(styleGuide.primary_color, styleGuide.secondary_color, styleGuide.accent_color);
-                    }
-                  }
-                }}
-                className="text-xs"
-              >
-                Reset to Brand
-              </Button>
-            </div>
-            <div className="flex space-x-4 items-center">
-              <div className="flex items-center space-x-2">
-                <Label htmlFor="primary-color" className="text-sm">Primary</Label>
-                <ColorPicker
-                  value={themeColors.primary}
-                  onChange={(color) => {
-                    setThemeColors(prev => ({ ...prev, primary: color }));
-                    if (generatedTemplate) {
-                      applyColorChangesToTemplate(color, themeColors.secondary, themeColors.accent);
-                    }
-                  }}
-                />
-              </div>
-              <div className="flex items-center space-x-2">
-                <Label htmlFor="secondary-color" className="text-sm">Secondary</Label>
-                <ColorPicker
-                  value={themeColors.secondary}
-                  onChange={(color) => {
-                    setThemeColors(prev => ({ ...prev, secondary: color }));
-                    if (generatedTemplate) {
-                      applyColorChangesToTemplate(themeColors.primary, color, themeColors.accent);
-                    }
-                  }}
-                />
-              </div>
-              <div className="flex items-center space-x-2">
-                <Label htmlFor="accent-color" className="text-sm">Accent</Label>
-                <ColorPicker
-                  value={themeColors.accent}
-                  onChange={(color) => {
-                    setThemeColors(prev => ({ ...prev, accent: color }));
-                    if (generatedTemplate) {
-                      applyColorChangesToTemplate(themeColors.primary, themeColors.secondary, color);
-                    }
-                  }}
-                />
-              </div>
-            </div>
-          </div>
-
           <Button 
             onClick={handleGenerateTemplate}
             disabled={isGenerating}
@@ -611,226 +537,98 @@ export const CampaignComposer = () => {
           >
             {isGenerating ? (
               <>
-                <Sparkles className="h-4 w-4 mr-2 animate-spin" />
+                <Wand2 className="h-4 w-4 mr-2 animate-spin" />
                 Generating...
               </>
             ) : (
               <>
-                <Sparkles className="h-4 w-4 mr-2" />
+                <Wand2 className="h-4 w-4 mr-2" />
                 Generate Email Template
               </>
             )}
           </Button>
-
-          {/* AI Generated Template Preview */}
-          {generatedTemplate && (
-            <div className="mt-4 space-y-2">
-              <div className="flex justify-between items-center">
-                <Label>Generated Template</Label>
-                <div className="flex space-x-2">
-                  <Dialog open={showPreview} onOpenChange={setShowPreview}>
-                    <DialogTrigger asChild>
-                      <Button variant="outline" size="sm">
-                        <Eye className="h-4 w-4 mr-2" />
-                        Preview
-                      </Button>
-                    </DialogTrigger>
-                    <DialogContent className="max-w-4xl max-h-[80vh] overflow-auto" aria-describedby="email-preview-desc">
-                      <DialogHeader>
-                        <div className="flex justify-between items-center">
-                          <DialogTitle>Email Preview</DialogTitle>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => setViewMode(viewMode === 'desktop' ? 'mobile' : 'desktop')}
-                          >
-                            {viewMode === 'desktop' ? <Smartphone className="h-4 w-4 mr-2" /> : <Monitor className="h-4 w-4 mr-2" />}
-                            {viewMode === 'desktop' ? 'Mobile View' : 'Desktop View'}
-                          </Button>
-                        </div>
-                      </DialogHeader>
-                      <p id="email-preview-desc" className="sr-only">Full email preview content in an isolated iframe.</p>
-                      <div className={`mx-auto ${viewMode === 'mobile' ? 'max-w-sm' : 'w-full'}`}>
-                        <iframe
-                          title="Email full preview"
-                          srcDoc={generatedTemplate}
-                          className={`w-full border rounded ${viewMode === 'mobile' ? 'h-[60vh]' : 'h-[70vh]'}`}
-                          sandbox="allow-same-origin"
-                        />
-                      </div>
-                    </DialogContent>
-                  </Dialog>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => {
-                      navigator.clipboard.writeText(generatedTemplate);
-                      toast({
-                        title: "Copied!",
-                        description: "HTML template copied to clipboard.",
-                      });
-                    }}
-                  >
-                    Copy HTML
-                  </Button>
-                </div>
-              </div>
-              
-              {/* Inline Email Preview */}
-              <div className="border rounded-lg bg-white overflow-hidden">
-                <iframe
-                  title="Email inline preview"
-                  srcDoc={generatedTemplate}
-                  className="w-full h-[600px] border-0"
-                  sandbox="allow-same-origin"
-                />
-              </div>
-              
-              {/* AI Edit Controls */}
-              <div className="mt-4 space-y-2">
-                <Label htmlFor="aiEdit">Edit with AI</Label>
-                <div className="flex space-x-2">
-                  <Input
-                    id="aiEdit"
-                    value={aiEditPrompt}
-                    onChange={(e) => setAiEditPrompt(e.target.value)}
-                    placeholder="Describe changes you want to make..."
-                    className="flex-1"
-                  />
-                  <Button
-                    onClick={handleEditWithAI}
-                    disabled={isEditingWithAI}
-                    variant="outline"
-                  >
-                    {isEditingWithAI ? (
-                      <>
-                        <Wand2 className="h-4 w-4 mr-2 animate-spin" />
-                        Editing...
-                      </>
-                    ) : (
-                      <>
-                        <Wand2 className="h-4 w-4 mr-2" />
-                        Apply Edit
-                      </>
-                    )}
-                  </Button>
-                </div>
-              </div>
-            </div>
-          )}
         </CardContent>
       </Card>
 
-      {/* Email Lists Selection */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Target Email Lists</CardTitle>
-          <CardDescription>
-            Select which email lists to send this campaign to
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          {emailLists.length === 0 ? (
-            <p className="text-muted-foreground">
-              No email lists found. Create some email lists in the Lists tab first.
-            </p>
-          ) : (
-            <div className="space-y-2">
-              {emailLists.map(list => (
-                <div key={list.id} className="flex items-center space-x-2">
-                  <Checkbox
-                    id={list.id}
-                    checked={selectedLists.includes(list.id)}
-                    onCheckedChange={() => toggleListSelection(list.id)}
-                  />
-                  <Label htmlFor={list.id} className="flex-1">
-                    {list.name}
-                    {list.description && (
-                      <span className="text-muted-foreground text-sm ml-2">
-                        - {list.description}
-                      </span>
-                    )}
-                  </Label>
-                </div>
-              ))}
-            </div>
-          )}
-        </CardContent>
-      </Card>
-
-      {/* Sender Rotation */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Email Sender Rotation</CardTitle>
-          <CardDescription>
-            Configure how many emails each sender handles before rotating
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="space-y-2">
-            <Label>Cycle Count: {senderCycleCount[0]} emails per sender</Label>
-            <Slider
-              value={senderCycleCount}
-              onValueChange={setSenderCycleCount}
-              max={50}
-              min={5}
-              step={5}
-              className="w-full"
-            />
-          </div>
-          <div className="text-sm text-muted-foreground">
-            Current sender: Sender {getCurrentSenderNumber()} (sent {currentEmailCount} emails)
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Send Campaign */}
+      {/* Email Template Tabs */}
       {generatedTemplate && (
         <Card>
           <CardHeader>
-            <CardTitle>Send Campaign</CardTitle>
+            <CardTitle>Email Template</CardTitle>
             <CardDescription>
-              Review and send your email campaign
+              Preview and edit your email template
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="space-y-4">
-              <div className="grid grid-cols-2 gap-4 text-sm">
-                <div>
-                  <strong>Subject:</strong> {subject}
-                </div>
-                <div>
-                  <strong>Selected Lists:</strong> {selectedLists.length}
-                </div>
-                <div>
-                  <strong>Current Sender:</strong> Sender {getCurrentSenderNumber()}
-                </div>
-                <div>
-                  <strong>Theme:</strong> 
-                  <div className="flex space-x-1 mt-1">
-                    <div 
-                      className="w-4 h-4 rounded" 
-                      style={{ backgroundColor: themeColors.primary }}
-                    />
-                    <div 
-                      className="w-4 h-4 rounded" 
-                      style={{ backgroundColor: themeColors.secondary }}
-                    />
-                    <div 
-                      className="w-4 h-4 rounded" 
-                      style={{ backgroundColor: themeColors.accent }}
-                    />
-                  </div>
-                </div>
-              </div>
+            <Tabs value={previewMode} onValueChange={(value) => setPreviewMode(value as 'code' | 'visual' | 'editor')}>
+              <TabsList className="grid w-full grid-cols-3">
+                <TabsTrigger value="visual">Visual Preview</TabsTrigger>
+                <TabsTrigger value="editor">
+                  <Palette className="h-4 w-4 mr-2" />
+                  Visual Editor
+                </TabsTrigger>
+                <TabsTrigger value="code">
+                  <Code className="h-4 w-4 mr-2" />
+                  HTML Code
+                </TabsTrigger>
+              </TabsList>
 
-              <Button onClick={handleSendCampaign} className="w-full">
-                <Send className="h-4 w-4 mr-2" />
-                Save & Setup Campaign
-              </Button>
-            </div>
+              <TabsContent value="visual" className="mt-4">
+                <div className="border rounded-lg bg-white overflow-hidden">
+                  <iframe
+                    title="Email preview"
+                    srcDoc={generatedTemplate}
+                    className="w-full h-[600px] border-0"
+                    sandbox="allow-same-origin"
+                  />
+                </div>
+              </TabsContent>
+              
+              <TabsContent value="editor" className="mt-4">
+                <div className="rounded-lg border overflow-hidden">
+                  <EmailEditor
+                    onSave={handleEditorSave}
+                    initialElements={emailElements}
+                  />
+                </div>
+              </TabsContent>
+
+              <TabsContent value="code" className="mt-4">
+                <div className="space-y-4">
+                  <div className="flex justify-between items-center">
+                    <Label>HTML Source</Label>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        navigator.clipboard.writeText(generatedTemplate);
+                        toast.success("HTML copied to clipboard!");
+                      }}
+                    >
+                      Copy HTML
+                    </Button>
+                  </div>
+                  <Textarea
+                    value={generatedTemplate}
+                    onChange={(e) => setGeneratedTemplate(e.target.value)}
+                    rows={20}
+                    className="font-mono text-sm"
+                  />
+                </div>
+              </TabsContent>
+            </Tabs>
           </CardContent>
         </Card>
+      )}
+
+      {/* Save Campaign */}
+      {generatedTemplate && (
+        <div className="flex justify-end">
+          <Button onClick={handleSave}>
+            <Save className="h-4 w-4 mr-2" />
+            Save Campaign
+          </Button>
+        </div>
       )}
     </div>
   );
