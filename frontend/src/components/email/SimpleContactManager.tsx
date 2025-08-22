@@ -60,6 +60,9 @@ export const SimpleContactManager = () => {
   const [showEditContactDialog, setShowEditContactDialog] = useState(false);
   const [editingContact, setEditingContact] = useState<Contact | null>(null);
 
+  // Contact lists tracking
+  const [contactLists, setContactLists] = useState<Record<string, any[]>>({});
+
   // Add contact form state
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [newContact, setNewContact] = useState({
