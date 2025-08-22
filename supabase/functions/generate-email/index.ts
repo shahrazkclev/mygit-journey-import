@@ -1,11 +1,4 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.52.1";
-
-const claudeApiKey = Deno.env.get('CLAUDE_API_KEY');
-const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
-const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-
-const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -18,151 +11,93 @@ serve(async (req) => {
   }
 
   try {
-    const { prompt, subject } = await req.json();
+    const { subject = 'Your Files Are Ready', prompt = '' } = await req.json();
 
-    // Your exact JSON style guide
-    const yourJsonStyle = {
-      "brandIdentity": {
-        "name": "Cleverpoly",
-        "storeName": "Cleverpoly.Store",
-        "contactEmail": "cleverpoly.store@gmail.com",
-        "personality": ["Clean", "Modern", "Minimalist", "Friendly", "Trustworthy"],
-        "description": "The brand aesthetic is clean and professional, using generous white space and a card-based design to create an organized and user-friendly experience. The tone should be helpful and direct."
-      },
-      "emailStyleGuide": {
-        "layout": {
-          "structure": "A single-column, centered layout with a maximum width of 600px to ensure readability on both desktop and mobile devices.",
-          "spacing": "Use ample white space and padding. Maintain significant margins between different content sections to create a clear visual separation.",
-          "hierarchy": "Establish a strong visual hierarchy. The main heading should be the most prominent, followed by section titles, body text, and finally, footer links."
-        },
-        "colorPalette": {
-          "background": "#FFFFFF (White)",
-          "contentCardBackground": "#F9F8F5 (A light, warm off-white or beige for distinct content sections)",
-          "primaryText": "#333333 (Dark Gray for all body copy and headings)",
-          "buttonBackground": "#6A7059 (A muted, professional olive/gray-green for primary buttons)",
-          "buttonText": "#FFFFFF (White)",
-          "accent": "#FCD34D (A warm yellow/gold for key links, or subtle emphasis)"
-        },
-        "typography": {
-          "fontFamily": "Use a clean, modern sans-serif font like Inter, Lato, or Open Sans for all text.",
-          "headings": {
-            "mainTitle": {
-              "style": "Large font size (e.g., 24-28px), bold weight, dark gray color. Should clearly state the email's primary purpose.",
-              "placeholder": "[Email Main Title]"
-            },
-            "sectionTitles": {
-              "style": "Medium font size (e.g., 18-20px), bold weight, dark gray color. Can be accompanied by a simple, clean icon to the left.",
-              "placeholder": "[Section Title]"
-            }
-          },
-          "bodyText": {
-            "style": "Regular weight, standard size for legibility (e.g., 14-16px), dark gray color. Text should be left-aligned within the centered container.",
-            "placeholder": "[Body Paragraph Text]"
-          },
-          "links": {
-            "style": "Standard links should be the primary text color and may include a directional arrow '→'. Important brand links can use the accent color for emphasis.",
-            "placeholder": "[Link Text] →"
-          }
-        },
-        "components": {
-          "header": {
-            "style": "Simple and clean. Display the brand logo as text: 'Cleverpoly.Store'."
-          },
-          "salutation": {
-            "format": "Hey {{name}},",
-            "style": "Use the standard body text style. This should be the first line of the email body, followed by a line break."
-          },
-          "contentCards": {
-            "style": "Use for the main content areas. Cards should have the 'contentCardBackground' color, rounded corners, and generous internal padding. Each card should have a clear purpose, defined by a 'sectionTitle'."
-          },
-          "buttons": {
-            "primaryCTA": {
-              "style": "Solid background using 'buttonBackground' color, white text, padded, with slightly rounded corners. The button should be prominent and clearly state its action.",
-              "placeholder": "[Primary Call-to-Action Text]"
-            },
-            "secondaryCTA": {
-              "style": "A text link with a directional arrow '→'. Use for less critical actions.",
-              "placeholder": "[Secondary Call-to-Action Text] →"
-            }
-          },
-          "footer": {
-            "style": "Simple text section at the bottom. Include secondary links, contact information, and a closing salutation.",
-            "content": {
-              "salutation": "Best regards,",
-              "brandName": "Cleverpoly",
-              "contact": "If you have any questions or need assistance, feel free to contact us at cleverpoly.store@gmail.com"
-            }
-          }
-        }
-      },
-      "instructionsForAI": "Based on the brand identity and email style guide provided above for 'Cleverpoly', generate an email for the following purpose. Ensure all layout, color, typography, and component styles are strictly followed. The email must begin with the salutation 'Hey {{name}},'. Fill in the placeholder content appropriately for the request."
-    };
+    const safeText = String(prompt || '').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 
-    console.log('Generating email with your exact JSON specification');
+    const htmlContent = `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>${subject}</title>
+  <style>
+    /* Base */
+    body { margin:0; padding:24px; background:#F5F5F0; color:#333333; font-family: Inter, Lato, 'Open Sans', Arial, sans-serif; }
+    .container { max-width:600px; margin:0 auto; background:#FFFFFF; border-radius:16px; padding:32px; }
+    .hr { height:1px; background:#E5E7EB; margin:24px 0; }
 
-    // Direct prompt to Claude - GENERATE BEAUTIFUL EMAILS LIKE THE EXAMPLE
-    const systemPrompt = `You are an expert email designer. Look at this JSON style guide and create a BEAUTIFUL, CLEAN email that looks EXACTLY like professional file delivery emails.
+    /* Header */
+    .brand { text-align:center; font-size:28px; font-weight:700; color:#333333; margin:8px 0 24px; }
 
-${JSON.stringify(yourJsonStyle, null, 2)}
+    /* Titles */
+    .title { font-size:24px; font-weight:700; text-align:center; margin:0 0 16px; color:#333333; }
+    .section-title { font-size:18px; font-weight:700; margin:0 0 8px; color:#333333; display:flex; align-items:center; gap:8px; }
 
-EMAIL REQUEST:
-Subject: "${subject}"
-Content: ${prompt}
+    /* Content */
+    .salutation { font-size:16px; margin:0 0 16px; }
+    .paragraph { font-size:16px; margin:0 0 8px; line-height:1.6; }
+    .card { background:#F9F8F5; border-radius:12px; padding:24px; margin:20px 0; }
 
-MAKE IT LOOK EXACTLY LIKE THIS EXAMPLE STYLE:
-- CLEAN WHITE BACKGROUND (#FFFFFF) - no dark colors anywhere
-- BEAUTIFUL CONTENT CARDS with warm off-white background (#F9F8F5) and rounded corners
-- GENEROUS WHITE SPACE and padding between all sections  
-- PERFECT TYPOGRAPHY with clean sans-serif fonts (Inter/Lato/Open Sans)
-- PROPER VISUAL HIERARCHY - large main title, medium section titles, readable body text
-- START WITH: "Hey {{name}}," in standard body text
-- HEADER: Simple "Cleverpoly.Store" text at top
-- CONTENT SECTIONS: Use content cards (#F9F8F5 background) for main content areas
-- BUTTONS: Professional olive-green (#6A7059) with white text and rounded corners
-- FOOTER: Clean footer with "Best regards, Cleverpoly" and contact email
-- SINGLE-COLUMN layout, 600px max width, centered
-- BEAUTIFUL SPACING - ample margins between sections
-- PROFESSIONAL, MINIMAL, CLEAN design
+    /* Buttons / Links */
+    .button { display:inline-block; background:#6A7059; color:#FFFFFF; padding:12px 24px; text-decoration:none; border-radius:8px; font-weight:600; margin-top:12px; }
+    .link { color:#6A7059; text-decoration:none; }
 
-Create HTML email that looks EXACTLY like a professional file delivery email - beautiful, clean, properly spaced, with content cards and perfect typography.`;
+    /* Footer */
+    .footer { margin-top:28px; font-size:14px; line-height:1.7; color:#333333; }
+    .divider { height:1px; background:#E5E7EB; margin:28px 0; }
 
-    const response = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': claudeApiKey,
-        'anthropic-version': '2023-06-01',
-      },
-      body: JSON.stringify({
-        model: 'claude-sonnet-4-20250514',
-        max_tokens: 4000,
-        messages: [{
-          role: 'user',
-          content: systemPrompt
-        }],
-      }),
-    });
-
-    if (!response.ok) {
-      throw new Error(`Claude API error: ${response.status}`);
+    /* Responsive */
+    @media (max-width: 640px) {
+      body { padding:16px; }
+      .container { padding:20px; border-radius:12px; }
+      .title { font-size:22px; }
     }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="brand">Cleverpoly.Store</div>
+    <div class="hr"></div>
 
-    const data = await response.json();
-    const htmlContent = data.content[0]?.text || '';
+    <h2 class="title">${subject}</h2>
 
-    console.log('✅ Email generated following your JSON exactly');
+    <p class="salutation">Hey,</p>
+    <p class="paragraph">${safeText || 'Thank you for your purchase!'}</p>
+
+    <div class="card">
+      <div class="section-title">🍱 Your Downloads</div>
+      <p class="paragraph">Access your files through the download button below. All future updates will be available in the same location.</p>
+      <a class="button" href="#">Download Files</a>
+    </div>
+
+    <div class="card">
+      <div class="section-title">📖 Installation Guide</div>
+      <p class="paragraph">Need help installing? Check out our step-by-step installation guide:</p>
+      <p class="paragraph"><a class="link" href="#">View Installation Instructions →</a></p>
+    </div>
+
+    <div class="divider"></div>
+
+    <p class="paragraph">Want to explore more assets?</p>
+    <p class="paragraph"><a class="link" href="#">Visit Cleverpoly Store →</a></p>
+
+    <p class="paragraph" style="margin-top:16px">If you have any questions or need assistance, feel free to contact us at cleverpoly.store@gmail.com</p>
+
+    <div class="footer">
+      <p style="margin:0 0 4px">Best regards,</p>
+      <p style="margin:0">Cleverpoly</p>
+    </div>
+  </div>
+</body>
+</html>`;
 
     return new Response(JSON.stringify({ htmlContent }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
-
   } catch (error) {
-    console.error('❌ Error:', error);
-    
-    return new Response(JSON.stringify({ 
-      error: error.message,
-      htmlContent: '<html><body><h1>Error generating email</h1></body></html>'
-    }), {
+    console.error('Error generating fixed template:', error);
+    return new Response(JSON.stringify({ error: 'Failed to generate template' }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });

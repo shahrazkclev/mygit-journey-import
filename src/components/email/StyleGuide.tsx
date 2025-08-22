@@ -562,41 +562,6 @@ export const StyleGuide = () => {
         </CardContent>
       </Card>
 
-      {/* Style JSON Prompt */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center space-x-2">
-            <Eye className="h-5 w-5" />
-            <span>Style JSON Prompt</span>
-          </CardTitle>
-          <CardDescription>
-            Paste or edit the JSON prompt that defines your email style. This is saved as template_preview.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-2">
-            <Label htmlFor="jsonPrompt">JSON Style Prompt</Label>
-            <Textarea
-              id="jsonPrompt"
-              className="font-mono text-sm"
-              value={jsonPrompt}
-              onChange={(e) => {
-                setJsonPrompt(e.target.value);
-                setTimeout(() => saveBrandToSupabase(), 1000);
-              }}
-              placeholder={`{
-  "brandName": "Your Brand",
-  "colors": { "primary": "#6A7059", "secondary": "#F9F8F5", "accent": "#FCD34D" },
-  "typography": { "fontFamily": "Inter, sans-serif" },
-  "voice": { "tone": "friendly", "description": "Clean and professional aesthetic..." },
-  "signature": "Best regards,\\nYour Brand"
-}`}
-              rows={12}
-            />
-            <p className="text-xs text-muted-foreground">Tip: Provide valid JSON. We will use this directly when generating emails.</p>
-          </div>
-        </CardContent>
-      </Card>
 
       {/* Action Buttons */}
       <div className="flex space-x-4">
