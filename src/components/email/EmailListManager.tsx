@@ -68,6 +68,7 @@ export const EmailListManager = () => {
   const [listSearchQuery, setListSearchQuery] = useState("");
   const [filterTag, setFilterTag] = useState<string>("all");
   const [filterProduct, setFilterProduct] = useState<string>("all");
+  const [contactProducts, setContactProducts] = useState<any[]>([]);
   
   // Form state
   const [newListName, setNewListName] = useState("");
@@ -127,6 +128,13 @@ export const EmailListManager = () => {
 
       if (contactListsError) throw contactListsError;
 
+      // Load contact-product relationships
+      const { data: contactProductsData, error: contactProductsError } = await supabase
+        .from('contact_products')
+        .select('*');
+
+      if (contactProductsError) throw contactProductsError;
+
       // Calculate contact count for each list
       const listsWithCounts = (listsData || []).map(list => ({
         ...list,
@@ -137,6 +145,7 @@ export const EmailListManager = () => {
       setContacts(contactsData || []);
       setProducts(productsData || []);
       setContactLists(contactListsData || []);
+      setContactProducts(contactProductsData || []);
     } catch (error: any) {
       toast({
         title: "Error loading data",
@@ -655,7 +664,10 @@ export const EmailListManager = () => {
     const matchesTag = filterTag === "all" || 
       (contact.tags && contact.tags.includes(filterTag));
     
-    return matchesSearch && matchesTag;
+    const matchesProduct = filterProduct === "all" || 
+      contactProducts.some(cp => cp.contact_id === contact.id && cp.product_id === filterProduct);
+    
+    return matchesSearch && matchesTag && matchesProduct;
   });
 
   // Get lists that a contact belongs to
@@ -849,6 +861,17 @@ export const EmailListManager = () => {
                     <SelectItem value="all">All Tags</SelectItem>
                     {uniqueTags.map(tag => (
                       <SelectItem key={tag} value={tag}>{tag}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <Select value={filterProduct} onValueChange={setFilterProduct}>
+                  <SelectTrigger className="w-48">
+                    <SelectValue placeholder="Filter by product" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Products</SelectItem>
+                    {products.map(product => (
+                      <SelectItem key={product.id} value={product.id}>{product.name}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>

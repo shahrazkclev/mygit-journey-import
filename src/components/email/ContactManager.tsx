@@ -61,15 +61,24 @@ export const ContactManager: React.FC = () => {
   const [selectedContact, setSelectedContact] = useState<Contact | null>(null);
   const [contactProducts, setContactProducts] = useState<ContactProduct[]>([]);
   const [contactLists, setContactLists] = useState<ContactList[]>([]);
+  const [allContactProducts, setAllContactProducts] = useState<ContactProduct[]>([]);
+  const [allContactLists, setAllContactLists] = useState<ContactList[]>([]);
   
   const [newContact, setNewContact] = useState({ email: '', first_name: '', last_name: '' });
   const [showAddContact, setShowAddContact] = useState(false);
   const [showContactDetails, setShowContactDetails] = useState(false);
+  
+  // Filter states
+  const [searchQuery, setSearchQuery] = useState('');
+  const [filterByProduct, setFilterByProduct] = useState<string>('');
+  const [filterByList, setFilterByList] = useState<string>('');
 
   useEffect(() => {
     loadContacts();
     loadProducts();
     loadEmailLists();
+    loadAllContactProducts();
+    loadAllContactLists();
   }, []);
 
   const loadContacts = async () => {
@@ -115,6 +124,40 @@ export const ContactManager: React.FC = () => {
       setEmailLists(data || []);
     } catch (error) {
       console.error('Error loading email lists:', error);
+    }
+  };
+
+  const loadAllContactProducts = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('contact_products')
+        .select(`
+          *,
+          product:products(*),
+          contact:contacts(*)
+        `);
+
+      if (error) throw error;
+      setAllContactProducts(data || []);
+    } catch (error) {
+      console.error('Error loading all contact products:', error);
+    }
+  };
+
+  const loadAllContactLists = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('contact_lists')
+        .select(`
+          *,
+          email_list:email_lists(*),
+          contact:contacts(*)
+        `);
+
+      if (error) throw error;
+      setAllContactLists(data || []);
+    } catch (error) {
+      console.error('Error loading all contact lists:', error);
     }
   };
 
@@ -196,6 +239,7 @@ export const ContactManager: React.FC = () => {
       if (error) throw error;
 
       await loadContactProducts(contactId);
+      await loadAllContactProducts(); // Refresh global data
       toast.success('Product added to contact');
     } catch (error) {
       console.error('Error adding product to contact:', error);
@@ -215,6 +259,7 @@ export const ContactManager: React.FC = () => {
       if (error) throw error;
 
       await loadContactLists(contactId);
+      await loadAllContactLists(); // Refresh global data
       toast.success('Contact added to list');
     } catch (error) {
       console.error('Error adding contact to list:', error);
@@ -232,6 +277,7 @@ export const ContactManager: React.FC = () => {
       if (error) throw error;
 
       setContactProducts(prev => prev.filter(cp => cp.id !== contactProductId));
+      await loadAllContactProducts(); // Refresh global data
       toast.success('Product removed from contact');
     } catch (error) {
       console.error('Error removing product from contact:', error);
@@ -249,6 +295,7 @@ export const ContactManager: React.FC = () => {
       if (error) throw error;
 
       setContactLists(prev => prev.filter(cl => cl.id !== contactListId));
+      await loadAllContactLists(); // Refresh global data
       toast.success('Contact removed from list');
     } catch (error) {
       console.error('Error removing contact from list:', error);
@@ -262,6 +309,25 @@ export const ContactManager: React.FC = () => {
     loadContactLists(contact.id);
     setShowContactDetails(true);
   };
+
+  // Filter contacts based on search query, product, and list
+  const filteredContacts = contacts.filter(contact => {
+    // Search filter
+    const matchesSearch = searchQuery === '' || 
+      contact.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (contact.first_name && contact.first_name.toLowerCase().includes(searchQuery.toLowerCase())) ||
+      (contact.last_name && contact.last_name.toLowerCase().includes(searchQuery.toLowerCase()));
+
+    // Product filter
+    const matchesProduct = filterByProduct === '' || 
+      allContactProducts.some(cp => cp.contact_id === contact.id && cp.product_id === filterByProduct);
+
+    // List filter
+    const matchesList = filterByList === '' || 
+      allContactLists.some(cl => cl.contact_id === contact.id && cl.list_id === filterByList);
+
+    return matchesSearch && matchesProduct && matchesList;
+  });
 
   return (
     <div className="space-y-6">
@@ -320,21 +386,73 @@ export const ContactManager: React.FC = () => {
         </Dialog>
       </div>
 
+      {/* Filters */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Filters</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="search">Search Contacts</Label>
+              <Input
+                id="search"
+                placeholder="Search by name or email..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="product-filter">Filter by Product</Label>
+              <Select value={filterByProduct} onValueChange={setFilterByProduct}>
+                <SelectTrigger>
+                  <SelectValue placeholder="All Products" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="">All Products</SelectItem>
+                  {products.map((product) => (
+                    <SelectItem key={product.id} value={product.id}>
+                      {product.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="list-filter">Filter by List</Label>
+              <Select value={filterByList} onValueChange={setFilterByList}>
+                <SelectTrigger>
+                  <SelectValue placeholder="All Lists" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="">All Lists</SelectItem>
+                  {emailLists.map((list) => (
+                    <SelectItem key={list.id} value={list.id}>
+                      {list.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center">
             <Users className="h-5 w-5 mr-2" />
-            Contacts ({contacts.length})
+            Contacts ({filteredContacts.length} of {contacts.length})
           </CardTitle>
         </CardHeader>
         <CardContent>
           <div className="space-y-3">
-            {contacts.length === 0 ? (
+            {filteredContacts.length === 0 ? (
               <p className="text-muted-foreground text-center py-8">
-                No contacts found. Add your first contact above.
+                {contacts.length === 0 ? 'No contacts found. Add your first contact above.' : 'No contacts match your current filters.'}
               </p>
             ) : (
-              contacts.map((contact) => (
+              filteredContacts.map((contact) => (
                 <div
                   key={contact.id}
                   className="flex items-center justify-between p-4 border rounded-lg cursor-pointer hover:bg-gray-50"
