@@ -568,10 +568,8 @@ ${emailHtml.replace(/<html[^>]*>/, '').replace('</html>', '')}
 
       if (data?.htmlContent) {
         let cleaned = cleanHtmlContent(data.htmlContent);
-        // Inline CSS styles for better email client compatibility
+        // Just inline CSS styles - don't mess with anything else
         cleaned = inlineCssStyles(cleaned);
-        // Make HTML email-client friendly
-        cleaned = makeEmailClientFriendly(cleaned);
         
         setOriginalTemplate(cleaned); // Store original for color changes
         setGeneratedTemplate(cleaned);
