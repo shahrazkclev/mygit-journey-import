@@ -444,10 +444,13 @@ export const CampaignComposer: React.FC<CampaignComposerProps> = ({ onSave }) =>
     setIsEditingWithAI(true);
 
     try {
+      // Enhance the edit prompt with product details if products are mentioned
+      const enhancedEditPrompt = enhancePromptWithProductDetails(aiEditPrompt);
+      
       const { data, error } = await supabase.functions.invoke('edit-email', {
         body: {
           htmlContent: generatedTemplate,
-          editInstruction: aiEditPrompt,
+          editInstruction: enhancedEditPrompt,
           themeColors: themeColors,
           // Include style guide context for AI editing
           styleGuide: styleGuide ? {
