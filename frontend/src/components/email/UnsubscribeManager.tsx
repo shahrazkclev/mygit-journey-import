@@ -178,9 +178,10 @@ export const UnsubscribeManager = () => {
               <Calendar className="h-5 w-5 text-email-warning" />
               <div>
                 <p className="text-2xl font-bold">
-                  {unsubscribedUsers.filter(u => 
-                    new Date(u.unsubscribed_at) > new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)
-                  ).length}
+                  {unsubscribedUsers.filter(u => {
+                    const date = u.unsubscribed_at || u.created_at;
+                    return date && new Date(date) > new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+                  }).length}
                 </p>
                 <p className="text-sm text-muted-foreground">This Week</p>
               </div>
