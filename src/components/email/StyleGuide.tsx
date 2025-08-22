@@ -24,6 +24,7 @@ interface BrandIdentity {
   brandVoice: string;
   logo: string;
   signature: string;
+  signatureFont: string;
 }
 
 interface PageThemeColors {
@@ -44,7 +45,8 @@ export const StyleGuide = () => {
     voice: "friendly",
     brandVoice: "Clean and professional aesthetic using generous white space and a card-based design to create an organized and user-friendly experience. The tone should be helpful and direct.",
     logo: "",
-    signature: "Best regards,\nCleverpoly\n\nIf you have any questions or need assistance, feel free to contact us at cleverpoly.store@gmail.com"
+    signature: "Best regards,\nCleverpoly\n\nIf you have any questions or need assistance, feel free to contact us at cleverpoly.store@gmail.com",
+    signatureFont: "'Dancing Script', cursive"
   });
 
   const [jsonPrompt, setJsonPrompt] = useState<string>("");
@@ -106,6 +108,7 @@ export const StyleGuide = () => {
             brandVoice: guide.brand_voice || '',
             logo: guide.logo_url || '',
             signature: guide.email_signature,
+            signatureFont: guide.signature_font || "'Dancing Script', cursive",
           });
           setBrandInitialized(true);
         }
@@ -212,6 +215,7 @@ export const StyleGuide = () => {
         brand_voice: brandIdentity.brandVoice,
         logo_url: brandIdentity.logo,
         email_signature: brandIdentity.signature,
+        signature_font: brandIdentity.signatureFont,
         page_theme_primary: pageThemeColors.primary,
         page_theme_secondary: pageThemeColors.secondary,
         page_theme_accent: pageThemeColors.accent,
@@ -275,6 +279,7 @@ export const StyleGuide = () => {
             brandVoice: brandIdentity.brandVoice,
             logoUrl: brandIdentity.logo,
             emailSignature: brandIdentity.signature,
+            signatureFont: brandIdentity.signatureFont,
           }
         }
       });
@@ -546,18 +551,43 @@ export const StyleGuide = () => {
               />
           </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="signature">Email Signature</Label>
-              <Textarea
-                id="signature"
-                value={brandIdentity.signature}
-                onChange={(e) => {
-                  setBrandIdentity({...brandIdentity, signature: e.target.value});
-                  setTimeout(() => saveBrandToSupabase(), 1000);
-                }}
-                placeholder="Best regards,&#10;The Team"
-                rows={3}
-              />
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="signature">Email Signature</Label>
+                <Textarea
+                  id="signature"
+                  value={brandIdentity.signature}
+                  onChange={(e) => {
+                    setBrandIdentity({...brandIdentity, signature: e.target.value});
+                    setTimeout(() => saveBrandToSupabase(), 1000);
+                  }}
+                  placeholder="Best regards,&#10;The Team"
+                  rows={3}
+                />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="signatureFont">Signature Font</Label>
+              <Select value={brandIdentity.signatureFont} onValueChange={(value) => {
+                setBrandIdentity({...brandIdentity, signatureFont: value});
+                setTimeout(() => saveBrandToSupabase(), 1000);
+              }}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="'Dancing Script', cursive">Dancing Script (Handwritten)</SelectItem>
+                  <SelectItem value="'Pacifico', cursive">Pacifico (Friendly Script)</SelectItem>
+                  <SelectItem value="'Great Vibes', cursive">Great Vibes (Elegant Script)</SelectItem>
+                  <SelectItem value="'Satisfy', cursive">Satisfy (Casual Script)</SelectItem>
+                  <SelectItem value="'Lobster', cursive">Lobster (Bold Script)</SelectItem>
+                  <SelectItem value="'Caveat', cursive">Caveat (Handwriting)</SelectItem>
+                  <SelectItem value="Georgia, serif">Georgia (Classic Serif)</SelectItem>
+                  <SelectItem value="'Times New Roman', serif">Times New Roman (Traditional)</SelectItem>
+                  <SelectItem value="Arial, sans-serif">Arial (Clean Sans-serif)</SelectItem>
+                  <SelectItem value="'Segoe UI', sans-serif">Segoe UI (Modern Sans-serif)</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
           </div>
         </CardContent>
       </Card>

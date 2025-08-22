@@ -13,7 +13,7 @@ serve(async (req) => {
   }
 
   try {
-    const { subject = 'Hello', prompt = '' } = await req.json();
+    const { subject = 'Hello', prompt = '', styleGuide } = await req.json();
 
     console.log('Generating AI content with beautiful styling');
 
@@ -64,6 +64,21 @@ Return ONLY the email body content (no HTML tags, just the text content).`;
       `<p class="paragraph">${p.trim()}</p>`
     ).join('\n    ');
 
+    // Extract style guide info
+    const brandName = styleGuide?.brandName || 'Cleverpoly.Store';
+    const primaryColor = styleGuide?.primaryColor || '#6A7059';
+    const fontFamily = styleGuide?.fontFamily || 'Inter, Lato, \'Open Sans\', Arial, sans-serif';
+    const emailSignature = styleGuide?.emailSignature || 'Best regards,\nCleverpoly';
+    const signatureFont = styleGuide?.signatureFont || '\'Dancing Script\', cursive';
+
+    // Import Google Fonts for signature if needed
+    const googleFontsImport = signatureFont.includes('Dancing Script') ? '@import url(\'https://fonts.googleapis.com/css2?family=Dancing+Script:wght@400;700&display=swap\');' :
+                             signatureFont.includes('Pacifico') ? '@import url(\'https://fonts.googleapis.com/css2?family=Pacifico&display=swap\');' :
+                             signatureFont.includes('Great Vibes') ? '@import url(\'https://fonts.googleapis.com/css2?family=Great+Vibes&display=swap\');' :
+                             signatureFont.includes('Satisfy') ? '@import url(\'https://fonts.googleapis.com/css2?family=Satisfy&display=swap\');' :
+                             signatureFont.includes('Lobster') ? '@import url(\'https://fonts.googleapis.com/css2?family=Lobster&display=swap\');' :
+                             signatureFont.includes('Caveat') ? '@import url(\'https://fonts.googleapis.com/css2?family=Caveat:wght@400;700&display=swap\');' : '';
+
     const htmlContent = `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -71,13 +86,14 @@ Return ONLY the email body content (no HTML tags, just the text content).`;
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Email</title>
   <style>
+    ${googleFontsImport}
     /* Base */
-    body { margin:0; padding:24px; background:#F5F5F0; color:#333333; font-family: Inter, Lato, 'Open Sans', Arial, sans-serif; }
+    body { margin:0; padding:24px; background:#F5F5F0; color:#333333; font-family: ${fontFamily}; }
     .container { max-width:600px; margin:0 auto; background:#FFFFFF; border-radius:16px; padding:32px; }
     .hr { height:1px; background:#E5E7EB; margin:24px 0; }
 
     /* Header */
-    .brand { text-align:center; font-size:28px; font-weight:700; color:#333333; margin:8px 0 24px; }
+    .brand { text-align:center; font-size:28px; font-weight:700; color:${primaryColor}; margin:8px 0 24px; }
 
     /* Titles */
     .title { font-size:24px; font-weight:700; text-align:center; margin:0 0 16px; color:#333333; }
@@ -87,11 +103,11 @@ Return ONLY the email body content (no HTML tags, just the text content).`;
     .card { background:#F9F8F5; border-radius:12px; padding:24px; margin:20px 0; }
 
     /* Buttons / Links */
-    .button { display:inline-block; background:#6A7059; color:#FFFFFF; padding:12px 24px; text-decoration:none; border-radius:8px; font-weight:600; margin:12px 0; }
-    .link { color:#6A7059; text-decoration:none; }
+    .button { display:inline-block; background:${primaryColor}; color:#FFFFFF; padding:12px 24px; text-decoration:none; border-radius:8px; font-weight:600; margin:12px 0; }
+    .link { color:${primaryColor}; text-decoration:none; }
 
     /* Footer */
-    .footer { margin-top:28px; font-size:14px; line-height:1.7; color:#333333; }
+    .footer { margin-top:28px; font-size:16px; line-height:1.7; color:#333333; font-family: ${signatureFont}; }
     .divider { height:1px; background:#E5E7EB; margin:28px 0; }
 
     /* Responsive */
@@ -104,7 +120,7 @@ Return ONLY the email body content (no HTML tags, just the text content).`;
 </head>
 <body>
   <div class="container">
-    <div class="brand">Cleverpoly.Store</div>
+    <div class="brand">${brandName}</div>
     <div class="hr"></div>
 
     ${paragraphs}
@@ -112,8 +128,7 @@ Return ONLY the email body content (no HTML tags, just the text content).`;
     <div class="divider"></div>
 
     <div class="footer">
-      <p style="margin:0 0 4px">Best regards,</p>
-      <p style="margin:0">Cleverpoly</p>
+      ${emailSignature.split('\n').map(line => `<p style="margin:0 0 4px">${line}</p>`).join('')}
     </div>
   </div>
 </body>
@@ -129,31 +144,36 @@ Return ONLY the email body content (no HTML tags, just the text content).`;
     
     // Fallback with user's prompt
     const safePrompt = String(prompt || '').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    const brandName = styleGuide?.brandName || 'Cleverpoly.Store';
+    const primaryColor = styleGuide?.primaryColor || '#6A7059';
+    const fontFamily = styleGuide?.fontFamily || 'Inter, sans-serif';
+    const emailSignature = styleGuide?.emailSignature || 'Best regards,\nCleverpoly';
+    const signatureFont = styleGuide?.signatureFont || '\'Dancing Script\', cursive';
+
     const fallbackHtml = `<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>${subject}</title>
+  <title>Email</title>
   <style>
-    body { margin:0; padding:24px; background:#F5F5F0; color:#333333; font-family: Inter, sans-serif; }
+    @import url('https://fonts.googleapis.com/css2?family=Dancing+Script:wght@400;700&display=swap');
+    body { margin:0; padding:24px; background:#F5F5F0; color:#333333; font-family: ${fontFamily}; }
     .container { max-width:600px; margin:0 auto; background:#FFFFFF; border-radius:16px; padding:32px; }
-    .brand { text-align:center; font-size:28px; font-weight:700; color:#333333; margin:8px 0 24px; }
-    .title { font-size:24px; font-weight:700; text-align:center; margin:0 0 16px; color:#333333; }
+    .brand { text-align:center; font-size:28px; font-weight:700; color:${primaryColor}; margin:8px 0 24px; }
     .paragraph { font-size:16px; margin:0 0 16px; line-height:1.6; }
     .hr { height:1px; background:#E5E7EB; margin:24px 0; }
+    .footer { margin-top:28px; font-size:16px; line-height:1.7; color:#333333; font-family: ${signatureFont}; }
   </style>
 </head>
 <body>
   <div class="container">
-    <div class="brand">Cleverpoly.Store</div>
+    <div class="brand">${brandName}</div>
     <div class="hr"></div>
-    <h2 class="title">${subject}</h2>
     <p class="paragraph">Hey,</p>
     <p class="paragraph">${safePrompt}</p>
-    <div style="margin-top:28px;">
-      <p style="margin:0 0 4px">Best regards,</p>
-      <p style="margin:0">Cleverpoly</p>
+    <div class="footer">
+      ${emailSignature.split('\n').map(line => `<p style="margin:0 0 4px">${line}</p>`).join('')}
     </div>
   </div>
 </body>
