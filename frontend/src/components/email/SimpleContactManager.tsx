@@ -41,6 +41,14 @@ export const SimpleContactManager = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [allTags, setAllTags] = useState<string[]>([]);
   const [isMakeIntegrationOpen, setIsMakeIntegrationOpen] = useState(false);
+  
+  // Bulk operations state
+  const [selectedContacts, setSelectedContacts] = useState<Set<string>>(new Set());
+  const [showBulkTagDialog, setShowBulkTagDialog] = useState(false);
+  const [showBulkListDialog, setShowBulkListDialog] = useState(false);
+  const [bulkTags, setBulkTags] = useState('');
+  const [emailLists, setEmailLists] = useState<any[]>([]);
+  const [selectedBulkLists, setSelectedBulkLists] = useState<string[]>([]);
 
   // Add contact form state
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
