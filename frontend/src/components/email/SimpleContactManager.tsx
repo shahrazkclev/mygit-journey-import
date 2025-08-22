@@ -372,85 +372,114 @@ export const SimpleContactManager = () => {
       </Card>
 
       {/* Contacts Management */}
-      <Card className="shadow-soft">
+      <Card className="shadow-soft bg-gradient-to-br from-email-background to-background">
         <CardHeader>
           <div className="flex items-center justify-between">
             <div>
               <CardTitle className="flex items-center space-x-2">
                 <Users className="h-5 w-5 text-email-secondary" />
-                <span>Contacts ({filteredContacts.length})</span>
+                <span className="text-email-secondary">Contacts ({filteredContacts.length})</span>
+                {selectedContacts.size > 0 && (
+                  <Badge variant="secondary" className="bg-email-accent/20 text-email-accent">
+                    {selectedContacts.size} selected
+                  </Badge>
+                )}
               </CardTitle>
               <CardDescription>
                 Manage your contacts with tag-based organization
               </CardDescription>
             </div>
-            <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
-              <DialogTrigger asChild>
-                <Button className="bg-email-primary hover:bg-email-primary/80">
-                  <Plus className="h-4 w-4 mr-2" />
-                  Add Contact
-                </Button>
-              </DialogTrigger>
-              <DialogContent>
-                <DialogHeader>
-                  <DialogTitle>Add New Contact</DialogTitle>
-                  <DialogDescription>
-                    Add a new contact with tags for better organization
-                  </DialogDescription>
-                </DialogHeader>
-                <div className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="name">Name</Label>
-                    <Input
-                      id="name"
-                      value={newContact.name}
-                      onChange={(e) => setNewContact({...newContact, name: e.target.value})}
-                      placeholder="John Doe"
-                    />
+            <div className="flex space-x-2">
+              {selectedContacts.size > 0 && (
+                <>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setShowBulkTagDialog(true)}
+                    className="border-email-accent text-email-accent hover:bg-email-accent/10"
+                  >
+                    <Tag className="h-4 w-4 mr-1" />
+                    Add Tags
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setShowBulkListDialog(true)}
+                    className="border-email-secondary text-email-secondary hover:bg-email-secondary/10"
+                  >
+                    <Users className="h-4 w-4 mr-1" />
+                    Add to Lists
+                  </Button>
+                </>
+              )}
+              <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
+                <DialogTrigger asChild>
+                  <Button className="bg-email-primary hover:bg-email-primary/80">
+                    <Plus className="h-4 w-4 mr-2" />
+                    Add Contact
+                  </Button>
+                </DialogTrigger>
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle>Add New Contact</DialogTitle>
+                    <DialogDescription>
+                      Add a new contact with tags for better organization
+                    </DialogDescription>
+                  </DialogHeader>
+                  <div className="space-y-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="name">Name</Label>
+                      <Input
+                        id="name"
+                        value={newContact.name}
+                        onChange={(e) => setNewContact({...newContact, name: e.target.value})}
+                        placeholder="John Doe"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="email">Email *</Label>
+                      <Input
+                        id="email"
+                        type="email"
+                        value={newContact.email}
+                        onChange={(e) => setNewContact({...newContact, email: e.target.value})}
+                        placeholder="john@example.com"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="phone">Phone</Label>
+                      <Input
+                        id="phone"
+                        value={newContact.phone}
+                        onChange={(e) => setNewContact({...newContact, phone: e.target.value})}
+                        placeholder="+1234567890"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="tags">Tags (comma-separated)</Label>
+                      <Input
+                        id="tags"
+                        value={newContact.tags}
+                        onChange={(e) => setNewContact({...newContact, tags: e.target.value})}
+                        placeholder="customer, premium, lazy-motion-library"
+                      />
+                    </div>
+                    <div className="flex space-x-2">
+                      <Button onClick={handleAddContact} className="flex-1">
+                        Add Contact
+                      </Button>
+                      <Button 
+                        variant="outline" 
+                        onClick={() => setIsAddDialogOpen(false)}
+                        className="flex-1"
+                      >
+                        Cancel
+                      </Button>
+                    </div>
                   </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="email">Email *</Label>
-                    <Input
-                      id="email"
-                      type="email"
-                      value={newContact.email}
-                      onChange={(e) => setNewContact({...newContact, email: e.target.value})}
-                      placeholder="john@example.com"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="phone">Phone</Label>
-                    <Input
-                      id="phone"
-                      value={newContact.phone}
-                      onChange={(e) => setNewContact({...newContact, phone: e.target.value})}
-                      placeholder="+1234567890"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="tags">Tags (comma-separated)</Label>
-                    <Input
-                      id="tags"
-                      value={newContact.tags}
-                      onChange={(e) => setNewContact({...newContact, tags: e.target.value})}
-                      placeholder="customer, premium, lazy-motion-library"
-                    />
-                  </div>
-                  <div className="flex space-x-2">
-                    <Button onClick={handleAddContact} className="flex-1">
-                      Add Contact
-                    </Button>
-                    <Button 
-                      variant="outline" 
-                      onClick={() => setIsAddDialogOpen(false)}
-                      className="flex-1"
-                    >
-                      Cancel
-                    </Button>
-                  </div>
-                </div>
-              </DialogContent>
-            </Dialog>
+                </DialogContent>
+              </Dialog>
+            </div>
           </div>
         </CardHeader>
         <CardContent className="space-y-4">
