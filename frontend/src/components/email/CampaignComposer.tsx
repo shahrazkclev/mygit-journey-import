@@ -73,6 +73,12 @@ export const CampaignComposer: React.FC<CampaignComposerProps> = ({ onSave }) =>
   const [emailLists, setEmailLists] = useState<any[]>([]);
   const [products, setProducts] = useState<any[]>([]);
 
+  // Product autocomplete state
+  const [showProductAutocomplete, setShowProductAutocomplete] = useState(false);
+  const [autocompletePosition, setAutocompletePosition] = useState({ top: 0, left: 0 });
+  const [currentMatch, setCurrentMatch] = useState<{product: any, startIndex: number, partialName: string} | null>(null);
+  const promptTextareaRef = React.useRef<HTMLTextAreaElement>(null);
+
   useEffect(() => {
     loadEmailLists();
     loadProducts();
