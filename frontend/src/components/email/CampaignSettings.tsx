@@ -170,11 +170,12 @@ export const CampaignSettings = () => {
               <div className="flex gap-3">
                 <Button 
                   onClick={handleTestWebhook}
+                  disabled={isTestingWebhook}
                   variant="outline"
                   className="border-email-secondary hover:bg-email-secondary/10 text-email-secondary"
                 >
                   <Zap className="h-4 w-4 mr-2" />
-                  Test Connection
+                  {isTestingWebhook ? 'Testing...' : 'Test Connection'}
                 </Button>
                 <Button 
                   onClick={handleSaveSettings}
