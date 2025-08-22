@@ -13,6 +13,9 @@ import { Mail, Users, List, Settings, History, UserX, Palette } from "lucide-rea
 
 export const EmailCampaignApp = () => {
   const [activeTab, setActiveTab] = useState("compose");
+  
+  // Initialize global theme
+  useGlobalTheme();
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-email-background to-background">
