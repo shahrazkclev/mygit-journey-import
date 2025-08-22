@@ -889,6 +889,30 @@ export const SimpleContactManager = () => {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Edit Contact Dialog */}
+      {editingContact && (
+        <EditContactDialog
+          contact={{
+            id: editingContact.id,
+            email: editingContact.email,
+            first_name: editingContact.name.split(' ')[0] || '',
+            last_name: editingContact.name.split(' ').slice(1).join(' ') || null,
+            status: 'subscribed', // default status
+            tags: editingContact.tags
+          }}
+          isOpen={showEditContactDialog}
+          onClose={() => {
+            setShowEditContactDialog(false);
+            setEditingContact(null);
+          }}
+          onContactUpdated={() => {
+            loadContacts();
+            setShowEditContactDialog(false);
+            setEditingContact(null);
+          }}
+        />
+      )}
     </div>
   );
 };
