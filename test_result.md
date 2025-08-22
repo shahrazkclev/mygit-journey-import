@@ -392,7 +392,31 @@ frontend:
     status_history:
         -working: "NA"
         -agent: "main"
-        -comment: "Added product loading and prompt enhancement functionality. When product names are mentioned in AI prompts, their full details (description, price, category, SKU) are automatically appended to provide accurate information to the AI."
+        -comment: "Added product loading and prompt enhancement functionality. When product names are mentioned in AI prompts, their full details (description, price, category, SKU) are automatically appended to provide accurate information to the AI. Fixed database import - all 36 products successfully imported."
+        
+  - task: "Comprehensive color and visibility improvements across all tabs"
+    implemented: true
+    working: "NA"
+    file: "Multiple component files across all tabs"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+        -working: "NA"
+        -agent: "main"
+        -comment: "Applied consistent email theme colors across ALL tabs: gradient backgrounds, themed borders, consistent text colors using email-primary/secondary/accent variables. Improved Cards, Labels, Buttons, Icons throughout Compose, Contacts, Lists, Products, Settings, History, and Style tabs."
+        
+  - task: "Smart product autocomplete in AI prompt"
+    implemented: true
+    working: "NA"
+    file: "/app/frontend/src/components/email/CampaignComposer.tsx"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+        -working: "NA"
+        -agent: "main"
+        -comment: "Added intelligent autocomplete in AI prompt textarea. When typing product names (3+ chars), shows greyed preview with product details. Tab/Enter key inserts full product info format: 'Product Name (category - $price)'. Includes real-time matching, positioning, and keyboard navigation."
 
 metadata:
   created_by: "main_agent"
