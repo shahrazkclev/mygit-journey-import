@@ -121,7 +121,7 @@ export const SendCampaignModal: React.FC<SendCampaignModalProps> = ({
       try {
         const { data: campaign, error } = await supabase
           .from('campaigns')
-          .select('status, total_recipients, sent_count')
+          .select('status, total_recipients, sent_count, current_sender_sequence')
           .eq('id', id)
           .single();
 
