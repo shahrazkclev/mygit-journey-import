@@ -206,6 +206,111 @@ export const CampaignComposer: React.FC<CampaignComposerProps> = ({ onSave }) =>
     return enhancedPrompt;
   };
 
+  // Product autocomplete functionality
+  const findProductMatch = (text: string, cursorPosition: number) => {
+    // Find the start of the current word
+    let wordStart = cursorPosition;
+    while (wordStart > 0 && /\w/.test(text[wordStart - 1])) {
+      wordStart--;
+    }
+    
+    // Find the end of the current word
+    let wordEnd = cursorPosition;
+    while (wordEnd < text.length && /\w/.test(text[wordEnd])) {
+      wordEnd++;
+    }
+    
+    const currentWord = text.substring(wordStart, wordEnd).toLowerCase();
+    
+    // Only show autocomplete if we have at least 3 characters
+    if (currentWord.length < 3) return null;
+    
+    // Find matching products
+    const matchingProduct = products.find(product => 
+      product.name.toLowerCase().startsWith(currentWord)
+    );
+    
+    if (matchingProduct) {
+      return {
+        product: matchingProduct,
+        startIndex: wordStart,
+        partialName: currentWord
+      };
+    }
+    
+    return null;
+  };
+
+  const handlePromptChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    const newPrompt = e.target.value;
+    const cursorPosition = e.target.selectionStart;
+    
+    setPrompt(newPrompt);
+    
+    // Check for product matches
+    const match = findProductMatch(newPrompt, cursorPosition);
+    
+    if (match) {
+      setCurrentMatch(match);
+      setShowProductAutocomplete(true);
+      
+      // Calculate position for autocomplete dropdown
+      const textarea = e.target;
+      const textBeforeCursor = newPrompt.substring(0, match.startIndex);
+      const lines = textBeforeCursor.split('\n');
+      const currentLine = lines.length - 1;
+      const charPosition = lines[lines.length - 1].length;
+      
+      // Rough calculation for position (you might need to adjust)
+      const lineHeight = 24; // approximate line height
+      const charWidth = 8; // approximate character width
+      
+      setAutocompletePosition({
+        top: currentLine * lineHeight + 30,
+        left: charPosition * charWidth
+      });
+    } else {
+      setShowProductAutocomplete(false);
+      setCurrentMatch(null);
+    }
+  };
+
+  const handleProductInsert = () => {
+    if (!currentMatch || !promptTextareaRef.current) return;
+    
+    const textarea = promptTextareaRef.current;
+    const product = currentMatch.product;
+    
+    // Create product details text
+    const productDetails = `${product.name} (${product.category} - $${product.price})`;
+    
+    // Replace the partial text with full product details
+    const beforeText = prompt.substring(0, currentMatch.startIndex);
+    const afterText = prompt.substring(currentMatch.startIndex + currentMatch.partialName.length);
+    const newPrompt = beforeText + productDetails + afterText;
+    
+    setPrompt(newPrompt);
+    setShowProductAutocomplete(false);
+    setCurrentMatch(null);
+    
+    // Focus back on textarea
+    setTimeout(() => {
+      textarea.focus();
+      const newPosition = beforeText.length + productDetails.length;
+      textarea.setSelectionRange(newPosition, newPosition);
+    }, 0);
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (showProductAutocomplete && (e.key === 'Tab' || e.key === 'Enter')) {
+      e.preventDefault();
+      handleProductInsert();
+    } else if (e.key === 'Escape') {
+      setShowProductAutocomplete(false);
+      setCurrentMatch(null);
+    }
+  };
+
   // Clean code fences and extraneous markdown around returned HTML
   const cleanHtmlContent = (raw: string) => {
     try {
