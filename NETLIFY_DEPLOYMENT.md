@@ -21,9 +21,14 @@ The Radix UI build error has been resolved by removing the problematic manual ch
 
 ### 2. Netlify Site Settings
 - **Build Command**: `npm ci && npm run build`
-- **Publish Directory**: `frontend/build`
+- **Publish Directory**: `build` (NOT `frontend/build`)
 - **Base Directory**: `frontend`
 - **Node Version**: 18
+
+### ❌ Deploy Directory Error: 'frontend/frontend/build' does not exist
+**Status**: ✅ FIXED - Updated netlify.toml to use `publish = "build"` instead of `publish = "frontend/build"`
+**Cause**: Netlify combines base + publish paths, so `base: "frontend"` + `publish: "frontend/build"` = `"frontend/frontend/build"`
+**Solution**: Use `publish = "build"` (relative to base directory)
 
 ### 3. Environment Variables (Required)
 Set these in Netlify Dashboard → Site Settings → Environment Variables:
