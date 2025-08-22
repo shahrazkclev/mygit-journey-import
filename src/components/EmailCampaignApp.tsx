@@ -2,9 +2,11 @@ import { useState, useEffect } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Mail, Users, Settings, UserX, Sparkles, Send, Wifi } from "lucide-react";
+import { Mail, Users, Settings, UserX, Sparkles, Send, Wifi, User, Package } from "lucide-react";
 import { CampaignComposer } from "./email/CampaignComposer";
 import { EmailListManager } from "./email/EmailListManager";
+import { ContactManager } from "./email/ContactManager";
+import { ProductManager } from "./email/ProductManager";
 import { CampaignSettings } from "./email/CampaignSettings";
 import { UnsubscribeManager } from "./email/UnsubscribeManager";
 import { StyleGuide } from "./email/StyleGuide";
@@ -65,7 +67,7 @@ export const EmailCampaignApp = () => {
           </CardHeader>
         </Card>
           <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-            <TabsList className="grid w-full grid-cols-5 lg:w-fit lg:grid-cols-5 bg-card shadow-soft">
+            <TabsList className="grid w-full grid-cols-6 lg:w-fit lg:grid-cols-6 bg-card shadow-soft">
               <TabsTrigger value="compose" className="flex items-center space-x-2">
                 <Sparkles className="h-4 w-4" />
                 <span className="hidden sm:inline">Compose</span>
@@ -74,6 +76,14 @@ export const EmailCampaignApp = () => {
                 <Users className="h-4 w-4" />
                 <span className="hidden sm:inline">Lists</span>
               </TabsTrigger>
+              <TabsTrigger value="contacts" className="flex items-center space-x-2">
+                <User className="h-4 w-4" />
+                <span className="hidden sm:inline">Contacts</span>
+              </TabsTrigger>
+               <TabsTrigger value="products" className="flex items-center space-x-2">
+                 <Package className="h-4 w-4" />
+                 <span className="hidden sm:inline">Products</span>
+               </TabsTrigger>
               <TabsTrigger value="settings" className="flex items-center space-x-2">
                 <Settings className="h-4 w-4" />
                 <span className="hidden sm:inline">Settings</span>
@@ -103,7 +113,7 @@ export const EmailCampaignApp = () => {
                   <CampaignComposer />
                 </CardContent>
               </Card>
-            </TabsContent>
+          </TabsContent>
 
             <TabsContent value="lists" className="space-y-6">
               <Card className="shadow-soft border-secondary/20">
@@ -122,17 +132,50 @@ export const EmailCampaignApp = () => {
               </Card>
             </TabsContent>
 
-            <TabsContent value="settings" className="space-y-6">
-              <Card className="shadow-soft border-accent/20">
+            <TabsContent value="contacts" className="space-y-6">
+              <Card className="shadow-soft border-blue-200">
                 <CardHeader>
                   <CardTitle className="flex items-center space-x-2">
-                    <Settings className="h-5 w-5 text-accent" />
-                    <span>Campaign Settings</span>
+                    <User className="h-5 w-5 text-blue-600" />
+                    <span>Contact Management</span>
                   </CardTitle>
                   <CardDescription>
-                    Configure sending patterns, pacing, and Make.com integration
+                    Manage contacts, track purchases, and assign to lists
                   </CardDescription>
                 </CardHeader>
+                <CardContent>
+                  <ContactManager />
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            <TabsContent value="products" className="space-y-6">
+              <Card className="shadow-soft border-orange-200">
+                <CardHeader>
+                  <CardTitle className="flex items-center space-x-2">
+                    <Package className="h-5 w-5 text-orange-600" />
+                    <span>Product Catalog</span>
+                  </CardTitle>
+                  <CardDescription>
+                    Manage your product catalog and track customer purchases
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <ProductManager />
+                </CardContent>
+               </Card>
+             </TabsContent>
+             <TabsContent value="settings" className="space-y-6">
+               <Card className="shadow-soft border-accent/20">
+                 <CardHeader>
+                   <CardTitle className="flex items-center space-x-2">
+                     <Settings className="h-5 w-5 text-accent" />
+                     <span>Campaign Settings</span>
+                   </CardTitle>
+                   <CardDescription>
+                     Configure sending patterns, pacing, and Make.com integration
+                   </CardDescription>
+                 </CardHeader>
                 <CardContent>
                   <CampaignSettings />
                 </CardContent>

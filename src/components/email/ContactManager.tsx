@@ -1,0 +1,509 @@
+import React, { useState, useEffect } from 'react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Badge } from '@/components/ui/badge';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Plus, Edit, Trash2, ShoppingCart, User, Users, Tag } from 'lucide-react';
+import { toast } from 'sonner';
+import { supabase } from '@/integrations/supabase/client';
+import { DEMO_USER_ID } from '@/lib/demo-auth';
+
+interface Contact {
+  id: string;
+  email: string;
+  first_name: string | null;
+  last_name: string | null;
+  status: string;
+  tags: string[] | null;
+  created_at: string;
+}
+
+interface Product {
+  id: string;
+  name: string;
+  description: string | null;
+  price: number | null;
+  category: string | null;
+  sku: string | null;
+}
+
+interface EmailList {
+  id: string;
+  name: string;
+  description: string | null;
+}
+
+interface ContactProduct {
+  id: string;
+  contact_id: string;
+  product_id: string;
+  purchased_at: string;
+  price_paid: number | null;
+  product: Product;
+}
+
+interface ContactList {
+  id: string;
+  contact_id: string;
+  list_id: string;
+  created_at: string;
+  email_list: EmailList;
+}
+
+export const ContactManager: React.FC = () => {
+  const [contacts, setContacts] = useState<Contact[]>([]);
+  const [products, setProducts] = useState<Product[]>([]);
+  const [emailLists, setEmailLists] = useState<EmailList[]>([]);
+  const [selectedContact, setSelectedContact] = useState<Contact | null>(null);
+  const [contactProducts, setContactProducts] = useState<ContactProduct[]>([]);
+  const [contactLists, setContactLists] = useState<ContactList[]>([]);
+  
+  const [newContact, setNewContact] = useState({ email: '', first_name: '', last_name: '' });
+  const [showAddContact, setShowAddContact] = useState(false);
+  const [showContactDetails, setShowContactDetails] = useState(false);
+
+  useEffect(() => {
+    loadContacts();
+    loadProducts();
+    loadEmailLists();
+  }, []);
+
+  const loadContacts = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('contacts')
+        .select('*')
+        .eq('user_id', DEMO_USER_ID)
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      setContacts(data || []);
+    } catch (error) {
+      console.error('Error loading contacts:', error);
+      toast.error('Failed to load contacts');
+    }
+  };
+
+  const loadProducts = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('products')
+        .select('*')
+        .eq('user_id', DEMO_USER_ID)
+        .order('name');
+
+      if (error) throw error;
+      setProducts(data || []);
+    } catch (error) {
+      console.error('Error loading products:', error);
+    }
+  };
+
+  const loadEmailLists = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('email_lists')
+        .select('*')
+        .eq('user_id', DEMO_USER_ID)
+        .order('name');
+
+      if (error) throw error;
+      setEmailLists(data || []);
+    } catch (error) {
+      console.error('Error loading email lists:', error);
+    }
+  };
+
+  const loadContactProducts = async (contactId: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('contact_products')
+        .select(`
+          *,
+          product:products(*)
+        `)
+        .eq('contact_id', contactId);
+
+      if (error) throw error;
+      setContactProducts(data || []);
+    } catch (error) {
+      console.error('Error loading contact products:', error);
+    }
+  };
+
+  const loadContactLists = async (contactId: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('contact_lists')
+        .select(`
+          *,
+          email_list:email_lists(*)
+        `)
+        .eq('contact_id', contactId);
+
+      if (error) throw error;
+      setContactLists(data || []);
+    } catch (error) {
+      console.error('Error loading contact lists:', error);
+    }
+  };
+
+  const addContact = async () => {
+    if (!newContact.email) {
+      toast.error('Email is required');
+      return;
+    }
+
+    try {
+      const { data, error } = await supabase
+        .from('contacts')
+        .insert([{
+          user_id: DEMO_USER_ID,
+          email: newContact.email,
+          first_name: newContact.first_name || null,
+          last_name: newContact.last_name || null,
+          status: 'subscribed'
+        }])
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      setContacts(prev => [data, ...prev]);
+      setNewContact({ email: '', first_name: '', last_name: '' });
+      setShowAddContact(false);
+      toast.success('Contact added successfully');
+    } catch (error) {
+      console.error('Error adding contact:', error);
+      toast.error('Failed to add contact');
+    }
+  };
+
+  const addProductToContact = async (contactId: string, productId: string, pricePaid?: number) => {
+    try {
+      const { error } = await supabase
+        .from('contact_products')
+        .insert([{
+          contact_id: contactId,
+          product_id: productId,
+          price_paid: pricePaid || null
+        }]);
+
+      if (error) throw error;
+
+      await loadContactProducts(contactId);
+      toast.success('Product added to contact');
+    } catch (error) {
+      console.error('Error adding product to contact:', error);
+      toast.error('Failed to add product to contact');
+    }
+  };
+
+  const addContactToList = async (contactId: string, listId: string) => {
+    try {
+      const { error } = await supabase
+        .from('contact_lists')
+        .insert([{
+          contact_id: contactId,
+          list_id: listId
+        }]);
+
+      if (error) throw error;
+
+      await loadContactLists(contactId);
+      toast.success('Contact added to list');
+    } catch (error) {
+      console.error('Error adding contact to list:', error);
+      toast.error('Failed to add contact to list');
+    }
+  };
+
+  const removeProductFromContact = async (contactProductId: string) => {
+    try {
+      const { error } = await supabase
+        .from('contact_products')
+        .delete()
+        .eq('id', contactProductId);
+
+      if (error) throw error;
+
+      setContactProducts(prev => prev.filter(cp => cp.id !== contactProductId));
+      toast.success('Product removed from contact');
+    } catch (error) {
+      console.error('Error removing product from contact:', error);
+      toast.error('Failed to remove product from contact');
+    }
+  };
+
+  const removeContactFromList = async (contactListId: string) => {
+    try {
+      const { error } = await supabase
+        .from('contact_lists')
+        .delete()
+        .eq('id', contactListId);
+
+      if (error) throw error;
+
+      setContactLists(prev => prev.filter(cl => cl.id !== contactListId));
+      toast.success('Contact removed from list');
+    } catch (error) {
+      console.error('Error removing contact from list:', error);
+      toast.error('Failed to remove contact from list');
+    }
+  };
+
+  const openContactDetails = (contact: Contact) => {
+    setSelectedContact(contact);
+    loadContactProducts(contact.id);
+    loadContactLists(contact.id);
+    setShowContactDetails(true);
+  };
+
+  return (
+    <div className="space-y-6">
+      <div className="flex justify-between items-center">
+        <h2 className="text-2xl font-bold">Contact Management</h2>
+        <Dialog open={showAddContact} onOpenChange={setShowAddContact}>
+          <DialogTrigger asChild>
+            <Button>
+              <Plus className="h-4 w-4 mr-2" />
+              Add Contact
+            </Button>
+          </DialogTrigger>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Add New Contact</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="email">Email *</Label>
+                <Input
+                  id="email"
+                  type="email"
+                  value={newContact.email}
+                  onChange={(e) => setNewContact(prev => ({ ...prev, email: e.target.value }))}
+                  placeholder="contact@example.com"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="first_name">First Name</Label>
+                <Input
+                  id="first_name"
+                  value={newContact.first_name}
+                  onChange={(e) => setNewContact(prev => ({ ...prev, first_name: e.target.value }))}
+                  placeholder="John"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="last_name">Last Name</Label>
+                <Input
+                  id="last_name"
+                  value={newContact.last_name}
+                  onChange={(e) => setNewContact(prev => ({ ...prev, last_name: e.target.value }))}
+                  placeholder="Doe"
+                />
+              </div>
+              <div className="flex justify-end space-x-2">
+                <Button variant="outline" onClick={() => setShowAddContact(false)}>
+                  Cancel
+                </Button>
+                <Button onClick={addContact}>
+                  Add Contact
+                </Button>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
+      </div>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center">
+            <Users className="h-5 w-5 mr-2" />
+            Contacts ({contacts.length})
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-3">
+            {contacts.length === 0 ? (
+              <p className="text-muted-foreground text-center py-8">
+                No contacts found. Add your first contact above.
+              </p>
+            ) : (
+              contacts.map((contact) => (
+                <div
+                  key={contact.id}
+                  className="flex items-center justify-between p-4 border rounded-lg cursor-pointer hover:bg-gray-50"
+                  onClick={() => openContactDetails(contact)}
+                >
+                  <div className="flex items-center space-x-3">
+                    <div className="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center">
+                      <User className="h-5 w-5 text-primary" />
+                    </div>
+                    <div>
+                      <div className="font-medium">
+                        {contact.first_name || contact.last_name 
+                          ? `${contact.first_name || ''} ${contact.last_name || ''}`.trim()
+                          : contact.email
+                        }
+                      </div>
+                      <div className="text-sm text-muted-foreground">{contact.email}</div>
+                    </div>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <Badge variant={contact.status === 'subscribed' ? 'default' : 'secondary'}>
+                      {contact.status}
+                    </Badge>
+                    {contact.tags && contact.tags.length > 0 && (
+                      <Badge variant="outline">
+                        <Tag className="h-3 w-3 mr-1" />
+                        {contact.tags.length}
+                      </Badge>
+                    )}
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Contact Details Dialog */}
+      <Dialog open={showContactDetails} onOpenChange={setShowContactDetails}>
+        <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>
+              Contact Details: {selectedContact?.first_name || selectedContact?.last_name 
+                ? `${selectedContact?.first_name || ''} ${selectedContact?.last_name || ''}`.trim()
+                : selectedContact?.email
+              }
+            </DialogTitle>
+          </DialogHeader>
+          
+          {selectedContact && (
+            <Tabs defaultValue="products" className="w-full">
+              <TabsList className="grid w-full grid-cols-2">
+                <TabsTrigger value="products">
+                  <ShoppingCart className="h-4 w-4 mr-2" />
+                  Products ({contactProducts.length})
+                </TabsTrigger>
+                <TabsTrigger value="lists">
+                  <Users className="h-4 w-4 mr-2" />
+                  Lists ({contactLists.length})
+                </TabsTrigger>
+              </TabsList>
+
+              <TabsContent value="products" className="space-y-4">
+                <div className="flex justify-between items-center">
+                  <h3 className="text-lg font-semibold">Purchased Products</h3>
+                  <Select onValueChange={(productId) => addProductToContact(selectedContact.id, productId)}>
+                    <SelectTrigger className="w-48">
+                      <SelectValue placeholder="Add Product" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {products
+                        .filter(product => !contactProducts.some(cp => cp.product_id === product.id))
+                        .map((product) => (
+                          <SelectItem key={product.id} value={product.id}>
+                            {product.name} - ${product.price || 0}
+                          </SelectItem>
+                        ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-3">
+                  {contactProducts.length === 0 ? (
+                    <p className="text-muted-foreground text-center py-8">
+                      No products purchased yet.
+                    </p>
+                  ) : (
+                    contactProducts.map((contactProduct) => (
+                      <div key={contactProduct.id} className="flex items-center justify-between p-4 border rounded-lg">
+                        <div className="flex items-center space-x-3">
+                          <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center">
+                            <ShoppingCart className="h-5 w-5 text-green-600" />
+                          </div>
+                          <div>
+                            <div className="font-medium">{contactProduct.product.name}</div>
+                            <div className="text-sm text-muted-foreground">
+                              Purchased: {new Date(contactProduct.purchased_at).toLocaleDateString()}
+                              {contactProduct.price_paid && ` • $${contactProduct.price_paid}`}
+                            </div>
+                          </div>
+                        </div>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => removeProductFromContact(contactProduct.id)}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </TabsContent>
+
+              <TabsContent value="lists" className="space-y-4">
+                <div className="flex justify-between items-center">
+                  <h3 className="text-lg font-semibold">Email Lists</h3>
+                  <Select onValueChange={(listId) => addContactToList(selectedContact.id, listId)}>
+                    <SelectTrigger className="w-48">
+                      <SelectValue placeholder="Add to List" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {emailLists
+                        .filter(list => !contactLists.some(cl => cl.list_id === list.id))
+                        .map((list) => (
+                          <SelectItem key={list.id} value={list.id}>
+                            {list.name}
+                          </SelectItem>
+                        ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-3">
+                  {contactLists.length === 0 ? (
+                    <p className="text-muted-foreground text-center py-8">
+                      Not in any email lists yet.
+                    </p>
+                  ) : (
+                    contactLists.map((contactList) => (
+                      <div key={contactList.id} className="flex items-center justify-between p-4 border rounded-lg">
+                        <div className="flex items-center space-x-3">
+                          <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
+                            <Users className="h-5 w-5 text-blue-600" />
+                          </div>
+                          <div>
+                            <div className="font-medium">{contactList.email_list.name}</div>
+                            <div className="text-sm text-muted-foreground">
+                              Added: {new Date(contactList.created_at).toLocaleDateString()}
+                              {contactList.email_list.description && ` • ${contactList.email_list.description}`}
+                            </div>
+                          </div>
+                        </div>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => removeContactFromList(contactList.id)}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </TabsContent>
+            </Tabs>
+          )}
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+};
