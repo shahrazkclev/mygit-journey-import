@@ -151,7 +151,7 @@ async def create_campaign(campaign_data: CampaignCreate, background_tasks: Backg
     return campaign
 
 @api_router.get("/campaigns/{campaign_id}", response_model=Campaign)
-async def get_campaign(campaign_id: str, current_user: str = Depends(verify_token)):
+async def get_campaign(campaign_id: str):
     campaign_doc = await db.campaigns.find_one({"id": campaign_id})
     if not campaign_doc:
         raise HTTPException(status_code=404, detail="Campaign not found")
