@@ -324,6 +324,7 @@ def run_all_tests():
     print(f"Backend URL: {BACKEND_URL}")
     print()
     
+    # Run basic tests first
     results = {
         "health_check": test_health_check(),
         "create_status": test_create_status_check()[0],
@@ -331,6 +332,25 @@ def run_all_tests():
         "cors_config": test_cors_configuration(),
         "mongodb_connection": test_mongodb_connection()
     }
+    
+    # Run campaign management tests
+    print("\n" + "=" * 40)
+    print("🎯 Testing Campaign Management Features")
+    print("=" * 40)
+    
+    campaign_create_success, campaign_id = test_create_campaign()
+    results["create_campaign"] = campaign_create_success
+    
+    if campaign_id:
+        results["get_campaign"] = test_get_campaign(campaign_id)
+        results["get_campaign_progress"] = test_get_campaign_progress(campaign_id)
+    else:
+        results["get_campaign"] = False
+        results["get_campaign_progress"] = False
+    
+    results["webhook_contacts"] = test_webhook_contacts()
+    results["campaign_error_handling"] = test_campaign_error_handling()
+    results["campaign_background_processing"] = test_campaign_background_processing()
     
     print("\n" + "=" * 60)
     print("📊 Test Results Summary")
