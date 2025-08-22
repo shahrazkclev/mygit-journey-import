@@ -313,10 +313,20 @@ async def send_campaign_background(campaign_id: str):
 
 async def send_email_via_webhook(webhook_url: str, recipient: Dict[str, Any], subject: str, html_content: str, sender_sequence: int = 1) -> bool:
     try:
+        # Debug: Log original HTML content
+        logging.info(f"📧 Sending email to: {recipient['email']}")
+        logging.info(f"🔗 Webhook URL: {webhook_url}")
+        logging.info(f"📝 Original HTML contains {{{{RECIPIENT_EMAIL}}}}: {'{{RECIPIENT_EMAIL}}' in html_content}")
+        logging.info(f"📝 Original HTML contains {{{{WEBHOOK_URL}}}}: {'{{WEBHOOK_URL}}' in html_content}")
+        
         # Replace dynamic placeholders in HTML content
         personalized_html = html_content.replace('{{RECIPIENT_EMAIL}}', recipient["email"])
         personalized_html = personalized_html.replace('{{RECIPIENT_NAME}}', recipient.get("name", ""))
         personalized_html = personalized_html.replace('{{WEBHOOK_URL}}', webhook_url)
+        
+        # Debug: Check if replacement worked
+        logging.info(f"✅ After replacement - contains email: {recipient['email'] in personalized_html}")
+        logging.info(f"✅ After replacement - contains webhook: {webhook_url in personalized_html}")
         
         payload = {
             "to": recipient["email"],
