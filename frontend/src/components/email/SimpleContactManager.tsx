@@ -48,8 +48,12 @@ export const SimpleContactManager = () => {
   const [showBulkTagDialog, setShowBulkTagDialog] = useState(false);
   const [showBulkListDialog, setShowBulkListDialog] = useState(false);
   const [bulkTags, setBulkTags] = useState('');
+  const [bulkTagsToRemove, setBulkTagsToRemove] = useState('');
   const [emailLists, setEmailLists] = useState<any[]>([]);
   const [selectedBulkLists, setSelectedBulkLists] = useState<string[]>([]);
+  const [selectedBulkListsToRemove, setSelectedBulkListsToRemove] = useState<string[]>([]);
+  const [bulkTagOperation, setBulkTagOperation] = useState<'add' | 'remove'>('add');
+  const [bulkListOperation, setBulkListOperation] = useState<'add' | 'remove'>('add');
 
   // Add contact form state
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
