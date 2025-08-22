@@ -12,7 +12,7 @@ export default defineConfig(({ mode }) => ({
       output: {
         manualChunks: {
           vendor: ['react', 'react-dom'],
-          ui: ['@radix-ui/react-dialog', '@radix-ui/react-button']
+          ui: ['@radix-ui/react-dialog', '@radix-ui/react-slot', '@radix-ui/react-tabs']
         }
       }
     }
@@ -23,11 +23,6 @@ export default defineConfig(({ mode }) => ({
     port: 3000,
     host: '0.0.0.0', // Explicitly bind to all interfaces
     allowedHosts: true
-  },
-  
-  // Define for production build
-  define: {
-    'process.env': process.env
   },
   
   plugins: [
