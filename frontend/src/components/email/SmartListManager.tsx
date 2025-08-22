@@ -631,6 +631,150 @@ export const SmartListManager = () => {
           </div>
         </CardContent>
       </Card>
+
+      {/* Manage Contacts Dialog */}
+      <Dialog open={showManageContactsDialog} onOpenChange={setShowManageContactsDialog}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Manage Contacts - {selectedListForManagement?.name}</DialogTitle>
+            <DialogDescription>
+              Add or remove contacts from this list
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* Available Contacts */}
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <h3 className="text-lg font-semibold text-email-primary">Available Contacts</h3>
+                {selectedContactsToAdd.size > 0 && (
+                  <Badge variant="secondary" className="bg-email-accent/20 text-email-accent">
+                    {selectedContactsToAdd.size} selected
+                  </Badge>
+                )}
+              </div>
+              
+              <div className="border rounded-lg p-4 max-h-80 overflow-y-auto bg-email-muted/10">
+                {availableContacts.length === 0 ? (
+                  <p className="text-muted-foreground text-center py-4">
+                    All contacts are already in this list
+                  </p>
+                ) : (
+                  <div className="space-y-2">
+                    {availableContacts.map((contact) => (
+                      <div key={contact.id} className="flex items-center space-x-3 p-2 rounded hover:bg-email-primary/10">
+                        <Checkbox
+                          id={`add-${contact.id}`}
+                          checked={selectedContactsToAdd.has(contact.id)}
+                          onCheckedChange={(checked) => {
+                            const newSelected = new Set(selectedContactsToAdd);
+                            if (checked) {
+                              newSelected.add(contact.id);
+                            } else {
+                              newSelected.delete(contact.id);
+                            }
+                            setSelectedContactsToAdd(newSelected);
+                          }}
+                        />
+                        <div className="flex-1 min-w-0">
+                          <label 
+                            htmlFor={`add-${contact.id}`}
+                            className="text-sm font-medium cursor-pointer"
+                          >
+                            {contact.name || 'No name'}
+                          </label>
+                          <div className="text-xs text-muted-foreground">{contact.email}</div>
+                          {contact.tags && contact.tags.length > 0 && (
+                            <div className="flex flex-wrap gap-1 mt-1">
+                              {contact.tags.slice(0, 3).map(tag => (
+                                <Badge key={tag} variant="outline" className="text-xs">
+                                  {tag}
+                                </Badge>
+                              ))}
+                              {contact.tags.length > 3 && (
+                                <Badge variant="outline" className="text-xs">
+                                  +{contact.tags.length - 3}
+                                </Badge>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {selectedContactsToAdd.size > 0 && (
+                <Button 
+                  onClick={handleAddContactsToList}
+                  className="w-full bg-email-primary hover:bg-email-primary/80"
+                >
+                  Add {selectedContactsToAdd.size} Contact{selectedContactsToAdd.size !== 1 ? 's' : ''} to List
+                </Button>
+              )}
+            </div>
+
+            {/* Contacts in List */}
+            <div className="space-y-4">
+              <h3 className="text-lg font-semibold text-email-secondary">Contacts in List ({listContacts.length})</h3>
+              
+              <div className="border rounded-lg p-4 max-h-80 overflow-y-auto bg-email-muted/10">
+                {listContacts.length === 0 ? (
+                  <p className="text-muted-foreground text-center py-4">
+                    No contacts in this list yet
+                  </p>
+                ) : (
+                  <div className="space-y-2">
+                    {listContacts.map((contact) => (
+                      <div key={contact.id} className="flex items-center justify-between p-2 rounded hover:bg-email-secondary/10">
+                        <div className="flex-1 min-w-0">
+                          <div className="text-sm font-medium">{contact.name || 'No name'}</div>
+                          <div className="text-xs text-muted-foreground">{contact.email}</div>
+                          {contact.tags && contact.tags.length > 0 && (
+                            <div className="flex flex-wrap gap-1 mt-1">
+                              {contact.tags.slice(0, 3).map(tag => (
+                                <Badge key={tag} variant="outline" className="text-xs">
+                                  {tag}
+                                </Badge>
+                              ))}
+                              {contact.tags.length > 3 && (
+                                <Badge variant="outline" className="text-xs">
+                                  +{contact.tags.length - 3}
+                                </Badge>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleRemoveContactFromList(contact.id)}
+                          className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                        >
+                          <Trash2 className="h-3 w-3" />
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+
+          <div className="flex justify-end space-x-2 pt-4 border-t">
+            <Button 
+              variant="outline" 
+              onClick={() => {
+                setShowManageContactsDialog(false);
+                setSelectedContactsToAdd(new Set());
+              }}
+            >
+              Close
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
