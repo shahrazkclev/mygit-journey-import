@@ -137,10 +137,10 @@ export const ProductManager: React.FC = () => {
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
-        <h2 className="text-2xl font-bold">Product Management</h2>
+        <h2 className="text-2xl font-bold text-email-primary">Product Management</h2>
         <Dialog open={showAddProduct} onOpenChange={setShowAddProduct}>
           <DialogTrigger asChild>
-            <Button>
+            <Button className="bg-email-primary hover:bg-email-primary/80">
               <Plus className="h-4 w-4 mr-2" />
               Add Product
             </Button>
