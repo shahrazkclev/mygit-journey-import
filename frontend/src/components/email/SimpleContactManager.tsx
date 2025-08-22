@@ -590,6 +590,137 @@ export const SimpleContactManager = () => {
           </div>
         </CardContent>
       </Card>
+
+      {/* Bulk Add Tags Dialog */}
+      <Dialog open={showBulkTagDialog} onOpenChange={setShowBulkTagDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Add Tags to Selected Contacts</DialogTitle>
+            <DialogDescription>
+              Add tags to {selectedContacts.size} selected contacts
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="bulkTags">Tags (comma-separated)</Label>
+              <Input
+                id="bulkTags"
+                value={bulkTags}
+                onChange={(e) => setBulkTags(e.target.value)}
+                placeholder="premium, newsletter, product-customer"
+              />
+            </div>
+            {allTags.length > 0 && (
+              <div className="space-y-2">
+                <Label className="text-sm font-medium">Available Tags:</Label>
+                <div className="flex flex-wrap gap-2 max-h-32 overflow-y-auto">
+                  {allTags.map(tag => (
+                    <Badge
+                      key={tag}
+                      variant="outline"
+                      className="cursor-pointer hover:bg-email-accent/10 border-email-accent/30"
+                      onClick={() => {
+                        const currentTags = bulkTags.split(',').map(t => t.trim()).filter(t => t.length > 0);
+                        if (!currentTags.includes(tag)) {
+                          setBulkTags(currentTags.length > 0 ? `${bulkTags}, ${tag}` : tag);
+                        }
+                      }}
+                    >
+                      <Tag className="h-3 w-3 mr-1" />
+                      {tag}
+                    </Badge>
+                  ))}
+                </div>
+              </div>
+            )}
+            <div className="flex space-x-2">
+              <Button onClick={handleBulkAddTags} className="flex-1 bg-email-accent hover:bg-email-accent/80">
+                Add Tags
+              </Button>
+              <Button 
+                variant="outline" 
+                onClick={() => {
+                  setShowBulkTagDialog(false);
+                  setBulkTags('');
+                }}
+                className="flex-1"
+              >
+                Cancel
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Bulk Add to Lists Dialog */}
+      <Dialog open={showBulkListDialog} onOpenChange={setShowBulkListDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Add Contacts to Lists</DialogTitle>
+            <DialogDescription>
+              Add {selectedContacts.size} selected contacts to email lists
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label>Select Lists:</Label>
+              <div className="space-y-2 max-h-48 overflow-y-auto border rounded-lg p-3">
+                {emailLists.length === 0 ? (
+                  <p className="text-muted-foreground text-center py-4">
+                    No email lists found. Create some lists first.
+                  </p>
+                ) : (
+                  emailLists.map(list => (
+                    <div key={list.id} className="flex items-center space-x-3">
+                      <input
+                        type="checkbox"
+                        id={`bulk-list-${list.id}`}
+                        checked={selectedBulkLists.includes(list.id)}
+                        onChange={(e) => {
+                          if (e.target.checked) {
+                            setSelectedBulkLists([...selectedBulkLists, list.id]);
+                          } else {
+                            setSelectedBulkLists(selectedBulkLists.filter(id => id !== list.id));
+                          }
+                        }}
+                        className="h-4 w-4 text-email-primary focus:ring-email-primary border-gray-300 rounded"
+                      />
+                      <Label htmlFor={`bulk-list-${list.id}`} className="flex-1 cursor-pointer">
+                        <div className="font-medium">{list.name}</div>
+                        {list.description && (
+                          <div className="text-sm text-muted-foreground">{list.description}</div>
+                        )}
+                        <div className="text-xs text-email-secondary">
+                          {list.list_type === 'dynamic' ? 'Dynamic' : 'Static'} List
+                        </div>
+                      </Label>
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
+            <div className="flex space-x-2">
+              <Button 
+                onClick={handleBulkAddToLists} 
+                className="flex-1 bg-email-secondary hover:bg-email-secondary/80"
+                disabled={selectedBulkLists.length === 0 || emailLists.length === 0}
+              >
+                Add to Lists
+              </Button>
+              <Button 
+                variant="outline" 
+                onClick={() => {
+                  setShowBulkListDialog(false);
+                  setSelectedBulkLists([]);
+                }}
+                className="flex-1"
+              >
+                Cancel
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
