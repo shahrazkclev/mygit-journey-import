@@ -219,7 +219,9 @@ export type Database = {
           created_at: string
           description: string | null
           id: string
+          list_type: string
           name: string
+          rule_config: Json | null
           updated_at: string
           user_id: string
         }
@@ -227,7 +229,9 @@ export type Database = {
           created_at?: string
           description?: string | null
           id?: string
+          list_type?: string
           name: string
+          rule_config?: Json | null
           updated_at?: string
           user_id: string
         }
@@ -235,7 +239,9 @@ export type Database = {
           created_at?: string
           description?: string | null
           id?: string
+          list_type?: string
           name?: string
+          rule_config?: Json | null
           updated_at?: string
           user_id?: string
         }

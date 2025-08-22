@@ -1,7 +1,5 @@
+
 project_id = "mixifcnokcmxarpzwfiy"
 
-[functions.generate-email]
-verify_jwt = false
-
-[functions.send-campaign]
+[functions.sync-contacts]
 verify_jwt = false
