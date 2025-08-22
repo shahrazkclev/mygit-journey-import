@@ -77,14 +77,14 @@ export const DraggableElement: React.FC<DraggableElementProps> = ({
                             (element.type === 'text' && element.content.length > 50) ? Textarea : Input;
         
         return (
-          <div className="bg-white border-2 border-blue-300 rounded p-2">
+          <div className="bg-transparent p-0">
             <EditComponent
               value={editValue}
               onChange={(e) => setEditValue(e.target.value)}
               onBlur={handleSaveEdit}
               onKeyDown={handleKeyDown}
               autoFocus
-              className="w-full border-0 focus:ring-0 focus:outline-none"
+              className="w-full border-0 bg-transparent focus:ring-0 focus:outline-none p-0"
               placeholder={element.type === 'image' ? 'Enter image URL...' : 'Enter text...'}
               style={{
                 fontSize: element.type !== 'image' ? element.styles.fontSize : undefined,
@@ -146,10 +146,10 @@ export const DraggableElement: React.FC<DraggableElementProps> = ({
         return (
           <div
             style={{
-              ...commonStyles,
               backgroundColor: isSelected ? '#f0f0f0' : 'transparent',
               border: isSelected ? '2px dashed #ccc' : '2px dashed transparent',
               minHeight: element.styles.height || '40px',
+              padding: '0px'
             }}
             className="w-full flex items-center justify-center text-gray-400 text-sm"
           >
@@ -167,7 +167,7 @@ export const DraggableElement: React.FC<DraggableElementProps> = ({
       ref={setNodeRef}
       style={style}
       {...attributes}
-      {...listeners}
+      {...(!isEditing ? listeners : {})}
       onClick={handleClick}
       onDoubleClick={handleDoubleClick}
       className={cn(

@@ -219,7 +219,7 @@ export const EmailEditor: React.FC<EmailEditorProps> = ({
         fontSize: type === 'button' ? '16px' : '14px',
         color: type === 'button' ? '#ffffff' : '#333333',
         backgroundColor: type === 'button' ? '#6A7059' : 'transparent',
-        padding: type === 'button' ? '12px 24px' : '16px',
+        padding: type === 'button' ? '12px 24px' : type === 'spacer' ? '0px' : '16px',
         textAlign: 'center',
         borderRadius: type === 'button' ? '8px' : '0px',
         ...(type === 'spacer' && { height: '40px' })
