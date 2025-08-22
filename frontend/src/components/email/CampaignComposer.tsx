@@ -824,7 +824,7 @@ export const CampaignComposer: React.FC<CampaignComposerProps> = ({ onSave }) =>
               <TabsContent value="code" className="mt-4">
                 <div className="space-y-4">
                   <div className="flex justify-between items-center">
-                    <Label>HTML Source</Label>
+                    <Label className="text-email-primary font-medium">HTML Source</Label>
                     <Button
                       variant="outline"
                       size="sm"
@@ -832,6 +832,7 @@ export const CampaignComposer: React.FC<CampaignComposerProps> = ({ onSave }) =>
                         navigator.clipboard.writeText(generatedTemplate);
                         toast.success("HTML copied to clipboard!");
                       }}
+                      className="border-email-secondary text-email-secondary hover:bg-email-secondary/10"
                     >
                       Copy HTML
                     </Button>
@@ -840,7 +841,7 @@ export const CampaignComposer: React.FC<CampaignComposerProps> = ({ onSave }) =>
                     value={generatedTemplate}
                     onChange={(e) => setGeneratedTemplate(e.target.value)}
                     rows={20}
-                    className="font-mono text-sm"
+                    className="font-mono text-sm border-email-primary/30 focus:border-email-primary"
                   />
                 </div>
               </TabsContent>
