@@ -65,6 +65,8 @@ export const EditContactDialog: React.FC<EditContactDialogProps> = ({
   const [productPrices, setProductPrices] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(false);
   const [showProductSuggestions, setShowProductSuggestions] = useState(false);
+  
+  const dropdownRef = useRef<HTMLDivElement>(null);
 
   // Load data when contact changes
   useEffect(() => {
