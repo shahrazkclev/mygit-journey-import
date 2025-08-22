@@ -186,10 +186,17 @@ export const UnsubscribeManager = () => {
             <Button 
               onClick={handleExportList}
               variant="outline"
-              className="border-email-secondary hover:bg-email-secondary"
+              className="border-email-secondary hover:bg-email-secondary mr-2"
             >
               <Download className="h-4 w-4 mr-2" />
               Export CSV
+            </Button>
+            <Button 
+              onClick={addTestUnsubscribe}
+              variant="outline"
+              className="border-blue-500 hover:bg-blue-500"
+            >
+              🧪 Add Test
             </Button>
           </CardTitle>
           <CardDescription>
