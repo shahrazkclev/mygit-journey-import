@@ -226,12 +226,15 @@ export const CampaignSettings = () => {
       </Card>
 
       {/* Advanced Options */}
-      <Card className="shadow-soft border-email-accent/20">
+      <Card className="shadow-soft bg-gradient-to-br from-email-background to-background border-email-primary/20">
         <CardHeader>
           <CardTitle className="flex items-center space-x-2">
-            <Settings className="h-5 w-5 text-email-accent" />
-            <span>Advanced Options</span>
+            <AlertCircle className="h-5 w-5 text-email-accent" />
+            <span className="text-email-accent">Advanced Options</span>
           </CardTitle>
+          <CardDescription>
+            Advanced settings for handling failures and retries
+          </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="flex items-center justify-between">
