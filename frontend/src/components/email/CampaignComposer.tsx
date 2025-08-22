@@ -59,7 +59,6 @@ export const CampaignComposer: React.FC<CampaignComposerProps> = ({ onSave }) =>
         if (typeof d.generatedTemplate === 'string') setGeneratedTemplate(d.generatedTemplate);
         if (Array.isArray(d.selectedLists)) setSelectedLists(d.selectedLists);
         if (d.themeColors) { setThemeColors(d.themeColors); setColorsInitialized(true); }
-        if (typeof d.includeUnsubscribe === 'boolean') setIncludeUnsubscribe(d.includeUnsubscribe);
       }
     } catch {}
   }, []);
