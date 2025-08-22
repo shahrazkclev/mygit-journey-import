@@ -156,8 +156,6 @@ export const CampaignComposer: React.FC<CampaignComposerProps> = ({ onSave }) =>
     setEmailElements(elements);
     setGeneratedTemplate(htmlContent);
   };
-
-  
   const applyInstructionToHtml = (originalHtml: string, instruction: string) => {
     const instr = instruction.toLowerCase();
     let out = originalHtml;
@@ -609,6 +607,30 @@ export const CampaignComposer: React.FC<CampaignComposerProps> = ({ onSave }) =>
                 </div>
               </TabsContent>
             </Tabs>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Edit with AI (Claude) */}
+      {generatedTemplate && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Edit with AI</CardTitle>
+            <CardDescription>Make specific changes to the current HTML (uses Claude)</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <Textarea
+              value={aiEditPrompt}
+              onChange={(e) => setAiEditPrompt(e.target.value)}
+              rows={3}
+              placeholder="e.g., Add a primary CTA button below the hero, lighten background, increase body text to 16px, replace the second emoji with 🚀"
+            />
+            <div className="flex justify-end">
+              <Button onClick={handleEditWithAI} disabled={isEditingWithAI}>
+                <Edit className="h-4 w-4 mr-2" />
+                {isEditingWithAI ? 'Applying Edits...' : 'Edit with AI'}
+              </Button>
+            </div>
           </CardContent>
         </Card>
       )}

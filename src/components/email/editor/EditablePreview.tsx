@@ -19,10 +19,12 @@ export const EditablePreview: React.FC<EditablePreviewProps> = ({
   const [undoStack, setUndoStack] = useState<string[]>([]);
   const [redoStack, setRedoStack] = useState<string[]>([]);
   
+  const colorPickerRef = useRef<HTMLDivElement>(null);
+  const emojiPickerRef = useRef<HTMLDivElement>(null);
+
   const emojis = ['😀', '😍', '🎉', '👍', '❤️', '🔥', '💯', '⭐', '🚀', '💼', '📧', '✅', '❗', '💡', '🎯', '📱'];
   const colors = ['#000000', '#FF0000', '#00FF00', '#0000FF', '#FFFF00', '#FF00FF', '#00FFFF', '#FFA500'];
   const fontSizes = ['12px', '14px', '16px', '18px', '20px', '24px', '28px', '32px'];
-
   const saveToHistory = () => {
     const iframe = iframeRef.current;
     if (!iframe) return;
@@ -142,11 +144,45 @@ export const EditablePreview: React.FC<EditablePreviewProps> = ({
     setShowColorPicker(false);
   };
 
-  const changeFontSize = (size: string) => {
+  const applyFontSize = (px: number) => {
+    const iframe = iframeRef.current;
+    if (!iframe) return;
+    const doc = iframe.contentDocument || iframe.contentWindow?.document;
+    if (!doc) return;
     saveToHistory();
-    executeCommand('fontSize', size);
+    try { doc.execCommand('styleWithCSS', false, 'true'); } catch {}
+    // Use largest size then replace <font> with <span style>
+    doc.execCommand('fontSize', false, '7');
+    const fonts = doc.querySelectorAll('font[size="7"]');
+    fonts.forEach((fontEl) => {
+      const span = doc.createElement('span');
+      span.style.fontSize = `${px}px`;
+      span.innerHTML = fontEl.innerHTML;
+      (fontEl as HTMLElement).replaceWith(span);
+    });
+    const newHtml = doc.documentElement.outerHTML;
+    onContentUpdate(newHtml);
   };
 
+  const adjustFontSize = (delta: number) => {
+    const iframe = iframeRef.current;
+    if (!iframe) return;
+    const doc = iframe.contentDocument || iframe.contentWindow?.document;
+    if (!doc) return;
+
+    const sel = doc.getSelection();
+    let basePx = 16;
+    if (sel && sel.anchorNode) {
+      const node = sel.anchorNode.nodeType === 1 ? (sel.anchorNode as HTMLElement) : (sel.anchorNode.parentElement as HTMLElement | null);
+      if (node) {
+        const cs = (doc.defaultView || window).getComputedStyle(node);
+        const match = cs.fontSize.match(/(\d+\.?\d*)px/);
+        if (match) basePx = parseFloat(match[1]);
+      }
+    }
+    const newPx = Math.min(40, Math.max(10, Math.round(basePx + delta)));
+    applyFontSize(newPx);
+  };
   useEffect(() => {
     const iframe = iframeRef.current;
     if (!iframe) return;
@@ -159,6 +195,8 @@ export const EditablePreview: React.FC<EditablePreviewProps> = ({
       const body = doc.body;
       body.setAttribute('contenteditable', 'true');
       body.style.outline = 'none';
+      // Use CSS-based formatting for execCommand outputs
+      try { doc.execCommand('styleWithCSS', false, 'true'); } catch {}
 
       const styleEl = doc.createElement('style');
       styleEl.textContent = '*,*::before,*::after{animation:none!important;transition:none!important} a{pointer-events:none!important}';
@@ -213,12 +251,15 @@ export const EditablePreview: React.FC<EditablePreviewProps> = ({
     }
 
     // Close pickers when clicking outside
-    const handleOutsideClick = () => {
+    const handleOutsideClick = (e: MouseEvent) => {
+      const target = e.target as Node;
+      if (colorPickerRef.current && colorPickerRef.current.contains(target)) return;
+      if (emojiPickerRef.current && emojiPickerRef.current.contains(target)) return;
       setShowColorPicker(false);
       setShowEmojiPicker(false);
     };
     
-    document.addEventListener('click', handleOutsideClick);
+    document.addEventListener('click', handleOutsideClick as any);
 
     return () => {
       iframe.removeEventListener('load', handleLoad);
@@ -264,15 +305,15 @@ export const EditablePreview: React.FC<EditablePreviewProps> = ({
             </Button>
             
             {/* Font Size */}
-            <Button size="sm" variant="ghost" className="h-7 px-2" onClick={() => changeFontSize('4')}>
+            <Button size="sm" variant="ghost" className="h-7 px-2" onClick={() => adjustFontSize(+2)}>
               <Plus className="h-3 w-3" />
             </Button>
-            <Button size="sm" variant="ghost" className="h-7 px-2" onClick={() => changeFontSize('2')}>
+            <Button size="sm" variant="ghost" className="h-7 px-2" onClick={() => adjustFontSize(-2)}>
               <Minus className="h-3 w-3" />
             </Button>
             
             {/* Color Picker */}
-            <div className="relative">
+            <div className="relative" ref={colorPickerRef}>
               <Button 
                 size="sm" 
                 variant="ghost" 
@@ -308,7 +349,7 @@ export const EditablePreview: React.FC<EditablePreviewProps> = ({
             </Button>
             
             {/* Single Emoji Picker */}
-            <div className="relative">
+            <div className="relative" ref={emojiPickerRef}>
               <Button 
                 size="sm" 
                 variant="ghost" 
@@ -347,7 +388,7 @@ export const EditablePreview: React.FC<EditablePreviewProps> = ({
         </div>
 
         {/* Simple Preview */}
-        <div className="bg-background rounded border">
+        <div className="bg-background rounded">
           <div className="bg-muted/20 px-2 py-1 text-xs text-muted-foreground border-b flex items-center justify-between">
             <span>{mode === 'mobile' ? 'Mobile (375px)' : 'Desktop (1100px)'}</span>
           </div>
@@ -355,7 +396,7 @@ export const EditablePreview: React.FC<EditablePreviewProps> = ({
           <div className={`mx-auto ${mode === 'mobile' ? 'w-full max-w-[375px]' : 'w-full max-w-[1100px]'}`}>
             <iframe
               ref={iframeRef}
-              srcDoc={initialHtmlRef.current}
+              srcDoc={htmlContent}
               className={`w-full border-0 ${mode === 'mobile' ? 'h-[400px]' : 'h-[500px]'}`}
               title="Email Editor"
               style={{ colorScheme: 'normal' }}
