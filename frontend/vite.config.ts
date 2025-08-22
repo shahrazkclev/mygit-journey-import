@@ -6,7 +6,16 @@ import { componentTagger } from "lovable-tagger";
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => ({
   build: {
-    outDir: 'build'
+    outDir: 'build',
+    sourcemap: false,
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          vendor: ['react', 'react-dom'],
+          ui: ['@radix-ui/react-dialog', '@radix-ui/react-button']
+        }
+      }
+    }
   },
 
   // Server configuration
@@ -15,6 +24,12 @@ export default defineConfig(({ mode }) => ({
     host: '0.0.0.0', // Explicitly bind to all interfaces
     allowedHosts: true
   },
+  
+  // Define for production build
+  define: {
+    'process.env': process.env
+  },
+  
   plugins: [
     react(),
     mode === 'development' &&
