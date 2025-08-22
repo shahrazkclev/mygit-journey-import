@@ -368,7 +368,31 @@ frontend:
     status_history:
         -working: "NA"
         -agent: "main"
-        -comment: "Added Products tab to main navigation, integrated ProductManager component with consistent email theming, users can now add products that show as tag suggestions. Added bulk import functionality with all 36 user products from image (The Lazy Motion Library, Advanced 3d Product Animation Course, etc.) with proper categories and pricing."
+        -comment: "Added Products tab to main navigation, integrated ProductManager component with consistent email theming, users can now add products that show as tag suggestions. Added bulk import functionality with all 36 user products from image (The Lazy Motion Library, Advanced 3d Product Animation Course, etc.) with proper categories and pricing. Removed import button after successful import."
+        
+  - task: "Fixed tag suggestions click-outside behavior"
+    implemented: true
+    working: "NA"
+    file: "/app/frontend/src/components/email/EditContactDialog.tsx"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+        -working: "NA"
+        -agent: "main"
+        -comment: "Added click outside handler with useRef and useEffect. Tag suggestions dropdown now closes when clicking anywhere outside the input/dropdown area."
+        
+  - task: "Enhanced AI prompts with product details"
+    implemented: true
+    working: "NA"
+    file: "/app/frontend/src/components/email/CampaignComposer.tsx"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+        -working: "NA"
+        -agent: "main"
+        -comment: "Added product loading and prompt enhancement functionality. When product names are mentioned in AI prompts, their full details (description, price, category, SKU) are automatically appended to provide accurate information to the AI."
 
 metadata:
   created_by: "main_agent"
