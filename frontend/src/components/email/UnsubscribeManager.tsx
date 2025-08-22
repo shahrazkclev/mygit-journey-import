@@ -58,15 +58,44 @@ export const UnsubscribeManager = () => {
     try {
       console.log('🔍 Loading unsubscribe data from Supabase...');
       
+      // First, let's try to get the current user
+      const { data: { user } } = await supabase.auth.getUser();
+      console.log('👤 Current user:', user?.id);
+      
+      // Try different approaches to get the data
+      console.log('🔍 Attempt 1: Query all columns to see structure');
+      const { data: allData, error: allError } = await supabase
+        .from('unsubscribes')
+        .select('*');
+      
+      console.log('📊 All data query:', { data: allData, error: allError });
+      
+      // Try with specific columns that might exist
+      console.log('🔍 Attempt 2: Query with expected columns');
       const { data, error } = await supabase
         .from('unsubscribes')
-        .select('*')
-        .order('unsubscribed_at', { ascending: false });
+        .select('id, email, name, unsubscribed_at, reason, user_id, created_at')
+        .order('created_at', { ascending: false });
 
       console.log('📊 Supabase query result:', { data, error });
 
       if (error) {
         console.error('❌ Supabase error:', error);
+        
+        // If we have an error, try a simpler query
+        console.log('🔍 Attempt 3: Simpler query');
+        const { data: simpleData, error: simpleError } = await supabase
+          .from('unsubscribes')
+          .select('*');
+        
+        console.log('📊 Simple query result:', { data: simpleData, error: simpleError });
+        
+        if (!simpleError && simpleData) {
+          setUnsubscribedUsers(simpleData);
+          console.log(`✅ Found ${simpleData.length} unsubscribed users (simple query)`);
+          return;
+        }
+        
         throw error;
       }
 
