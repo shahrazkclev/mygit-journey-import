@@ -35,13 +35,25 @@ export const setCssThemeFromHex = (primary?: string, secondary?: string, accent?
   const setColor = (name: 'primary' | 'secondary' | 'accent', hex?: string) => {
     if (!hex || !/^#([0-9a-f]{3}){1,2}$/i.test(hex)) return;
     const [h, s, l] = hexToHsl(hex);
+    
+    // Set both regular and email-specific CSS variables
     root.style.setProperty(`--${name}`, `${h} ${s}% ${l}%`);
+    root.style.setProperty(`--email-${name}`, `${h} ${s}% ${l}%`);
+    
     // Ensure good contrast by dynamically setting the foreground color
     const foreground = l < 55 ? '0 0% 100%' : '220 15% 25%';
     root.style.setProperty(`--${name}-foreground`, foreground);
+    root.style.setProperty(`--email-${name}-foreground`, foreground);
   };
 
   setColor('primary', primary);
   setColor('secondary', secondary);
   setColor('accent', accent);
+  
+  // Also set other email-specific colors if needed
+  if (primary) {
+    const [h, s, l] = hexToHsl(primary);
+    root.style.setProperty('--email-background', `${h} ${Math.max(s - 70, 5)}% ${Math.min(l + 30, 98)}%`);
+    root.style.setProperty('--email-muted', `${h} ${Math.max(s - 60, 10)}% ${Math.min(l + 20, 95)}%`);
+  }
 };
