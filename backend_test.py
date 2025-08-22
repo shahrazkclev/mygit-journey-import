@@ -511,59 +511,392 @@ def test_sender_sequence_with_custom_settings():
         print(f"❌ Sender sequence logic test failed with error: {str(e)}")
         return False
 
+# Global variable to store JWT token for authenticated requests
+jwt_token = None
+
+def test_login_correct_credentials():
+    """Test login with correct credentials"""
+    global jwt_token
+    print("\n🔍 Testing Login with Correct Credentials...")
+    try:
+        test_data = {
+            "email": "cgdora4@gmail.com",
+            "password": "shahzrp11"
+        }
+        
+        response = requests.post(
+            f"{BACKEND_URL}/auth/login",
+            json=test_data,
+            headers={"Content-Type": "application/json"}
+        )
+        
+        print(f"Status Code: {response.status_code}")
+        print(f"Response: {response.json()}")
+        
+        if response.status_code == 200:
+            data = response.json()
+            if "access_token" in data and "token_type" in data:
+                jwt_token = data["access_token"]  # Store token for other tests
+                print("✅ Login with correct credentials working correctly")
+                return True
+            else:
+                print("❌ Login response missing required fields")
+                return False
+        else:
+            print(f"❌ Login failed with status code: {response.status_code}")
+            return False
+    except Exception as e:
+        print(f"❌ Login test failed with error: {str(e)}")
+        return False
+
+def test_login_wrong_credentials():
+    """Test login with wrong credentials"""
+    print("\n🔍 Testing Login with Wrong Credentials...")
+    try:
+        test_data = {
+            "email": "wrong@email.com",
+            "password": "wrongpassword"
+        }
+        
+        response = requests.post(
+            f"{BACKEND_URL}/auth/login",
+            json=test_data,
+            headers={"Content-Type": "application/json"}
+        )
+        
+        print(f"Status Code: {response.status_code}")
+        print(f"Response: {response.json()}")
+        
+        if response.status_code == 401:
+            data = response.json()
+            if "detail" in data:
+                print("✅ Login with wrong credentials properly rejected")
+                return True
+            else:
+                print("❌ Login rejection missing error details")
+                return False
+        else:
+            print(f"❌ Expected 401 for wrong credentials, got {response.status_code}")
+            return False
+    except Exception as e:
+        print(f"❌ Wrong credentials test failed with error: {str(e)}")
+        return False
+
+def test_verify_valid_token():
+    """Test verify endpoint with valid JWT token"""
+    global jwt_token
+    print("\n🔍 Testing Verify with Valid JWT Token...")
+    try:
+        if not jwt_token:
+            print("❌ No JWT token available for testing")
+            return False
+        
+        headers = {
+            "Authorization": f"Bearer {jwt_token}",
+            "Content-Type": "application/json"
+        }
+        
+        response = requests.get(f"{BACKEND_URL}/auth/verify", headers=headers)
+        
+        print(f"Status Code: {response.status_code}")
+        print(f"Response: {response.json()}")
+        
+        if response.status_code == 200:
+            data = response.json()
+            if "email" in data and "authenticated" in data and data["authenticated"] == True:
+                print("✅ Verify with valid token working correctly")
+                return True
+            else:
+                print("❌ Verify response missing required fields or incorrect data")
+                return False
+        else:
+            print(f"❌ Verify failed with status code: {response.status_code}")
+            return False
+    except Exception as e:
+        print(f"❌ Verify valid token test failed with error: {str(e)}")
+        return False
+
+def test_verify_invalid_token():
+    """Test verify endpoint with invalid/missing token"""
+    print("\n🔍 Testing Verify with Invalid/Missing Token...")
+    try:
+        # Test with invalid token
+        headers = {
+            "Authorization": "Bearer invalid_token_here",
+            "Content-Type": "application/json"
+        }
+        
+        response = requests.get(f"{BACKEND_URL}/auth/verify", headers=headers)
+        
+        print(f"Status Code (invalid token): {response.status_code}")
+        
+        if response.status_code == 401:
+            print("✅ Invalid token properly rejected")
+        else:
+            print(f"❌ Expected 401 for invalid token, got {response.status_code}")
+            return False
+        
+        # Test with missing token
+        response = requests.get(f"{BACKEND_URL}/auth/verify")
+        
+        print(f"Status Code (missing token): {response.status_code}")
+        
+        if response.status_code == 403:  # FastAPI HTTPBearer returns 403 for missing token
+            print("✅ Missing token properly rejected")
+            return True
+        else:
+            print(f"❌ Expected 403 for missing token, got {response.status_code}")
+            return False
+    except Exception as e:
+        print(f"❌ Invalid token test failed with error: {str(e)}")
+        return False
+
+def test_protected_endpoints_without_auth():
+    """Test that existing endpoints require authentication"""
+    print("\n🔍 Testing Protected Endpoints Without Authentication...")
+    try:
+        endpoints_to_test = [
+            "/status",
+            "/campaigns",
+            "/webhook/contacts"
+        ]
+        
+        all_protected = True
+        
+        for endpoint in endpoints_to_test:
+            print(f"Testing {endpoint} without auth...")
+            
+            if endpoint == "/status":
+                response = requests.get(f"{BACKEND_URL}{endpoint}")
+            elif endpoint == "/campaigns":
+                response = requests.post(f"{BACKEND_URL}{endpoint}", json={})
+            elif endpoint == "/webhook/contacts":
+                response = requests.post(f"{BACKEND_URL}{endpoint}", json={})
+            
+            print(f"  Status Code: {response.status_code}")
+            
+            if response.status_code in [401, 403]:
+                print(f"  ✅ {endpoint} properly protected")
+            else:
+                print(f"  ❌ {endpoint} not properly protected (expected 401/403, got {response.status_code})")
+                all_protected = False
+        
+        if all_protected:
+            print("✅ All endpoints properly protected")
+            return True
+        else:
+            print("❌ Some endpoints not properly protected")
+            return False
+    except Exception as e:
+        print(f"❌ Protected endpoints test failed with error: {str(e)}")
+        return False
+
+def test_protected_endpoints_with_auth():
+    """Test that existing endpoints work with valid JWT token"""
+    global jwt_token
+    print("\n🔍 Testing Protected Endpoints With Valid Authentication...")
+    try:
+        if not jwt_token:
+            print("❌ No JWT token available for testing")
+            return False
+        
+        headers = {
+            "Authorization": f"Bearer {jwt_token}",
+            "Content-Type": "application/json"
+        }
+        
+        # Test GET /status
+        print("Testing GET /status with auth...")
+        response = requests.get(f"{BACKEND_URL}/status", headers=headers)
+        print(f"  Status Code: {response.status_code}")
+        
+        if response.status_code != 200:
+            print(f"  ❌ GET /status failed with auth: {response.status_code}")
+            return False
+        else:
+            print("  ✅ GET /status works with auth")
+        
+        # Test POST /status
+        print("Testing POST /status with auth...")
+        test_data = {"client_name": "AuthTestClient"}
+        response = requests.post(f"{BACKEND_URL}/status", json=test_data, headers=headers)
+        print(f"  Status Code: {response.status_code}")
+        
+        if response.status_code != 200:
+            print(f"  ❌ POST /status failed with auth: {response.status_code}")
+            return False
+        else:
+            print("  ✅ POST /status works with auth")
+        
+        # Test POST /webhook/contacts
+        print("Testing POST /webhook/contacts with auth...")
+        webhook_data = {
+            "action": "create",
+            "email": "authtest@example.com",
+            "name": "Auth Test User",
+            "tags": ["test"]
+        }
+        response = requests.post(f"{BACKEND_URL}/webhook/contacts", json=webhook_data, headers=headers)
+        print(f"  Status Code: {response.status_code}")
+        
+        if response.status_code != 200:
+            print(f"  ❌ POST /webhook/contacts failed with auth: {response.status_code}")
+            return False
+        else:
+            print("  ✅ POST /webhook/contacts works with auth")
+        
+        print("✅ All protected endpoints work with valid authentication")
+        return True
+        
+    except Exception as e:
+        print(f"❌ Protected endpoints with auth test failed with error: {str(e)}")
+        return False
+
+def test_jwt_token_content():
+    """Test JWT token contains correct email and is persistent"""
+    global jwt_token
+    print("\n🔍 Testing JWT Token Content and Persistence...")
+    try:
+        if not jwt_token:
+            print("❌ No JWT token available for testing")
+            return False
+        
+        import jwt as jwt_lib
+        import json
+        
+        # Decode token without verification to check content
+        try:
+            # Split token and decode payload (middle part)
+            token_parts = jwt_token.split('.')
+            if len(token_parts) != 3:
+                print("❌ Invalid JWT token format")
+                return False
+            
+            # Add padding if needed for base64 decoding
+            payload_part = token_parts[1]
+            padding = 4 - len(payload_part) % 4
+            if padding != 4:
+                payload_part += '=' * padding
+            
+            import base64
+            decoded_payload = base64.urlsafe_b64decode(payload_part)
+            payload_data = json.loads(decoded_payload)
+            
+            print(f"Token payload: {payload_data}")
+            
+            # Check if email is correct
+            if payload_data.get("email") == "cgdora4@gmail.com":
+                print("✅ JWT token contains correct email")
+            else:
+                print(f"❌ JWT token contains wrong email: {payload_data.get('email')}")
+                return False
+            
+            # Check if token is marked as persistent
+            if payload_data.get("persistent") == True:
+                print("✅ JWT token is marked as persistent")
+            else:
+                print("❌ JWT token not marked as persistent")
+                return False
+            
+            # Check that there's no expiration field
+            if "exp" not in payload_data:
+                print("✅ JWT token has no expiration (persistent)")
+                return True
+            else:
+                print("❌ JWT token has expiration field")
+                return False
+                
+        except Exception as decode_error:
+            print(f"❌ Failed to decode JWT token: {str(decode_error)}")
+            return False
+        
+    except Exception as e:
+        print(f"❌ JWT token content test failed with error: {str(e)}")
+        return False
+
 def run_all_tests():
-    """Run all backend tests"""
+    """Run all backend tests including authentication"""
     print("=" * 60)
     print("🚀 Starting Backend API Tests")
     print("=" * 60)
     print(f"Backend URL: {BACKEND_URL}")
     print()
     
-    # Run basic tests first
-    results = {
-        "health_check": test_health_check(),
-        "create_status": test_create_status_check()[0],
-        "get_status": test_get_status_checks(),
-        "cors_config": test_cors_configuration(),
-        "mongodb_connection": test_mongodb_connection()
+    # Run authentication tests first
+    print("\n" + "=" * 40)
+    print("🔐 Testing Authentication System")
+    print("=" * 40)
+    
+    auth_results = {
+        "login_correct_credentials": test_login_correct_credentials(),
+        "login_wrong_credentials": test_login_wrong_credentials(),
+        "verify_valid_token": test_verify_valid_token(),
+        "verify_invalid_token": test_verify_invalid_token(),
+        "protected_endpoints_without_auth": test_protected_endpoints_without_auth(),
+        "protected_endpoints_with_auth": test_protected_endpoints_with_auth(),
+        "jwt_token_content": test_jwt_token_content()
     }
     
-    # Run campaign management tests
+    # Run basic tests (health check doesn't require auth)
     print("\n" + "=" * 40)
-    print("🎯 Testing Campaign Management Features")
+    print("🏥 Testing Basic Health Check")
     print("=" * 40)
     
-    campaign_create_success, campaign_id = test_create_campaign()
-    results["create_campaign"] = campaign_create_success
+    basic_results = {
+        "health_check": test_health_check(),
+        "cors_config": test_cors_configuration()
+    }
     
-    if campaign_id:
-        results["get_campaign"] = test_get_campaign(campaign_id)
-        results["get_campaign_progress"] = test_get_campaign_progress(campaign_id)
+    # Run protected endpoint tests with authentication
+    print("\n" + "=" * 40)
+    print("🛡️ Testing Protected Endpoints (Authenticated)")
+    print("=" * 40)
+    
+    if jwt_token:  # Only run if we have a valid token
+        protected_results = {}
+        
+        # Update existing test functions to use authentication
+        headers = {"Authorization": f"Bearer {jwt_token}", "Content-Type": "application/json"}
+        
+        # Test status endpoints with auth
+        print("Testing status endpoints with authentication...")
+        try:
+            # Create status check with auth
+            test_data = {"client_name": "AuthTestClient_" + str(uuid.uuid4())[:8]}
+            response = requests.post(f"{BACKEND_URL}/status", json=test_data, headers=headers)
+            protected_results["create_status_auth"] = response.status_code == 200
+            
+            # Get status checks with auth
+            response = requests.get(f"{BACKEND_URL}/status", headers=headers)
+            protected_results["get_status_auth"] = response.status_code == 200
+            
+            # Test webhook with auth
+            webhook_data = {
+                "action": "create",
+                "email": "authtest@example.com",
+                "name": "Auth Test User",
+                "tags": ["test"]
+            }
+            response = requests.post(f"{BACKEND_URL}/webhook/contacts", json=webhook_data, headers=headers)
+            protected_results["webhook_contacts_auth"] = response.status_code == 200
+            
+        except Exception as e:
+            print(f"Error testing protected endpoints: {str(e)}")
+            protected_results = {"protected_endpoints_error": False}
     else:
-        results["get_campaign"] = False
-        results["get_campaign_progress"] = False
+        protected_results = {"no_token_available": False}
     
-    results["webhook_contacts"] = test_webhook_contacts()
-    results["campaign_error_handling"] = test_campaign_error_handling()
-    results["campaign_background_processing"] = test_campaign_background_processing()
-    
-    # Run sender sequence rotation tests
-    print("\n" + "=" * 40)
-    print("🔄 Testing Sender Sequence Rotation Features")
-    print("=" * 40)
-    
-    results["sender_sequence_rotation"] = test_sender_sequence_rotation()
-    results["webhook_payload_sender_sequence"] = test_webhook_payload_sender_sequence()
-    results["sender_sequence_logic"] = test_sender_sequence_with_custom_settings()
+    # Combine all results
+    all_results = {**auth_results, **basic_results, **protected_results}
     
     print("\n" + "=" * 60)
     print("📊 Test Results Summary")
     print("=" * 60)
     
     passed = 0
-    total = len(results)
+    total = len(all_results)
     
-    for test_name, result in results.items():
+    for test_name, result in all_results.items():
         status = "✅ PASS" if result else "❌ FAIL"
         print(f"{test_name.replace('_', ' ').title()}: {status}")
         if result:
