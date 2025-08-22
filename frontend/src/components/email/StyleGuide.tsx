@@ -435,11 +435,11 @@ export const StyleGuide = () => {
       </Card>
 
       {/* Brand Identity */}
-      <Card>
+      <Card className="shadow-soft bg-gradient-to-br from-email-background to-background border-email-primary/20">
         <CardHeader>
           <CardTitle className="flex items-center space-x-2">
-            <Sparkles className="h-5 w-5" />
-            <span>Brand Identity</span>
+            <Sparkles className="h-5 w-5 text-email-secondary" />
+            <span className="text-email-secondary">Brand Identity</span>
           </CardTitle>
           <CardDescription>
             Define your brand colors and identity for AI-generated emails
