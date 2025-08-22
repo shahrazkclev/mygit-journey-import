@@ -65,7 +65,7 @@ export const CampaignComposer: React.FC<CampaignComposerProps> = ({ onSave }) =>
 
   // Persist draft locally so switching tabs doesn't lose progress
   useEffect(() => {
-    const draft = { subject, prompt, generatedTemplate, selectedLists, themeColors, includeUnsubscribe };
+    const draft = { subject, prompt, generatedTemplate, selectedLists, themeColors };
     try {
       localStorage.setItem(DRAFT_KEY, JSON.stringify(draft));
     } catch {}
