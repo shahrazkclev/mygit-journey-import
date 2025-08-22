@@ -21,6 +21,7 @@ export const CampaignSettings = () => {
   const [maxRetries, setMaxRetries] = useState([3]);
   const [isLoading, setIsLoading] = useState(false);
   const [isMakeIntegrationOpen, setIsMakeIntegrationOpen] = useState(false);
+  const [isTestingWebhook, setIsTestingWebhook] = useState(false);
 
   useEffect(() => {
     loadSettings();
