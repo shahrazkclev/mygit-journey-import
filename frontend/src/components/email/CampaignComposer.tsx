@@ -329,49 +329,6 @@ export const CampaignComposer: React.FC<CampaignComposerProps> = ({ onSave }) =>
     }
   };
 
-  // Make HTML more email-client friendly
-  const makeEmailClientFriendly = (htmlContent: string): string => {
-    let emailHtml = htmlContent;
-
-    // Ensure proper DOCTYPE and meta tags for email clients
-    if (!emailHtml.includes('<!DOCTYPE')) {
-      emailHtml = `<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
-<html xmlns="http://www.w3.org/1999/xhtml">
-${emailHtml.replace(/<html[^>]*>/, '').replace('</html>', '')}
-</html>`;
-    }
-
-    // Add email-specific meta tags if missing
-    if (!emailHtml.includes('<meta http-equiv="Content-Type"')) {
-      emailHtml = emailHtml.replace('<head>', `<head>
-<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />`);
-    }
-
-    // Fix common email client issues
-    emailHtml = emailHtml
-      // Replace CSS Grid with tables for better support
-      .replace(/display:\s*grid/gi, 'display: block')
-      .replace(/display:\s*flex/gi, 'display: block')
-      // Convert modern CSS to email-safe alternatives
-      .replace(/border-radius:\s*([^;]+)/gi, (match, value) => {
-        // Keep border-radius but add fallback
-        return `${match}; -webkit-border-radius: ${value}; -moz-border-radius: ${value}`;
-      })
-      // Ensure all images have proper attributes
-      .replace(/<img([^>]*?)>/gi, (match, attrs) => {
-        if (!attrs.includes('style=') && !attrs.includes('width=')) {
-          return match.replace('>', ' style="max-width: 100%; height: auto;" border="0">');
-        }
-        return match.replace('>', ' border="0">');
-      })
-      // Add table-based layout structure if missing
-      .replace(/<body([^>]*)>/, '<body$1><table width="100%" cellpadding="0" cellspacing="0" border="0"><tr><td>')
-      .replace('</body>', '</td></tr></table></body>');
-
-    return emailHtml;
-  };
-
   // Inline CSS styles for better email client compatibility
   const inlineCssStyles = (htmlContent: string): string => {
     try {
