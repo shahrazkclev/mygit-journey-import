@@ -364,6 +364,45 @@ export type Database = {
         }
         Relationships: []
       }
+      user_settings: {
+        Row: {
+          batch_size: number | null
+          created_at: string
+          delay_between_batches: number | null
+          enable_retries: boolean | null
+          id: string
+          max_retries: number | null
+          sending_speed: number | null
+          updated_at: string
+          user_id: string
+          webhook_url: string | null
+        }
+        Insert: {
+          batch_size?: number | null
+          created_at?: string
+          delay_between_batches?: number | null
+          enable_retries?: boolean | null
+          id?: string
+          max_retries?: number | null
+          sending_speed?: number | null
+          updated_at?: string
+          user_id: string
+          webhook_url?: string | null
+        }
+        Update: {
+          batch_size?: number | null
+          created_at?: string
+          delay_between_batches?: number | null
+          enable_retries?: boolean | null
+          id?: string
+          max_retries?: number | null
+          sending_speed?: number | null
+          updated_at?: string
+          user_id?: string
+          webhook_url?: string | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never

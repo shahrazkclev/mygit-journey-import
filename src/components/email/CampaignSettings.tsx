@@ -25,17 +25,25 @@ export const CampaignSettings = () => {
   }, []);
 
   const loadSettings = async () => {
-    // For now, we'll just use local storage until the types are updated
     try {
-      const savedSettings = localStorage.getItem('campaign_settings');
-      if (savedSettings) {
-        const settings = JSON.parse(savedSettings);
-        setWebhookUrl(settings.webhook_url || "");
-        setSendingSpeed([settings.sending_speed || 50]);
-        setBatchSize([settings.batch_size || 10]);
-        setDelayBetweenBatches([settings.delay_between_batches || 5]);
-        setEnableRetries(settings.enable_retries !== false);
-        setMaxRetries([settings.max_retries || 3]);
+      const { data, error } = await supabase
+        .from('user_settings')
+        .select('*')
+        .eq('user_id', DEMO_USER_ID)
+        .single();
+
+      if (error && error.code !== 'PGRST116') {
+        console.error('Error loading settings:', error);
+        return;
+      }
+
+      if (data) {
+        setWebhookUrl(data.webhook_url || "");
+        setSendingSpeed([data.sending_speed || 50]);
+        setBatchSize([data.batch_size || 10]);
+        setDelayBetweenBatches([data.delay_between_batches || 5]);
+        setEnableRetries(data.enable_retries !== false);
+        setMaxRetries([data.max_retries || 3]);
       }
     } catch (error) {
       console.error('Error loading settings:', error);
@@ -50,19 +58,27 @@ export const CampaignSettings = () => {
 
     setIsLoading(true);
     try {
-      const settings = {
+      const settingsData = {
         user_id: DEMO_USER_ID,
         webhook_url: webhookUrl,
         sending_speed: sendingSpeed[0],
         batch_size: batchSize[0],
         delay_between_batches: delayBetweenBatches[0],
         enable_retries: enableRetries,
-        max_retries: maxRetries[0],
-        updated_at: new Date().toISOString()
+        max_retries: maxRetries[0]
       };
 
-      // Save to localStorage for now
-      localStorage.setItem('campaign_settings', JSON.stringify(settings));
+      const { error } = await supabase
+        .from('user_settings')
+        .upsert(settingsData, { 
+          onConflict: 'user_id' 
+        });
+
+      if (error) {
+        console.error('Error saving settings:', error);
+        toast.error("Failed to save settings. Please try again.");
+        return;
+      }
 
       toast.success("Campaign settings saved successfully!");
     } catch (error) {
