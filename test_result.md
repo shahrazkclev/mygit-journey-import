@@ -372,7 +372,7 @@ test_plan:
 
 agent_communication:
     -agent: "main"
-    -message: "Successfully implemented ALL requested Email Campaign Manager enhancements including additional features: 1) Collapsible Make.com integration, 2) Product suggestions in contact tag editing, 3) Enhanced bulk operations for tags/lists (add/remove), 4) Searchable contact management in lists, 5) Editable lists with dynamic rule editing, 6) Duplicate dynamic lists as static, 7) Individual contact editing, 8) Global theme control from Style page. All features ready for testing."
+    -message: "Successfully implemented ALL requested Email Campaign Manager enhancements including user feedback fixes: 1) Dynamic lists now rules-only (no manual contact management), 2) Simplified product-tag integration (removed complex UI), 3) Contacts show current lists, 4) Improved manage lists logic (smart filtering), 5) Fixed global theme application across all components, 6) Enhanced bulk operations, 7) Searchable contact management, 8) Individual contact editing. All features implemented and backend verified working."
     -agent: "testing"
     -message: "Backend testing completed successfully. All FastAPI endpoints are working correctly: Health check (/api/), Status creation (POST /api/status), Status retrieval (GET /api/status), CORS configuration, and MongoDB connection. Created comprehensive backend_test.py for future testing. Backend is fully functional and ready for production use."
     -agent: "testing"
