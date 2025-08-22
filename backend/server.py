@@ -179,7 +179,7 @@ async def get_campaign_progress(campaign_id: str):
     )
 
 @api_router.post("/campaigns/{campaign_id}/pause")
-async def pause_campaign(campaign_id: str, current_user: str = Depends(verify_token)):
+async def pause_campaign(campaign_id: str):
     result = await db.campaigns.update_one(
         {"id": campaign_id},
         {"$set": {"status": "paused"}}
