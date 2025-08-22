@@ -40,6 +40,7 @@ export const SimpleContactManager = () => {
   const [tagFilter, setTagFilter] = useState("");
   const [isLoading, setIsLoading] = useState(true);
   const [allTags, setAllTags] = useState<string[]>([]);
+  const [isMakeIntegrationOpen, setIsMakeIntegrationOpen] = useState(false);
 
   // Add contact form state
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
