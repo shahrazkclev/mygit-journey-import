@@ -8,14 +8,8 @@ export default defineConfig(({ mode }) => ({
   build: {
     outDir: 'build',
     sourcemap: false,
-    rollupOptions: {
-      output: {
-        manualChunks: {
-          vendor: ['react', 'react-dom'],
-          ui: ['@radix-ui/react-dialog', '@radix-ui/react-slot', '@radix-ui/react-tabs']
-        }
-      }
-    }
+    target: 'esnext',
+    minify: 'esbuild'
   },
 
   // Server configuration
