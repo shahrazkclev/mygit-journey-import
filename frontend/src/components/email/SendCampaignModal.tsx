@@ -282,7 +282,7 @@ export const SendCampaignModal: React.FC<SendCampaignModalProps> = ({
                 <Progress value={progress} className="h-2" />
               </div>
 
-              <div className="grid grid-cols-3 gap-4 text-center">
+              <div className="grid grid-cols-4 gap-3 text-center">
                 <div className="space-y-1">
                   <div className="text-2xl font-bold text-email-primary">{totalRecipients}</div>
                   <div className="text-xs text-muted-foreground">Total</div>
@@ -294,6 +294,10 @@ export const SendCampaignModal: React.FC<SendCampaignModalProps> = ({
                 <div className="space-y-1">
                   <div className="text-2xl font-bold text-red-600">{failedCount}</div>
                   <div className="text-xs text-muted-foreground">Failed</div>
+                </div>
+                <div className="space-y-1">
+                  <div className="text-2xl font-bold text-email-accent">{currentSenderSequence}</div>
+                  <div className="text-xs text-muted-foreground">Sender #</div>
                 </div>
               </div>
 
