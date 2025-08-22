@@ -523,30 +523,54 @@ export const SimpleContactManager = () => {
 
           {/* Contacts List */}
           <div className="space-y-2">
+            {filteredContacts.length > 0 && (
+              <div className="flex items-center p-3 bg-email-muted/30 rounded-lg border border-email-primary/10">
+                <input
+                  type="checkbox"
+                  checked={selectedContacts.size === filteredContacts.length && filteredContacts.length > 0}
+                  onChange={(e) => handleSelectAll(e.target.checked)}
+                  className="h-4 w-4 text-email-primary focus:ring-email-primary border-gray-300 rounded"
+                />
+                <Label className="ml-3 text-sm font-medium text-email-primary cursor-pointer">
+                  Select All ({filteredContacts.length})
+                </Label>
+              </div>
+            )}
+            
             {filteredContacts.map(contact => (
               <div
                 key={contact.id}
-                className="flex items-center justify-between p-4 border rounded-lg hover:bg-gray-50"
+                className={`flex items-center justify-between p-4 border rounded-lg hover:bg-email-muted/20 transition-colors ${
+                  selectedContacts.has(contact.id) ? 'bg-email-primary/10 border-email-primary/30' : ''
+                }`}
               >
-                <div className="flex-1">
-                  <div className="flex items-center space-x-4">
-                    <div>
-                      <p className="font-medium">{contact.name || 'No name'}</p>
-                      <p className="text-sm text-gray-600">{contact.email}</p>
-                      {contact.phone && (
-                        <p className="text-sm text-gray-500">{contact.phone}</p>
-                      )}
+                <div className="flex items-center space-x-3">
+                  <input
+                    type="checkbox"
+                    checked={selectedContacts.has(contact.id)}
+                    onChange={(e) => handleSelectContact(contact.id, e.target.checked)}
+                    className="h-4 w-4 text-email-primary focus:ring-email-primary border-gray-300 rounded"
+                  />
+                  <div className="flex-1">
+                    <div className="flex items-center space-x-4">
+                      <div>
+                        <p className="font-medium">{contact.name || 'No name'}</p>
+                        <p className="text-sm text-gray-600">{contact.email}</p>
+                        {contact.phone && (
+                          <p className="text-sm text-gray-500">{contact.phone}</p>
+                        )}
+                      </div>
                     </div>
+                    {contact.tags && contact.tags.length > 0 && (
+                      <div className="flex flex-wrap gap-1 mt-2">
+                        {contact.tags.map(tag => (
+                          <Badge key={tag} variant="secondary" className="text-xs bg-email-accent/20 text-email-accent">
+                            {tag}
+                          </Badge>
+                        ))}
+                      </div>
+                    )}
                   </div>
-                  {contact.tags && contact.tags.length > 0 && (
-                    <div className="flex flex-wrap gap-1 mt-2">
-                      {contact.tags.map(tag => (
-                        <Badge key={tag} variant="secondary" className="text-xs">
-                          {tag}
-                        </Badge>
-                      ))}
-                    </div>
-                  )}
                 </div>
                 <Button
                   variant="ghost"
