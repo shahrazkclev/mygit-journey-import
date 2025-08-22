@@ -69,7 +69,7 @@ Return ONLY the email body content (no HTML tags, just the text content).`;
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>${subject}</title>
+  <title>Email</title>
   <style>
     /* Base */
     body { margin:0; padding:24px; background:#F5F5F0; color:#333333; font-family: Inter, Lato, 'Open Sans', Arial, sans-serif; }
@@ -106,8 +106,6 @@ Return ONLY the email body content (no HTML tags, just the text content).`;
   <div class="container">
     <div class="brand">Cleverpoly.Store</div>
     <div class="hr"></div>
-
-    <h2 class="title">${subject}</h2>
 
     ${paragraphs}
 
