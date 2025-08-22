@@ -100,8 +100,8 @@ serve(async (req) => {
 
     console.log('Generating email with your exact JSON specification');
 
-    // Direct prompt to Claude - DO WHAT THE JSON SAYS
-    const systemPrompt = `YOU MUST FOLLOW THIS JSON STYLE GUIDE EXACTLY. DO NOT DEVIATE FROM IT.
+    // Direct prompt to Claude - GENERATE BEAUTIFUL EMAILS LIKE THE EXAMPLE
+    const systemPrompt = `You are an expert email designer. Look at this JSON style guide and create a BEAUTIFUL, CLEAN email that looks EXACTLY like professional file delivery emails.
 
 ${JSON.stringify(yourJsonStyle, null, 2)}
 
@@ -109,18 +109,22 @@ EMAIL REQUEST:
 Subject: "${subject}"
 Content: ${prompt}
 
-CRITICAL REQUIREMENTS:
-1. Use EXACTLY these colors: #FFFFFF background, #F9F8F5 for content cards, #333333 for text, #6A7059 for buttons, #FCD34D for accents
-2. Start with "Hey {{name}}," exactly
-3. Use "Cleverpoly.Store" as the header text
-4. Single-column layout, 600px max width
-5. Content cards with #F9F8F5 background and rounded corners
-6. Clean sans-serif fonts (Inter/Lato/Open Sans)
-7. Include footer with "Best regards, Cleverpoly" and contact email
-8. Generous white space and padding
-9. Professional, clean, minimalist design
+MAKE IT LOOK EXACTLY LIKE THIS EXAMPLE STYLE:
+- CLEAN WHITE BACKGROUND (#FFFFFF) - no dark colors anywhere
+- BEAUTIFUL CONTENT CARDS with warm off-white background (#F9F8F5) and rounded corners
+- GENEROUS WHITE SPACE and padding between all sections  
+- PERFECT TYPOGRAPHY with clean sans-serif fonts (Inter/Lato/Open Sans)
+- PROPER VISUAL HIERARCHY - large main title, medium section titles, readable body text
+- START WITH: "Hey {{name}}," in standard body text
+- HEADER: Simple "Cleverpoly.Store" text at top
+- CONTENT SECTIONS: Use content cards (#F9F8F5 background) for main content areas
+- BUTTONS: Professional olive-green (#6A7059) with white text and rounded corners
+- FOOTER: Clean footer with "Best regards, Cleverpoly" and contact email
+- SINGLE-COLUMN layout, 600px max width, centered
+- BEAUTIFUL SPACING - ample margins between sections
+- PROFESSIONAL, MINIMAL, CLEAN design
 
-Create a beautiful HTML email that implements EVERY specification in the JSON above. Do not add anything not specified. Follow the instructionsForAI exactly.`;
+Create HTML email that looks EXACTLY like a professional file delivery email - beautiful, clean, properly spaced, with content cards and perfect typography.`;
 
     const response = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
