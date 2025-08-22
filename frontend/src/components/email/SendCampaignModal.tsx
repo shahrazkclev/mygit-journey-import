@@ -261,52 +261,74 @@ export const SendCampaignModal: React.FC<SendCampaignModalProps> = ({
           )}
 
           {(status === 'sending' || status === 'paused' || status === 'sent' || status === 'failed') && (
-            <>
-              <div className="space-y-3">
-                <div className="flex items-center justify-between">
-                  <span className="text-sm font-medium">
-                    Status: <span className="capitalize">{status}</span>
-                  </span>
-                  <span className="text-sm text-muted-foreground">
-                    {sentCount} / {totalRecipients} sent
-                  </span>
-                </div>
-
-                <Progress value={progress} className="w-full" />
-
-                <div className="text-sm text-muted-foreground text-center">
-                  {status === 'sending' && 'Sending emails in background...'}
-                  {status === 'paused' && 'Campaign is paused'}
-                  {status === 'sent' && 'Campaign completed successfully!'}
-                  {status === 'failed' && 'Campaign failed'}
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <h3 className="font-medium text-email-primary">Campaign Progress</h3>
+                <div className="flex items-center gap-2">
+                  {status === 'sending' && <Badge className="bg-email-accent/20 text-email-accent">Sending...</Badge>}
+                  {status === 'paused' && <Badge variant="outline" className="border-orange-500 text-orange-600">Paused</Badge>}
+                  {status === 'sent' && <Badge className="bg-green-100 text-green-700"><CheckCircle className="h-3 w-3 mr-1" />Completed</Badge>}
+                  {status === 'failed' && <Badge variant="destructive"><XCircle className="h-3 w-3 mr-1" />Failed</Badge>}
                 </div>
               </div>
+
+              <div className="space-y-2">
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">Progress</span>
+                  <span className="font-medium text-email-primary">{Math.round(progress)}%</span>
+                </div>
+                <Progress value={progress} className="h-2" />
+              </div>
+
+              <div className="grid grid-cols-3 gap-4 text-center">
+                <div className="space-y-1">
+                  <div className="text-2xl font-bold text-email-primary">{totalRecipients}</div>
+                  <div className="text-xs text-muted-foreground">Total</div>
+                </div>
+                <div className="space-y-1">
+                  <div className="text-2xl font-bold text-green-600">{sentCount}</div>
+                  <div className="text-xs text-muted-foreground">Sent</div>
+                </div>
+                <div className="space-y-1">
+                  <div className="text-2xl font-bold text-red-600">{failedCount}</div>
+                  <div className="text-xs text-muted-foreground">Failed</div>
+                </div>
+              </div>
+
+              {errorMessage && (
+                <div className="bg-red-50 border border-red-200 rounded-lg p-3">
+                  <div className="flex items-start gap-2">
+                    <XCircle className="h-4 w-4 text-red-600 mt-0.5 flex-shrink-0" />
+                    <div className="text-sm text-red-800">
+                      <p className="font-medium">Error Details:</p>
+                      <p>{errorMessage}</p>
+                    </div>
+                  </div>
+                </div>
+              )}
 
               <div className="flex gap-2">
-                {(status === 'sending' || status === 'paused') && (
-                  <Button 
-                    onClick={pauseResumeCampaign}
-                    variant="outline"
-                    className="flex-1"
-                  >
-                    {status === 'sending' ? (
-                      <>
-                        <Pause className="h-4 w-4 mr-2" />
-                        Pause
-                      </>
-                    ) : (
-                      <>
-                        <Play className="h-4 w-4 mr-2" />
-                        Resume
-                      </>
-                    )}
+                {status === 'sending' && (
+                  <Button onClick={pauseResumeCampaign} variant="outline" className="flex-1 border-orange-500 text-orange-600 hover:bg-orange-50">
+                    <Pause className="h-4 w-4 mr-2" />
+                    Pause Campaign
                   </Button>
                 )}
-                <Button onClick={handleClose} className="flex-1">
-                  Close
-                </Button>
+                
+                {status === 'paused' && (
+                  <Button onClick={pauseResumeCampaign} className="flex-1 bg-email-accent hover:bg-email-accent/80">
+                    <Play className="h-4 w-4 mr-2" />
+                    Resume Campaign
+                  </Button>
+                )}
+                
+                {(status === 'sent' || status === 'failed') && (
+                  <Button onClick={handleClose} className="flex-1 bg-email-primary hover:bg-email-primary/80">
+                    Close
+                  </Button>
+                )}
               </div>
-            </>
+            </div>
           )}
         </div>
       </DialogContent>
