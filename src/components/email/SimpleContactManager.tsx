@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -18,6 +17,19 @@ interface Contact {
   phone: string;
   tags: string[];
   created_at: string;
+}
+
+// Match DB schema for contacts
+interface DbContact {
+  id: string;
+  user_id: string;
+  created_at: string;
+  updated_at: string;
+  email: string;
+  first_name: string | null;
+  last_name: string | null;
+  status: string;
+  tags: string[] | null;
 }
 
 export const SimpleContactManager = () => {
@@ -54,7 +66,8 @@ export const SimpleContactManager = () => {
     try {
       const { data, error } = await supabase
         .from('contacts')
-        .select('*')
+        .select('id, user_id, created_at, updated_at, email, first_name, last_name, status, tags')
+        .eq('user_id', DEMO_USER_ID)
         .order('created_at', { ascending: false });
 
       if (error) {
@@ -63,11 +76,22 @@ export const SimpleContactManager = () => {
         return;
       }
 
-      setContacts(data || []);
+      const dbContacts: DbContact[] = data || [];
+      // Map DB rows to UI shape
+      const uiContacts: Contact[] = dbContacts.map(c => ({
+        id: c.id,
+        name: [c.first_name, c.last_name].filter(Boolean).join(' ').trim(),
+        email: c.email,
+        phone: "", // No phone column in DB; keep UI consistent
+        tags: c.tags ?? [],
+        created_at: c.created_at,
+      }));
+
+      setContacts(uiContacts);
       
-      // Extract all unique tags
+      // Extract all unique tags from DB rows
       const tags = new Set<string>();
-      data?.forEach(contact => {
+      dbContacts.forEach(contact => {
         contact.tags?.forEach((tag: string) => tags.add(tag));
       });
       setAllTags(Array.from(tags));
@@ -113,13 +137,20 @@ export const SimpleContactManager = () => {
         .map(tag => tag.trim())
         .filter(tag => tag.length > 0);
 
+      // Split name into first_name and last_name
+      const nameTrimmed = (newContact.name || "").trim();
+      const [firstName, ...rest] = nameTrimmed.split(/\s+/);
+      const lastName = rest.join(" ");
+
       const { error } = await supabase
         .from('contacts')
         .insert({
-          name: newContact.name,
+          user_id: DEMO_USER_ID,
           email: newContact.email,
-          phone: newContact.phone,
-          tags
+          first_name: firstName || null,
+          last_name: lastName || null,
+          // status will default to 'subscribed' on DB
+          tags: tags.length ? tags : null
         });
 
       if (error) {

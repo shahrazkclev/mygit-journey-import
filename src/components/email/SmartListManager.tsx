@@ -69,27 +69,39 @@ export const SmartListManager = () => {
         return;
       }
 
-      // Process lists with contact counts
-      const processedLists = listsData?.map(list => ({
-        ...list,
-        contact_count: list.contact_lists?.[0]?.count || 0
-      })) || [];
+      // Process lists with contact counts and narrow types
+      const processedLists: EmailList[] = (listsData || []).map((list: any) => ({
+        id: list.id,
+        name: list.name,
+        description: list.description || "",
+        list_type: list.list_type === 'dynamic' ? 'dynamic' : 'static',
+        rule_config: list.rule_config ?? null,
+        created_at: list.created_at,
+        contact_count: list.contact_lists?.[0]?.count || 0,
+      }));
 
       setLists(processedLists);
 
       // Load contacts for tag suggestions
       const { data: contactsData, error: contactsError } = await supabase
         .from('contacts')
-        .select('id, name, email, tags');
+        .select('id, first_name, last_name, email, tags')
+        .eq('user_id', DEMO_USER_ID);
 
       if (contactsError) {
         console.error('Error loading contacts:', contactsError);
       } else {
-        setContacts(contactsData || []);
+        const uiContacts: Contact[] = (contactsData || []).map((c: any) => ({
+          id: c.id,
+          name: [c.first_name, c.last_name].filter(Boolean).join(' ').trim(),
+          email: c.email,
+          tags: c.tags ?? [],
+        }));
+        setContacts(uiContacts);
         
         // Extract all unique tags
         const tags = new Set<string>();
-        contactsData?.forEach(contact => {
+        uiContacts.forEach(contact => {
           contact.tags?.forEach((tag: string) => tags.add(tag));
         });
         setAllTags(Array.from(tags));
