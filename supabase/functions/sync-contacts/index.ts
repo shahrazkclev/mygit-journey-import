@@ -27,12 +27,12 @@ serve(async (req) => {
     // {
     //   "email": "customer@example.com",
     //   "name": "John Doe", 
-    //   "phone": "+1234567890",
     //   "tags": ["customer", "premium", "lazy-motion-library"],
-    //   "action": "create" | "update"
+    //   "action": "create" | "update",
+    //   "user_id": "optional-user-id"
     // }
 
-    const { email, name, phone, tags = [], action = 'create' } = payload;
+    const { email, name, tags = [], action = 'create', user_id } = payload;
 
     if (!email) {
       return new Response(JSON.stringify({ error: 'Email is required' }), {
@@ -41,13 +41,22 @@ serve(async (req) => {
       });
     }
 
-    // Upsert contact
+    // Use provided user_id or default to demo user
+    const finalUserId = user_id || '550e8400-e29b-41d4-a716-446655440000';
+    
+    // Parse name into first_name and last_name
+    const nameTrimmed = (name || "").trim();
+    const [firstName, ...rest] = nameTrimmed.split(/\s+/);
+    const lastName = rest.join(" ");
+
+    // Upsert contact with correct schema
     const { data: contact, error: contactError } = await supabase
       .from('contacts')
       .upsert({
         email,
-        name: name || '',
-        phone: phone || '',
+        user_id: finalUserId,
+        first_name: firstName || null,
+        last_name: lastName || null,
         tags: Array.isArray(tags) ? tags : [],
         updated_at: new Date().toISOString()
       }, {
@@ -70,7 +79,8 @@ serve(async (req) => {
     const { data: dynamicLists, error: listsError } = await supabase
       .from('email_lists')
       .select('*')
-      .eq('list_type', 'dynamic');
+      .eq('list_type', 'dynamic')
+      .eq('user_id', finalUserId);
 
     if (listsError) {
       console.error('Error fetching dynamic lists:', listsError);
