@@ -10,7 +10,7 @@ import { ProductManager } from "./email/ProductManager";
 import { CampaignHistory } from "./email/CampaignHistory";
 import { UnsubscribeManager } from "./email/UnsubscribeManager";
 import { StyleGuide } from "./email/StyleGuide";
-import { Mail, Users, List, Settings, History, UserX, Palette } from "lucide-react";
+import { Mail, Users, List, Settings, History, UserX, Palette, Package } from "lucide-react";
 
 export const EmailCampaignApp = () => {
   const [activeTab, setActiveTab] = useState("compose");
