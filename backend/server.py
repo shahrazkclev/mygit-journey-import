@@ -70,6 +70,7 @@ class WebhookPayload(BaseModel):
     name: str
     phone: Optional[str] = None
     tags: List[str] = []
+    status: Optional[str] = "subscribed"  # Add status field
 
 class CampaignProgress(BaseModel):
     campaign_id: str
