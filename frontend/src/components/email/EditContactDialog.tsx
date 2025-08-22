@@ -289,7 +289,7 @@ export const EditContactDialog: React.FC<EditContactDialogProps> = ({
 
             <div>
               <Label htmlFor="tags">Tags (comma-separated)</Label>
-              <div className="relative">
+              <div className="relative" ref={dropdownRef}>
                 <Input
                   id="tags"
                   value={formData.tags}
