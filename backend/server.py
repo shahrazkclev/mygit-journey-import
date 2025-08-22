@@ -201,6 +201,15 @@ async def send_campaign_background(campaign_id: str):
         
         campaign = Campaign(**campaign_doc)
         
+        # Get sender rotation settings
+        settings_doc = await db.campaign_settings.find_one({})  # Get first available settings
+        emails_per_sender = 50  # default
+        max_sender_sequence = 3  # default
+        
+        if settings_doc:
+            emails_per_sender = settings_doc.get("emails_per_sender", 50)
+            max_sender_sequence = settings_doc.get("max_sender_sequence", 3)
+        
         # Update status to sending
         await db.campaigns.update_one(
             {"id": campaign_id},
@@ -212,6 +221,8 @@ async def send_campaign_background(campaign_id: str):
             {"email": "test1@example.com", "name": "Test User 1"},
             {"email": "test2@example.com", "name": "Test User 2"},
             {"email": "test3@example.com", "name": "Test User 3"},
+            {"email": "test4@example.com", "name": "Test User 4"},
+            {"email": "test5@example.com", "name": "Test User 5"},
         ]
         
         total_recipients = len(recipients)
@@ -222,38 +233,47 @@ async def send_campaign_background(campaign_id: str):
         
         sent_count = 0
         failed_count = 0
+        current_sender_sequence = 1
         
-        for recipient in recipients:
+        for i, recipient in enumerate(recipients):
             # Check if campaign is paused
             current_campaign = await db.campaigns.find_one({"id": campaign_id})
             if current_campaign and current_campaign["status"] == "paused":
                 logging.info(f"Campaign {campaign_id} paused, stopping sending")
                 return
             
+            # Calculate sender sequence based on emails sent
+            # Every 'emails_per_sender' emails, increment the sequence
+            current_sender_sequence = ((sent_count // emails_per_sender) % max_sender_sequence) + 1
+            
             try:
-                # Send email via webhook
+                # Send email via webhook with sender sequence
                 if campaign.webhook_url:
                     success = await send_email_via_webhook(
                         campaign.webhook_url,
                         recipient,
                         campaign.subject,
-                        campaign.html_content
+                        campaign.html_content,
+                        current_sender_sequence
                     )
                     if success:
                         sent_count += 1
+                        logging.info(f"Email {sent_count} sent with sender sequence {current_sender_sequence}")
                     else:
                         failed_count += 1
                 else:
                     # Simulate sending without webhook
                     await asyncio.sleep(0.5)  # Simulate processing time
                     sent_count += 1
+                    logging.info(f"Email {sent_count} simulated with sender sequence {current_sender_sequence}")
                 
                 # Update progress
                 await db.campaigns.update_one(
                     {"id": campaign_id},
                     {"$set": {
                         "sent_count": sent_count,
-                        "failed_count": failed_count
+                        "failed_count": failed_count,
+                        "current_sender_sequence": current_sender_sequence
                     }}
                 )
                 
@@ -285,13 +305,14 @@ async def send_campaign_background(campaign_id: str):
             }}
         )
 
-async def send_email_via_webhook(webhook_url: str, recipient: Dict[str, Any], subject: str, html_content: str) -> bool:
+async def send_email_via_webhook(webhook_url: str, recipient: Dict[str, Any], subject: str, html_content: str, sender_sequence: int = 1) -> bool:
     try:
         payload = {
             "to": recipient["email"],
             "name": recipient.get("name", ""),
             "subject": subject,
             "html": html_content,
+            "sender_sequence": sender_sequence,  # Add sender sequence to payload
             "timestamp": datetime.utcnow().isoformat()
         }
         
@@ -299,7 +320,7 @@ async def send_email_via_webhook(webhook_url: str, recipient: Dict[str, Any], su
             response = await client.post(webhook_url, json=payload)
             
         if response.status_code == 200:
-            logging.info(f"Email sent successfully to {recipient['email']}")
+            logging.info(f"Email sent successfully to {recipient['email']} with sender sequence {sender_sequence}")
             return True
         else:
             logging.error(f"Webhook failed for {recipient['email']}: {response.status_code} - {response.text}")
