@@ -10,9 +10,10 @@ import { supabase } from "@/integrations/supabase/client";
 interface UnsubscribedUser {
   id: string;
   email: string;
-  unsubscribed_at: string;
+  unsubscribed_at?: string;
+  created_at?: string;
   reason?: string;
-  user_id: string;
+  user_id?: string;
 }
 
 export const UnsubscribeManager = () => {
