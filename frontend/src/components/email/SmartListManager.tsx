@@ -392,6 +392,136 @@ export const SmartListManager = () => {
     }
   };
 
+  const handleEditList = (list: EmailList) => {
+    setEditingList(list);
+    setEditListForm({
+      name: list.name,
+      description: list.description,
+      list_type: list.list_type,
+      requiredTags: list.rule_config?.requiredTags || [],
+      tagInput: ''
+    });
+    setShowEditListDialog(true);
+  };
+
+  const handleUpdateList = async () => {
+    if (!editingList || !editListForm.name.trim()) {
+      toast.error("List name is required");
+      return;
+    }
+
+    try {
+      let ruleConfig = null;
+      
+      if (editListForm.list_type === 'dynamic') {
+        if (editListForm.requiredTags.length === 0) {
+          toast.error("Dynamic lists require at least one tag rule");
+          return;
+        }
+        ruleConfig = {
+          requiredTags: editListForm.requiredTags
+        };
+      }
+
+      const { error } = await supabase
+        .from('email_lists')
+        .update({
+          name: editListForm.name,
+          description: editListForm.description,
+          list_type: editListForm.list_type,
+          rule_config: ruleConfig
+        })
+        .eq('id', editingList.id);
+
+      if (error) throw error;
+
+      // If it's a dynamic list and rules changed, repopulate it
+      if (editListForm.list_type === 'dynamic' && ruleConfig) {
+        await populateDynamicList(editingList.id, ruleConfig);
+      }
+
+      toast.success("List updated successfully!");
+      setShowEditListDialog(false);
+      setEditingList(null);
+      loadData();
+    } catch (error) {
+      console.error('Error updating list:', error);
+      toast.error("Failed to update list");
+    }
+  };
+
+  const handleDuplicateList = async (originalList: EmailList) => {
+    try {
+      const duplicateName = `${originalList.name} (Copy)`;
+      
+      // Create the duplicate as a static list
+      const { data: newListData, error: createError } = await supabase
+        .from('email_lists')
+        .insert({
+          name: duplicateName,
+          description: `Static copy of ${originalList.name}`,
+          user_id: DEMO_USER_ID,
+          list_type: 'static',
+          rule_config: null
+        })
+        .select()
+        .single();
+
+      if (createError) throw createError;
+
+      // Copy all contacts from the original list
+      const { data: originalContacts, error: fetchError } = await supabase
+        .from('contact_lists')
+        .select('contact_id')
+        .eq('list_id', originalList.id);
+
+      if (fetchError) throw fetchError;
+
+      if (originalContacts && originalContacts.length > 0) {
+        const memberships = originalContacts.map(contact => ({
+          contact_id: contact.contact_id,
+          list_id: newListData.id
+        }));
+
+        const { error: copyError } = await supabase
+          .from('contact_lists')
+          .insert(memberships);
+
+        if (copyError) throw copyError;
+      }
+
+      toast.success(`Created static copy: ${duplicateName}`);
+      loadData();
+    } catch (error) {
+      console.error('Error duplicating list:', error);
+      toast.error("Failed to duplicate list");
+    }
+  };
+
+  const addTagToEditList = (tag: string) => {
+    if (!editListForm.requiredTags.includes(tag)) {
+      setEditListForm({
+        ...editListForm,
+        requiredTags: [...editListForm.requiredTags, tag],
+        tagInput: ""
+      });
+    }
+  };
+
+  const removeTagFromEditList = (tagToRemove: string) => {
+    setEditListForm({
+      ...editListForm,
+      requiredTags: editListForm.requiredTags.filter(tag => tag !== tagToRemove)
+    });
+  };
+
+  // Filter contacts based on search term
+  const filteredAvailableContacts = availableContacts.filter(contact =>
+    contact.name.toLowerCase().includes(contactSearchTerm.toLowerCase()) ||
+    contact.email.toLowerCase().includes(contactSearchTerm.toLowerCase()) ||
+    contact.tags.some(tag => tag.toLowerCase().includes(contactSearchTerm.toLowerCase()))
+  );
+
   if (isLoading) {
     return <div className="p-6">Loading lists...</div>;
   }
