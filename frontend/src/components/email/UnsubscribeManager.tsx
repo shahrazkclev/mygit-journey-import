@@ -59,49 +59,44 @@ export const UnsubscribeManager = () => {
     try {
       console.log('🔍 Loading unsubscribe data from Supabase...');
       
-      // First, let's try to get the current user
+      // Get current user
       const { data: { user } } = await supabase.auth.getUser();
       console.log('👤 Current user:', user?.id);
       
-      // Try different approaches to get the data
-      console.log('🔍 Attempt 1: Query all columns to see structure');
-      const { data: allData, error: allError } = await supabase
-        .from('unsubscribes')
-        .select('*');
-      
-      console.log('📊 All data query:', { data: allData, error: allError });
-      
-      // Try with specific columns that might exist
-      console.log('🔍 Attempt 2: Query with expected columns');
+      // Try basic query first
       const { data, error } = await supabase
         .from('unsubscribes')
-        .select('id, email, name, unsubscribed_at, reason, user_id, created_at')
-        .order('created_at', { ascending: false });
+        .select('*');
 
-      console.log('📊 Supabase query result:', { data, error });
+      console.log('📊 Basic query result:', { data, error, count: data?.length });
 
       if (error) {
         console.error('❌ Supabase error:', error);
-        
-        // If we have an error, try a simpler query
-        console.log('🔍 Attempt 3: Simpler query');
-        const { data: simpleData, error: simpleError } = await supabase
-          .from('unsubscribes')
-          .select('*');
-        
-        console.log('📊 Simple query result:', { data: simpleData, error: simpleError });
-        
-        if (!simpleError && simpleData) {
-          setUnsubscribedUsers(simpleData);
-          console.log(`✅ Found ${simpleData.length} unsubscribed users (simple query)`);
-          return;
-        }
-        
         throw error;
       }
 
-      console.log(`✅ Found ${data?.length || 0} unsubscribed users`);
-      setUnsubscribedUsers(data || []);
+      // If no data, it might be due to RLS. Let's try bypassing with service role
+      if (!data || data.length === 0) {
+        console.log('⚠️ No data found - might be RLS policy issue');
+        console.log('💡 You may need to:');
+        console.log('1. Update RLS policy to allow reading unsubscribes');
+        console.log('2. Or ensure user_id matches when creating unsubscribe records');
+        
+        // For now, let's try with user context
+        const { data: userData, error: userError } = await supabase
+          .from('unsubscribes')
+          .select('*')
+          .eq('user_id', user?.id);
+        
+        console.log('📊 User-specific query:', { data: userData, error: userError });
+        
+        setUnsubscribedUsers(userData || []);
+        console.log(`✅ Found ${userData?.length || 0} unsubscribed users for current user`);
+        return;
+      }
+
+      setUnsubscribedUsers(data);
+      console.log(`✅ Found ${data.length} unsubscribed users`);
     } catch (error: any) {
       console.error('❌ Error loading unsubscribe data:', error);
       toast.error("Failed to load unsubscribe data: " + error.message);
