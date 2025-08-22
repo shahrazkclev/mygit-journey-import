@@ -60,7 +60,7 @@ serve(async (req) => {
         tags: Array.isArray(tags) ? tags : [],
         updated_at: new Date().toISOString()
       }, {
-        onConflict: 'email'
+        onConflict: 'user_id,email'
       })
       .select()
       .single();
