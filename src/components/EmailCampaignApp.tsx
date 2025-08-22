@@ -2,11 +2,12 @@ import { useState, useEffect } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Mail, Users, Settings, UserX, Sparkles, Send, Wifi, User, Package, Palette } from "lucide-react";
+import { Mail, Users, Settings, UserX, Sparkles, Send, Wifi, User, Package, Palette, History } from "lucide-react";
 import { CampaignComposer } from "./email/CampaignComposer";
 import { EmailListManager } from "./email/EmailListManager";
 import { ContactManager } from "./email/ContactManager";
 import { ProductManager } from "./email/ProductManager";
+import { CampaignHistory } from "./email/CampaignHistory";
 import { CampaignSettings } from "./email/CampaignSettings";
 import { UnsubscribeManager } from "./email/UnsubscribeManager";
 import { StyleGuide } from "./email/StyleGuide";
@@ -67,10 +68,14 @@ export const EmailCampaignApp = () => {
           </CardHeader>
         </Card>
           <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-            <TabsList className="grid w-full grid-cols-6 lg:w-fit lg:grid-cols-6 bg-card shadow-soft">
+            <TabsList className="grid w-full grid-cols-7 lg:w-fit lg:grid-cols-7 bg-card shadow-soft">
               <TabsTrigger value="compose" className="flex items-center space-x-2">
                 <Sparkles className="h-4 w-4" />
                 <span className="hidden sm:inline">Compose</span>
+              </TabsTrigger>
+              <TabsTrigger value="campaigns" className="flex items-center space-x-2">
+                <History className="h-4 w-4" />
+                <span className="hidden sm:inline">Campaigns</span>
               </TabsTrigger>
               <TabsTrigger value="lists" className="flex items-center space-x-2">
                 <Users className="h-4 w-4" />
@@ -110,6 +115,23 @@ export const EmailCampaignApp = () => {
                 </CardContent>
               </Card>
           </TabsContent>
+
+            <TabsContent value="campaigns" className="space-y-6">
+              <Card className="shadow-soft border-primary/20">
+                <CardHeader>
+                  <CardTitle className="flex items-center space-x-2">
+                    <History className="h-5 w-5 text-primary" />
+                    <span>Campaign History</span>
+                  </CardTitle>
+                  <CardDescription>
+                    View sent campaigns, download data, and create lists from recipients
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <CampaignHistory />
+                </CardContent>
+              </Card>
+            </TabsContent>
 
             <TabsContent value="lists" className="space-y-6">
               <Card className="shadow-soft border-secondary/20">

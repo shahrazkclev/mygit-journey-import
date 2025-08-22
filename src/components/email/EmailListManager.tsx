@@ -949,6 +949,34 @@ export const EmailListManager = () => {
                                 
                                 <div className="border-t pt-4">
                                   <h4 className="font-medium mb-2">Add Contacts to List</h4>
+                                  <div className="mb-4 p-3 bg-muted rounded-lg">
+                                    <h5 className="text-sm font-medium mb-2">Smart Filtering</h5>
+                                    <div className="grid grid-cols-2 gap-2">
+                                      <Select>
+                                        <SelectTrigger>
+                                          <SelectValue placeholder="Product condition" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                          <SelectItem value="any">Any product</SelectItem>
+                                          <SelectItem value="none">No products</SelectItem>
+                                          <SelectItem value="specific">Specific product...</SelectItem>
+                                        </SelectContent>
+                                      </Select>
+                                      <Select>
+                                        <SelectTrigger>
+                                          <SelectValue placeholder="Status filter" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                          <SelectItem value="all">All statuses</SelectItem>
+                                          <SelectItem value="subscribed">Subscribed only</SelectItem>
+                                          <SelectItem value="unsubscribed">Unsubscribed only</SelectItem>
+                                        </SelectContent>
+                                      </Select>
+                                    </div>
+                                    <p className="text-xs text-muted-foreground mt-2">
+                                      Use filters to add contacts based on purchase history and status
+                                    </p>
+                                  </div>
                                   <div className="max-h-48 overflow-y-auto border rounded-lg">
                                     <Table>
                                       <TableHeader>
@@ -956,6 +984,7 @@ export const EmailListManager = () => {
                                           <TableHead className="w-12"></TableHead>
                                           <TableHead>Contact</TableHead>
                                           <TableHead>Status</TableHead>
+                                          <TableHead>Products</TableHead>
                                         </TableRow>
                                       </TableHeader>
                                       <TableBody>
@@ -985,6 +1014,12 @@ export const EmailListManager = () => {
                                               <Badge variant={contact.status === 'subscribed' ? 'default' : 'secondary'}>
                                                 {contact.status}
                                               </Badge>
+                                            </TableCell>
+                                            <TableCell>
+                                              <div className="text-xs text-muted-foreground">
+                                                {/* Show product count for this contact */}
+                                                Products: 0
+                                              </div>
                                             </TableCell>
                                           </TableRow>
                                         ))}

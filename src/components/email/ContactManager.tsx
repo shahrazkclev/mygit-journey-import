@@ -518,26 +518,28 @@ export const ContactManager: React.FC = () => {
               <TabsContent value="products" className="space-y-4">
                 <div className="flex justify-between items-center">
                   <h3 className="text-lg font-semibold">Purchased Products</h3>
-                  <Select onValueChange={(productId) => addProductToContact(selectedContact.id, productId)}>
-                    <SelectTrigger className="w-48">
-                      <SelectValue placeholder="Add Product" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {products
-                        .filter(product => !contactProducts.some(cp => cp.product_id === product.id))
-                        .map((product) => (
-                          <SelectItem key={product.id} value={product.id}>
-                            {product.name} - ${product.price || 0}
-                          </SelectItem>
-                        ))}
-                    </SelectContent>
-                  </Select>
+                  <div className="flex space-x-2">
+                    <Select onValueChange={(productId) => addProductToContact(selectedContact.id, productId)}>
+                      <SelectTrigger className="w-48">
+                        <SelectValue placeholder="Add Product" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {products
+                          .filter(product => !contactProducts.some(cp => cp.product_id === product.id))
+                          .map((product) => (
+                            <SelectItem key={product.id} value={product.id}>
+                              {product.name} - ${product.price || 0}
+                            </SelectItem>
+                          ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
                 </div>
 
                 <div className="space-y-3">
                   {contactProducts.length === 0 ? (
                     <p className="text-muted-foreground text-center py-8">
-                      No products purchased yet.
+                      No products purchased yet. Add products to track this contact's purchase history.
                     </p>
                   ) : (
                     contactProducts.map((contactProduct) => (
@@ -550,8 +552,14 @@ export const ContactManager: React.FC = () => {
                             <div className="font-medium">{contactProduct.product.name}</div>
                             <div className="text-sm text-muted-foreground">
                               Purchased: {new Date(contactProduct.purchased_at).toLocaleDateString()}
-                              {contactProduct.price_paid && ` • $${contactProduct.price_paid}`}
+                              {contactProduct.price_paid && ` • Paid: $${contactProduct.price_paid}`}
+                              {contactProduct.product.category && ` • ${contactProduct.product.category}`}
                             </div>
+                            {contactProduct.product.description && (
+                              <div className="text-xs text-muted-foreground mt-1">
+                                {contactProduct.product.description}
+                              </div>
+                            )}
                           </div>
                         </div>
                         <Button
