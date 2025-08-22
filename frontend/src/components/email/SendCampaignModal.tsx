@@ -34,6 +34,9 @@ export const SendCampaignModal: React.FC<SendCampaignModalProps> = ({
   const [status, setStatus] = useState<'idle' | 'sending' | 'paused' | 'sent' | 'failed'>('idle');
   const [totalRecipients, setTotalRecipients] = useState(0);
   const [sentCount, setSentCount] = useState(0);
+  const [failedCount, setFailedCount] = useState(0);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [webhookUrl, setWebhookUrl] = useState('');
 
   const startCampaign = async () => {
     if (selectedLists.length === 0) {
