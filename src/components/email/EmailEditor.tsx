@@ -308,9 +308,9 @@ export const EmailEditor: React.FC<EmailEditorProps> = ({
 
   return (
     <div className="flex h-screen bg-background">
-      {/* Sidebar */}
-      <div className="w-80 border-r bg-card p-4 overflow-y-auto">
-        <div className="space-y-4">
+      {/* Sidebar with fixed positioning */}
+      <div className="w-80 border-r bg-card overflow-y-auto flex-shrink-0">
+        <div className="p-4 space-y-4">
           <Card>
             <CardHeader>
               <CardTitle className="text-sm">Add Elements</CardTitle>
@@ -356,11 +356,13 @@ export const EmailEditor: React.FC<EmailEditorProps> = ({
           </Card>
 
           {selectedElementData && (
-            <ElementToolbar
-              element={selectedElementData}
-              onUpdate={(updates) => updateElement(selectedElement!, updates)}
-              onDelete={() => deleteElement(selectedElement!)}
-            />
+            <div className="relative">
+              <ElementToolbar
+                element={selectedElementData}
+                onUpdate={(updates) => updateElement(selectedElement!, updates)}
+                onDelete={() => deleteElement(selectedElement!)}
+              />
+            </div>
           )}
         </div>
       </div>

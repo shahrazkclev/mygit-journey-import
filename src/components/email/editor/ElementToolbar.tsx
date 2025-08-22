@@ -119,7 +119,7 @@ export const ElementToolbar: React.FC<ElementToolbarProps> = ({
               <SelectTrigger>
                 <SelectValue />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent className="bg-background border shadow-lg z-50">
                 <SelectItem value="12px">12px</SelectItem>
                 <SelectItem value="14px">14px</SelectItem>
                 <SelectItem value="16px">16px</SelectItem>
@@ -144,7 +144,7 @@ export const ElementToolbar: React.FC<ElementToolbarProps> = ({
               <SelectTrigger>
                 <SelectValue />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent className="bg-background border shadow-lg z-50">
                 <SelectItem value="normal">Normal</SelectItem>
                 <SelectItem value="500">Medium</SelectItem>
                 <SelectItem value="600">Semi Bold</SelectItem>
@@ -189,7 +189,7 @@ export const ElementToolbar: React.FC<ElementToolbarProps> = ({
               <SelectTrigger>
                 <SelectValue />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent className="bg-background border shadow-lg z-50">
                 <SelectItem value="0px">0px (Square)</SelectItem>
                 <SelectItem value="4px">4px (Slightly rounded)</SelectItem>
                 <SelectItem value="8px">8px (Rounded)</SelectItem>
@@ -211,7 +211,7 @@ export const ElementToolbar: React.FC<ElementToolbarProps> = ({
               <SelectTrigger>
                 <SelectValue />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent className="bg-background border shadow-lg z-50">
                 <SelectItem value="20px">20px (Small)</SelectItem>
                 <SelectItem value="40px">40px (Medium)</SelectItem>
                 <SelectItem value="60px">60px (Large)</SelectItem>
@@ -231,7 +231,7 @@ export const ElementToolbar: React.FC<ElementToolbarProps> = ({
             <SelectTrigger>
               <SelectValue />
             </SelectTrigger>
-            <SelectContent>
+            <SelectContent className="bg-background border shadow-lg z-50">
               <SelectItem value="8px">8px (Small)</SelectItem>
               <SelectItem value="16px">16px (Medium)</SelectItem>
               <SelectItem value="24px">24px (Large)</SelectItem>
