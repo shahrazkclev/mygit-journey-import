@@ -66,6 +66,7 @@ export const SimpleContactManager = () => {
 
   useEffect(() => {
     loadContacts();
+    loadEmailLists();
   }, []);
 
   useEffect(() => {
