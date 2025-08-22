@@ -181,8 +181,8 @@ export const CampaignHistory: React.FC = () => {
       <Card className="shadow-soft bg-gradient-to-br from-email-background to-background border-email-primary/20">
         <CardHeader>
           <CardTitle className="flex items-center">
-            <History className="h-5 w-5 mr-2" />
-            All Campaigns ({campaigns.length})
+            <History className="h-5 w-5 mr-2 text-email-secondary" />
+            <span className="text-email-secondary">All Campaigns ({campaigns.length})</span>
           </CardTitle>
         </CardHeader>
         <CardContent>
