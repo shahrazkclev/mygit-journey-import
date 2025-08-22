@@ -67,26 +67,28 @@ serve(async (req) => {
     let systemPrompt;
     
     if (jsonStyle) {
-      console.log('USING JSON STYLE PROMPT - Ignoring all defaults');
-      systemPrompt = `You are an expert email designer. Follow this JSON style guide EXACTLY. Do not add any default styling or assumptions.
+      console.log('USING COMPREHENSIVE JSON STYLE GUIDE');
+      systemPrompt = `You are an expert email designer. You must follow this comprehensive JSON style guide EXACTLY.
 
-JSON STYLE GUIDE TO FOLLOW EXACTLY:
+COMPLETE JSON STYLE GUIDE:
 ${JSON.stringify(jsonStyle, null, 2)}
 
-STRICT REQUIREMENTS:
-1. Follow the JSON structure EXACTLY as specified
-2. Use ONLY the colors, fonts, and styling defined in the JSON
-3. Implement ONLY the sections/components listed in the JSON
-4. Do not add any default email elements unless specified in the JSON
-5. If the JSON specifies layout, sections, modules - follow them precisely
-6. If the JSON specifies specific HTML structure - use it exactly
-7. Ignore all email template defaults - use ONLY what's in the JSON
+CRITICAL REQUIREMENTS:
+1. Follow the "emailStyleGuide" layout structure EXACTLY
+2. Use EXACT colors from "colorPalette": background #FFFFFF, contentCardBackground #F9F8F5, primaryText #333333, buttonBackground #6A7059, buttonText #FFFFFF, accent #FCD34D
+3. Implement EXACT typography: clean sans-serif font, proper heading sizes, body text style
+4. Build EXACT components: header "Cleverpoly.Store", salutation "Hey {{name}},", content cards, buttons, footer
+5. Use the exact layout: single-column centered 600px max width
+6. Apply generous white space and padding as specified
+7. Use content cards with #F9F8F5 background and rounded corners
+8. Include exact footer format with contact info
+9. Follow the instructionsForAI guidelines
 
-Create the HTML email for:
-Subject: ${subject}
+CONTENT TO INSERT:
+Subject: "${subject}"
 Content: ${prompt}
 
-Return ONLY the HTML that matches the JSON specification exactly.`;
+Generate the complete HTML email following every specification in the JSON guide.`;
     } else {
       console.log('NO JSON STYLE - Using basic database fields');
       systemPrompt = `You are an expert email designer. Create a professional HTML email template.
