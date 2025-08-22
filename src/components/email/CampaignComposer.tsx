@@ -590,6 +590,7 @@ export const CampaignComposer: React.FC<CampaignComposerProps> = ({ onSave }) =>
                   <EmailEditor
                     onSave={handleEditorSave}
                     initialElements={emailElements}
+                    htmlContent={generatedTemplate}
                   />
                 </div>
               </TabsContent>

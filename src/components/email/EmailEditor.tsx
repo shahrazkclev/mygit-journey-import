@@ -35,14 +35,128 @@ export interface EmailElement {
 interface EmailEditorProps {
   onSave?: (elements: EmailElement[], htmlContent: string) => void;
   initialElements?: EmailElement[];
+  htmlContent?: string;
 }
 
 export const EmailEditor: React.FC<EmailEditorProps> = ({ 
   onSave, 
-  initialElements = [] 
+  initialElements = [],
+  htmlContent
 }) => {
-  const [elements, setElements] = useState<EmailElement[]>(
-    initialElements.length > 0 ? initialElements : [
+  // Parse HTML content into elements if provided
+  const parseHtmlToElements = useCallback((html: string): EmailElement[] => {
+    if (!html) return [];
+    
+    try {
+      const parser = new DOMParser();
+      const doc = parser.parseFromString(html, 'text/html');
+      const elements: EmailElement[] = [];
+      
+      // Extract text content and basic elements
+      const bodyContent = doc.body;
+      if (bodyContent) {
+        const headings = bodyContent.querySelectorAll('h1, h2, h3');
+        const paragraphs = bodyContent.querySelectorAll('p');
+        const buttons = bodyContent.querySelectorAll('a[style*="background"], button');
+        const images = bodyContent.querySelectorAll('img');
+        
+        let elementIndex = 0;
+        
+        // Add headings as text elements
+        headings.forEach((heading, index) => {
+          if (heading.textContent?.trim()) {
+            elements.push({
+              id: `parsed-heading-${elementIndex++}`,
+              type: 'text',
+              content: heading.textContent.trim(),
+              styles: {
+                fontSize: heading.tagName === 'H1' ? '24px' : heading.tagName === 'H2' ? '20px' : '18px',
+                fontWeight: 'bold',
+                color: '#333333',
+                textAlign: 'center',
+                padding: '16px',
+              },
+              gridPosition: { x: 0, y: index * 2, width: 12, height: 2 }
+            });
+          }
+        });
+        
+        // Add paragraphs as text elements
+        paragraphs.forEach((p, index) => {
+          if (p.textContent?.trim() && p.textContent.length > 10) {
+            elements.push({
+              id: `parsed-text-${elementIndex++}`,
+              type: 'text',
+              content: p.textContent.trim(),
+              styles: {
+                fontSize: '16px',
+                color: '#666666',
+                padding: '16px',
+                textAlign: 'left',
+              },
+              gridPosition: { x: 0, y: (elements.length) * 2, width: 12, height: 3 }
+            });
+          }
+        });
+        
+        // Add buttons
+        buttons.forEach((button, index) => {
+          if (button.textContent?.trim()) {
+            elements.push({
+              id: `parsed-button-${elementIndex++}`,
+              type: 'button',
+              content: button.textContent.trim(),
+              styles: {
+                fontSize: '16px',
+                color: '#ffffff',
+                backgroundColor: '#6A7059',
+                padding: '12px 24px',
+                textAlign: 'center',
+                borderRadius: '8px',
+              },
+              gridPosition: { x: 0, y: (elements.length) * 2, width: 4, height: 2 }
+            });
+          }
+        });
+        
+        // Add images
+        images.forEach((img, index) => {
+          const src = img.getAttribute('src');
+          if (src) {
+            elements.push({
+              id: `parsed-image-${elementIndex++}`,
+              type: 'image',
+              content: src,
+              styles: {
+                textAlign: 'center',
+                padding: '16px',
+              },
+              gridPosition: { x: 0, y: (elements.length) * 2, width: 12, height: 4 }
+            });
+          }
+        });
+      }
+      
+      return elements.length > 0 ? elements : [];
+    } catch (error) {
+      console.error('Error parsing HTML:', error);
+      return [];
+    }
+  }, []);
+
+  const [elements, setElements] = useState<EmailElement[]>(() => {
+    // Priority: initialElements > parsed HTML > default elements
+    if (initialElements.length > 0) {
+      return initialElements;
+    } else if (htmlContent) {
+      const parsed = parseHtmlToElements(htmlContent);
+      if (parsed.length > 0) {
+        return parsed;
+      }
+    }
+    
+    // Default elements if nothing else is available
+    return [
       {
         id: '1',
         type: 'text',
@@ -68,8 +182,8 @@ export const EmailEditor: React.FC<EmailEditorProps> = ({
         },
         gridPosition: { x: 0, y: 2, width: 12, height: 3 }
       }
-    ]
-  );
+    ];
+  });
   
   const [activeId, setActiveId] = useState<string | null>(null);
   const [selectedElement, setSelectedElement] = useState<string | null>(null);
