@@ -203,7 +203,7 @@ async def resume_campaign(campaign_id: str, background_tasks: BackgroundTasks):
 
 # Webhook endpoint for receiving contact data
 @api_router.post("/webhook/contacts")
-async def webhook_contacts(payload: WebhookPayload, current_user: str = Depends(verify_token)):
+async def webhook_contacts(payload: WebhookPayload):
     try:
         # Log the webhook call
         logging.info(f"Webhook received: {payload.dict()}")
