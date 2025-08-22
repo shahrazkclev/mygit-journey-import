@@ -1,5 +1,5 @@
-import React, { useRef, useEffect } from 'react';
-
+import React, { useRef, useEffect, useState } from 'react';
+import { Button } from '@/components/ui/button';
 
 interface EditablePreviewProps {
   htmlContent: string;
@@ -11,6 +11,8 @@ export const EditablePreview: React.FC<EditablePreviewProps> = ({
   onContentUpdate 
 }) => {
   const iframeRef = useRef<HTMLIFrameElement>(null);
+  const initialHtmlRef = useRef(htmlContent);
+  const [mode, setMode] = useState<'mobile' | 'desktop'>('desktop');
 
   useEffect(() => {
     const iframe = iframeRef.current;
@@ -75,19 +77,28 @@ export const EditablePreview: React.FC<EditablePreviewProps> = ({
     return () => {
       iframe.removeEventListener('load', handleLoad);
     };
-  }, [onContentUpdate]);
+  }, []);
 
   return (
     <div className="w-full max-w-sm sm:max-w-lg md:max-w-2xl lg:max-w-4xl xl:max-w-6xl mx-auto px-4">
       <div className="bg-muted/50 p-3 sm:p-4 lg:p-6 rounded-lg">
+        <div className="flex items-center justify-between mb-3">
+          <span className="text-sm font-medium">Preview</span>
+          <div className="inline-flex gap-2">
+            <Button size="sm" variant={mode==='mobile' ? 'default' : 'outline'} onClick={() => setMode('mobile')}>Mobile</Button>
+            <Button size="sm" variant={mode==='desktop' ? 'default' : 'outline'} onClick={() => setMode('desktop')}>Desktop</Button>
+          </div>
+        </div>
         <div className="bg-background rounded-lg overflow-hidden shadow-lg border relative min-h-[400px] sm:min-h-[500px] lg:min-h-[600px]">
-          <iframe
-            ref={iframeRef}
-            srcDoc={htmlContent}
-            className="w-full h-[400px] sm:h-[500px] lg:h-[600px] border-0"
-            title="Editable Email Preview"
-            style={{ colorScheme: 'normal' }}
-          />
+          <div className={`mx-auto ${mode === 'mobile' ? 'w-[390px]' : 'w-[1024px]'}`}>
+            <iframe
+              ref={iframeRef}
+              srcDoc={initialHtmlRef.current}
+              className="w-full h-[400px] sm:h-[500px] lg:h-[600px] border-0"
+              title="Editable Email Preview"
+              style={{ colorScheme: 'normal' }}
+            />
+          </div>
         </div>
       </div>
     </div>
