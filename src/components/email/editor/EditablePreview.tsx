@@ -13,6 +13,7 @@ export const EditablePreview: React.FC<EditablePreviewProps> = ({
 }) => {
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const initialHtmlRef = useRef(htmlContent);
+  const selectionRangeRef = useRef<Range | null>(null);
   const [mode, setMode] = useState<'mobile' | 'desktop'>('desktop');
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [showColorPicker, setShowColorPicker] = useState(false);
@@ -45,6 +46,7 @@ export const EditablePreview: React.FC<EditablePreviewProps> = ({
     if (!doc) return;
     
     saveToHistory();
+    restoreSelection();
     doc.execCommand(command, false, value);
     
     // Trigger update
@@ -103,6 +105,7 @@ export const EditablePreview: React.FC<EditablePreviewProps> = ({
     const doc = iframe.contentDocument || iframe.contentWindow?.document;
     if (!doc) return;
     
+    restoreSelection();
     const selection = doc.getSelection();
     if (selection && selection.rangeCount > 0) {
       const range = selection.getRangeAt(0);
@@ -140,10 +143,25 @@ export const EditablePreview: React.FC<EditablePreviewProps> = ({
 
   const changeTextColor = (color: string) => {
     saveToHistory();
+    restoreSelection();
     executeCommand('foreColor', color);
     setShowColorPicker(false);
   };
 
+  const restoreSelection = () => {
+    const iframe = iframeRef.current;
+    if (!iframe) return;
+    const doc = iframe.contentDocument || iframe.contentWindow?.document;
+    if (!doc) return;
+    const sel = doc.getSelection();
+    if (selectionRangeRef.current && sel) {
+      (doc.body as HTMLElement).focus();
+      try {
+        sel.removeAllRanges();
+        sel.addRange(selectionRangeRef.current);
+      } catch {}
+    }
+  };
   const applyFontSize = (px: number) => {
     const iframe = iframeRef.current;
     if (!iframe) return;
@@ -211,6 +229,14 @@ export const EditablePreview: React.FC<EditablePreviewProps> = ({
         }, 500);
       };
 
+      // track selection to keep it across toolbar clicks
+      const onSelectionChange = () => {
+        const sel = doc.getSelection();
+        if (sel && sel.rangeCount > 0) {
+          try { selectionRangeRef.current = sel.getRangeAt(0).cloneRange(); } catch {}
+        }
+      };
+
       const onInput = () => scheduleUpdate();
       const onPaste = (e: ClipboardEvent) => {
         e.preventDefault();
@@ -240,6 +266,7 @@ export const EditablePreview: React.FC<EditablePreviewProps> = ({
         }
       };
 
+      doc.addEventListener('selectionchange', onSelectionChange);
       body.addEventListener('input', onInput);
       body.addEventListener('paste', onPaste as any);
       body.addEventListener('keydown', onKeyDown);
@@ -297,18 +324,18 @@ export const EditablePreview: React.FC<EditablePreviewProps> = ({
             <div className="h-4 w-px bg-border mx-1" />
             
             {/* Text Formatting */}
-            <Button size="sm" variant="ghost" className="h-7 px-2" onClick={() => executeCommand('bold')}>
+            <Button size="sm" variant="ghost" className="h-7 px-2" onMouseDown={(e)=>e.preventDefault()} onClick={() => executeCommand('bold')}>
               <Bold className="h-3 w-3" />
             </Button>
-            <Button size="sm" variant="ghost" className="h-7 px-2" onClick={() => executeCommand('italic')}>
+            <Button size="sm" variant="ghost" className="h-7 px-2" onMouseDown={(e)=>e.preventDefault()} onClick={() => executeCommand('italic')}>
               <Italic className="h-3 w-3" />
             </Button>
             
             {/* Font Size */}
-            <Button size="sm" variant="ghost" className="h-7 px-2" onClick={() => adjustFontSize(+2)}>
+            <Button size="sm" variant="ghost" className="h-7 px-2" onMouseDown={(e)=>e.preventDefault()} onClick={() => adjustFontSize(+2)}>
               <Plus className="h-3 w-3" />
             </Button>
-            <Button size="sm" variant="ghost" className="h-7 px-2" onClick={() => adjustFontSize(-2)}>
+            <Button size="sm" variant="ghost" className="h-7 px-2" onMouseDown={(e)=>e.preventDefault()} onClick={() => adjustFontSize(-2)}>
               <Minus className="h-3 w-3" />
             </Button>
             
@@ -318,6 +345,7 @@ export const EditablePreview: React.FC<EditablePreviewProps> = ({
                 size="sm" 
                 variant="ghost" 
                 className="h-7 px-2"
+                onMouseDown={(e)=>e.preventDefault()}
                 onClick={(e) => {
                   e.stopPropagation();
                   setShowColorPicker(!showColorPicker);
@@ -344,7 +372,7 @@ export const EditablePreview: React.FC<EditablePreviewProps> = ({
               )}
             </div>
             
-            <Button size="sm" variant="ghost" className="h-7 px-2" onClick={insertBulletList}>
+            <Button size="sm" variant="ghost" className="h-7 px-2" onMouseDown={(e)=>e.preventDefault()} onClick={insertBulletList}>
               <List className="h-3 w-3" />
             </Button>
             
@@ -354,6 +382,7 @@ export const EditablePreview: React.FC<EditablePreviewProps> = ({
                 size="sm" 
                 variant="ghost" 
                 className="h-7 px-2"
+                onMouseDown={(e)=>e.preventDefault()}
                 onClick={(e) => {
                   e.stopPropagation();
                   setShowEmojiPicker(!showEmojiPicker);
@@ -396,6 +425,7 @@ export const EditablePreview: React.FC<EditablePreviewProps> = ({
           <div className={`mx-auto ${mode === 'mobile' ? 'w-full max-w-[375px]' : 'w-full max-w-[1100px]'}`}>
             <iframe
               ref={iframeRef}
+              key={`${mode}-${htmlContent.length}`}
               srcDoc={htmlContent}
               className={`w-full border-0 ${mode === 'mobile' ? 'h-[400px]' : 'h-[500px]'}`}
               title="Email Editor"
