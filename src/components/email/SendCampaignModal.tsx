@@ -40,20 +40,20 @@ export const SendCampaignModal: React.FC<SendCampaignModalProps> = ({
       return;
     }
 
-    // Get webhook URL from settings
+    // Get webhook URL from user_settings
     const { data: settings, error: settingsError } = await supabase
-      .from('style_guides')
-      .select('*')
+      .from('user_settings')
+      .select('webhook_url')
       .eq('user_id', DEMO_USER_ID)
-      .order('created_at', { ascending: false })
-      .limit(1);
+      .maybeSingle();
 
     if (settingsError) {
+      console.error('Failed to load settings', settingsError);
       toast.error('Failed to load settings');
       return;
     }
 
-    const webhookUrl = (settings?.[0] as any)?.webhook_url as string | undefined;
+    const webhookUrl = settings?.webhook_url || undefined;
     if (!webhookUrl) {
       toast.error('Please set webhook URL in Settings first');
       return;
