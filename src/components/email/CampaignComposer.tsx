@@ -6,10 +6,11 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Wand2, Send, Eye, Save, Palette, Code } from "lucide-react";
+import { Wand2, Send, Eye, Save, Palette, Code, Edit } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { EmailEditor, EmailElement } from "./EmailEditor";
+import { InlineEmailEditor } from "./editor/InlineEmailEditor";
 import { DEMO_USER_ID } from "@/lib/demo-auth";
 
 interface CampaignComposerProps {
@@ -21,7 +22,7 @@ export const CampaignComposer: React.FC<CampaignComposerProps> = ({ onSave }) =>
   const [prompt, setPrompt] = useState("");
   const [generatedTemplate, setGeneratedTemplate] = useState("");
   const [isGenerating, setIsGenerating] = useState(false);
-  const [previewMode, setPreviewMode] = useState<'code' | 'visual' | 'editor'>('visual');
+  const [previewMode, setPreviewMode] = useState<'code' | 'visual' | 'editor' | 'inline'>('visual');
   const [selectedLists, setSelectedLists] = useState<string[]>([]);
   const [isEditingWithAI, setIsEditingWithAI] = useState(false);
   const [aiEditPrompt, setAiEditPrompt] = useState("");
@@ -560,9 +561,13 @@ export const CampaignComposer: React.FC<CampaignComposerProps> = ({ onSave }) =>
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <Tabs value={previewMode} onValueChange={(value) => setPreviewMode(value as 'code' | 'visual' | 'editor')}>
-              <TabsList className="grid w-full grid-cols-3">
-                <TabsTrigger value="visual">Visual Preview</TabsTrigger>
+            <Tabs value={previewMode} onValueChange={(value) => setPreviewMode(value as 'code' | 'visual' | 'editor' | 'inline')}>
+              <TabsList className="grid w-full grid-cols-4">
+                <TabsTrigger value="visual">Preview</TabsTrigger>
+                <TabsTrigger value="inline">
+                  <Edit className="h-4 w-4 mr-2" />
+                  Quick Edit
+                </TabsTrigger>
                 <TabsTrigger value="editor">
                   <Palette className="h-4 w-4 mr-2" />
                   Visual Editor
@@ -584,6 +589,13 @@ export const CampaignComposer: React.FC<CampaignComposerProps> = ({ onSave }) =>
                 </div>
               </TabsContent>
               
+              <TabsContent value="inline" className="mt-4">
+                <InlineEmailEditor
+                  htmlContent={generatedTemplate}
+                  onUpdate={setGeneratedTemplate}
+                />
+              </TabsContent>
+
               <TabsContent value="editor" className="mt-4">
                 <div className="rounded-lg border overflow-hidden">
                   <EmailEditor
