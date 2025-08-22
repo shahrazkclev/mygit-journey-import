@@ -157,6 +157,15 @@ export const EditContactDialog: React.FC<EditContactDialogProps> = ({
     }));
   };
 
+  const addProductAsTag = (productName: string) => {
+    const currentTags = formData.tags.split(',').map(tag => tag.trim()).filter(tag => tag.length > 0);
+    if (!currentTags.includes(productName)) {
+      const newTags = [...currentTags, productName].join(', ');
+      setFormData(prev => ({ ...prev, tags: newTags }));
+    }
+    setShowProductSuggestions(false);
+  };
+
   const updateContact = async () => {
     if (!contact) return;
     
