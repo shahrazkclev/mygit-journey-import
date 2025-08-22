@@ -279,6 +279,107 @@ export const SmartListManager = () => {
     }
   };
 
+  const handleManageContacts = async (list: EmailList) => {
+    setSelectedListForManagement(list);
+    setShowManageContactsDialog(true);
+    
+    // Load all contacts
+    const { data: allContactsData, error: contactsError } = await supabase
+      .from('contacts')
+      .select('id, first_name, last_name, email, tags')
+      .eq('user_id', DEMO_USER_ID);
+
+    if (contactsError) {
+      console.error('Error loading contacts:', contactsError);
+      return;
+    }
+
+    // Load contacts already in this list
+    const { data: listMemberships, error: membershipError } = await supabase
+      .from('contact_lists')
+      .select(`
+        contact_id,
+        contacts(id, first_name, last_name, email, tags)
+      `)
+      .eq('list_id', list.id);
+
+    if (membershipError) {
+      console.error('Error loading list memberships:', membershipError);
+      return;
+    }
+
+    const processedContacts: Contact[] = (allContactsData || []).map((c: any) => ({
+      id: c.id,
+      name: [c.first_name, c.last_name].filter(Boolean).join(' ').trim(),
+      email: c.email,
+      tags: c.tags ?? [],
+    }));
+
+    const contactsInList = (listMemberships || [])
+      .map((membership: any) => membership.contacts)
+      .filter(Boolean)
+      .map((c: any) => ({
+        id: c.id,
+        name: [c.first_name, c.last_name].filter(Boolean).join(' ').trim(),
+        email: c.email,
+        tags: c.tags ?? [],
+      }));
+
+    const contactsInListIds = new Set(contactsInList.map(c => c.id));
+    const availableForAddition = processedContacts.filter(c => !contactsInListIds.has(c.id));
+
+    setAvailableContacts(availableForAddition);
+    setListContacts(contactsInList);
+  };
+
+  const handleAddContactsToList = async () => {
+    if (!selectedListForManagement || selectedContactsToAdd.size === 0) {
+      return;
+    }
+
+    try {
+      const memberships = Array.from(selectedContactsToAdd).map(contactId => ({
+        contact_id: contactId,
+        list_id: selectedListForManagement.id
+      }));
+
+      const { error } = await supabase
+        .from('contact_lists')
+        .upsert(memberships, { onConflict: 'contact_id,list_id' });
+
+      if (error) throw error;
+
+      toast.success(`Added ${selectedContactsToAdd.size} contacts to ${selectedListForManagement.name}`);
+      setSelectedContactsToAdd(new Set());
+      setShowManageContactsDialog(false);
+      loadData();
+    } catch (error) {
+      console.error('Error adding contacts to list:', error);
+      toast.error("Failed to add contacts to list");
+    }
+  };
+
+  const handleRemoveContactFromList = async (contactId: string) => {
+    if (!selectedListForManagement) return;
+
+    try {
+      const { error } = await supabase
+        .from('contact_lists')
+        .delete()
+        .eq('contact_id', contactId)
+        .eq('list_id', selectedListForManagement.id);
+
+      if (error) throw error;
+
+      toast.success("Contact removed from list");
+      // Refresh the contacts in this list
+      handleManageContacts(selectedListForManagement);
+    } catch (error) {
+      console.error('Error removing contact from list:', error);
+      toast.error("Failed to remove contact from list");
+    }
+  };
+
   if (isLoading) {
     return <div className="p-6">Loading lists...</div>;
   }
