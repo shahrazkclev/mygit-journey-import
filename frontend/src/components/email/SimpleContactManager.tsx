@@ -668,6 +668,17 @@ export const SimpleContactManager = () => {
                         ))}
                       </div>
                     )}
+                    {contactLists[contact.id] && contactLists[contact.id].length > 0 && (
+                      <div className="flex flex-wrap gap-1 mt-2">
+                        <span className="text-xs text-gray-500 mr-1">Lists:</span>
+                        {contactLists[contact.id].map(list => (
+                          <Badge key={list.id} variant="outline" className="text-xs border-email-secondary/30 text-email-secondary">
+                            <Users className="h-3 w-3 mr-1" />
+                            {list.name}
+                          </Badge>
+                        ))}
+                      </div>
+                    )}
                   </div>
                 </div>
                 <div className="flex items-center space-x-2">
