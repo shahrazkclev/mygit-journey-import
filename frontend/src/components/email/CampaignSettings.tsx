@@ -72,7 +72,9 @@ export const CampaignSettings = () => {
         batch_size: batchSize[0],
         delay_between_batches: delayBetweenBatches[0],
         enable_retries: enableRetries,
-        max_retries: maxRetries[0]
+        max_retries: maxRetries[0],
+        emails_per_sender: emailsPerSender,
+        max_sender_sequence: maxSenderSequence
       };
 
       const { error } = await supabase
