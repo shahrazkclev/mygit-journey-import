@@ -133,6 +133,53 @@ export const CampaignComposer: React.FC<CampaignComposerProps> = ({ onSave }) =>
     }
   };
 
+  const loadProducts = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('products')
+        .select('*')
+        .eq('user_id', DEMO_USER_ID)
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        console.error('Error loading products:', error);
+        return;
+      }
+
+      setProducts(data || []);
+    } catch (error) {
+      console.error('Error loading products:', error);
+    }
+  };
+
+  const enhancePromptWithProductDetails = (originalPrompt: string): string => {
+    if (!products.length) return originalPrompt;
+
+    // Find product names mentioned in the prompt (case insensitive)
+    const mentionedProducts = products.filter(product => 
+      originalPrompt.toLowerCase().includes(product.name.toLowerCase())
+    );
+
+    if (mentionedProducts.length === 0) return originalPrompt;
+
+    // Add product details to the prompt
+    let enhancedPrompt = originalPrompt;
+    
+    enhancedPrompt += "\n\n--- Product Details ---\n";
+    enhancedPrompt += "The following products are mentioned in this email. Use these details for accurate information:\n\n";
+
+    mentionedProducts.forEach(product => {
+      enhancedPrompt += `• ${product.name}:\n`;
+      if (product.description) enhancedPrompt += `  Description: ${product.description}\n`;
+      if (product.price) enhancedPrompt += `  Price: $${product.price}\n`;
+      if (product.category) enhancedPrompt += `  Category: ${product.category}\n`;
+      if (product.sku) enhancedPrompt += `  SKU: ${product.sku}\n`;
+      enhancedPrompt += "\n";
+    });
+
+    return enhancedPrompt;
+  };
+
   // Clean code fences and extraneous markdown around returned HTML
   const cleanHtmlContent = (raw: string) => {
     try {
