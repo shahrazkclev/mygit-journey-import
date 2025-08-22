@@ -232,7 +232,7 @@ export const EditContactDialog: React.FC<EditContactDialogProps> = ({
           </DialogDescription>
         </DialogHeader>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 gap-6">
           {/* Contact Information */}
           <div className="space-y-4">
             <h3 className="text-lg font-semibold">Contact Information</h3>
@@ -329,92 +329,6 @@ export const EditContactDialog: React.FC<EditContactDialogProps> = ({
                 </SelectContent>
               </Select>
             </div>
-          </div>
-
-          {/* Product Selection */}
-          <div className="space-y-4">
-            <div className="flex items-center space-x-2">
-              <ShoppingCart className="h-5 w-5" />
-              <h3 className="text-lg font-semibold">Product Purchases</h3>
-            </div>
-            
-            <p className="text-sm text-muted-foreground">
-              Select products this contact has purchased and optionally set the price paid:
-            </p>
-
-            <ScrollArea className="h-80 border rounded-lg p-4">
-              <div className="space-y-3">
-                {products.length === 0 ? (
-                  <p className="text-muted-foreground text-center py-4">
-                    No products available. Add products in the Product Manager first.
-                  </p>
-                ) : (
-                  products.map((product) => (
-                    <div key={product.id} className="flex flex-col space-y-2 p-3 border rounded-lg">
-                      <div className="flex items-start space-x-3">
-                        <Checkbox
-                          id={`product-${product.id}`}
-                          checked={selectedProducts.has(product.id)}
-                          onCheckedChange={() => handleProductToggle(product.id, product)}
-                        />
-                        <div className="flex-1 min-w-0">
-                          <label 
-                            htmlFor={`product-${product.id}`}
-                            className="text-sm font-medium cursor-pointer"
-                          >
-                            {product.name}
-                          </label>
-                          <div className="text-xs text-muted-foreground">
-                            {product.description && <div>{product.description}</div>}
-                            <div className="flex items-center space-x-2 mt-1">
-                              {product.price && (
-                                <Badge variant="outline" className="text-xs">
-                                  <DollarSign className="h-3 w-3 mr-1" />
-                                  ${product.price}
-                                </Badge>
-                              )}
-                              {product.category && (
-                                <Badge variant="secondary" className="text-xs">
-                                  {product.category}
-                                </Badge>
-                              )}
-                              {product.sku && (
-                                <Badge variant="outline" className="text-xs">
-                                  SKU: {product.sku}
-                                </Badge>
-                              )}
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                      
-                      {selectedProducts.has(product.id) && (
-                        <div className="ml-6 pt-2 border-t">
-                          <Label htmlFor={`price-${product.id}`} className="text-xs">
-                            Price Paid (optional)
-                          </Label>
-                          <Input
-                            id={`price-${product.id}`}
-                            type="number"
-                            step="0.01"
-                            placeholder={product.price?.toString() || "0.00"}
-                            value={productPrices[product.id] || ''}
-                            onChange={(e) => handlePriceChange(product.id, e.target.value)}
-                            className="mt-1"
-                          />
-                        </div>
-                      )}
-                    </div>
-                  ))
-                )}
-              </div>
-            </ScrollArea>
-
-            {selectedProducts.size > 0 && (
-              <div className="text-sm text-muted-foreground">
-                Selected {selectedProducts.size} product{selectedProducts.size !== 1 ? 's' : ''}
-              </div>
-            )}
           </div>
         </div>
 
