@@ -58,6 +58,7 @@ class Campaign(BaseModel):
     total_recipients: int = 0
     sent_count: int = 0
     failed_count: int = 0
+    current_sender_sequence: int = 1
     created_at: datetime = Field(default_factory=datetime.utcnow)
     started_at: Optional[datetime] = None
     completed_at: Optional[datetime] = None
