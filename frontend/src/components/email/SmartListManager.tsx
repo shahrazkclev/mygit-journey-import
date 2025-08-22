@@ -743,16 +743,36 @@ export const SmartListManager = () => {
                     <UserPlus className="h-4 w-4 mr-1" />
                     Manage
                   </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleEditList(list)}
+                    className="border-email-secondary text-email-secondary hover:bg-email-secondary/10"
+                  >
+                    <Edit className="h-4 w-4 mr-1" />
+                    Edit
+                  </Button>
                   {list.list_type === 'dynamic' && (
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => handleRefreshDynamicList(list)}
-                      className="text-email-accent hover:text-email-accent/80 border-email-accent/30 hover:bg-email-accent/10"
-                    >
-                      <Zap className="h-4 w-4 mr-1" />
-                      Refresh
-                    </Button>
+                    <>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleRefreshDynamicList(list)}
+                        className="text-email-accent hover:text-email-accent/80 border-email-accent/30 hover:bg-email-accent/10"
+                      >
+                        <Zap className="h-4 w-4 mr-1" />
+                        Refresh
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleDuplicateList(list)}
+                        className="border-email-warning/50 text-email-warning hover:bg-email-warning/10"
+                      >
+                        <Copy className="h-4 w-4 mr-1" />
+                        Duplicate
+                      </Button>
+                    </>
                   )}
                   <Button
                     variant="ghost"
