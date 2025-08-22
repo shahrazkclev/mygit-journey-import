@@ -209,6 +209,28 @@ export const CampaignComposer: React.FC<CampaignComposerProps> = ({ onSave }) =>
     return enhancedPrompt;
   };
 
+  const addUnsubscribeLink = (htmlContent: string): string => {
+    // Create the unsubscribe link that will be dynamically replaced during sending
+    const unsubscribeLink = `
+      <div style="margin: 40px 0 20px; padding: 20px; background-color: #f8f9fa; border-top: 1px solid #e9ecef; text-align: center; font-family: Arial, sans-serif;">
+        <p style="margin: 0 0 10px; font-size: 12px; color: #6c757d;">
+          Don't want to receive these emails anymore?
+        </p>
+        <a href="https://mixifcnokcmxarpzwfiy.supabase.co/functions/v1/sync-contacts?email={{RECIPIENT_EMAIL}}&action=unsubscribe" 
+           style="font-size: 12px; color: #dc3545; text-decoration: underline;">
+          Unsubscribe
+        </a>
+      </div>
+    `;
+
+    // Try to insert before closing body tag, fallback to end of content
+    if (htmlContent.includes('</body>')) {
+      return htmlContent.replace('</body>', unsubscribeLink + '</body>');
+    } else {
+      return htmlContent + unsubscribeLink;
+    }
+  };
+
   // Product autocomplete functionality
   const findProductMatch = (text: string, cursorPosition: number) => {
     // Find the start of the current word
