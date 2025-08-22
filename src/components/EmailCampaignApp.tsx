@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Mail, Users, Settings, UserX, Sparkles, Send, Wifi, User, Package } from "lucide-react";
+import { Mail, Users, Settings, UserX, Sparkles, Send, Wifi, User, Package, Palette } from "lucide-react";
 import { CampaignComposer } from "./email/CampaignComposer";
 import { EmailListManager } from "./email/EmailListManager";
 import { ContactManager } from "./email/ContactManager";
@@ -67,7 +67,7 @@ export const EmailCampaignApp = () => {
           </CardHeader>
         </Card>
           <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-            <TabsList className="grid w-full grid-cols-6 lg:w-fit lg:grid-cols-6 bg-card shadow-soft">
+            <TabsList className="grid w-full grid-cols-7 lg:w-fit lg:grid-cols-7 bg-card shadow-soft">
               <TabsTrigger value="compose" className="flex items-center space-x-2">
                 <Sparkles className="h-4 w-4" />
                 <span className="hidden sm:inline">Compose</span>
@@ -84,6 +84,10 @@ export const EmailCampaignApp = () => {
                  <Package className="h-4 w-4" />
                  <span className="hidden sm:inline">Products</span>
                </TabsTrigger>
+              <TabsTrigger value="style" className="flex items-center space-x-2">
+                <Palette className="h-4 w-4" />
+                <span className="hidden sm:inline">Style</span>
+              </TabsTrigger>
               <TabsTrigger value="settings" className="flex items-center space-x-2">
                 <Settings className="h-4 w-4" />
                 <span className="hidden sm:inline">Settings</span>
@@ -91,10 +95,6 @@ export const EmailCampaignApp = () => {
               <TabsTrigger value="unsubscribe" className="flex items-center space-x-2">
                 <UserX className="h-4 w-4" />
                 <span className="hidden sm:inline">Unsubscribe</span>
-              </TabsTrigger>
-              <TabsTrigger value="style" className="flex items-center space-x-2">
-                <Send className="h-4 w-4" />
-                <span className="hidden sm:inline">Style</span>
               </TabsTrigger>
             </TabsList>
 

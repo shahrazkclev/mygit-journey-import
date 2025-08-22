@@ -5,6 +5,7 @@ import { cn } from '@/lib/utils';
 import { EmailElement } from '../EmailEditor';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
+import { Edit3 } from 'lucide-react';
 
 interface DraggableElementProps {
   element: EmailElement;
@@ -128,20 +129,21 @@ export const DraggableElement: React.FC<DraggableElementProps> = ({
                             (element.type === 'text' && element.content.length > 50) ? Textarea : Input;
         
         return (
-          <div className="bg-transparent p-0">
+          <div className="relative border border-primary/50 rounded bg-background/90">
             <EditComponent
               value={editValue}
               onChange={(e) => setEditValue(e.target.value)}
               onBlur={handleSaveEdit}
               onKeyDown={handleKeyDown}
               autoFocus
-              className="w-full border-0 bg-transparent focus:ring-0 focus:outline-none p-0"
+              className="w-full border-0 bg-transparent focus:ring-0 focus:outline-none p-2"
               placeholder={element.type === 'image' ? 'Enter image URL...' : 'Enter text...'}
               style={{
                 fontSize: element.type !== 'image' ? element.styles.fontSize : undefined,
                 fontWeight: element.type !== 'image' ? element.styles.fontWeight : undefined,
                 color: element.type !== 'image' ? element.styles.color : undefined,
                 textAlign: element.type !== 'image' ? element.styles.textAlign : undefined,
+                resize: element.type === 'text' && element.content.length > 50 ? 'vertical' : 'none'
               }}
             />
           </div>
@@ -151,45 +153,82 @@ export const DraggableElement: React.FC<DraggableElementProps> = ({
     switch (element.type) {
       case 'text':
         return (
-          <div style={commonStyles} className="min-h-8">
-            {element.content || 'Empty text block'}
+          <div className="relative group">
+            <div style={commonStyles} className="min-h-8 outline-none">
+              {element.content || 'Empty text block'}
+            </div>
+            {!isEditing && isSelected && (
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleDoubleClick(e);
+                }}
+                className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 bg-primary text-primary-foreground rounded p-1 hover:bg-primary/80 transition-opacity"
+                aria-label="Edit text"
+              >
+                <Edit3 className="h-3 w-3" />
+              </button>
+            )}
           </div>
         );
       
       case 'button':
         return (
           <div style={{ textAlign: element.styles.textAlign || 'center' }}>
-            <span
-              style={commonStyles}
-              className="inline-block min-w-20 min-h-8 leading-8"
-            >
-              {element.content || 'Button'}
-            </span>
+            <div className="relative group inline-block">
+              <span
+                style={commonStyles}
+                className="inline-block min-w-20 min-h-8 leading-8"
+              >
+                {element.content || 'Button'}
+              </span>
+              {!isEditing && isSelected && (
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleDoubleClick(e);
+                  }}
+                  className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 bg-primary text-primary-foreground rounded p-1 hover:bg-primary/80 transition-opacity"
+                  aria-label="Edit button"
+                >
+                  <Edit3 className="h-3 w-3" />
+                </button>
+              )}
+            </div>
           </div>
         );
       
       case 'image':
         return (
           <div style={{ textAlign: element.styles.textAlign || 'center', position: 'relative' }}>
-            <img
-              src={element.content || 'https://via.placeholder.com/400x200?text=Click+to+edit+image+URL'}
-              alt="Email content"
-              style={{
-                ...commonStyles,
-                maxWidth: '100%',
-                height: 'auto',
-                display: 'block',
-                margin: element.styles.textAlign === 'center' ? '0 auto' : '0'
-              }}
-              onError={(e) => {
-                e.currentTarget.src = 'https://via.placeholder.com/400x200/f0f0f0/999999?text=Image+Not+Found';
-              }}
-            />
-            {isSelected && (
-              <div className="absolute top-2 left-2 bg-blue-600 text-white text-xs px-2 py-1 rounded">
-                Double-click to edit image URL
-              </div>
-            )}
+            <div className="relative group inline-block">
+              <img
+                src={element.content || 'https://via.placeholder.com/400x200?text=Click+to+edit+image+URL'}
+                alt="Email content"
+                style={{
+                  ...commonStyles,
+                  maxWidth: '100%',
+                  height: 'auto',
+                  display: 'block',
+                  margin: element.styles.textAlign === 'center' ? '0 auto' : '0'
+                }}
+                onError={(e) => {
+                  e.currentTarget.src = 'https://via.placeholder.com/400x200/f0f0f0/999999?text=Image+Not+Found';
+                }}
+              />
+              {!isEditing && isSelected && (
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleDoubleClick(e);
+                  }}
+                  className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 bg-primary text-primary-foreground rounded p-1 hover:bg-primary/80 transition-opacity"
+                  aria-label="Edit image URL"
+                >
+                  <Edit3 className="h-3 w-3" />
+                </button>
+              )}
+            </div>
           </div>
         );
       
@@ -222,35 +261,31 @@ export const DraggableElement: React.FC<DraggableElementProps> = ({
       onClick={handleClick}
       onDoubleClick={handleDoubleClick}
       className={cn(
-        "relative group mb-3 rounded-lg transition-all cursor-pointer",
-        isSelected && "ring-2 ring-blue-500 ring-offset-2 bg-blue-50/30",
+        "relative group mb-2 rounded transition-all cursor-pointer",
+        isSelected && "ring-2 ring-primary ring-offset-2 bg-primary/5",
         isDragging && "opacity-50 z-50",
-        "hover:ring-1 hover:ring-gray-300 hover:shadow-sm",
-        !isDragging && "active:scale-[0.98]"
+        !isDragging && !isEditing && "hover:ring-1 hover:ring-primary/30"
       )}
     >
-      {isSelected && !isEditing && (
-        <div className="absolute -top-8 left-0 bg-blue-600 text-white text-xs px-2 py-1 rounded shadow-sm z-10">
-          {element.type === 'text' || element.type === 'button' || element.type === 'image' 
-            ? 'Double-click to edit' 
-            : element.type.charAt(0).toUpperCase() + element.type.slice(1)
-          }
+      {isSelected && !isEditing && !(['text', 'button', 'image'].includes(element.type)) && (
+        <div className="absolute -top-6 left-0 bg-primary text-primary-foreground text-xs px-2 py-1 rounded text-nowrap z-10">
+          {element.type.charAt(0).toUpperCase() + element.type.slice(1)}
         </div>
       )}
       <div ref={containerRef} className="p-2 relative">
         {renderElement()}
 
         {/* Resize handles */}
-        {isSelected && (element.type === 'button' || element.type === 'image') && (
+        {isSelected && !isEditing && (element.type === 'button' || element.type === 'image') && (
           <div
-            className="absolute right-0 top-1/2 -translate-y-1/2 w-2 h-6 bg-primary/30 rounded cursor-ew-resize z-20"
+            className="absolute right-0 top-1/2 -translate-y-1/2 w-2 h-6 bg-primary/50 rounded cursor-ew-resize z-20 opacity-0 group-hover:opacity-100"
             onMouseDown={(e) => startResize(e, 'width')}
             aria-label="Resize width"
           />
         )}
-        {isSelected && element.type === 'spacer' && (
+        {isSelected && !isEditing && element.type === 'spacer' && (
           <div
-            className="absolute left-1/2 -translate-x-1/2 bottom-0 w-10 h-2 bg-primary/30 rounded cursor-ns-resize z-20"
+            className="absolute left-1/2 -translate-x-1/2 bottom-0 w-10 h-2 bg-primary/50 rounded cursor-ns-resize z-20 opacity-0 group-hover:opacity-100"
             onMouseDown={(e) => startResize(e, 'height')}
             aria-label="Resize height"
           />
