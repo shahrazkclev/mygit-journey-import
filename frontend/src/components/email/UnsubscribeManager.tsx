@@ -146,6 +146,7 @@ export const UnsubscribeManager = () => {
   };
 
   const formatDate = (dateString: string) => {
+    if (!dateString) return 'Unknown';
     return new Date(dateString).toLocaleDateString('en-US', {
       year: 'numeric',
       month: 'short',
