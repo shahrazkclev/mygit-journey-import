@@ -38,6 +38,13 @@ export const SmartListManager = () => {
   const [allTags, setAllTags] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
+  // Manage contacts state
+  const [showManageContactsDialog, setShowManageContactsDialog] = useState(false);
+  const [selectedListForManagement, setSelectedListForManagement] = useState<EmailList | null>(null);
+  const [availableContacts, setAvailableContacts] = useState<Contact[]>([]);
+  const [listContacts, setListContacts] = useState<Contact[]>([]);
+  const [selectedContactsToAdd, setSelectedContactsToAdd] = useState<Set<string>>(new Set());
+
   // Create list dialog state
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [newList, setNewList] = useState({
