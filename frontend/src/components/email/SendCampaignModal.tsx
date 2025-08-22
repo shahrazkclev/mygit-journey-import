@@ -257,9 +257,19 @@ export const SendCampaignModal: React.FC<SendCampaignModalProps> = ({
                 <Button 
                   onClick={startCampaign} 
                   disabled={isStarting}
-                  className="flex-1"
+                  className="flex-1 bg-email-primary hover:bg-email-primary/90 text-white shadow-lg hover:shadow-xl transition-all duration-200"
                 >
-                  {isStarting ? 'Starting...' : 'Start Campaign'}
+                  {isStarting ? (
+                    <>
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                      Starting...
+                    </>
+                  ) : (
+                    <>
+                      <Send className="h-4 w-4 mr-2" />
+                      Start Campaign
+                    </>
+                  )}
                 </Button>
               </div>
             </>
