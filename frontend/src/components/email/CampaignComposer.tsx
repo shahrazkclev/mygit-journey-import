@@ -880,9 +880,9 @@ export const CampaignComposer: React.FC<CampaignComposerProps> = ({ onSave }) =>
       )}
 
       {/* Email Lists Selection */}
-      <Card>
+      <Card className="shadow-soft bg-gradient-to-br from-email-background to-background border-email-primary/20">
         <CardHeader>
-          <CardTitle>Target Email Lists</CardTitle>
+          <CardTitle className="text-email-primary">Target Email Lists</CardTitle>
           <CardDescription>
             Select which email lists to send this campaign to
           </CardDescription>
@@ -895,7 +895,7 @@ export const CampaignComposer: React.FC<CampaignComposerProps> = ({ onSave }) =>
           ) : (
             <div className="space-y-2 max-h-48 overflow-y-auto">
               {emailLists.map(list => (
-                <div key={list.id} className="flex items-center space-x-3 p-3 border rounded-lg hover:bg-gray-50">
+                <div key={list.id} className="flex items-center space-x-3 p-3 border rounded-lg hover:bg-email-muted/20 transition-colors border-email-primary/10">
                   <input
                     type="checkbox"
                     id={list.id}
@@ -907,10 +907,10 @@ export const CampaignComposer: React.FC<CampaignComposerProps> = ({ onSave }) =>
                           : [...prev, list.id]
                       );
                     }}
-                    className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                    className="h-4 w-4 text-email-primary focus:ring-email-primary border-gray-300 rounded"
                   />
                   <Label htmlFor={list.id} className="flex-1 cursor-pointer">
-                    <div className="font-medium">{list.name}</div>
+                    <div className="font-medium text-email-primary">{list.name}</div>
                     {list.description && (
                       <div className="text-sm text-muted-foreground">{list.description}</div>
                     )}
