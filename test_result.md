@@ -345,6 +345,30 @@ frontend:
         -working: "NA"
         -agent: "main"
         -comment: "Fixed theme system to apply consistently across all components. Updated colors to match user's image (dark gray, light orange, dark blue). Added useGlobalTheme to main app component."
+        
+  - task: "Fixed tag suggestions dropdown layout issues"
+    implemented: true
+    working: "NA"
+    file: "/app/frontend/src/components/email/EditContactDialog.tsx"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+        -working: "NA"
+        -agent: "main"
+        -comment: "Fixed dropdown positioning with z-50, improved layout with flex-shrink-0, added max-height to dialog to prevent viewport overflow"
+        
+  - task: "Added Products tab and management"
+    implemented: true
+    working: "NA"
+    file: "/app/frontend/src/components/EmailCampaignApp.tsx, /app/frontend/src/components/email/ProductManager.tsx"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+        -working: "NA"
+        -agent: "main"
+        -comment: "Added Products tab to main navigation, integrated ProductManager component with consistent email theming, users can now add products that show as tag suggestions"
 
 metadata:
   created_by: "main_agent"
