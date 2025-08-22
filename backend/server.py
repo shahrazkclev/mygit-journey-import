@@ -313,11 +313,15 @@ async def send_campaign_background(campaign_id: str):
 
 async def send_email_via_webhook(webhook_url: str, recipient: Dict[str, Any], subject: str, html_content: str, sender_sequence: int = 1) -> bool:
     try:
+        # Replace dynamic placeholders in HTML content
+        personalized_html = html_content.replace('{{RECIPIENT_EMAIL}}', recipient["email"])
+        personalized_html = personalized_html.replace('{{RECIPIENT_NAME}}', recipient.get("name", ""))
+        
         payload = {
             "to": recipient["email"],
             "name": recipient.get("name", ""),
             "subject": subject,
-            "html": html_content,
+            "html": personalized_html,  # Use personalized HTML
             "sender_sequence": sender_sequence,  # Add sender sequence to payload
             "timestamp": datetime.utcnow().isoformat()
         }
