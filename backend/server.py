@@ -253,6 +253,12 @@ async def send_campaign_background(campaign_id: str):
             current_sender_sequence = ((sent_count // emails_per_sender) % max_sender_sequence) + 1
             
             try:
+                # Update current recipient in campaign
+                await db.campaigns.update_one(
+                    {"id": campaign_id},
+                    {"$set": {"current_recipient": recipient["email"]}}
+                )
+                
                 # Send email via webhook with sender sequence
                 if campaign.webhook_url:
                     success = await send_email_via_webhook(
@@ -264,14 +270,15 @@ async def send_campaign_background(campaign_id: str):
                     )
                     if success:
                         sent_count += 1
-                        logging.info(f"Email {sent_count} sent with sender sequence {current_sender_sequence}")
+                        logging.info(f"✅ Email {sent_count} sent to {recipient['email']} with sender sequence {current_sender_sequence}")
                     else:
                         failed_count += 1
+                        logging.error(f"❌ Failed to send email to {recipient['email']}")
                 else:
                     # Simulate sending without webhook
                     await asyncio.sleep(0.5)  # Simulate processing time
                     sent_count += 1
-                    logging.info(f"Email {sent_count} simulated with sender sequence {current_sender_sequence}")
+                    logging.info(f"✅ Email {sent_count} simulated to {recipient['email']} with sender sequence {current_sender_sequence}")
                 
                 # Update progress
                 await db.campaigns.update_one(
