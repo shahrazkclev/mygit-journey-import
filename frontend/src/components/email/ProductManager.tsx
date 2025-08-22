@@ -134,25 +134,6 @@ export const ProductManager: React.FC = () => {
     }
   };
 
-  const handleBulkImport = async () => {
-    setIsBulkImporting(true);
-    try {
-      const result = await bulkImportProducts();
-      
-      if (result.success) {
-        toast.success(result.message);
-        loadProducts(); // Reload the products list
-      } else {
-        toast.error(result.error);
-      }
-    } catch (error) {
-      console.error('Error during bulk import:', error);
-      toast.error('Failed to import products');
-    } finally {
-      setIsBulkImporting(false);
-    }
-  };
-
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
