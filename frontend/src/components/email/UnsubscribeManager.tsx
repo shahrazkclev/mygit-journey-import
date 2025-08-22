@@ -27,17 +27,25 @@ export const UnsubscribeManager = () => {
 
   const loadUnsubscribeData = async () => {
     try {
+      console.log('🔍 Loading unsubscribe data from Supabase...');
+      
       const { data, error } = await supabase
         .from('unsubscribes')
         .select('*')
         .order('unsubscribed_at', { ascending: false });
 
-      if (error) throw error;
+      console.log('📊 Supabase query result:', { data, error });
 
+      if (error) {
+        console.error('❌ Supabase error:', error);
+        throw error;
+      }
+
+      console.log(`✅ Found ${data?.length || 0} unsubscribed users`);
       setUnsubscribedUsers(data || []);
     } catch (error: any) {
+      console.error('❌ Error loading unsubscribe data:', error);
       toast.error("Failed to load unsubscribe data: " + error.message);
-      console.error('Error loading unsubscribe data:', error);
     } finally {
       setLoading(false);
     }
