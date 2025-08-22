@@ -97,6 +97,218 @@ async def get_status_checks():
     status_checks = await db.status_checks.find().to_list(1000)
     return [StatusCheck(**status_check) for status_check in status_checks]
 
+# Campaign Management Endpoints
+@api_router.post("/campaigns", response_model=Campaign)
+async def create_campaign(campaign_data: CampaignCreate, background_tasks: BackgroundTasks):
+    campaign_dict = campaign_data.dict()
+    campaign = Campaign(**campaign_dict)
+    
+    # Insert campaign into database
+    await db.campaigns.insert_one(campaign.dict())
+    
+    # Start campaign sending in background
+    background_tasks.add_task(send_campaign_background, campaign.id)
+    
+    return campaign
+
+@api_router.get("/campaigns/{campaign_id}", response_model=Campaign)
+async def get_campaign(campaign_id: str):
+    campaign_doc = await db.campaigns.find_one({"id": campaign_id})
+    if not campaign_doc:
+        raise HTTPException(status_code=404, detail="Campaign not found")
+    return Campaign(**campaign_doc)
+
+@api_router.get("/campaigns/{campaign_id}/progress", response_model=CampaignProgress)
+async def get_campaign_progress(campaign_id: str):
+    campaign_doc = await db.campaigns.find_one({"id": campaign_id})
+    if not campaign_doc:
+        raise HTTPException(status_code=404, detail="Campaign not found")
+    
+    campaign = Campaign(**campaign_doc)
+    progress_percentage = 0
+    if campaign.total_recipients > 0:
+        progress_percentage = (campaign.sent_count / campaign.total_recipients) * 100
+    
+    return CampaignProgress(
+        campaign_id=campaign.id,
+        total_recipients=campaign.total_recipients,
+        sent_count=campaign.sent_count,
+        failed_count=campaign.failed_count,
+        status=campaign.status,
+        progress_percentage=progress_percentage,
+        error_message=campaign.error_message
+    )
+
+@api_router.post("/campaigns/{campaign_id}/pause")
+async def pause_campaign(campaign_id: str):
+    result = await db.campaigns.update_one(
+        {"id": campaign_id},
+        {"$set": {"status": "paused"}}
+    )
+    if result.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Campaign not found")
+    return {"message": "Campaign paused"}
+
+@api_router.post("/campaigns/{campaign_id}/resume")
+async def resume_campaign(campaign_id: str, background_tasks: BackgroundTasks):
+    result = await db.campaigns.update_one(
+        {"id": campaign_id, "status": "paused"},
+        {"$set": {"status": "sending"}}
+    )
+    if result.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Campaign not found or not paused")
+    
+    # Resume campaign sending
+    background_tasks.add_task(send_campaign_background, campaign_id)
+    return {"message": "Campaign resumed"}
+
+# Webhook endpoint for receiving contact data
+@api_router.post("/webhook/contacts")
+async def webhook_contacts(payload: WebhookPayload):
+    try:
+        # Log the webhook call
+        logging.info(f"Webhook received: {payload.dict()}")
+        
+        # Process the webhook data (e.g., add to contacts)
+        contact_data = {
+            "id": str(uuid.uuid4()),
+            "email": payload.email,
+            "name": payload.name,
+            "phone": payload.phone,
+            "tags": payload.tags,
+            "action": payload.action,
+            "created_at": datetime.utcnow(),
+            "source": "webhook"
+        }
+        
+        # Store in webhook_contacts collection for tracking
+        await db.webhook_contacts.insert_one(contact_data)
+        
+        return {"message": "Webhook processed successfully", "contact_id": contact_data["id"]}
+    
+    except Exception as e:
+        logging.error(f"Webhook processing error: {e}")
+        raise HTTPException(status_code=500, detail=f"Webhook processing failed: {str(e)}")
+
+# Background task for sending campaigns
+async def send_campaign_background(campaign_id: str):
+    try:
+        # Get campaign details
+        campaign_doc = await db.campaigns.find_one({"id": campaign_id})
+        if not campaign_doc:
+            logging.error(f"Campaign {campaign_id} not found")
+            return
+        
+        campaign = Campaign(**campaign_doc)
+        
+        # Update status to sending
+        await db.campaigns.update_one(
+            {"id": campaign_id},
+            {"$set": {"status": "sending", "started_at": datetime.utcnow()}}
+        )
+        
+        # Mock recipient list (replace with actual contact fetching)
+        recipients = [
+            {"email": "test1@example.com", "name": "Test User 1"},
+            {"email": "test2@example.com", "name": "Test User 2"},
+            {"email": "test3@example.com", "name": "Test User 3"},
+        ]
+        
+        total_recipients = len(recipients)
+        await db.campaigns.update_one(
+            {"id": campaign_id},
+            {"$set": {"total_recipients": total_recipients}}
+        )
+        
+        sent_count = 0
+        failed_count = 0
+        
+        for recipient in recipients:
+            # Check if campaign is paused
+            current_campaign = await db.campaigns.find_one({"id": campaign_id})
+            if current_campaign and current_campaign["status"] == "paused":
+                logging.info(f"Campaign {campaign_id} paused, stopping sending")
+                return
+            
+            try:
+                # Send email via webhook
+                if campaign.webhook_url:
+                    success = await send_email_via_webhook(
+                        campaign.webhook_url,
+                        recipient,
+                        campaign.subject,
+                        campaign.html_content
+                    )
+                    if success:
+                        sent_count += 1
+                    else:
+                        failed_count += 1
+                else:
+                    # Simulate sending without webhook
+                    await asyncio.sleep(0.5)  # Simulate processing time
+                    sent_count += 1
+                
+                # Update progress
+                await db.campaigns.update_one(
+                    {"id": campaign_id},
+                    {"$set": {
+                        "sent_count": sent_count,
+                        "failed_count": failed_count
+                    }}
+                )
+                
+            except Exception as e:
+                failed_count += 1
+                logging.error(f"Failed to send to {recipient['email']}: {e}")
+        
+        # Mark campaign as completed
+        await db.campaigns.update_one(
+            {"id": campaign_id},
+            {"$set": {
+                "status": "sent" if failed_count == 0 else "failed",
+                "completed_at": datetime.utcnow(),
+                "sent_count": sent_count,
+                "failed_count": failed_count
+            }}
+        )
+        
+        logging.info(f"Campaign {campaign_id} completed: {sent_count} sent, {failed_count} failed")
+        
+    except Exception as e:
+        logging.error(f"Campaign sending error: {e}")
+        await db.campaigns.update_one(
+            {"id": campaign_id},
+            {"$set": {
+                "status": "failed",
+                "error_message": str(e),
+                "completed_at": datetime.utcnow()
+            }}
+        )
+
+async def send_email_via_webhook(webhook_url: str, recipient: Dict[str, Any], subject: str, html_content: str) -> bool:
+    try:
+        payload = {
+            "to": recipient["email"],
+            "name": recipient.get("name", ""),
+            "subject": subject,
+            "html": html_content,
+            "timestamp": datetime.utcnow().isoformat()
+        }
+        
+        async with httpx.AsyncClient(timeout=30.0) as client:
+            response = await client.post(webhook_url, json=payload)
+            
+        if response.status_code == 200:
+            logging.info(f"Email sent successfully to {recipient['email']}")
+            return True
+        else:
+            logging.error(f"Webhook failed for {recipient['email']}: {response.status_code} - {response.text}")
+            return False
+            
+    except Exception as e:
+        logging.error(f"Webhook error for {recipient['email']}: {e}")
+        return False
+
 # Include the router in the main app
 app.include_router(api_router)
 
