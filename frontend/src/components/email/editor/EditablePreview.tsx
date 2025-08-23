@@ -1,5 +1,7 @@
 import React, { useRef, useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Label } from '@/components/ui/label';
 import { Smartphone, Monitor, Bold, Italic, List, Smile, Type, Palette, Undo, Redo, Plus, Minus } from 'lucide-react';
 
 interface EditablePreviewProps {
@@ -17,15 +19,34 @@ export const EditablePreview: React.FC<EditablePreviewProps> = ({
   const [mode, setMode] = useState<'mobile' | 'desktop'>('desktop');
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [showColorPicker, setShowColorPicker] = useState(false);
+  const [showFontControls, setShowFontControls] = useState(false);
   const [undoStack, setUndoStack] = useState<string[]>([]);
   const [redoStack, setRedoStack] = useState<string[]>([]);
   
+  // Font control states
+  const [currentFontFamily, setCurrentFontFamily] = useState("Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif");
+  const [currentFontSize, setCurrentFontSize] = useState("16");
+  const [currentLineHeight, setCurrentLineHeight] = useState("1.6");
+  
   const colorPickerRef = useRef<HTMLDivElement>(null);
   const emojiPickerRef = useRef<HTMLDivElement>(null);
+  const fontControlsRef = useRef<HTMLDivElement>(null);
 
   const emojis = ['😀', '😍', '🎉', '👍', '❤️', '🔥', '💯', '⭐', '🚀', '💼', '📧', '✅', '❗', '💡', '🎯', '📱'];
   const colors = ['#000000', '#FF0000', '#00FF00', '#0000FF', '#FFFF00', '#FF00FF', '#00FFFF', '#FFA500'];
   const fontSizes = ['12px', '14px', '16px', '18px', '20px', '24px', '28px', '32px'];
+  
+  // Font family options for email templates
+  const fontOptions = [
+    { value: "Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif", label: "Inter (Modern)" },
+    { value: "system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif", label: "System UI" },
+    { value: "'Helvetica Neue', Helvetica, Arial, sans-serif", label: "Helvetica" },
+    { value: "Georgia, 'Times New Roman', Times, serif", label: "Georgia (Serif)" },
+    { value: "'Courier New', Courier, monospace", label: "Courier (Monospace)" },
+    { value: "'Arial Black', Arial, sans-serif", label: "Arial Black" },
+    { value: "'Trebuchet MS', Arial, sans-serif", label: "Trebuchet" }
+  ];
+
   const saveToHistory = () => {
     const iframe = iframeRef.current;
     if (!iframe) return;
@@ -162,6 +183,7 @@ export const EditablePreview: React.FC<EditablePreviewProps> = ({
       } catch {}
     }
   };
+
   const applyFontSize = (px: number) => {
     const iframe = iframeRef.current;
     if (!iframe) return;
@@ -201,6 +223,42 @@ export const EditablePreview: React.FC<EditablePreviewProps> = ({
     const newPx = Math.min(40, Math.max(10, Math.round(basePx + delta)));
     applyFontSize(newPx);
   };
+
+  // Apply global font settings to the entire email template
+  const applyGlobalFontSettings = () => {
+    const iframe = iframeRef.current;
+    if (!iframe) return;
+    const doc = iframe.contentDocument || iframe.contentWindow?.document;
+    if (!doc) return;
+
+    saveToHistory();
+
+    // Find or create style element for global font settings
+    let styleEl = doc.getElementById('global-font-settings') as HTMLStyleElement;
+    if (!styleEl) {
+      styleEl = doc.createElement('style');
+      styleEl.id = 'global-font-settings';
+      doc.head.appendChild(styleEl);
+    }
+
+    // Apply global font settings
+    styleEl.textContent = `
+      body, body * {
+        font-family: ${currentFontFamily} !important;
+        font-size: ${currentFontSize}px !important;
+        line-height: ${currentLineHeight} !important;
+      }
+      h1, h2, h3, h4, h5, h6 {
+        font-family: ${currentFontFamily} !important;
+        line-height: 1.3 !important;
+      }
+    `;
+
+    const newHtml = doc.documentElement.outerHTML;
+    onContentUpdate(newHtml);
+    setShowFontControls(false);
+  };
+
   useEffect(() => {
     const iframe = iframeRef.current;
     if (!iframe) return;
@@ -282,8 +340,10 @@ export const EditablePreview: React.FC<EditablePreviewProps> = ({
       const target = e.target as Node;
       if (colorPickerRef.current && colorPickerRef.current.contains(target)) return;
       if (emojiPickerRef.current && emojiPickerRef.current.contains(target)) return;
+      if (fontControlsRef.current && fontControlsRef.current.contains(target)) return;
       setShowColorPicker(false);
       setShowEmojiPicker(false);
+      setShowFontControls(false);
     };
     
     document.addEventListener('click', handleOutsideClick as any);
@@ -299,7 +359,7 @@ export const EditablePreview: React.FC<EditablePreviewProps> = ({
       <div className="bg-muted/20 p-2 rounded-lg border">
         {/* Simple Header */}
         <div className="flex items-center justify-between mb-2">
-          <span className="text-sm font-medium">Email Editor</span>
+          <span className="text-sm font-medium">Email Template Editor</span>
           <div className="flex gap-1 bg-background p-0.5 rounded border">
             <Button size="sm" variant={mode === 'mobile' ? 'default' : 'ghost'} onClick={() => setMode('mobile')} className="h-6 px-2 text-xs">
               <Smartphone className="h-3 w-3" />
@@ -310,7 +370,7 @@ export const EditablePreview: React.FC<EditablePreviewProps> = ({
           </div>
         </div>
 
-        {/* Simplified Toolbar */}
+        {/* Enhanced Toolbar */}
         <div className="bg-background p-1.5 rounded border mb-2 overflow-x-auto">
           <div className="flex items-center gap-1 min-w-max">
             {/* Undo/Redo */}
@@ -338,6 +398,86 @@ export const EditablePreview: React.FC<EditablePreviewProps> = ({
             <Button size="sm" variant="ghost" className="h-7 px-2" onMouseDown={(e)=>e.preventDefault()} onClick={() => adjustFontSize(-2)}>
               <Minus className="h-3 w-3" />
             </Button>
+
+            <div className="h-4 w-px bg-border mx-1" />
+            
+            {/* Global Font Controls */}
+            <div className="relative" ref={fontControlsRef}>
+              <Button 
+                size="sm" 
+                variant="ghost" 
+                className="h-7 px-2"
+                onMouseDown={(e)=>e.preventDefault()}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setShowFontControls(!showFontControls);
+                  setShowColorPicker(false);
+                  setShowEmojiPicker(false);
+                }}
+              >
+                <Type className="h-3 w-3" />
+              </Button>
+              
+              {showFontControls && (
+                <div className="absolute top-8 left-0 z-50 bg-background border rounded-lg shadow-lg p-4 w-80">
+                  <div className="space-y-4">
+                    <div>
+                      <Label className="text-xs font-medium mb-1 block">Font Family</Label>
+                      <Select value={currentFontFamily} onValueChange={setCurrentFontFamily}>
+                        <SelectTrigger className="h-8 text-xs">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {fontOptions.map(font => (
+                            <SelectItem key={font.value} value={font.value} className="text-xs">
+                              {font.label}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <Label className="text-xs font-medium mb-1 block">Font Size</Label>
+                        <Select value={currentFontSize} onValueChange={setCurrentFontSize}>
+                          <SelectTrigger className="h-8 text-xs">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {['12', '13', '14', '15', '16', '17', '18', '20', '22', '24', '28', '32'].map(size => (
+                              <SelectItem key={size} value={size} className="text-xs">{size}px</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+
+                      <div>
+                        <Label className="text-xs font-medium mb-1 block">Line Height</Label>
+                        <Select value={currentLineHeight} onValueChange={setCurrentLineHeight}>
+                          <SelectTrigger className="h-8 text-xs">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {['1.2', '1.3', '1.4', '1.5', '1.6', '1.7', '1.8', '2.0'].map(height => (
+                              <SelectItem key={height} value={height} className="text-xs">{height}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+
+                    <Button 
+                      onClick={applyGlobalFontSettings}
+                      size="sm"
+                      className="w-full bg-primary hover:bg-primary/80 text-xs"
+                    >
+                      Apply Font Settings to Entire Email
+                    </Button>
+                  </div>
+                </div>
+              )}
+            </div>
             
             {/* Color Picker */}
             <div className="relative" ref={colorPickerRef}>
@@ -350,6 +490,7 @@ export const EditablePreview: React.FC<EditablePreviewProps> = ({
                   e.stopPropagation();
                   setShowColorPicker(!showColorPicker);
                   setShowEmojiPicker(false);
+                  setShowFontControls(false);
                 }}
               >
                 <Palette className="h-3 w-3" />
@@ -387,6 +528,7 @@ export const EditablePreview: React.FC<EditablePreviewProps> = ({
                   e.stopPropagation();
                   setShowEmojiPicker(!showEmojiPicker);
                   setShowColorPicker(false);
+                  setShowFontControls(false);
                 }}
               >
                 😀
@@ -410,8 +552,8 @@ export const EditablePreview: React.FC<EditablePreviewProps> = ({
               )}
             </div>
             
-            <span className="text-xs text-muted-foreground ml-2 hidden md:inline">
-              Click text to edit
+            <span className="text-xs text-muted-foreground ml-2 hidden lg:inline">
+              Select text and use font controls, or apply global settings with the Type button
             </span>
           </div>
         </div>
@@ -420,6 +562,7 @@ export const EditablePreview: React.FC<EditablePreviewProps> = ({
         <div className="bg-background rounded">
           <div className="bg-muted/20 px-2 py-1 text-xs text-muted-foreground border-b flex items-center justify-between">
             <span>{mode === 'mobile' ? 'Mobile (375px)' : 'Desktop (1100px)'}</span>
+            <span className="hidden sm:inline">Click text to edit • Use toolbar for formatting</span>
           </div>
           
           <div className={`mx-auto ${mode === 'mobile' ? 'w-full max-w-[375px]' : 'w-full max-w-[1100px]'}`}>

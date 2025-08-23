@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Trash2, Plus, Tag, Users, Link, ChevronDown, ChevronRight, Edit } from "lucide-react";
+import { Trash2, Plus, Tag, Users, Link, ChevronDown, ChevronRight, Edit, Upload, FileSpreadsheet, User } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { DEMO_USER_ID } from "@/lib/demo-auth";
@@ -72,6 +72,18 @@ export const SimpleContactManager = () => {
     tags: ""
   });
 
+  // CSV import state
+  const [showCsvImportDialog, setShowCsvImportDialog] = useState(false);
+  const [csvFile, setCsvFile] = useState<File | null>(null);
+  const [csvPreview, setCsvPreview] = useState<any[]>([]);
+  const [csvMapping, setCsvMapping] = useState({
+    email: 0,
+    name: 1,
+    phone: 2,
+    tags: 3
+  });
+  const [isImporting, setIsImporting] = useState(false);
+
   // Make.com webhook URL
   const [webhookUrl] = useState(() => 
     `https://mixifcnokcmxarpzwfiy.supabase.co/functions/v1/sync-contacts`
@@ -86,6 +98,16 @@ export const SimpleContactManager = () => {
   useEffect(() => {
     filterContacts();
   }, [contacts, searchTerm, tagFilter]);
+
+  // Generate name from email if no name provided
+  const generateNameFromEmail = (email: string): string => {
+    const localPart = email.split('@')[0];
+    // Convert dots, dashes, underscores to spaces and capitalize
+    return localPart
+      .replace(/[._-]/g, ' ')
+      .replace(/\b\w/g, l => l.toUpperCase())
+      .trim();
+  };
 
   const loadContacts = async () => {
     try {
@@ -103,14 +125,22 @@ export const SimpleContactManager = () => {
 
       const dbContacts: DbContact[] = data || [];
       // Map DB rows to UI shape
-      const uiContacts: Contact[] = dbContacts.map(c => ({
-        id: c.id,
-        name: [c.first_name, c.last_name].filter(Boolean).join(' ').trim(),
-        email: c.email,
-        phone: "", // No phone column in DB; keep UI consistent
-        tags: c.tags ?? [],
-        created_at: c.created_at,
-      }));
+      const uiContacts: Contact[] = dbContacts.map(c => {
+        let name = [c.first_name, c.last_name].filter(Boolean).join(' ').trim();
+        // If no name, generate from email
+        if (!name && c.email) {
+          name = generateNameFromEmail(c.email);
+        }
+        
+        return {
+          id: c.id,
+          name: name || 'Unknown',
+          email: c.email,
+          phone: "", // No phone column in DB; keep UI consistent
+          tags: c.tags ?? [],
+          created_at: c.created_at,
+        };
+      });
 
       setContacts(uiContacts);
       
@@ -210,10 +240,22 @@ export const SimpleContactManager = () => {
         .map(tag => tag.trim())
         .filter(tag => tag.length > 0);
 
-      // Split name into first_name and last_name
-      const nameTrimmed = (newContact.name || "").trim();
-      const [firstName, ...rest] = nameTrimmed.split(/\s+/);
-      const lastName = rest.join(" ");
+      // Split name into first_name and last_name, or generate from email if no name
+      let firstName = '';
+      let lastName = '';
+      
+      if (newContact.name.trim()) {
+        const nameTrimmed = newContact.name.trim();
+        const [first, ...rest] = nameTrimmed.split(/\s+/);
+        firstName = first;
+        lastName = rest.join(" ");
+      } else {
+        // Generate name from email if no name provided
+        const generatedName = generateNameFromEmail(newContact.email);
+        const [first, ...rest] = generatedName.split(/\s+/);
+        firstName = first;
+        lastName = rest.join(" ");
+      }
 
       const { error } = await supabase
         .from('contacts')
@@ -283,6 +325,115 @@ export const SimpleContactManager = () => {
       setSelectedContacts(new Set(filteredContacts.map(c => c.id)));
     } else {
       setSelectedContacts(new Set());
+    }
+  };
+
+  // CSV Import Functions
+  const handleCsvFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file && file.type === 'text/csv') {
+      setCsvFile(file);
+      previewCsv(file);
+    } else {
+      toast.error('Please select a valid CSV file');
+    }
+  };
+
+  const previewCsv = (file: File) => {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const text = e.target?.result as string;
+      const lines = text.split('\n').filter(line => line.trim());
+      const preview = lines.slice(0, 6).map(line => 
+        line.split(',').map(cell => cell.replace(/"/g, '').trim())
+      );
+      setCsvPreview(preview);
+    };
+    reader.readAsText(file);
+  };
+
+  const handleCsvImport = async () => {
+    if (!csvFile) {
+      toast.error('Please select a CSV file');
+      return;
+    }
+
+    setIsImporting(true);
+
+    try {
+      const reader = new FileReader();
+      reader.onload = async (e) => {
+        const text = e.target?.result as string;
+        const lines = text.split('\n').filter(line => line.trim());
+        
+        // Skip header row if exists
+        const dataLines = lines.slice(1);
+        let successCount = 0;
+        let failureCount = 0;
+
+        for (const line of dataLines) {
+          try {
+            const cells = line.split(',').map(cell => cell.replace(/"/g, '').trim());
+            
+            const email = cells[csvMapping.email] || '';
+            let name = cells[csvMapping.name] || '';
+            const phone = cells[csvMapping.phone] || '';
+            const tagsString = cells[csvMapping.tags] || '';
+
+            if (!email) {
+              failureCount++;
+              continue;
+            }
+
+            // Generate name from email if no name provided
+            if (!name) {
+              name = generateNameFromEmail(email);
+            }
+
+            const tags = tagsString
+              .split(',')
+              .map(tag => tag.trim())
+              .filter(tag => tag.length > 0);
+
+            // Split name into first_name and last_name
+            const [firstName, ...rest] = name.split(/\s+/);
+            const lastName = rest.join(" ");
+
+            const { error } = await supabase
+              .from('contacts')
+              .insert({
+                user_id: DEMO_USER_ID,
+                email: email,
+                first_name: firstName || null,
+                last_name: lastName || null,
+                tags: tags.length ? tags : null
+              });
+
+            if (error) {
+              console.error('Error importing contact:', error);
+              failureCount++;
+            } else {
+              successCount++;
+            }
+          } catch (error) {
+            console.error('Error processing line:', error);
+            failureCount++;
+          }
+        }
+
+        toast.success(`Imported ${successCount} contacts successfully! ${failureCount} failed.`);
+        setShowCsvImportDialog(false);
+        setCsvFile(null);
+        setCsvPreview([]);
+        loadContacts();
+      };
+
+      reader.readAsText(csvFile);
+    } catch (error) {
+      console.error('Error reading CSV file:', error);
+      toast.error('Failed to read CSV file');
+    } finally {
+      setIsImporting(false);
     }
   };
 
@@ -473,7 +624,7 @@ export const SimpleContactManager = () => {
       {/* Contacts Management */}
       <Card className="shadow-soft bg-gradient-to-br from-email-background to-background">
         <CardHeader>
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4">
             <div>
               <CardTitle className="flex items-center space-x-2">
                 <Users className="h-5 w-5 text-email-secondary" />
@@ -485,10 +636,10 @@ export const SimpleContactManager = () => {
                 )}
               </CardTitle>
               <CardDescription>
-                Manage your contacts with tag-based organization
+                Manage your contacts with tag-based organization. Names auto-generated from emails when missing.
               </CardDescription>
             </div>
-            <div className="flex space-x-2">
+            <div className="flex flex-wrap gap-2">
               {selectedContacts.size > 0 && (
                 <>
                   <Button
@@ -511,6 +662,156 @@ export const SimpleContactManager = () => {
                   </Button>
                 </>
               )}
+              
+              {/* CSV Import Button */}
+              <Dialog open={showCsvImportDialog} onOpenChange={setShowCsvImportDialog}>
+                <DialogTrigger asChild>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="border-email-primary text-email-primary hover:bg-email-primary/10"
+                  >
+                    <FileSpreadsheet className="h-4 w-4 mr-1" />
+                    Import CSV
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="max-w-2xl">
+                  <DialogHeader>
+                    <DialogTitle>Import Contacts from CSV</DialogTitle>
+                    <DialogDescription>
+                      Upload a CSV file with contacts. Names will be auto-generated from emails if missing.
+                    </DialogDescription>
+                  </DialogHeader>
+                  <div className="space-y-4">
+                    <div>
+                      <Label htmlFor="csv-file">Select CSV File</Label>
+                      <Input
+                        id="csv-file"
+                        type="file"
+                        accept=".csv"
+                        onChange={handleCsvFileChange}
+                        className="border-email-primary/30 focus:border-email-primary"
+                      />
+                    </div>
+
+                    {csvPreview.length > 0 && (
+                      <div className="space-y-4">
+                        <h3 className="font-semibold text-email-primary">CSV Preview</h3>
+                        <div className="bg-email-muted/20 rounded-lg p-3 border border-email-primary/10 overflow-x-auto">
+                          <table className="w-full text-sm">
+                            <thead>
+                              <tr>
+                                {csvPreview[0]?.map((header, index) => (
+                                  <th key={index} className="text-left p-2 border-b border-email-primary/20">
+                                    Column {index + 1}
+                                  </th>
+                                ))}
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {csvPreview.slice(0, 5).map((row, rowIndex) => (
+                                <tr key={rowIndex}>
+                                  {row.map((cell, cellIndex) => (
+                                    <td key={cellIndex} className="p-2 border-b border-email-primary/10">
+                                      {cell || '-'}
+                                    </td>
+                                  ))}
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+
+                        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                          <div>
+                            <Label>Email Column</Label>
+                            <select
+                              value={csvMapping.email}
+                              onChange={(e) => setCsvMapping({...csvMapping, email: parseInt(e.target.value)})}
+                              className="w-full p-2 border border-email-primary/30 rounded-md focus:border-email-primary"
+                            >
+                              {csvPreview[0]?.map((_, index) => (
+                                <option key={index} value={index}>Column {index + 1}</option>
+                              ))}
+                            </select>
+                          </div>
+
+                          <div>
+                            <Label>Name Column (Optional)</Label>
+                            <select
+                              value={csvMapping.name}
+                              onChange={(e) => setCsvMapping({...csvMapping, name: parseInt(e.target.value)})}
+                              className="w-full p-2 border border-email-primary/30 rounded-md focus:border-email-primary"
+                            >
+                              <option value={-1}>Auto-generate from email</option>
+                              {csvPreview[0]?.map((_, index) => (
+                                <option key={index} value={index}>Column {index + 1}</option>
+                              ))}
+                            </select>
+                          </div>
+
+                          <div>
+                            <Label>Phone Column (Optional)</Label>
+                            <select
+                              value={csvMapping.phone}
+                              onChange={(e) => setCsvMapping({...csvMapping, phone: parseInt(e.target.value)})}
+                              className="w-full p-2 border border-email-primary/30 rounded-md focus:border-email-primary"
+                            >
+                              <option value={-1}>Skip</option>
+                              {csvPreview[0]?.map((_, index) => (
+                                <option key={index} value={index}>Column {index + 1}</option>
+                              ))}
+                            </select>
+                          </div>
+
+                          <div>
+                            <Label>Tags Column (Optional)</Label>
+                            <select
+                              value={csvMapping.tags}
+                              onChange={(e) => setCsvMapping({...csvMapping, tags: parseInt(e.target.value)})}
+                              className="w-full p-2 border border-email-primary/30 rounded-md focus:border-email-primary"
+                            >
+                              <option value={-1}>Skip</option>
+                              {csvPreview[0]?.map((_, index) => (
+                                <option key={index} value={index}>Column {index + 1}</option>
+                              ))}
+                            </select>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    <div className="flex space-x-2">
+                      <Button
+                        onClick={handleCsvImport}
+                        disabled={!csvFile || isImporting}
+                        className="flex-1 bg-email-primary hover:bg-email-primary/90"
+                      >
+                        {isImporting ? (
+                          <>
+                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                            Importing...
+                          </>
+                        ) : (
+                          <>
+                            <Upload className="h-4 w-4 mr-2" />
+                            Import Contacts
+                          </>
+                        )}
+                      </Button>
+                      <Button 
+                        variant="outline" 
+                        onClick={() => setShowCsvImportDialog(false)}
+                        className="flex-1"
+                        disabled={isImporting}
+                      >
+                        Cancel
+                      </Button>
+                    </div>
+                  </div>
+                </DialogContent>
+              </Dialog>
+
               <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
                 <DialogTrigger asChild>
                   <Button className="bg-email-primary hover:bg-email-primary/80">
@@ -522,17 +823,18 @@ export const SimpleContactManager = () => {
                   <DialogHeader>
                     <DialogTitle>Add New Contact</DialogTitle>
                     <DialogDescription>
-                      Add a new contact with tags for better organization
+                      Add a new contact with tags for better organization. Name will be auto-generated from email if not provided.
                     </DialogDescription>
                   </DialogHeader>
                   <div className="space-y-4">
                     <div className="space-y-2">
-                      <Label htmlFor="name">Name</Label>
+                      <Label htmlFor="name">Name (Optional)</Label>
                       <Input
                         id="name"
                         value={newContact.name}
                         onChange={(e) => setNewContact({...newContact, name: e.target.value})}
-                        placeholder="John Doe"
+                        placeholder="John Doe (auto-generated from email if empty)"
+                        className="border-email-primary/30 focus:border-email-primary"
                       />
                     </div>
                     <div className="space-y-2">
@@ -542,8 +844,15 @@ export const SimpleContactManager = () => {
                         type="email"
                         value={newContact.email}
                         onChange={(e) => setNewContact({...newContact, email: e.target.value})}
-                        placeholder="john@example.com"
+                        placeholder="john.doe@example.com"
+                        className="border-email-primary/30 focus:border-email-primary"
                       />
+                      {newContact.email && !newContact.name && (
+                        <div className="text-xs text-muted-foreground flex items-center">
+                          <User className="h-3 w-3 mr-1" />
+                          Name will be: {generateNameFromEmail(newContact.email)}
+                        </div>
+                      )}
                     </div>
                     <div className="space-y-2">
                       <Label htmlFor="phone">Phone</Label>
@@ -552,6 +861,7 @@ export const SimpleContactManager = () => {
                         value={newContact.phone}
                         onChange={(e) => setNewContact({...newContact, phone: e.target.value})}
                         placeholder="+1234567890"
+                        className="border-email-primary/30 focus:border-email-primary"
                       />
                     </div>
                     <div className="space-y-2">
@@ -561,10 +871,11 @@ export const SimpleContactManager = () => {
                         value={newContact.tags}
                         onChange={(e) => setNewContact({...newContact, tags: e.target.value})}
                         placeholder="customer, premium, lazy-motion-library"
+                        className="border-email-primary/30 focus:border-email-primary"
                       />
                     </div>
                     <div className="flex space-x-2">
-                      <Button onClick={handleAddContact} className="flex-1">
+                      <Button onClick={handleAddContact} className="flex-1 bg-email-primary hover:bg-email-primary/90">
                         Add Contact
                       </Button>
                       <Button 
@@ -583,12 +894,13 @@ export const SimpleContactManager = () => {
         </CardHeader>
         <CardContent className="space-y-4">
           {/* Filters */}
-          <div className="flex space-x-4">
+          <div className="flex flex-col lg:flex-row space-y-2 lg:space-y-0 lg:space-x-4">
             <div className="flex-1">
               <Input
                 placeholder="Search contacts..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
+                className="border-email-primary/30 focus:border-email-primary"
               />
             </div>
             <div className="flex-1">
@@ -596,6 +908,7 @@ export const SimpleContactManager = () => {
                 placeholder="Filter by tag..."
                 value={tagFilter}
                 onChange={(e) => setTagFilter(e.target.value)}
+                className="border-email-primary/30 focus:border-email-primary"
               />
             </div>
           </div>
@@ -640,21 +953,21 @@ export const SimpleContactManager = () => {
               <div
                 key={contact.id}
                 className={`flex items-center justify-between p-4 border rounded-lg hover:bg-email-muted/20 transition-colors ${
-                  selectedContacts.has(contact.id) ? 'bg-email-primary/10 border-email-primary/30' : ''
+                  selectedContacts.has(contact.id) ? 'bg-email-primary/10 border-email-primary/30' : 'border-email-primary/10'
                 }`}
               >
-                <div className="flex items-center space-x-3">
+                <div className="flex items-center space-x-3 flex-1">
                   <input
                     type="checkbox"
                     checked={selectedContacts.has(contact.id)}
                     onChange={(e) => handleSelectContact(contact.id, e.target.checked)}
                     className="h-4 w-4 text-email-primary focus:ring-email-primary border-gray-300 rounded"
                   />
-                  <div className="flex-1">
+                  <div className="flex-1 min-w-0">
                     <div className="flex items-center space-x-4">
                       <div>
-                        <p className="font-medium">{contact.name || 'No name'}</p>
-                        <p className="text-sm text-gray-600">{contact.email}</p>
+                        <p className="font-medium">{contact.name}</p>
+                        <p className="text-sm text-gray-600 break-all">{contact.email}</p>
                         {contact.phone && (
                           <p className="text-sm text-gray-500">{contact.phone}</p>
                         )}
@@ -682,7 +995,7 @@ export const SimpleContactManager = () => {
                     )}
                   </div>
                 </div>
-                <div className="flex items-center space-x-2">
+                <div className="flex items-center space-x-2 flex-shrink-0">
                   <Button
                     variant="ghost"
                     size="sm"
@@ -707,7 +1020,14 @@ export const SimpleContactManager = () => {
             ))}
             {filteredContacts.length === 0 && (
               <div className="text-center py-8 text-gray-500">
-                No contacts found
+                {contacts.length === 0 ? (
+                  <div>
+                    <Users className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
+                    <p>No contacts yet. Add your first contact or import from CSV!</p>
+                  </div>
+                ) : (
+                  "No contacts match your filters"
+                )}
               </div>
             )}
           </div>
@@ -758,6 +1078,7 @@ export const SimpleContactManager = () => {
                   value={bulkTags}
                   onChange={(e) => setBulkTags(e.target.value)}
                   placeholder="premium, newsletter, product-customer"
+                  className="border-email-primary/30 focus:border-email-primary"
                 />
               </div>
             ) : (
@@ -768,6 +1089,7 @@ export const SimpleContactManager = () => {
                   value={bulkTagsToRemove}
                   onChange={(e) => setBulkTagsToRemove(e.target.value)}
                   placeholder="premium, newsletter, product-customer"
+                  className="border-email-primary/30 focus:border-email-primary"
                 />
               </div>
             )}
