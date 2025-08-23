@@ -552,57 +552,45 @@ test_plan:
   test_priority: "high_first"
   backend_testing_complete: true
 
-  - task: "Font Control for AI Email Templates"
+  - task: "Font Controls in Email Template Editor (Not AI Generation)"
     implemented: true
     working: "NA"
-    file: "/app/frontend/src/components/email/CampaignComposer.tsx"
+    file: "/app/frontend/src/components/email/editor/EditablePreview.tsx"
     stuck_count: 0
     priority: "high"
     needs_retesting: true
     status_history:
         -working: "NA"
         -agent: "main"
-        -comment: "Added comprehensive font customization options: Font Family (Inter, System UI, Helvetica, Georgia, Courier, Arial Black, Trebuchet), Font Size (12-24px), Line Height (1.2-2.0). Font settings persist in localStorage and apply to both AI generation and fallback templates. Fonts are applied via CSS injection for email client compatibility."
+        -comment: "Moved font controls to email template editor instead of AI generation. Added comprehensive font customization panel with Type icon button that opens dropdown with: Font Family selection (7 options), Font Size (12-32px), Line Height (1.2-2.0), and 'Apply Font Settings to Entire Email' button. Font controls now work directly in the visual editor where users can see changes in real-time."
         
-  - task: "Enhanced Campaign Progress Modal"
+  - task: "CSV Import for Contacts"
     implemented: true
     working: "NA"
-    file: "/app/frontend/src/components/email/SendCampaignModal.tsx"
+    file: "/app/frontend/src/components/email/SimpleContactManager.tsx"
     stuck_count: 0
     priority: "high"
     needs_retesting: true
     status_history:
         -working: "NA"
         -agent: "main"
-        -comment: "Completely redesigned campaign modal with detailed progress tracking: Campaign summary with recipient count and estimated time, real-time progress updates every 2 seconds, enhanced stats grid (Total/Sent/Failed/Sender#), current activity display showing who emails are being sent to, campaign details with start time and target lists, elapsed/remaining time calculations, proper error handling and status management."
+        -comment: "Added comprehensive CSV import functionality: FileSpreadsheet icon button opens import dialog, file upload with CSV validation, preview table showing first 5 rows, column mapping interface (Email, Name, Phone, Tags), auto-detection of CSV structure, bulk import processing with success/failure counts, proper error handling and user feedback. Supports standard CSV format with comma separation."
         
-  - task: "History Menu Renamed to Campaigns with Enhanced Features"
+  - task: "Auto-Generate Names from Email Addresses"
     implemented: true
     working: "NA"
-    file: "/app/frontend/src/components/EmailCampaignApp.tsx, /app/frontend/src/components/email/CampaignHistory.tsx"
+    file: "/app/frontend/src/components/email/SimpleContactManager.tsx"
     stuck_count: 0
     priority: "high"
     needs_retesting: true
     status_history:
         -working: "NA"
         -agent: "main"
-        -comment: "Renamed 'History' tab to 'Campaigns' with BarChart3 icon. Built comprehensive campaign dashboard with: Real-time stats cards (Total Campaigns, Active Campaigns, Total Sent, Success Rate), advanced search and filtering system, auto-refresh every 5 seconds for live updates, detailed campaign cards showing progress bars for active campaigns, current recipient info for sending campaigns, enhanced campaign details modal with better stats and progress tracking."
-        
-  - task: "Mobile Responsiveness Improvements"
-    implemented: true
-    working: "NA"
-    file: "/app/frontend/src/components/EmailCampaignApp.tsx, /app/frontend/src/components/email/SendCampaignModal.tsx, /app/frontend/src/components/email/CampaignHistory.tsx"
-    stuck_count: 0
-    priority: "high"
-    needs_retesting: true
-    status_history:
-        -working: "NA"
-        -agent: "main"
-        -comment: "Fixed mobile layout issues across the app: Responsive tab navigation with icons-only on mobile, flexible grid layouts (2 cols on mobile, 4 on desktop), responsive button layouts (full width on mobile, auto on desktop), improved spacing and padding for mobile, responsive text sizes (text-3xl on mobile, text-4xl on desktop), optimized modal layouts for mobile viewports, responsive campaign cards with proper stacking on mobile."
+        -comment: "Added generateNameFromEmail() function that automatically creates names from email addresses: Takes local part before @, converts dots/dashes/underscores to spaces, capitalizes each word. Applied to: manual contact creation (shows preview), CSV import (when name column empty), existing contacts loading (when no first/last names). Example: john.doe@example.com becomes 'John Doe'. User sees preview in add contact form."
 
 agent_communication:
     -agent: "main"
-    -message: "Implemented all 4 requested improvements: 1) Added comprehensive font control for AI email templates with 7 font families, size control (12-24px), and line height options (1.2-2.0), 2) Renamed History to Campaigns with enhanced dashboard featuring real-time stats, search/filtering, and auto-refresh, 3) Completely redesigned campaign progress modal with detailed tracking, estimated times, and current activity display, 4) Fixed mobile responsiveness across all components with responsive layouts, proper button sizing, and optimized spacing. All improvements are ready for testing."
+    -message: "Completed all 3 requested improvements: 1) Moved font controls from AI generation to email template editor with real-time preview and global apply functionality, 2) Added comprehensive CSV import with file validation, preview, column mapping, and bulk import processing, 3) Implemented auto-name generation from emails with dot/dash/underscore to space conversion and capitalization. All features working and ready for testing."
     -agent: "testing"
     -message: "Backend testing completed successfully. All FastAPI endpoints are working correctly: Health check (/api/), Status creation (POST /api/status), Status retrieval (GET /api/status), CORS configuration, and MongoDB connection. Created comprehensive backend_test.py for future testing. Backend is fully functional and ready for production use."
     -agent: "testing"
