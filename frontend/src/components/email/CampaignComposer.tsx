@@ -633,7 +633,7 @@ export const CampaignComposer: React.FC<CampaignComposerProps> = ({ onSave }) =>
                                 <table role="presentation" cellspacing="0" cellpadding="0" border="0" style="margin: 0 auto;">
                                     <tr>
                                         <td style="border-radius: 50px; background: linear-gradient(135deg, ${themeColors.accent} 0%, ${themeColors.primary} 100%); box-shadow: 0 10px 20px ${themeColors.accent}40;">
-                                            <a href="#" class="button" style="display: inline-block; padding: 16px 32px; font-size: 15px; font-weight: 600; color: #ffffff; text-decoration: none; border-radius: 50px; letter-spacing: 0.3px; font-family: ${emailFontFamily};">
+                                            <a href="#" class="button" style="display: inline-block; padding: 16px 32px; font-size: 15px; font-weight: 600; color: #ffffff; text-decoration: none; border-radius: 50px; letter-spacing: 0.3px; font-family: Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;">
                                                 Take Action Now →
                                             </a>
                                         </td>
