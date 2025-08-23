@@ -165,17 +165,17 @@ export const SendCampaignModal: React.FC<SendCampaignModalProps> = ({
   const monitorProgress = (id: string) => {
     const interval = setInterval(async () => {
       try {
-        const { data: campaign, error } = await supabase
-          .from('campaigns')
-          .select('status, total_recipients, sent_count, failed_count, current_sender_sequence, current_recipient, error_message')
-          .eq('id', id)
-          .single();
-
-        if (error) {
-          console.error('Error monitoring campaign:', error);
+        const backendUrl = import.meta.env.REACT_APP_BACKEND_URL || 'http://localhost:8001';
+        
+        const response = await fetch(`${backendUrl}/api/campaigns/${id}`);
+        
+        if (!response.ok) {
+          console.error('Error monitoring campaign:', response.statusText);
           clearInterval(interval);
           return;
         }
+
+        const campaign = await response.json();
 
         if (campaign) {
           setTotalRecipients(campaign.total_recipients || 0);
