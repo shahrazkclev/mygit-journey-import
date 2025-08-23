@@ -474,40 +474,21 @@ export const EditablePreview: React.FC<EditablePreviewProps> = ({
               <List className="h-3 w-3" />
             </Button>
             
-            {/* Single Emoji Picker */}
-            <div className="relative" ref={emojiPickerRef}>
-              <Button 
-                size="sm" 
-                variant="ghost" 
-                className="h-7 px-2"
-                onMouseDown={(e)=>e.preventDefault()}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setShowEmojiPicker(!showEmojiPicker);
-                  setShowColorPicker(false);
-                  setShowFontControls(false);
-                }}
-              >
-                😀
-              </Button>
-              
-              {showEmojiPicker && (
-                <div className="absolute top-8 left-0 z-50 bg-background border rounded-lg shadow-lg p-2 grid grid-cols-4 gap-1 w-36 max-h-32 overflow-y-auto">
-                  {emojis.map((emoji, index) => (
-                    <button
-                      key={index}
-                      className="hover:bg-muted p-1 rounded text-base transition-colors"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        insertEmoji(emoji);
-                      }}
-                    >
-                      {emoji}
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
+            {/* Emoji Picker */}
+            <Button 
+              size="sm" 
+              variant="ghost" 
+              className="h-7 px-2"
+              onMouseDown={(e)=>e.preventDefault()}
+              onClick={(e) => {
+                e.stopPropagation();
+                setShowEmojiPicker(!showEmojiPicker);
+                setShowColorPicker(false);
+                setShowFontControls(false);
+              }}
+            >
+              😀
+            </Button>
             
             <span className="text-xs text-muted-foreground ml-2 hidden lg:inline">
               Select text and use font controls, or apply global settings with the Type button
