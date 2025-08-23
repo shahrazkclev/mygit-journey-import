@@ -80,7 +80,7 @@ export const CampaignComposer: React.FC<CampaignComposerProps> = ({ onSave }) =>
     try {
       localStorage.setItem(DRAFT_KEY, JSON.stringify(draft));
     } catch {}
-  }, [subject, prompt, generatedTemplate, selectedLists, themeColors, emailFontFamily, emailFontSize, emailLineHeight]);
+  }, [subject, prompt, generatedTemplate, selectedLists, themeColors]);
 
   const [emailLists, setEmailLists] = useState<any[]>([]);
   const [products, setProducts] = useState<any[]>([]);
