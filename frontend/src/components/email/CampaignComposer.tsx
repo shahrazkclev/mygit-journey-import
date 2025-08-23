@@ -650,7 +650,7 @@ export const CampaignComposer: React.FC<CampaignComposerProps> = ({ onSave }) =>
                     <tr>
                         <td style="background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%); padding: 35px; text-align: center; border-top: 1px solid #e2e8f0;">
                             <div style="margin-bottom: 20px;">
-                                <pre style="margin: 0; font-family: ${emailFontFamily}; font-size: 14px; color: #475569; white-space: pre-line; font-weight: 500;">${styleGuide?.email_signature || 'Best regards,\nThe Team'}</pre>
+                                <pre style="margin: 0; font-family: Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; font-size: 14px; color: #475569; white-space: pre-line; font-weight: 500;">${styleGuide?.email_signature || 'Best regards,\nThe Team'}</pre>
                             </div>
                             
                             <div style="border-top: 1px solid #d1d5db; padding-top: 20px;">
