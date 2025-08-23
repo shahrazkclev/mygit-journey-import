@@ -266,6 +266,8 @@ async def send_campaign_background(campaign_id: str):
             logging.warning(f"No real contacts found for campaign {campaign_id}, using mock data")
         
         total_recipients = len(recipients)
+        logging.info(f"Campaign {campaign_id} starting with {total_recipients} recipients")
+        
         await db.campaigns.update_one(
             {"id": campaign_id},
             {"$set": {"total_recipients": total_recipients}}
