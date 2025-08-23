@@ -233,29 +233,64 @@ export const EditablePreview: React.FC<EditablePreviewProps> = ({
 
     saveToHistory();
 
-    // Find or create style element for global font settings
-    let styleEl = doc.getElementById('global-font-settings') as HTMLStyleElement;
-    if (!styleEl) {
-      styleEl = doc.createElement('style');
-      styleEl.id = 'global-font-settings';
-      doc.head.appendChild(styleEl);
+    // Remove existing global font settings
+    const existingStyle = doc.getElementById('global-font-settings');
+    if (existingStyle) {
+      existingStyle.remove();
     }
 
-    // Apply global font settings
+    // Create new style element with comprehensive font settings
+    const styleEl = doc.createElement('style');
+    styleEl.id = 'global-font-settings';
     styleEl.textContent = `
-      body, body * {
+      /* Global font settings - highest specificity */
+      body, body *, p, div, span, h1, h2, h3, h4, h5, h6, td, th, li, a {
         font-family: ${currentFontFamily} !important;
         font-size: ${currentFontSize}px !important;
         line-height: ${currentLineHeight} !important;
       }
-      h1, h2, h3, h4, h5, h6 {
+      
+      /* Headings with proportional sizing */
+      h1, h1 * { font-size: ${Math.round(parseInt(currentFontSize) * 1.8)}px !important; line-height: 1.3 !important; }
+      h2, h2 * { font-size: ${Math.round(parseInt(currentFontSize) * 1.6)}px !important; line-height: 1.3 !important; }
+      h3, h3 * { font-size: ${Math.round(parseInt(currentFontSize) * 1.4)}px !important; line-height: 1.3 !important; }
+      h4, h4 * { font-size: ${Math.round(parseInt(currentFontSize) * 1.2)}px !important; line-height: 1.3 !important; }
+      h5, h5 * { font-size: ${parseInt(currentFontSize)}px !important; line-height: 1.3 !important; }
+      h6, h6 * { font-size: ${Math.round(parseInt(currentFontSize) * 0.9)}px !important; line-height: 1.3 !important; }
+      
+      /* Button and link styling */
+      .button, a.button, .btn, a.btn {
         font-family: ${currentFontFamily} !important;
-        line-height: 1.3 !important;
+        font-size: ${Math.round(parseInt(currentFontSize) * 0.9)}px !important;
+      }
+      
+      /* Small text elements */
+      small, .small, .text-small {
+        font-size: ${Math.round(parseInt(currentFontSize) * 0.8)}px !important;
       }
     `;
+    
+    // Insert the style into the document head
+    if (doc.head) {
+      doc.head.appendChild(styleEl);
+    } else {
+      // If no head, insert at the beginning of the document
+      doc.documentElement.insertBefore(styleEl, doc.documentElement.firstChild);
+    }
+
+    // Force a repaint by temporarily modifying and restoring body visibility
+    if (doc.body) {
+      const originalVisibility = doc.body.style.visibility;
+      doc.body.style.visibility = 'hidden';
+      setTimeout(() => {
+        doc.body.style.visibility = originalVisibility;
+      }, 50);
+    }
 
     const newHtml = doc.documentElement.outerHTML;
     onContentUpdate(newHtml);
+    
+    toast.success(`Font settings applied: ${currentFontFamily.split(',')[0]}, ${currentFontSize}px, ${currentLineHeight} line height`);
     setShowFontControls(false);
   };
 
