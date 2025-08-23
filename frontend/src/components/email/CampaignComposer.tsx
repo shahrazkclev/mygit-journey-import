@@ -717,8 +717,6 @@ export const CampaignComposer: React.FC<CampaignComposerProps> = ({ onSave }) =>
 
       if (data?.htmlContent) {
         let cleaned = cleanHtmlContent(data.htmlContent);
-        // Apply font customization to edited content
-        cleaned = applyFontCustomization(cleaned);
         setGeneratedTemplate(cleaned);
         setAiEditPrompt("");
         toast.success("Your email has been updated successfully!");
