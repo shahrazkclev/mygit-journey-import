@@ -654,11 +654,11 @@ export const CampaignComposer: React.FC<CampaignComposerProps> = ({ onSave }) =>
                             </div>
                             
                             <div style="border-top: 1px solid #d1d5db; padding-top: 20px;">
-                                <p style="margin: 0 0 10px 0; font-size: 13px; color: #64748b; font-weight: 500; font-family: ${emailFontFamily};">© 2024 ${styleGuide?.brand_name || 'Your Brand'}. All rights reserved.</p>
+                                <p style="margin: 0 0 10px 0; font-size: 13px; color: #64748b; font-weight: 500; font-family: Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;">© 2024 ${styleGuide?.brand_name || 'Your Brand'}. All rights reserved.</p>
                                 <div style="margin-top: 12px;">
-                                    <a href="#" style="color: #6366f1; text-decoration: none; font-size: 12px; font-weight: 500; margin: 0 10px; font-family: ${emailFontFamily};">Preferences</a>
+                                    <a href="#" style="color: #6366f1; text-decoration: none; font-size: 12px; font-weight: 500; margin: 0 10px; font-family: Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;">Preferences</a>
                                     <span style="color: #cbd5e1;">|</span>
-                                    <a href="#" style="color: #6366f1; text-decoration: none; font-size: 12px; font-weight: 500; margin: 0 10px; font-family: ${emailFontFamily};">Unsubscribe</a>
+                                    <a href="#" style="color: #6366f1; text-decoration: none; font-size: 12px; font-weight: 500; margin: 0 10px; font-family: Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;">Unsubscribe</a>
                                 </div>
                             </div>
                         </td>
