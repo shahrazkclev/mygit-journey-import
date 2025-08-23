@@ -29,9 +29,6 @@ export const EditablePreview: React.FC<EditablePreviewProps> = ({
   const [currentFontSize, setCurrentFontSize] = useState("16");
   const [currentLineHeight, setCurrentLineHeight] = useState("1.6");
   
-  const colorPickerRef = useRef<HTMLDivElement>(null);
-  const emojiPickerRef = useRef<HTMLDivElement>(null);
-
   const emojis = ['😀', '😍', '🎉', '👍', '❤️', '🔥', '💯', '⭐', '🚀', '💼', '📧', '✅', '❗', '💡', '🎯', '📱'];
   const colors = ['#000000', '#FF0000', '#00FF00', '#0000FF', '#FFFF00', '#FF00FF', '#00FFFF', '#FFA500'];
   const fontSizes = ['12px', '14px', '16px', '18px', '20px', '24px', '28px', '32px'];
