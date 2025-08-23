@@ -640,7 +640,7 @@ export const CampaignComposer: React.FC<CampaignComposerProps> = ({ onSave }) =>
                                     </tr>
                                 </table>
                                 
-                                <p style="margin: 20px 0 0 0; color: #94a3b8; font-size: 12px; font-family: ${emailFontFamily};">No spam, unsubscribe anytime</p>
+                                <p style="margin: 20px 0 0 0; color: #94a3b8; font-size: 12px; font-family: Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;">No spam, unsubscribe anytime</p>
                             </div>
                             
                         </td>
