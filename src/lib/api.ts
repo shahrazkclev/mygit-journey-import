@@ -11,14 +11,15 @@ export const api = {
     webhook_url: string;
   }) {
     try {
-      // 1) Create the campaign record
+      // 1) Create the campaign record (using correct column names from schema)
       const { data: campaign, error: campaignError } = await supabase
         .from('campaigns')
         .insert({
-          title: params.title,
+          user_id: '550e8400-e29b-41d4-a716-446655440000',
+          name: params.title,
           subject: params.subject,
           html_content: params.html_content,
-          selected_lists: params.selected_lists,
+          list_ids: params.selected_lists,
           sender_sequence_number: params.sender_sequence,
           webhook_url: params.webhook_url,
           status: 'draft',
