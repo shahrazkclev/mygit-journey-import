@@ -316,7 +316,9 @@ async def send_campaign_background(campaign_id: str):
                     sent_count += 1
                     logging.info(f"✅ Email {sent_count} simulated to {recipient['email']} with sender sequence {current_sender_sequence}")
                 
-                # Update progress (including current_recipient to maintain it)
+                # Update progress
+                progress_percentage = (sent_count / total_recipients) * 100 if total_recipients > 0 else 0
+                
                 await db.campaigns.update_one(
                     {"id": campaign_id},
                     {"$set": {
@@ -326,6 +328,8 @@ async def send_campaign_background(campaign_id: str):
                         "current_recipient": recipient["email"]
                     }}
                 )
+                
+                logging.info(f"Campaign {campaign_id} progress: {sent_count}/{total_recipients} ({progress_percentage:.1f}%)")
                 
             except Exception as e:
                 failed_count += 1
