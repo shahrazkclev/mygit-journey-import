@@ -542,8 +542,6 @@ export const CampaignComposer: React.FC<CampaignComposerProps> = ({ onSave }) =>
 
       if (data?.htmlContent) {
         let cleaned = cleanHtmlContent(data.htmlContent);
-        // Apply font customization
-        cleaned = applyFontCustomization(cleaned);
         // Just inline CSS styles - don't mess with anything else
         cleaned = inlineCssStyles(cleaned);
         
