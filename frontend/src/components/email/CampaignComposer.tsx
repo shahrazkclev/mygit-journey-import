@@ -51,16 +51,7 @@ export const CampaignComposer: React.FC<CampaignComposerProps> = ({ onSave }) =>
 
   const DRAFT_KEY = 'campaign_draft';
 
-  // Font options
-  const fontOptions = [
-    { value: "Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif", label: "Inter (Modern)" },
-    { value: "system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif", label: "System UI" },
-    { value: "'Helvetica Neue', Helvetica, Arial, sans-serif", label: "Helvetica" },
-    { value: "Georgia, 'Times New Roman', Times, serif", label: "Georgia (Serif)" },
-    { value: "'Courier New', Courier, monospace", label: "Courier (Monospace)" },
-    { value: "'Arial Black', Arial, sans-serif", label: "Arial Black" },
-    { value: "'Trebuchet MS', Arial, sans-serif", label: "Trebuchet" }
-  ];
+
 
   // Load draft from localStorage on mount (before fetching lists/styles)
   useEffect(() => {
