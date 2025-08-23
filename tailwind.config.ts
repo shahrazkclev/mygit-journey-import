@@ -57,18 +57,10 @@ export default {
 					secondary: 'hsl(var(--email-secondary))',
 					accent: 'hsl(var(--email-accent))',
 					success: 'hsl(var(--email-success))',
-					warning: 'hsl(var(--email-warning))'
+					warning: 'hsl(var(--email-warning))',
+					background: 'hsl(var(--email-background))',
+					muted: 'hsl(var(--email-muted))'
 				},
-				sidebar: {
-					DEFAULT: 'hsl(var(--sidebar-background))',
-					foreground: 'hsl(var(--sidebar-foreground))',
-					primary: 'hsl(var(--sidebar-primary))',
-					'primary-foreground': 'hsl(var(--sidebar-primary-foreground))',
-					accent: 'hsl(var(--sidebar-accent))',
-					'accent-foreground': 'hsl(var(--sidebar-accent-foreground))',
-					border: 'hsl(var(--sidebar-border))',
-					ring: 'hsl(var(--sidebar-ring))'
-				}
 			},
 			borderRadius: {
 				lg: 'var(--radius)',
