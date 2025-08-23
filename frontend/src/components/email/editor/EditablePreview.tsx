@@ -232,8 +232,6 @@ export const EditablePreview: React.FC<EditablePreviewProps> = ({
     if (!doc) return;
 
     try {
-      saveToHistory();
-
       // Remove existing global font settings
       const existingStyle = doc.getElementById('global-font-settings');
       if (existingStyle) {
@@ -245,14 +243,16 @@ export const EditablePreview: React.FC<EditablePreviewProps> = ({
       styleEl.id = 'global-font-settings';
       styleEl.type = 'text/css';
       
-      // Simple but effective CSS that won't break the layout
+      // Clean CSS that won't break anything
       const css = `
-        body, body p, body div, body span, body td, body th, body li, body a, body button {
-          font-family: ${currentFontFamily} !important;
-          font-size: ${currentFontSize}px !important;
-          line-height: ${currentLineHeight} !important;
-        }
-        
+        body { font-family: ${currentFontFamily} !important; font-size: ${currentFontSize}px !important; line-height: ${currentLineHeight} !important; }
+        p { font-family: ${currentFontFamily} !important; font-size: ${currentFontSize}px !important; line-height: ${currentLineHeight} !important; }
+        div { font-family: ${currentFontFamily} !important; font-size: ${currentFontSize}px !important; line-height: ${currentLineHeight} !important; }
+        span { font-family: ${currentFontFamily} !important; font-size: ${currentFontSize}px !important; line-height: ${currentLineHeight} !important; }
+        td { font-family: ${currentFontFamily} !important; font-size: ${currentFontSize}px !important; line-height: ${currentLineHeight} !important; }
+        th { font-family: ${currentFontFamily} !important; font-size: ${currentFontSize}px !important; line-height: ${currentLineHeight} !important; }
+        li { font-family: ${currentFontFamily} !important; font-size: ${currentFontSize}px !important; line-height: ${currentLineHeight} !important; }
+        a { font-family: ${currentFontFamily} !important; font-size: ${currentFontSize}px !important; line-height: ${currentLineHeight} !important; }
         h1 { font-family: ${currentFontFamily} !important; font-size: ${Math.round(parseInt(currentFontSize) * 1.8)}px !important; line-height: 1.3 !important; }
         h2 { font-family: ${currentFontFamily} !important; font-size: ${Math.round(parseInt(currentFontSize) * 1.6)}px !important; line-height: 1.3 !important; }
         h3 { font-family: ${currentFontFamily} !important; font-size: ${Math.round(parseInt(currentFontSize) * 1.4)}px !important; line-height: 1.3 !important; }
@@ -263,25 +263,32 @@ export const EditablePreview: React.FC<EditablePreviewProps> = ({
       
       styleEl.textContent = css;
       
-      // Safely insert the style into the document
+      // Insert the style safely
       if (doc.head) {
         doc.head.appendChild(styleEl);
       } else if (doc.body) {
         doc.body.insertAdjacentElement('afterbegin', styleEl);
       }
 
-      // Update the parent component with the new HTML - but do it safely
-      setTimeout(() => {
-        try {
-          const updatedHtml = doc.documentElement.outerHTML;
-          onContentUpdate(updatedHtml);
-          toast.success(`Font applied: ${currentFontFamily.split(',')[0].replace(/'/g, '')}, ${currentFontSize}px`);
-        } catch (error) {
-          console.error('Error updating HTML:', error);
-          toast.error('Font applied but could not save changes');
+      // Only update parent if needed and safe to do so
+      const currentHtml = htmlContent;
+      if (currentHtml && !currentHtml.includes('id="global-font-settings"')) {
+        // Add the style to the stored HTML content for persistence
+        let updatedHtml = currentHtml;
+        const styleTag = `<style id="global-font-settings" type="text/css">${css}</style>`;
+        
+        if (updatedHtml.includes('</head>')) {
+          updatedHtml = updatedHtml.replace('</head>', `${styleTag}</head>`);
+        } else if (updatedHtml.includes('<body')) {
+          updatedHtml = updatedHtml.replace('<body', `${styleTag}<body`);
+        } else {
+          updatedHtml = `${styleTag}${updatedHtml}`;
         }
-      }, 100);
+        
+        onContentUpdate(updatedHtml);
+      }
       
+      toast.success(`Font applied: ${currentFontFamily.split(',')[0].replace(/['"]/g, '')}, ${currentFontSize}px`);
       setShowFontControls(false);
       
     } catch (error) {
