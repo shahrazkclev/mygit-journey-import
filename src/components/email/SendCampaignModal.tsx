@@ -50,6 +50,7 @@ export const SendCampaignModal: React.FC<SendCampaignModalProps> = ({
   const [currentRecipient, setCurrentRecipient] = useState<string>('');
   const [estimatedTime, setEstimatedTime] = useState<string>('');
   const [startTime, setStartTime] = useState<Date | null>(null);
+  const [delayBetweenEmails, setDelayBetweenEmails] = useState(2);
   
   // Enhanced recipient tracking
   const [recipientDetails, setRecipientDetails] = useState<RecipientDetails[]>([]);
@@ -84,8 +85,8 @@ export const SendCampaignModal: React.FC<SendCampaignModalProps> = ({
       const actualRecipientCount = count || 0;
       setTotalRecipients(actualRecipientCount);
 
-      // Calculate estimated time (assuming 1 email per 2 seconds)
-      const estimatedSeconds = actualRecipientCount * 2;
+      // Calculate estimated time based on delay setting
+      const estimatedSeconds = actualRecipientCount * delayBetweenEmails;
       const minutes = Math.floor(estimatedSeconds / 60);
       const seconds = estimatedSeconds % 60;
       setEstimatedTime(minutes > 0 ? `${minutes}m ${seconds}s` : `${seconds}s`);
@@ -316,16 +317,36 @@ export const SendCampaignModal: React.FC<SendCampaignModalProps> = ({
                 />
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="sequence">Sender Sequence Number</Label>
-                <Input
-                  id="sequence"
-                  type="number"
-                  min="1"
-                  value={senderSequence}
-                  onChange={(e) => setSenderSequence(parseInt(e.target.value) || 1)}
-                  className="border-email-primary/30 focus:border-email-primary"
-                />
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="sequence">Sender Sequence</Label>
+                  <Input
+                    id="sequence"
+                    type="number"
+                    min="1"
+                    value={senderSequence}
+                    onChange={(e) => setSenderSequence(parseInt(e.target.value) || 1)}
+                  />
+                </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="delay">Delay Between Emails</Label>
+                  <div className="flex items-center space-x-2">
+                    <Input
+                      id="delay"
+                      type="number"
+                      min="1"
+                      max="30"
+                      value={delayBetweenEmails}
+                      onChange={(e) => setDelayBetweenEmails(parseInt(e.target.value) || 2)}
+                      className="flex-1"
+                    />
+                    <span className="text-sm text-muted-foreground">seconds</span>
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    Time to wait between individual emails (helps avoid rate limits)
+                  </p>
+                </div>
               </div>
 
               {/* Campaign Summary */}
