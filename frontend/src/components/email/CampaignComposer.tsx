@@ -627,8 +627,8 @@ export const CampaignComposer: React.FC<CampaignComposerProps> = ({ onSave }) =>
                             
                             <!-- CTA Section -->
                             <div style="text-align: center; margin: 40px 0; padding: 35px 20px; background: linear-gradient(135deg, ${themeColors.primary}05 0%, ${themeColors.secondary}03 100%); border-radius: 18px; border: 1px solid ${themeColors.primary}10;">
-                                <h3 style="margin: 0 0 12px 0; color: #1e293b; font-size: 18px; font-weight: 600; font-family: ${emailFontFamily};">Ready to dive in?</h3>
-                                <p style="margin: 0 0 28px 0; color: #64748b; font-size: 14px; line-height: 1.6; font-family: ${emailFontFamily};">Take the next step and discover what we have to offer.</p>
+                                <h3 style="margin: 0 0 12px 0; color: #1e293b; font-size: 18px; font-weight: 600; font-family: Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;">Ready to dive in?</h3>
+                                <p style="margin: 0 0 28px 0; color: #64748b; font-size: 14px; line-height: 1.6; font-family: Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;">Take the next step and discover what we have to offer.</p>
                                 
                                 <table role="presentation" cellspacing="0" cellpadding="0" border="0" style="margin: 0 auto;">
                                     <tr>
