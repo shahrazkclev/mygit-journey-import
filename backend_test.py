@@ -1205,5 +1205,12 @@ def run_all_tests():
         return False
 
 if __name__ == "__main__":
-    success = run_all_tests()
+    import sys
+    
+    # Check if we should run only campaign progress test
+    if len(sys.argv) > 1 and sys.argv[1] == "--campaign-progress":
+        success = run_campaign_progress_test()
+    else:
+        success = run_all_tests()
+    
     sys.exit(0 if success else 1)
