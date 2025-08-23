@@ -7,15 +7,8 @@ import { AuthProvider } from "./contexts/AuthContext";
 import { ProtectedRoute } from "./components/auth/ProtectedRoute";
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
-import { useGlobalTheme } from "@/hooks/useGlobalTheme";
 
 const queryClient = new QueryClient();
-
-const ThemeInitializer = () => {
-  // Triggers theme load on app start and applies CSS variables
-  useGlobalTheme();
-  return null;
-};
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
@@ -23,7 +16,6 @@ const App = () => (
       <TooltipProvider>
         <Toaster />
         <Sonner />
-        <ThemeInitializer />
         <BrowserRouter>
           <Routes>
             <Route path="/" element={
