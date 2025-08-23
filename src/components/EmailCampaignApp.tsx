@@ -1,5 +1,7 @@
 import { useState } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Button } from "@/components/ui/button";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { useGlobalTheme } from "@/hooks/useGlobalTheme";
 import { CampaignComposer } from "./email/CampaignComposer";
 import { SimpleContactManager } from "./email/SimpleContactManager";
@@ -9,122 +11,192 @@ import { ProductManager } from "./email/ProductManager";
 import { CampaignHistory } from "./email/CampaignHistory";
 import { UnsubscribeManager } from "./email/UnsubscribeManager";
 import { StyleGuide } from "./email/StyleGuide";
-import { Mail, Users, List, Settings, BarChart3, UserX, Palette, Package } from "lucide-react";
+import { Mail, Users, List, Settings, BarChart3, Package, ChevronDown, Palette, UserX, Link } from "lucide-react";
 
 export const EmailCampaignApp = () => {
   const [activeTab, setActiveTab] = useState("compose");
+  const [settingsSubTab, setSettingsSubTab] = useState("integration");
   
   // Initialize global theme
   useGlobalTheme();
 
   return (
     <div className="min-h-screen bg-background">
-      <div className="border-b bg-card">
-        <div className="container mx-auto px-6 py-8">
+      {/* Header */}
+      <div className="border-b bg-card/50 backdrop-blur-sm sticky top-0 z-50">
+        <div className="container mx-auto px-4 py-6">
           <div className="text-center space-y-2">
-            <h1 className="text-3xl font-bold text-foreground">
+            <h1 className="text-2xl md:text-3xl font-bold text-foreground">
               Email Campaign Manager
             </h1>
-            <p className="text-muted-foreground">
+            <p className="text-sm md:text-base text-muted-foreground">
               Create, manage, and send email campaigns
             </p>
           </div>
         </div>
       </div>
       
-      <div className="container mx-auto p-6">
-
+      <div className="container mx-auto p-4 md:p-6">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="grid grid-cols-4 lg:grid-cols-8 w-full bg-muted p-1 rounded-md border">
-            <TabsTrigger
+          {/* Navigation Tabs */}
+          <div className="bg-card rounded-lg border p-1">
+            <TabsList className="grid grid-cols-3 md:grid-cols-6 w-full bg-transparent gap-1">
+              <TabsTrigger
                 value="compose" 
-                className="flex flex-col lg:flex-row items-center gap-2 text-xs lg:text-sm p-2 rounded-md"
+                className="flex items-center gap-2 text-xs md:text-sm px-3 py-2 rounded-md data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
               >
                 <Mail className="h-4 w-4" />
-                <span className="hidden sm:inline font-medium">Compose</span>
+                <span className="hidden sm:inline">Compose</span>
               </TabsTrigger>
+              
               <TabsTrigger 
                 value="contacts" 
-                className="flex flex-col lg:flex-row items-center gap-2 text-xs lg:text-sm p-2 rounded-md"
+                className="flex items-center gap-2 text-xs md:text-sm px-3 py-2 rounded-md data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
               >
                 <Users className="h-4 w-4" />
-                <span className="hidden sm:inline font-medium">Contacts</span>
+                <span className="hidden sm:inline">Contacts</span>
               </TabsTrigger>
+              
               <TabsTrigger 
                 value="lists" 
-                className="flex flex-col lg:flex-row items-center gap-2 text-xs lg:text-sm p-2 rounded-md"
+                className="flex items-center gap-2 text-xs md:text-sm px-3 py-2 rounded-md data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
               >
                 <List className="h-4 w-4" />
-                <span className="hidden sm:inline font-medium">Lists</span>
+                <span className="hidden sm:inline">Lists</span>
               </TabsTrigger>
+              
               <TabsTrigger 
                 value="products" 
-                className="flex flex-col lg:flex-row items-center gap-2 text-xs lg:text-sm p-2 rounded-md"
+                className="flex items-center gap-2 text-xs md:text-sm px-3 py-2 rounded-md data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
               >
                 <Package className="h-4 w-4" />
-                <span className="hidden sm:inline font-medium">Products</span>
+                <span className="hidden sm:inline">Products</span>
               </TabsTrigger>
-              <TabsTrigger 
-                value="settings" 
-                className="flex flex-col lg:flex-row items-center gap-2 text-xs lg:text-sm p-2 rounded-md"
-              >
-                <Settings className="h-4 w-4" />
-                <span className="hidden sm:inline font-medium">Settings</span>
-              </TabsTrigger>
+              
               <TabsTrigger 
                 value="campaigns" 
-                className="flex flex-col lg:flex-row items-center gap-2 text-xs lg:text-sm p-2 rounded-md"
+                className="flex items-center gap-2 text-xs md:text-sm px-3 py-2 rounded-md data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
               >
                 <BarChart3 className="h-4 w-4" />
-                <span className="hidden sm:inline font-medium">Campaigns</span>
+                <span className="hidden sm:inline">Analytics</span>
               </TabsTrigger>
-              <TabsTrigger 
-                value="unsubscribe" 
-                className="flex flex-col lg:flex-row items-center gap-2 text-xs lg:text-sm p-2 rounded-md"
-              >
-                <UserX className="h-4 w-4" />
-                <span className="hidden sm:inline font-medium">Unsubscribe</span>
-              </TabsTrigger>
-              <TabsTrigger 
-                value="style" 
-                className="flex flex-col lg:flex-row items-center gap-2 text-xs lg:text-sm p-2 rounded-md"
-              >
-                <Palette className="h-4 w-4" />
-                <span className="hidden sm:inline font-medium">Style</span>
-              </TabsTrigger>
-            </TabsList>
 
-            <TabsContent value="compose" className="space-y-0">
+              {/* Settings Dropdown */}
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button 
+                    variant={activeTab === "settings" ? "default" : "ghost"}
+                    className="flex items-center gap-2 text-xs md:text-sm px-3 py-2 w-full justify-center"
+                  >
+                    <Settings className="h-4 w-4" />
+                    <span className="hidden sm:inline">Settings</span>
+                    <ChevronDown className="h-3 w-3" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-48 bg-popover border shadow-lg">
+                  <DropdownMenuItem 
+                    onClick={() => {
+                      setActiveTab("settings");
+                      setSettingsSubTab("integration");
+                    }}
+                    className="flex items-center gap-2 cursor-pointer"
+                  >
+                    <Link className="h-4 w-4" />
+                    Integration
+                  </DropdownMenuItem>
+                  <DropdownMenuItem 
+                    onClick={() => {
+                      setActiveTab("settings");
+                      setSettingsSubTab("style");
+                    }}
+                    className="flex items-center gap-2 cursor-pointer"
+                  >
+                    <Palette className="h-4 w-4" />
+                    Style & Branding
+                  </DropdownMenuItem>
+                  <DropdownMenuItem 
+                    onClick={() => {
+                      setActiveTab("settings");
+                      setSettingsSubTab("unsubscribe");
+                    }}
+                    className="flex items-center gap-2 cursor-pointer"
+                  >
+                    <UserX className="h-4 w-4" />
+                    Unsubscribe
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </TabsList>
+          </div>
+
+          {/* Tab Contents */}
+          <TabsContent value="compose" className="space-y-0 bg-card rounded-lg border p-6">
             <CampaignComposer />
           </TabsContent>
 
-          <TabsContent value="contacts" className="space-y-0">
+          <TabsContent value="contacts" className="space-y-0 bg-card rounded-lg border p-6">
             <SimpleContactManager />
           </TabsContent>
 
-          <TabsContent value="lists" className="space-y-0">
+          <TabsContent value="lists" className="space-y-0 bg-card rounded-lg border p-6">
             <SmartListManager />
           </TabsContent>
 
-          <TabsContent value="products" className="space-y-0">
+          <TabsContent value="products" className="space-y-0 bg-card rounded-lg border p-6">
             <ProductManager />
           </TabsContent>
 
-          <TabsContent value="settings" className="space-y-0">
-            <CampaignSettings />
-          </TabsContent>
-
-          <TabsContent value="campaigns" className="space-y-0">
+          <TabsContent value="campaigns" className="space-y-0 bg-card rounded-lg border p-6">
             <CampaignHistory />
           </TabsContent>
 
-          <TabsContent value="unsubscribe" className="space-y-0">
-            <UnsubscribeManager />
+          <TabsContent value="settings" className="space-y-0">
+            <div className="bg-card rounded-lg border">
+              {/* Settings Sub-Navigation */}
+              <div className="border-b px-6 py-4">
+                <div className="flex items-center gap-4">
+                  <Settings className="h-5 w-5" />
+                  <h2 className="text-lg font-semibold">Settings</h2>
+                </div>
+                <div className="flex gap-2 mt-4">
+                  <Button
+                    variant={settingsSubTab === "integration" ? "default" : "outline"}
+                    onClick={() => setSettingsSubTab("integration")}
+                    size="sm"
+                    className="flex items-center gap-2"
+                  >
+                    <Link className="h-4 w-4" />
+                    Integration
+                  </Button>
+                  <Button
+                    variant={settingsSubTab === "style" ? "default" : "outline"}
+                    onClick={() => setSettingsSubTab("style")}
+                    size="sm"
+                    className="flex items-center gap-2"
+                  >
+                    <Palette className="h-4 w-4" />
+                    Style & Branding
+                  </Button>
+                  <Button
+                    variant={settingsSubTab === "unsubscribe" ? "default" : "outline"}
+                    onClick={() => setSettingsSubTab("unsubscribe")}
+                    size="sm"
+                    className="flex items-center gap-2"
+                  >
+                    <UserX className="h-4 w-4" />
+                    Unsubscribe
+                  </Button>
+                </div>
+              </div>
+              
+              {/* Settings Content */}
+              <div className="p-6">
+                {settingsSubTab === "integration" && <CampaignSettings />}
+                {settingsSubTab === "style" && <StyleGuide />}
+                {settingsSubTab === "unsubscribe" && <UnsubscribeManager />}
+              </div>
+            </div>
           </TabsContent>
-
-          <TabsContent value="style" className="space-y-0">
-            <StyleGuide />
-            </TabsContent>
           </Tabs>
         </div>
       </div>

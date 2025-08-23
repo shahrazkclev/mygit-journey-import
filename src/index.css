@@ -9,56 +9,52 @@ All colors MUST be HSL.
 
 @layer base {
   :root {
-    /* Professional color palette with better contrast */
+    /* Base design system - clean and professional */
     --background: 0 0% 100%;
-    --foreground: 222 15% 20%;
+    --foreground: 224 71% 4%;
 
     --card: 0 0% 100%;
-    --card-foreground: 222 15% 20%;
+    --card-foreground: 224 71% 4%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 222 15% 20%;
+    --popover-foreground: 224 71% 4%;
 
     --primary: 221 83% 53%;
-    --primary-foreground: 0 0% 98%;
+    --primary-foreground: 210 40% 98%;
 
-    --secondary: 210 40% 96%;
-    --secondary-foreground: 222 15% 20%;
+    --secondary: 220 14% 96%;
+    --secondary-foreground: 220 9% 46%;
 
-    --muted: 210 40% 96%;
-    --muted-foreground: 215 16% 47%;
+    --muted: 220 14% 96%;
+    --muted-foreground: 220 9% 46%;
 
-    --accent: 210 40% 94%;
-    --accent-foreground: 222 84% 5%;
+    --accent: 220 14% 96%;
+    --accent-foreground: 220 9% 46%;
 
     --destructive: 0 84% 60%;
-    --destructive-foreground: 0 0% 98%;
+    --destructive-foreground: 210 40% 98%;
 
-    --border: 214 32% 91%;
-    --input: 214 32% 91%;
+    --border: 220 13% 91%;
+    --input: 220 13% 91%;
     --ring: 221 83% 53%;
 
-    /* Professional email campaign colors */
-    --email-primary: 221 83% 53%;
-    --email-secondary: 204 86% 53%;
-    --email-accent: 142 71% 45%;
-    --email-success: 142 71% 45%;
-    --email-warning: 35 91% 62%;
-    --email-background: 210 40% 98%;
-    --email-muted: 210 40% 95%;
-    
-    /* Dynamic theme colors (updated by StyleGuide component) */
+    /* Unified theme system - all components use these */
     --theme-primary: 221 83% 53%;
     --theme-secondary: 204 86% 53%;
     --theme-accent: 142 71% 45%;
+    --theme-success: 142 71% 45%;
+    --theme-warning: 35 91% 62%;
+    --theme-error: 0 84% 60%;
     
-    /* Simple gradients */
-    --gradient-soft: linear-gradient(135deg, hsl(var(--background)), hsl(var(--muted)));
-    --gradient-card: linear-gradient(145deg, hsl(var(--card)), hsl(var(--muted)));
+    /* Background variations */
+    --theme-background: 220 14% 99%;
+    --theme-surface: 0 0% 100%;
+    --theme-muted: 220 14% 96%;
     
-    /* Clean shadows */
-    --shadow-sm: 0 1px 2px 0 hsl(var(--foreground) / 0.05);
-    --shadow-md: 0 4px 6px -1px hsl(var(--foreground) / 0.1), 0 2px 4px -1px hsl(var(--foreground) / 0.06);
+    /* Text variations */
+    --theme-text-primary: 224 71% 4%;
+    --theme-text-secondary: 220 9% 46%;
+    --theme-text-muted: 220 9% 60%;
 
     --radius: 0.5rem;
 
@@ -80,41 +76,42 @@ All colors MUST be HSL.
   }
 
   .dark {
-    --background: 222.2 84% 4.9%;
+    --background: 224 71% 4%;
     --foreground: 210 40% 98%;
 
-    --card: 222.2 84% 4.9%;
+    --card: 224 71% 4%;
     --card-foreground: 210 40% 98%;
 
-    --popover: 222.2 84% 4.9%;
+    --popover: 224 71% 4%;
     --popover-foreground: 210 40% 98%;
 
     --primary: 210 40% 98%;
-    --primary-foreground: 222.2 47.4% 11.2%;
+    --primary-foreground: 224 71% 4%;
 
-    --secondary: 217.2 32.6% 17.5%;
+    --secondary: 215 27% 17%;
     --secondary-foreground: 210 40% 98%;
 
-    --muted: 217.2 32.6% 17.5%;
-    --muted-foreground: 215 20.2% 65.1%;
+    --muted: 215 27% 17%;
+    --muted-foreground: 217 10% 65%;
 
-    --accent: 217.2 32.6% 17.5%;
+    --accent: 215 27% 17%;
     --accent-foreground: 210 40% 98%;
 
-    --destructive: 0 62.8% 30.6%;
+    --destructive: 0 63% 31%;
     --destructive-foreground: 210 40% 98%;
 
-    --border: 217.2 32.6% 17.5%;
-    --input: 217.2 32.6% 17.5%;
-    --ring: 212.7 26.8% 83.9%;
-    --sidebar-background: 240 5.9% 10%;
-    --sidebar-foreground: 240 4.8% 95.9%;
-    --sidebar-primary: 224.3 76.3% 48%;
-    --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 240 3.7% 15.9%;
-    --sidebar-accent-foreground: 240 4.8% 95.9%;
-    --sidebar-border: 240 3.7% 15.9%;
-    --sidebar-ring: 217.2 91.2% 59.8%;
+    --border: 215 27% 17%;
+    --input: 215 27% 17%;
+    --ring: 216 34% 17%;
+
+    /* Dark theme adjustments */
+    --theme-background: 224 71% 4%;
+    --theme-surface: 215 27% 17%;
+    --theme-muted: 215 27% 17%;
+    
+    --theme-text-primary: 210 40% 98%;
+    --theme-text-secondary: 217 10% 65%;
+    --theme-text-muted: 217 10% 50%;
   }
 }
 
@@ -159,28 +156,40 @@ All colors MUST be HSL.
     scroll-behavior: smooth;
   }
   
-  /* Enhanced email editor gradient */
-  .email-editor-gradient {
+  /* Enhanced visual hierarchy */
+  .theme-gradient-soft {
     background: linear-gradient(135deg, 
-      hsl(221 83% 98%) 0%, 
-      hsl(204 86% 98%) 25%, 
-      hsl(142 71% 98%) 50%, 
-      hsl(221 83% 97%) 100%);
+      hsl(var(--theme-background)), 
+      hsl(var(--theme-muted))
+    );
+  }
+  
+  .theme-gradient-card {
+    background: linear-gradient(145deg, 
+      hsl(var(--theme-surface)), 
+      hsl(var(--theme-muted))
+    );
+  }
+  
+  /* Improved shadows with theme awareness */
+  .theme-shadow-sm {
+    box-shadow: 0 1px 2px 0 hsl(var(--theme-text-primary) / 0.05);
+  }
+  
+  .theme-shadow-md {
+    box-shadow: 0 4px 6px -1px hsl(var(--theme-text-primary) / 0.1), 
+                0 2px 4px -1px hsl(var(--theme-text-primary) / 0.06);
   }
   
   /* Clean focus states */
-  .mobile-focus:focus-visible {
-    outline: 2px solid hsl(var(--primary));
+  .theme-focus:focus-visible {
+    outline: 2px solid hsl(var(--theme-primary));
     outline-offset: 2px;
-    border-radius: 6px;
+    border-radius: calc(var(--radius) - 2px);
   }
 
-  /* Simple hover effects */
-  .hover-lift {
-    transition: transform 0.2s ease;
-  }
-  
-  .hover-lift:hover {
-    transform: translateY(-1px);
+  /* Smooth transitions */
+  .theme-transition {
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
   }
 }
