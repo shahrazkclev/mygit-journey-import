@@ -302,7 +302,8 @@ async def send_campaign_background(campaign_id: str):
                 "status": "sent" if failed_count == 0 else "failed",
                 "completed_at": datetime.utcnow(),
                 "sent_count": sent_count,
-                "failed_count": failed_count
+                "failed_count": failed_count,
+                "current_recipient": None  # Clear current recipient when completed
             }}
         )
         
