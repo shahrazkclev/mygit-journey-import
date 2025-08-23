@@ -19,20 +19,24 @@ export const EmailCampaignApp = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      <div className="container mx-auto p-6">
-        <div className="mb-8 text-center">
-          <h1 className="text-4xl font-semibold text-foreground mb-2">
-            Email Campaign Manager
-          </h1>
-          <p className="text-muted-foreground max-w-lg mx-auto">
-            Create, manage, and send email campaigns
-          </p>
+      <div className="border-b bg-card">
+        <div className="container mx-auto px-6 py-8">
+          <div className="text-center space-y-2">
+            <h1 className="text-3xl font-bold text-foreground">
+              Email Campaign Manager
+            </h1>
+            <p className="text-muted-foreground">
+              Create, manage, and send email campaigns
+            </p>
+          </div>
         </div>
+      </div>
+      
+      <div className="container mx-auto p-6">
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <div className="w-full overflow-x-auto">
-            <TabsList className="grid grid-cols-4 lg:grid-cols-8 w-full bg-muted/50 p-1 rounded-lg">
-              <TabsTrigger
+          <TabsList className="grid grid-cols-4 lg:grid-cols-8 w-full bg-muted p-1 rounded-md border">
+            <TabsTrigger
                 value="compose" 
                 className="flex flex-col lg:flex-row items-center gap-2 text-xs lg:text-sm p-2 rounded-md"
               >
@@ -89,9 +93,8 @@ export const EmailCampaignApp = () => {
                 <span className="hidden sm:inline font-medium">Style</span>
               </TabsTrigger>
             </TabsList>
-          </div>
 
-          <TabsContent value="compose" className="space-y-0">
+            <TabsContent value="compose" className="space-y-0">
             <CampaignComposer />
           </TabsContent>
 
@@ -121,9 +124,9 @@ export const EmailCampaignApp = () => {
 
           <TabsContent value="style" className="space-y-0">
             <StyleGuide />
-          </TabsContent>
-        </Tabs>
+            </TabsContent>
+          </Tabs>
+        </div>
       </div>
-    </div>
-  );
-};
+    );
+  };
