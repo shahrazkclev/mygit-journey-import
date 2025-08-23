@@ -573,7 +573,7 @@ export const CampaignComposer: React.FC<CampaignComposerProps> = ({ onSave }) =>
                 }
             </style>
         </head>
-        <body style="margin: 0; padding: 0; font-family: ${emailFontFamily}; background: linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%); min-height: 100vh;">
+        <body style="margin: 0; padding: 0; font-family: Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%); min-height: 100vh;">
             <div style="padding: 30px 15px;">
                 <table class="container" role="presentation" cellspacing="0" cellpadding="0" border="0" style="max-width: 600px; width: 100%; margin: 0 auto; background: #ffffff; border-radius: 20px; box-shadow: 0 25px 50px rgba(0,0,0,0.1); overflow: hidden;">
                     
