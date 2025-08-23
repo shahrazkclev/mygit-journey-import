@@ -222,14 +222,48 @@ async def send_campaign_background(campaign_id: str):
             {"$set": {"status": "sending", "started_at": datetime.utcnow()}}
         )
         
-        # Mock recipient list (replace with actual contact fetching)
-        recipients = [
-            {"email": "test1@example.com", "name": "Test User 1"},
-            {"email": "test2@example.com", "name": "Test User 2"},
-            {"email": "test3@example.com", "name": "Test User 3"},
-            {"email": "test4@example.com", "name": "Test User 4"},
-            {"email": "test5@example.com", "name": "Test User 5"},
-        ]
+        # Get actual recipients from the selected lists
+        recipients = []
+        
+        # For each selected list, get the contacts
+        for list_id in campaign.selected_lists:
+            # Get contacts from contact_lists table
+            contact_list_docs = await db.contact_lists.find({"list_id": list_id}).to_list(length=None)
+            
+            for contact_list in contact_list_docs:
+                # Get the actual contact details
+                contact_doc = await db.contacts.find_one({"id": contact_list["contact_id"]})
+                if contact_doc:
+                    # Combine first_name and last_name, or use email if no name
+                    name = ""
+                    if contact_doc.get("first_name"):
+                        name = contact_doc["first_name"]
+                        if contact_doc.get("last_name"):
+                            name += " " + contact_doc["last_name"]
+                    
+                    if not name:
+                        # Generate name from email if no name exists
+                        email_local = contact_doc["email"].split('@')[0]
+                        name = email_local.replace('.', ' ').replace('_', ' ').replace('-', ' ').title()
+                    
+                    recipient = {
+                        "email": contact_doc["email"],
+                        "name": name,
+                        "contact_id": contact_doc["id"]
+                    }
+                    
+                    # Avoid duplicates if contact is in multiple lists
+                    if not any(r["email"] == recipient["email"] for r in recipients):
+                        recipients.append(recipient)
+        
+        # If no real contacts found, use a smaller mock list for testing
+        if not recipients:
+            recipients = [
+                {"email": "test1@example.com", "name": "Test User 1", "contact_id": "mock1"},
+                {"email": "test2@example.com", "name": "Test User 2", "contact_id": "mock2"},
+                {"email": "test3@example.com", "name": "Test User 3", "contact_id": "mock3"},
+            ]
+            logging.warning(f"No real contacts found for campaign {campaign_id}, using mock data")
         
         total_recipients = len(recipients)
         await db.campaigns.update_one(
