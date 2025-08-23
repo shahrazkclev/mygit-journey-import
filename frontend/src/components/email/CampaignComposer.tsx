@@ -571,15 +571,6 @@ export const CampaignComposer: React.FC<CampaignComposerProps> = ({ onSave }) =>
                     .hero-title { font-size: 24px !important; }
                     .button { width: 90% !important; }
                 }
-                body, body * {
-                    font-family: ${emailFontFamily} !important;
-                    font-size: ${emailFontSize}px !important;
-                    line-height: ${emailLineHeight} !important;
-                }
-                h1, h2, h3, h4, h5, h6 {
-                    font-family: ${emailFontFamily} !important;
-                    line-height: 1.3 !important;
-                }
             </style>
         </head>
         <body style="margin: 0; padding: 0; font-family: ${emailFontFamily}; background: linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%); min-height: 100vh;">
