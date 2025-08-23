@@ -372,7 +372,6 @@ export const EditablePreview: React.FC<EditablePreviewProps> = ({
 
     return () => {
       iframe.removeEventListener('load', handleLoad);
-      document.removeEventListener('click', handleOutsideClick);
     };
   }, [onContentUpdate]);
 
