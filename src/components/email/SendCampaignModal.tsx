@@ -181,25 +181,29 @@ export const SendCampaignModal: React.FC<SendCampaignModalProps> = ({
         console.log('📈 Campaign status:', campaign);
 
         if (campaign) {
-          setTotalRecipients(campaign.total_recipients || 0);
-          setSentCount(campaign.sent_count || 0);
-          setFailedCount(campaign.failed_count || 0);
-          setCurrentSenderSequence(campaign.current_sender_sequence || 1);
-          setCurrentRecipient(campaign.current_recipient || '');
+          const total = campaign.total_recipients ?? 0;
+          const sent = campaign.sent_count ?? 0;
+
+          setTotalRecipients(total);
+          setSentCount(sent);
+          // Failed count may not be tracked in DB; derive best-effort
+          setFailedCount(total > 0 ? Math.max(total - sent, 0) : 0);
+          setCurrentSenderSequence(campaign.sender_sequence_number || 1);
+          setCurrentRecipient('');
           setStatus(campaign.status as any);
-          setErrorMessage(campaign.error_message);
+          setErrorMessage((campaign as any).error_message);
           
-          if (campaign.total_recipients > 0) {
-            const progressPercent = (campaign.sent_count / campaign.total_recipients) * 100;
+          if (total > 0) {
+            const progressPercent = (sent / total) * 100;
             setProgress(progressPercent);
-            console.log(`📊 Progress: ${campaign.sent_count}/${campaign.total_recipients} (${progressPercent.toFixed(1)}%)`);
+            console.log(`📊 Progress: ${sent}/${total} (${progressPercent.toFixed(1)}%)`);
           }
 
           if (campaign.status === 'sent' || campaign.status === 'failed') {
             clearInterval(interval);
             const message = campaign.status === 'sent' 
-              ? `✅ Campaign completed! Sent to ${campaign.sent_count} recipients.`
-              : `❌ Campaign failed: ${campaign.error_message || 'Unknown error'}`;
+              ? `✅ Campaign completed! Sent to ${sent} recipients.`
+              : `❌ Campaign failed: ${((campaign as any).error_message) || 'Unknown error'}`;
             
             toast.success(message);
             console.log('🏁 Campaign finished:', campaign.status);
