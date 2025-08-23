@@ -188,35 +188,6 @@ export const SendCampaignModal: React.FC<SendCampaignModalProps> = ({
   const monitorProgress = (id: string) => {
     const interval = setInterval(async () => {
       try {
-        // Monitor from Supabase first, fallback to backend
-        const { data: supabaseCampaign, error } = await supabase
-          .from('campaigns')
-          .select('*')
-          .eq('id', id)
-          .single();
-
-        if (!error && supabaseCampaign) {
-          setTotalRecipients(supabaseCampaign.total_recipients || 0);
-          setSentCount(supabaseCampaign.sent_count || 0);
-          setCurrentSenderSequence(supabaseCampaign.sender_sequence_number || 1);
-          setStatus(supabaseCampaign.status as any);
-          
-          if (supabaseCampaign.total_recipients > 0) {
-            setProgress((supabaseCampaign.sent_count / supabaseCampaign.total_recipients) * 100);
-          }
-
-          if (supabaseCampaign.status === 'sent' || supabaseCampaign.status === 'failed') {
-            clearInterval(interval);
-            const message = supabaseCampaign.status === 'sent' 
-              ? `✅ Campaign completed! Sent to ${supabaseCampaign.sent_count} recipients.`
-              : `❌ Campaign failed. Check backend logs for details.`;
-            
-            toast.success(message);
-          }
-          return;
-        }
-
-        // Fallback to backend monitoring
         const response = await api.getCampaign(id);
         
         if (!response.ok) {
@@ -419,7 +390,7 @@ export const SendCampaignModal: React.FC<SendCampaignModalProps> = ({
                 </Button>
                 <Button 
                   onClick={startCampaign} 
-                  disabled={isStarting || totalRecipients === 0}
+                  disabled={isStarting}
                   className="flex-1 bg-email-primary hover:bg-email-primary/90 text-white shadow-lg hover:shadow-xl transition-all duration-200"
                 >
                   {isStarting ? (
