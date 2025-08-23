@@ -587,7 +587,7 @@ export const CampaignComposer: React.FC<CampaignComposerProps> = ({ onSave }) =>
                         <td class="header" style="background: linear-gradient(135deg, ${themeColors.primary}12 0%, ${themeColors.secondary}08 100%); padding: 50px 40px; text-align: center; position: relative;">
                             <div style="position: absolute; top: 20px; right: 30px; width: 32px; height: 32px; background: ${themeColors.accent}25; border-radius: 50%; opacity: 0.6;"></div>
                             
-                            <h1 style="margin: 0 0 10px 0; color: #1e293b; font-size: 26px; font-weight: 700; letter-spacing: -0.5px; font-family: ${emailFontFamily};">${styleGuide?.brand_name || 'Your Brand'}</h1>
+                            <h1 style="margin: 0 0 10px 0; color: #1e293b; font-size: 26px; font-weight: 700; letter-spacing: -0.5px; font-family: Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;">${styleGuide?.brand_name || 'Your Brand'}</h1>
                             <div style="width: 60px; height: 3px; background: linear-gradient(90deg, ${themeColors.primary}, ${themeColors.accent}); margin: 16px auto; border-radius: 2px;"></div>
                             <h2 class="hero-title" style="margin: 20px 0 0 0; color: #334155; font-size: 28px; font-weight: 600; line-height: 1.3; letter-spacing: -0.3px; font-family: ${emailFontFamily};">${subject}</h2>
                         </td>
