@@ -599,8 +599,8 @@ export const CampaignComposer: React.FC<CampaignComposerProps> = ({ onSave }) =>
                             
                             <!-- Welcome Box -->
                             <div style="background: linear-gradient(135deg, ${themeColors.primary}08 0%, ${themeColors.accent}05 100%); border-radius: 16px; padding: 30px; margin-bottom: 35px; border: 1px solid ${themeColors.primary}15;">
-                                <h3 style="margin: 0 0 16px 0; color: #1e293b; font-size: 18px; font-weight: 600; font-family: ${emailFontFamily};">Hello there! 👋</h3>
-                                <p style="margin: 0; font-size: ${emailFontSize}px; line-height: ${emailLineHeight}; color: #475569; font-family: ${emailFontFamily};">${prompt}</p>
+                                <h3 style="margin: 0 0 16px 0; color: #1e293b; font-size: 18px; font-weight: 600; font-family: Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;">Hello there! 👋</h3>
+                                <p style="margin: 0; font-size: 16px; line-height: 1.6; color: #475569; font-family: Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;">${prompt}</p>
                             </div>
                             
                             <!-- Value Proposition -->
