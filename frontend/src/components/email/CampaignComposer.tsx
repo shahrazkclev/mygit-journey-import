@@ -342,34 +342,8 @@ export const CampaignComposer: React.FC<CampaignComposerProps> = ({ onSave }) =>
 
   // Apply font customization to HTML template
   const applyFontCustomization = (htmlContent: string): string => {
-    try {
-      // Add font customization CSS to the HTML
-      const fontStyles = `
-        <style>
-          body, body * {
-            font-family: ${emailFontFamily} !important;
-            font-size: ${emailFontSize}px !important;
-            line-height: ${emailLineHeight} !important;
-          }
-          h1, h2, h3, h4, h5, h6 {
-            font-family: ${emailFontFamily} !important;
-            line-height: 1.3 !important;
-          }
-        </style>
-      `;
-      
-      // Insert the styles into the head or before body
-      if (htmlContent.includes('</head>')) {
-        return htmlContent.replace('</head>', `${fontStyles}</head>`);
-      } else if (htmlContent.includes('<body')) {
-        return htmlContent.replace('<body', `${fontStyles}<body`);
-      } else {
-        return `${fontStyles}${htmlContent}`;
-      }
-    } catch (error) {
-      console.error('Error applying font customization:', error);
-      return htmlContent;
-    }
+    // Font customization is now handled in the EditablePreview component
+    return htmlContent;
   };
 
   // Inline CSS styles for better email client compatibility
