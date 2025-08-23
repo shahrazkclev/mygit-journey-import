@@ -3,6 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
 import { Smartphone, Monitor, Bold, Italic, List, Smile, Type, Palette, Undo, Redo, Plus, Minus } from 'lucide-react';
+import { toast } from 'sonner';
 
 interface EditablePreviewProps {
   htmlContent: string;
