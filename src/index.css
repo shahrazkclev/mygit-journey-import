@@ -9,43 +9,43 @@ All colors MUST be HSL.
 
 @layer base {
   :root {
-    /* Light, soft color palette inspired by minimal design */
-    --background: 44 20% 97%;
-    --foreground: 220 15% 25%;
+    /* Professional color palette with better contrast */
+    --background: 0 0% 100%;
+    --foreground: 222 15% 20%;
 
     --card: 0 0% 100%;
-    --card-foreground: 220 15% 25%;
+    --card-foreground: 222 15% 20%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 220 15% 25%;
+    --popover-foreground: 222 15% 20%;
 
-    --primary: 268 75% 85%;
-    --primary-foreground: 220 15% 25%;
+    --primary: 221 83% 53%;
+    --primary-foreground: 0 0% 98%;
 
-    --secondary: 200 25% 92%;
-    --secondary-foreground: 220 15% 25%;
+    --secondary: 210 40% 96%;
+    --secondary-foreground: 222 15% 20%;
 
     --muted: 210 40% 96%;
-    --muted-foreground: 220 10% 55%;
+    --muted-foreground: 215 16% 47%;
 
-    --accent: 160 45% 88%;
-    --accent-foreground: 220 15% 25%;
+    --accent: 210 40% 94%;
+    --accent-foreground: 222 84% 5%;
 
-    --destructive: 0 65% 75%;
-    --destructive-foreground: 0 0% 100%;
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 98%;
 
-    --border: 220 13% 91%;
-    --input: 220 13% 91%;
-    --ring: 268 75% 85%;
+    --border: 214 32% 91%;
+    --input: 214 32% 91%;
+    --ring: 221 83% 53%;
 
-    /* Email campaign specific colors */
-    --email-primary: 268 75% 65%;
-    --email-secondary: 200 25% 72%;
-    --email-accent: 160 45% 68%;
-    --email-success: 140 45% 65%;
-    --email-warning: 45 85% 65%;
-    --email-background: 268 75% 98%;
-    --email-muted: 268 30% 92%;
+    /* Professional email campaign colors */
+    --email-primary: 221 83% 53%;
+    --email-secondary: 204 86% 53%;
+    --email-accent: 142 71% 45%;
+    --email-success: 142 71% 45%;
+    --email-warning: 35 91% 62%;
+    --email-background: 210 40% 98%;
+    --email-muted: 210 40% 95%;
     
     /* Dynamic theme colors (updated by StyleGuide component) */
     --theme-primary: 268 75% 65%;

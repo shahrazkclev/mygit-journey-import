@@ -17,6 +17,7 @@ export const CampaignSettings = () => {
   const [sendingSpeed, setSendingSpeed] = useState([50]);
   const [batchSize, setBatchSize] = useState([10]);
   const [delayBetweenBatches, setDelayBetweenBatches] = useState([5]);
+  const [delayBetweenEmails, setDelayBetweenEmails] = useState([2]);
   const [enableRetries, setEnableRetries] = useState(true);
   const [maxRetries, setMaxRetries] = useState([3]);
   const [isLoading, setIsLoading] = useState(false);
@@ -49,6 +50,7 @@ export const CampaignSettings = () => {
         setSendingSpeed([data.sending_speed || 50]);
         setBatchSize([data.batch_size || 10]);
         setDelayBetweenBatches([data.delay_between_batches || 5]);
+        setDelayBetweenEmails([data.delay_between_emails || 2]);
         setEnableRetries(data.enable_retries !== false);
         setMaxRetries([data.max_retries || 3]);
       }
@@ -71,6 +73,7 @@ export const CampaignSettings = () => {
         sending_speed: sendingSpeed[0],
         batch_size: batchSize[0],
         delay_between_batches: delayBetweenBatches[0],
+        delay_between_emails: delayBetweenEmails[0],
         enable_retries: enableRetries,
         max_retries: maxRetries[0],
         emails_per_sender: emailsPerSender,
@@ -319,6 +322,26 @@ export const CampaignSettings = () => {
               step={1}
               className="w-full"
             />
+          </div>
+
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <Label>Delay Between Individual Emails</Label>
+              <Badge variant="outline" className="border-primary text-primary">
+                {delayBetweenEmails[0]} seconds
+              </Badge>
+            </div>
+            <Slider
+              value={delayBetweenEmails}
+              onValueChange={setDelayBetweenEmails}
+              max={30}
+              min={1}
+              step={1}
+              className="w-full"
+            />
+            <p className="text-xs text-muted-foreground">
+              Time to wait between sending individual emails for better deliverability
+            </p>
           </div>
         </CardContent>
       </Card>

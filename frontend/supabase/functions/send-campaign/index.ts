@@ -107,6 +107,20 @@ const handler = async (req: Request): Promise<Response> => {
   }
 };
 
+async function getUserSettings(supabase: SupabaseClient, userId: string) {
+  const { data } = await supabase
+    .from('user_settings')
+    .select('delay_between_emails, batch_size, delay_between_batches')
+    .eq('user_id', userId)
+    .maybeSingle();
+  
+  return {
+    delayBetweenEmails: (data?.delay_between_emails || 2) * 1000, // Convert to ms
+    batchSize: data?.batch_size || 10,
+    delayBetweenBatches: (data?.delay_between_batches || 5) * 60 * 1000, // Convert to ms
+  };
+}
+
 async function processSends(
   supabase: SupabaseClient,
   campaignId: string,
@@ -118,26 +132,38 @@ async function processSends(
   contacts: Contact[],
 ) {
   let sentCount = 0;
-  const batchSize = 10;
+  const settings = await getUserSettings(supabase, '550e8400-e29b-41d4-a716-446655440000');
 
-  for (let i = 0; i < contacts.length; i += batchSize) {
+  for (let i = 0; i < contacts.length; i += settings.batchSize) {
     const { data: c } = await supabase.from('campaigns').select('status').eq('id', campaignId).maybeSingle();
     if (c?.status === 'paused') break;
 
-    const batch = contacts.slice(i, i + batchSize);
-    await Promise.all(batch.map(async (contact) => {
+    const batch = contacts.slice(i, i + settings.batchSize);
+    
+    // Process emails one by one with individual delays
+    for (const contact of batch) {
       try {
         const body = { title, html, name, senderSequenceNumber, recipient: { email: contact.email, firstName: contact.first_name ?? undefined, lastName: contact.last_name ?? undefined }, campaignId };
         await deliver(webhookUrl, body);
         await markSend(supabase, campaignId, contact.email, { status: 'sent', sent_at: new Date().toISOString(), error_message: null });
         sentCount++;
+        
+        // Update campaign progress after each email
+        await updateCampaign(supabase, campaignId, { sent_count: sentCount });
+        
+        // Wait between individual emails (except for the last email in the batch)
+        if (contact !== batch[batch.length - 1]) {
+          await sleep(settings.delayBetweenEmails);
+        }
       } catch (e: any) {
         await markSend(supabase, campaignId, contact.email, { status: 'failed', error_message: e?.message || String(e) });
       }
-    }));
+    }
 
-    await updateCampaign(supabase, campaignId, { sent_count: sentCount });
-    await sleep(800);
+    // Wait between batches (except after the last batch)
+    if (i + settings.batchSize < contacts.length) {
+      await sleep(settings.delayBetweenBatches);
+    }
   }
 
   const finalStatus = sentCount === contacts.length ? 'sent' : (contacts.length === 0 ? 'sent' : 'failed');

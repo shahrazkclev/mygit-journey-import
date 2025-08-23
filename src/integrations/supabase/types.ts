@@ -375,6 +375,7 @@ export type Database = {
           batch_size: number | null
           created_at: string
           delay_between_batches: number | null
+          delay_between_emails: number | null
           enable_retries: boolean | null
           id: string
           max_retries: number | null
@@ -387,6 +388,7 @@ export type Database = {
           batch_size?: number | null
           created_at?: string
           delay_between_batches?: number | null
+          delay_between_emails?: number | null
           enable_retries?: boolean | null
           id?: string
           max_retries?: number | null
@@ -399,6 +401,7 @@ export type Database = {
           batch_size?: number | null
           created_at?: string
           delay_between_batches?: number | null
+          delay_between_emails?: number | null
           enable_retries?: boolean | null
           id?: string
           max_retries?: number | null
