@@ -884,61 +884,6 @@ export const CampaignComposer: React.FC<CampaignComposerProps> = ({ onSave }) =>
           </div>
 
           {/* Color Theme Customization */}
-          <Card className="bg-email-muted/20 border-email-primary/10">
-            <CardHeader className="pb-3">
-              <CardTitle className="text-sm text-email-primary flex items-center">
-                <Type className="h-4 w-4 mr-2" />
-                Font Customization
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div className="space-y-2">
-                  <Label className="text-sm font-medium text-email-primary">Font Family</Label>
-                  <Select value={emailFontFamily} onValueChange={setEmailFontFamily}>
-                    <SelectTrigger className="text-xs border-email-primary/30">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {fontOptions.map(font => (
-                        <SelectItem key={font.value} value={font.value} className="text-xs">
-                          {font.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div className="space-y-2">
-                  <Label className="text-sm font-medium text-email-primary">Font Size (px)</Label>
-                  <Select value={emailFontSize} onValueChange={setEmailFontSize}>
-                    <SelectTrigger className="text-xs border-email-primary/30">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {['12', '13', '14', '15', '16', '17', '18', '20', '22', '24'].map(size => (
-                        <SelectItem key={size} value={size} className="text-xs">{size}px</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div className="space-y-2">
-                  <Label className="text-sm font-medium text-email-primary">Line Height</Label>
-                  <Select value={emailLineHeight} onValueChange={setEmailLineHeight}>
-                    <SelectTrigger className="text-xs border-email-primary/30">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {['1.2', '1.3', '1.4', '1.5', '1.6', '1.7', '1.8', '2.0'].map(height => (
-                        <SelectItem key={height} value={height} className="text-xs">{height}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
 
           <div className="space-y-2">
             <Label htmlFor="prompt" className="text-email-primary font-medium">AI Prompt</Label>
