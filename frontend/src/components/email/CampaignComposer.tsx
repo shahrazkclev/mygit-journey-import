@@ -883,7 +883,7 @@ export const CampaignComposer: React.FC<CampaignComposerProps> = ({ onSave }) =>
             />
           </div>
 
-          {/* Font Customization Section */}
+          {/* Color Theme Customization */}
           <Card className="bg-email-muted/20 border-email-primary/10">
             <CardHeader className="pb-3">
               <CardTitle className="text-sm text-email-primary flex items-center">
