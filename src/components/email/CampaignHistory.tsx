@@ -109,7 +109,14 @@ export const CampaignHistory: React.FC = () => {
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      setCampaigns(data || []);
+      
+      // Map database fields to expected Campaign interface
+      const mappedCampaigns = (data || []).map(campaign => ({
+        ...campaign,
+        failed_count: 0 // Add missing field with default value
+      }));
+      
+      setCampaigns(mappedCampaigns);
     } catch (error) {
       console.error('Error loading campaigns:', error);
       toast.error('Failed to load campaigns');

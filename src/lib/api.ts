@@ -1,6 +1,6 @@
 // API utility functions for backend authentication
 const getBackendUrl = () => {
-  return import.meta.env.VITE_REACT_APP_BACKEND_URL || process.env.REACT_APP_BACKEND_URL || 'http://localhost:8001';
+  return 'https://micro-edits.preview.emergentagent.com';
 };
 
 const getAuthToken = () => {
