@@ -72,12 +72,19 @@ export const SendCampaignModal: React.FC<SendCampaignModalProps> = ({
       
       setListNames(lists.map(list => list.name));
       
-      // For now, set a mock recipient count since the backend uses mock data
-      // In a real implementation, this would query the actual contact lists
-      setTotalRecipients(5); // matches the mock data in backend
+      // Load actual recipient count from contact_lists
+      const { count, error: countError } = await supabase
+        .from('contact_lists')
+        .select('contact_id', { count: 'exact' })
+        .in('list_id', selectedLists);
+
+      if (countError) throw countError;
+      
+      const actualRecipientCount = count || 0;
+      setTotalRecipients(actualRecipientCount);
 
       // Calculate estimated time (assuming 1 email per 2 seconds)
-      const estimatedSeconds = 5 * 2;
+      const estimatedSeconds = actualRecipientCount * 2;
       const minutes = Math.floor(estimatedSeconds / 60);
       const seconds = estimatedSeconds % 60;
       setEstimatedTime(minutes > 0 ? `${minutes}m ${seconds}s` : `${seconds}s`);
