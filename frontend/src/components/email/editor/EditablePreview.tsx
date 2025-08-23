@@ -31,7 +31,6 @@ export const EditablePreview: React.FC<EditablePreviewProps> = ({
   
   const colorPickerRef = useRef<HTMLDivElement>(null);
   const emojiPickerRef = useRef<HTMLDivElement>(null);
-  const fontControlsRef = useRef<HTMLDivElement>(null);
 
   const emojis = ['😀', '😍', '🎉', '👍', '❤️', '🔥', '💯', '⭐', '🚀', '💼', '📧', '✅', '❗', '💡', '🎯', '📱'];
   const colors = ['#000000', '#FF0000', '#00FF00', '#0000FF', '#FFFF00', '#FF00FF', '#00FFFF', '#FFA500'];
