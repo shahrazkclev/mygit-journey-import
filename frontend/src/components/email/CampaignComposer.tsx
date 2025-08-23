@@ -705,20 +705,11 @@ export const CampaignComposer: React.FC<CampaignComposerProps> = ({ onSave }) =>
             primaryColor: themeColors.primary,
             secondaryColor: themeColors.secondary,
             accentColor: themeColors.accent,
-            fontFamily: emailFontFamily,
             tone: styleGuide.tone,
             brandVoice: styleGuide.brand_voice,
             logoUrl: styleGuide.logo_url,
             emailSignature: styleGuide.email_signature,
-          } : {
-            fontFamily: emailFontFamily
-          },
-          // Add font options to AI editing
-          fontOptions: {
-            fontFamily: emailFontFamily,
-            fontSize: emailFontSize,
-            lineHeight: emailLineHeight
-          }
+          } : undefined
         }
       });
 
