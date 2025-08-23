@@ -605,7 +605,7 @@ export const CampaignComposer: React.FC<CampaignComposerProps> = ({ onSave }) =>
                             
                             <!-- Value Proposition -->
                             <div style="margin-bottom: 40px;">
-                                <p style="margin: 0 0 20px 0; font-size: ${emailFontSize}px; line-height: ${emailLineHeight}; color: #475569; font-family: ${emailFontFamily};">We're excited to share this with you and believe it will make a meaningful impact. Our team has carefully crafted this experience with you in mind.</p>
+                                <p style="margin: 0 0 20px 0; font-size: 16px; line-height: 1.6; color: #475569; font-family: Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;">We're excited to share this with you and believe it will make a meaningful impact. Our team has carefully crafted this experience with you in mind.</p>
                                 
                                 <div style="display: flex; gap: 15px; margin: 25px 0;">
                                     <div style="flex: 1; background: #f8fafc; border-radius: 12px; padding: 20px; text-align: center; border: 1px solid #e2e8f0;">
