@@ -370,18 +370,6 @@ export const EditablePreview: React.FC<EditablePreviewProps> = ({
       handleLoad();
     }
 
-    // Close pickers when clicking outside
-    const handleOutsideClick = (e: MouseEvent) => {
-      const target = e.target as Node;
-      if (colorPickerRef.current && colorPickerRef.current.contains(target)) return;
-      if (emojiPickerRef.current && emojiPickerRef.current.contains(target)) return;
-      // Don't close font controls via outside click since it's now a modal
-      setShowColorPicker(false);
-      setShowEmojiPicker(false);
-    };
-    
-    document.addEventListener('click', handleOutsideClick as any);
-
     return () => {
       iframe.removeEventListener('load', handleLoad);
       document.removeEventListener('click', handleOutsideClick);
