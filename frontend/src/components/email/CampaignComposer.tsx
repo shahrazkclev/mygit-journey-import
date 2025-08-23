@@ -534,13 +534,7 @@ export const CampaignComposer: React.FC<CampaignComposerProps> = ({ onSave }) =>
             logoUrl: styleGuide.logo_url,
             emailSignature: styleGuide.email_signature,
           } : undefined,
-          templatePreview: styleGuide?.template_preview,
-          // Add font customization to the AI generation request
-          fontOptions: {
-            fontFamily: emailFontFamily,
-            fontSize: emailFontSize,
-            lineHeight: emailLineHeight
-          }
+          templatePreview: styleGuide?.template_preview
         }
       });
 
