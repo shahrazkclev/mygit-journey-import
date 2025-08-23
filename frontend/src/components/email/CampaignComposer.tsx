@@ -34,10 +34,7 @@ export const CampaignComposer: React.FC<CampaignComposerProps> = ({ onSave }) =>
   const [currentEmailCount, setCurrentEmailCount] = useState(0);
   const [styleGuide, setStyleGuide] = useState<any>(null);
   
-  // Font customization options
-  const [emailFontFamily, setEmailFontFamily] = useState("Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif");
-  const [emailFontSize, setEmailFontSize] = useState("16");
-  const [emailLineHeight, setEmailLineHeight] = useState("1.6");
+
   
   // Theme colors (can override style guide colors)
   const [themeColors, setThemeColors] = useState({
