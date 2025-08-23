@@ -213,19 +213,28 @@ export const SendCampaignModal: React.FC<SendCampaignModalProps> = ({
     if (!campaignId) return;
 
     try {
+      const backendUrl = import.meta.env.REACT_APP_BACKEND_URL || 'http://localhost:8001';
       const newStatus = status === 'sending' ? 'paused' : 'sending';
       
-      const { error } = await supabase
-        .from('campaigns')
-        .update({ status: newStatus })
-        .eq('id', campaignId);
+      const endpoint = newStatus === 'paused' 
+        ? `${backendUrl}/api/campaigns/${campaignId}/pause`
+        : `${backendUrl}/api/campaigns/${campaignId}/resume`;
+      
+      const response = await fetch(endpoint, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        }
+      });
 
-      if (error) throw error;
+      if (!response.ok) {
+        throw new Error(`Failed to ${newStatus === 'paused' ? 'pause' : 'resume'} campaign`);
+      }
 
       setStatus(newStatus as any);
       toast.success(newStatus === 'paused' ? 'Campaign paused' : 'Campaign resumed');
     } catch (error: any) {
-      toast.error('Failed to update campaign status');
+      toast.error(`Failed to update campaign status: ${error.message}`);
     }
   };
 
