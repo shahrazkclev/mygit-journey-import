@@ -18,7 +18,7 @@ export const EmailCampaignApp = () => {
   useGlobalTheme();
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-email-background to-background">
+    <div className="min-h-screen bg-gradient-soft">
       <div className="container mx-auto p-4 lg:p-6">
         <div className="mb-6 lg:mb-8">
           <h1 className="text-3xl lg:text-4xl font-bold text-email-primary mb-2">
@@ -32,7 +32,7 @@ export const EmailCampaignApp = () => {
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4 lg:space-y-6">
           {/* Mobile-optimized TabsList */}
           <div className="w-full overflow-x-auto">
-            <TabsList className="grid grid-cols-4 lg:grid-cols-8 bg-email-muted min-w-full lg:w-full gap-1">
+            <TabsList className="grid grid-cols-4 lg:grid-cols-8 bg-muted min-w-full lg:w-full gap-1">
               <TabsTrigger 
                 value="compose" 
                 className="flex flex-col lg:flex-row items-center space-y-1 lg:space-y-0 lg:space-x-2 text-xs lg:text-sm p-2 lg:p-3"
