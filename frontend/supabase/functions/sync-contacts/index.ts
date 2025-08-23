@@ -23,6 +23,65 @@ serve(async (req) => {
 
     console.log('Received webhook payload:', payload);
 
+    // Handle unsubscribes format
+    if (payload.unsubscribes && Array.isArray(payload.unsubscribes)) {
+      console.log('Processing unsubscribes...');
+      
+      const results = [];
+      for (const unsubscribe of payload.unsubscribes) {
+        const { email, reason = 'No longer interested' } = unsubscribe;
+        
+        if (!email) {
+          console.error('Email missing in unsubscribe entry:', unsubscribe);
+          continue;
+        }
+
+        try {
+          // Add to unsubscribes table (user_id will be auto-populated by trigger)
+          const { data: unsubscribeData, error: unsubscribeError } = await supabase
+            .from('unsubscribes')
+            .insert({
+              email,
+              reason
+            })
+            .select()
+            .single();
+
+          if (unsubscribeError) {
+            console.error('Error adding unsubscribe:', unsubscribeError);
+            results.push({ email, success: false, error: unsubscribeError.message });
+            continue;
+          }
+
+          // Update contact status to unsubscribed
+          const { error: contactError } = await supabase
+            .from('contacts')
+            .update({ status: 'unsubscribed' })
+            .eq('email', email);
+
+          if (contactError) {
+            console.error('Error updating contact status:', contactError);
+          }
+
+          console.log(`Processed unsubscribe for: ${email}`);
+          results.push({ email, success: true, unsubscribe: unsubscribeData });
+
+        } catch (error) {
+          console.error(`Error processing unsubscribe for ${email}:`, error);
+          results.push({ email, success: false, error: error.message });
+        }
+      }
+
+      return new Response(JSON.stringify({ 
+        success: true, 
+        results,
+        message: `Processed ${results.length} unsubscribe(s)`
+      }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    // Handle regular contact sync format
     // Expected format from Google Sheets via Make.com:
     // {
     //   "email": "customer@example.com",
