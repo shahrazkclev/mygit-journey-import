@@ -124,60 +124,36 @@ export const SendCampaignModal: React.FC<SendCampaignModalProps> = ({
     setStartTime(new Date());
 
     try {
-      // First create campaign in Supabase for tracking
-      const { data: supabaseCampaign, error: supabaseError } = await supabase
-        .from('campaigns')
-        .insert({
-          user_id: DEMO_USER_ID,
-          name: campaignName,
-          subject: campaignTitle,
-          html_content: htmlContent,
-          list_ids: selectedLists,
-          sender_sequence_number: senderSequence,
-          webhook_url: webhookUrl,
-          status: 'sending'
-        })
-        .select()
-        .single();
+      console.log('🚀 Starting campaign with:', { campaignName, selectedLists, webhookUrl });
+      
+      // Create campaign via backend API which should start sending immediately
+      const campaignResponse = await api.createCampaign({
+        title: campaignName,
+        subject: campaignTitle,
+        html_content: htmlContent,
+        selected_lists: selectedLists,
+        sender_sequence: senderSequence,
+        webhook_url: webhookUrl
+      });
 
-      if (supabaseError) {
-        throw new Error(`Failed to create campaign record: ${supabaseError.message}`);
+      if (!campaignResponse.ok) {
+        const errorText = await campaignResponse.text();
+        throw new Error(`Backend API failed: ${campaignResponse.status} - ${errorText}`);
       }
 
-      setCampaignId(supabaseCampaign.id);
+      const campaign = await campaignResponse.json();
+      console.log('✅ Campaign created:', campaign);
+      
+      setCampaignId(campaign.id);
+      setStatus('sending');
+      toast.success('Campaign started! Sending in background...');
 
-      // Then send to backend for processing
-      try {
-        const campaignResponse = await api.createCampaign({
-          title: campaignName,
-          subject: campaignTitle,
-          html_content: htmlContent,
-          selected_lists: selectedLists,
-          sender_sequence: senderSequence,
-          webhook_url: webhookUrl
-        });
-
-        const campaign = await campaignResponse.json();
-        
-        setStatus('sending');
-        toast.success('Campaign started! Sending in background...');
-
-        // Start monitoring progress
-        monitorProgress(supabaseCampaign.id);
-
-      } catch (backendError: any) {
-        // Backend failed but we still have the campaign in Supabase - mark as failed
-        await supabase
-          .from('campaigns')
-          .update({ status: 'failed' })
-          .eq('id', supabaseCampaign.id);
-        
-        throw backendError;
-      }
+      // Start monitoring progress
+      monitorProgress(campaign.id);
 
     } catch (error: any) {
-      console.error('Error starting campaign:', error);
-      toast.error(error.message || 'Failed to start campaign');
+      console.error('❌ Error starting campaign:', error);
+      toast.error(`Failed to start: ${error.message}`);
       setStatus('failed');
       setErrorMessage(error.message || 'Unknown error occurred');
     } finally {
@@ -186,17 +162,23 @@ export const SendCampaignModal: React.FC<SendCampaignModalProps> = ({
   };
 
   const monitorProgress = (id: string) => {
+    console.log('📊 Starting to monitor campaign:', id);
+    
     const interval = setInterval(async () => {
       try {
+        console.log('🔄 Checking campaign progress...');
         const response = await api.getCampaign(id);
         
         if (!response.ok) {
-          console.error('Error monitoring campaign:', response.statusText);
+          console.error('❌ Error monitoring campaign:', response.statusText);
           clearInterval(interval);
+          setStatus('failed');
+          setErrorMessage(`Monitoring failed: ${response.statusText}`);
           return;
         }
 
         const campaign = await response.json();
+        console.log('📈 Campaign status:', campaign);
 
         if (campaign) {
           setTotalRecipients(campaign.total_recipients || 0);
@@ -208,21 +190,26 @@ export const SendCampaignModal: React.FC<SendCampaignModalProps> = ({
           setErrorMessage(campaign.error_message);
           
           if (campaign.total_recipients > 0) {
-            setProgress((campaign.sent_count / campaign.total_recipients) * 100);
+            const progressPercent = (campaign.sent_count / campaign.total_recipients) * 100;
+            setProgress(progressPercent);
+            console.log(`📊 Progress: ${campaign.sent_count}/${campaign.total_recipients} (${progressPercent.toFixed(1)}%)`);
           }
 
           if (campaign.status === 'sent' || campaign.status === 'failed') {
             clearInterval(interval);
             const message = campaign.status === 'sent' 
               ? `✅ Campaign completed! Sent to ${campaign.sent_count} recipients.`
-              : `❌ Campaign failed. Sent to ${campaign.sent_count} out of ${campaign.total_recipients} recipients.`;
+              : `❌ Campaign failed: ${campaign.error_message || 'Unknown error'}`;
             
             toast.success(message);
+            console.log('🏁 Campaign finished:', campaign.status);
           }
         }
       } catch (error) {
-        console.error('Error monitoring campaign:', error);
+        console.error('❌ Error monitoring campaign:', error);
         clearInterval(interval);
+        setStatus('failed');
+        setErrorMessage('Monitoring failed - check console');
       }
     }, 2000); // Check every 2 seconds for more responsive updates
 
