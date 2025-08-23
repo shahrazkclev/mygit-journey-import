@@ -231,67 +231,63 @@ export const EditablePreview: React.FC<EditablePreviewProps> = ({
     const doc = iframe.contentDocument || iframe.contentWindow?.document;
     if (!doc) return;
 
-    saveToHistory();
+    try {
+      saveToHistory();
 
-    // Remove existing global font settings
-    const existingStyle = doc.getElementById('global-font-settings');
-    if (existingStyle) {
-      existingStyle.remove();
-    }
+      // Remove existing global font settings
+      const existingStyle = doc.getElementById('global-font-settings');
+      if (existingStyle) {
+        existingStyle.remove();
+      }
 
-    // Create new style element with comprehensive font settings
-    const styleEl = doc.createElement('style');
-    styleEl.id = 'global-font-settings';
-    styleEl.textContent = `
-      /* Global font settings - highest specificity */
-      body, body *, p, div, span, h1, h2, h3, h4, h5, h6, td, th, li, a {
-        font-family: ${currentFontFamily} !important;
-        font-size: ${currentFontSize}px !important;
-        line-height: ${currentLineHeight} !important;
-      }
+      // Create new style element with font settings
+      const styleEl = doc.createElement('style');
+      styleEl.id = 'global-font-settings';
+      styleEl.type = 'text/css';
       
-      /* Headings with proportional sizing */
-      h1, h1 * { font-size: ${Math.round(parseInt(currentFontSize) * 1.8)}px !important; line-height: 1.3 !important; }
-      h2, h2 * { font-size: ${Math.round(parseInt(currentFontSize) * 1.6)}px !important; line-height: 1.3 !important; }
-      h3, h3 * { font-size: ${Math.round(parseInt(currentFontSize) * 1.4)}px !important; line-height: 1.3 !important; }
-      h4, h4 * { font-size: ${Math.round(parseInt(currentFontSize) * 1.2)}px !important; line-height: 1.3 !important; }
-      h5, h5 * { font-size: ${parseInt(currentFontSize)}px !important; line-height: 1.3 !important; }
-      h6, h6 * { font-size: ${Math.round(parseInt(currentFontSize) * 0.9)}px !important; line-height: 1.3 !important; }
+      // Simple but effective CSS that won't break the layout
+      const css = `
+        body, body p, body div, body span, body td, body th, body li, body a, body button {
+          font-family: ${currentFontFamily} !important;
+          font-size: ${currentFontSize}px !important;
+          line-height: ${currentLineHeight} !important;
+        }
+        
+        h1 { font-family: ${currentFontFamily} !important; font-size: ${Math.round(parseInt(currentFontSize) * 1.8)}px !important; line-height: 1.3 !important; }
+        h2 { font-family: ${currentFontFamily} !important; font-size: ${Math.round(parseInt(currentFontSize) * 1.6)}px !important; line-height: 1.3 !important; }
+        h3 { font-family: ${currentFontFamily} !important; font-size: ${Math.round(parseInt(currentFontSize) * 1.4)}px !important; line-height: 1.3 !important; }
+        h4 { font-family: ${currentFontFamily} !important; font-size: ${Math.round(parseInt(currentFontSize) * 1.2)}px !important; line-height: 1.3 !important; }
+        h5 { font-family: ${currentFontFamily} !important; font-size: ${parseInt(currentFontSize)}px !important; line-height: 1.3 !important; }
+        h6 { font-family: ${currentFontFamily} !important; font-size: ${Math.round(parseInt(currentFontSize) * 0.9)}px !important; line-height: 1.3 !important; }
+      `;
       
-      /* Button and link styling */
-      .button, a.button, .btn, a.btn {
-        font-family: ${currentFontFamily} !important;
-        font-size: ${Math.round(parseInt(currentFontSize) * 0.9)}px !important;
-      }
+      styleEl.textContent = css;
       
-      /* Small text elements */
-      small, .small, .text-small {
-        font-size: ${Math.round(parseInt(currentFontSize) * 0.8)}px !important;
+      // Safely insert the style into the document
+      if (doc.head) {
+        doc.head.appendChild(styleEl);
+      } else if (doc.body) {
+        doc.body.insertAdjacentElement('afterbegin', styleEl);
       }
-    `;
-    
-    // Insert the style into the document head
-    if (doc.head) {
-      doc.head.appendChild(styleEl);
-    } else {
-      // If no head, insert at the beginning of the document
-      doc.documentElement.insertBefore(styleEl, doc.documentElement.firstChild);
-    }
 
-    // Force a repaint by temporarily modifying and restoring body visibility
-    if (doc.body) {
-      const originalVisibility = doc.body.style.visibility;
-      doc.body.style.visibility = 'hidden';
+      // Update the parent component with the new HTML - but do it safely
       setTimeout(() => {
-        doc.body.style.visibility = originalVisibility;
-      }, 50);
+        try {
+          const updatedHtml = doc.documentElement.outerHTML;
+          onContentUpdate(updatedHtml);
+          toast.success(`Font applied: ${currentFontFamily.split(',')[0].replace(/'/g, '')}, ${currentFontSize}px`);
+        } catch (error) {
+          console.error('Error updating HTML:', error);
+          toast.error('Font applied but could not save changes');
+        }
+      }, 100);
+      
+      setShowFontControls(false);
+      
+    } catch (error) {
+      console.error('Error applying font settings:', error);
+      toast.error('Failed to apply font settings');
     }
-
-    const newHtml = doc.documentElement.outerHTML;
-    onContentUpdate(newHtml);
-    
-    toast.success(`Font settings applied: ${currentFontFamily.split(',')[0]}, ${currentFontSize}px, ${currentLineHeight} line height`);
-    setShowFontControls(false);
   };
 
   useEffect(() => {
