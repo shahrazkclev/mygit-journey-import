@@ -124,27 +124,56 @@ export const SendCampaignModal: React.FC<SendCampaignModalProps> = ({
     setStartTime(new Date());
 
     try {
-      const campaignResponse = await api.createCampaign({
-        title: campaignName,
-        subject: campaignTitle,
-        html_content: htmlContent,
-        selected_lists: selectedLists,
-        sender_sequence: senderSequence,
-        webhook_url: webhookUrl
-      });
+      // First create campaign in Supabase for tracking
+      const { data: supabaseCampaign, error: supabaseError } = await supabase
+        .from('campaigns')
+        .insert({
+          user_id: DEMO_USER_ID,
+          name: campaignName,
+          subject: campaignTitle,
+          html_content: htmlContent,
+          list_ids: selectedLists,
+          sender_sequence_number: senderSequence,
+          webhook_url: webhookUrl,
+          status: 'sending'
+        })
+        .select()
+        .single();
 
-      if (!campaignResponse.ok) {
-        throw new Error(`Failed to create campaign: ${campaignResponse.statusText}`);
+      if (supabaseError) {
+        throw new Error(`Failed to create campaign record: ${supabaseError.message}`);
       }
 
-      const campaign = await campaignResponse.json();
-      setCampaignId(campaign.id);
+      setCampaignId(supabaseCampaign.id);
 
-      setStatus('sending');
-      toast.success('Campaign started! Sending in background...');
+      // Then send to backend for processing
+      try {
+        const campaignResponse = await api.createCampaign({
+          title: campaignName,
+          subject: campaignTitle,
+          html_content: htmlContent,
+          selected_lists: selectedLists,
+          sender_sequence: senderSequence,
+          webhook_url: webhookUrl
+        });
 
-      // Start monitoring progress
-      monitorProgress(campaign.id);
+        const campaign = await campaignResponse.json();
+        
+        setStatus('sending');
+        toast.success('Campaign started! Sending in background...');
+
+        // Start monitoring progress
+        monitorProgress(supabaseCampaign.id);
+
+      } catch (backendError: any) {
+        // Backend failed but we still have the campaign in Supabase - mark as failed
+        await supabase
+          .from('campaigns')
+          .update({ status: 'failed' })
+          .eq('id', supabaseCampaign.id);
+        
+        throw backendError;
+      }
 
     } catch (error: any) {
       console.error('Error starting campaign:', error);
@@ -159,6 +188,35 @@ export const SendCampaignModal: React.FC<SendCampaignModalProps> = ({
   const monitorProgress = (id: string) => {
     const interval = setInterval(async () => {
       try {
+        // Monitor from Supabase first, fallback to backend
+        const { data: supabaseCampaign, error } = await supabase
+          .from('campaigns')
+          .select('*')
+          .eq('id', id)
+          .single();
+
+        if (!error && supabaseCampaign) {
+          setTotalRecipients(supabaseCampaign.total_recipients || 0);
+          setSentCount(supabaseCampaign.sent_count || 0);
+          setCurrentSenderSequence(supabaseCampaign.sender_sequence_number || 1);
+          setStatus(supabaseCampaign.status as any);
+          
+          if (supabaseCampaign.total_recipients > 0) {
+            setProgress((supabaseCampaign.sent_count / supabaseCampaign.total_recipients) * 100);
+          }
+
+          if (supabaseCampaign.status === 'sent' || supabaseCampaign.status === 'failed') {
+            clearInterval(interval);
+            const message = supabaseCampaign.status === 'sent' 
+              ? `✅ Campaign completed! Sent to ${supabaseCampaign.sent_count} recipients.`
+              : `❌ Campaign failed. Check backend logs for details.`;
+            
+            toast.success(message);
+          }
+          return;
+        }
+
+        // Fallback to backend monitoring
         const response = await api.getCampaign(id);
         
         if (!response.ok) {
