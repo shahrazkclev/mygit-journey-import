@@ -75,10 +75,7 @@ export const CampaignComposer: React.FC<CampaignComposerProps> = ({ onSave }) =>
       prompt, 
       generatedTemplate, 
       selectedLists, 
-      themeColors,
-      emailFontFamily,
-      emailFontSize,
-      emailLineHeight
+      themeColors
     };
     try {
       localStorage.setItem(DRAFT_KEY, JSON.stringify(draft));
