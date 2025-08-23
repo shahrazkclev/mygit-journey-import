@@ -455,38 +455,20 @@ export const EditablePreview: React.FC<EditablePreviewProps> = ({
             </Button>
             
             {/* Color Picker */}
-            <div className="relative" ref={colorPickerRef}>
-              <Button 
-                size="sm" 
-                variant="ghost" 
-                className="h-7 px-2"
-                onMouseDown={(e)=>e.preventDefault()}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setShowColorPicker(!showColorPicker);
-                  setShowEmojiPicker(false);
-                  setShowFontControls(false);
-                }}
-              >
-                <Palette className="h-3 w-3" />
-              </Button>
-              
-              {showColorPicker && (
-                <div className="absolute top-8 left-0 z-50 bg-background border rounded-lg shadow-lg p-2 grid grid-cols-4 gap-1 w-32">
-                  {colors.map((color, index) => (
-                    <button
-                      key={index}
-                      className="w-6 h-6 rounded border hover:scale-110 transition-transform"
-                      style={{ backgroundColor: color }}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        changeTextColor(color);
-                      }}
-                    />
-                  ))}
-                </div>
-              )}
-            </div>
+            <Button 
+              size="sm" 
+              variant="ghost" 
+              className="h-7 px-2"
+              onMouseDown={(e)=>e.preventDefault()}
+              onClick={(e) => {
+                e.stopPropagation();
+                setShowColorPicker(!showColorPicker);
+                setShowEmojiPicker(false);
+                setShowFontControls(false);
+              }}
+            >
+              <Palette className="h-3 w-3" />
+            </Button>
             
             <Button size="sm" variant="ghost" className="h-7 px-2" onMouseDown={(e)=>e.preventDefault()} onClick={insertBulletList}>
               <List className="h-3 w-3" />
