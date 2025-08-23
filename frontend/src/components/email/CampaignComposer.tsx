@@ -529,14 +529,11 @@ export const CampaignComposer: React.FC<CampaignComposerProps> = ({ onSave }) =>
             primaryColor: styleGuide.primary_color,
             secondaryColor: styleGuide.secondary_color,
             accentColor: styleGuide.accent_color,
-            fontFamily: emailFontFamily, // Use selected font family
             tone: styleGuide.tone,
             brandVoice: styleGuide.brand_voice,
             logoUrl: styleGuide.logo_url,
             emailSignature: styleGuide.email_signature,
-          } : {
-            fontFamily: emailFontFamily, // Fallback font family
-          },
+          } : undefined,
           templatePreview: styleGuide?.template_preview,
           // Add font customization to the AI generation request
           fontOptions: {
