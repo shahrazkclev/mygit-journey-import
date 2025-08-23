@@ -44,6 +44,8 @@ All colors MUST be HSL.
     --email-accent: 160 45% 68%;
     --email-success: 140 45% 65%;
     --email-warning: 45 85% 65%;
+    --email-background: 44 20% 98%;
+    --email-muted: 210 40% 96%;
     
     /* Dynamic theme colors (updated by StyleGuide component) */
     --theme-primary: 268 75% 65%;

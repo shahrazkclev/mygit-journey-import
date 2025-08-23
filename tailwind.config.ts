@@ -57,7 +57,9 @@ export default {
 					secondary: 'hsl(var(--email-secondary))',
 					accent: 'hsl(var(--email-accent))',
 					success: 'hsl(var(--email-success))',
-					warning: 'hsl(var(--email-warning))'
+					warning: 'hsl(var(--email-warning))',
+					background: 'hsl(var(--email-background))',
+					muted: 'hsl(var(--email-muted))'
 				},
 				sidebar: {
 					DEFAULT: 'hsl(var(--sidebar-background))',

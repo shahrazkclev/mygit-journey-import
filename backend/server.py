@@ -25,7 +25,13 @@ try:
         base_url = mongo_url.split('?')[0]
         mongo_url = base_url
     
-    client = AsyncIOMotorClient(mongo_url, serverSelectionTimeoutMS=5000)
+    # Create client without any proxy-related parameters
+    client = AsyncIOMotorClient(
+        mongo_url, 
+        serverSelectionTimeoutMS=5000,
+        connectTimeoutMS=5000,
+        socketTimeoutMS=5000
+    )
     db = client[os.environ.get('DB_NAME', 'email_campaigns')]
     
     # Test the connection
