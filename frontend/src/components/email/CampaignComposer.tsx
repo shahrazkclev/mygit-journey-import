@@ -64,9 +64,6 @@ export const CampaignComposer: React.FC<CampaignComposerProps> = ({ onSave }) =>
         if (typeof d.generatedTemplate === 'string') setGeneratedTemplate(d.generatedTemplate);
         if (Array.isArray(d.selectedLists)) setSelectedLists(d.selectedLists);
         if (d.themeColors) { setThemeColors(d.themeColors); setColorsInitialized(true); }
-        if (d.emailFontFamily) setEmailFontFamily(d.emailFontFamily);
-        if (d.emailFontSize) setEmailFontSize(d.emailFontSize);
-        if (d.emailLineHeight) setEmailLineHeight(d.emailLineHeight);
       }
     } catch {}
   }, []);
