@@ -9,6 +9,7 @@ import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { DEMO_USER_ID } from '@/lib/demo-auth';
+import { api } from '@/lib/api';
 
 interface SendCampaignModalProps {
   isOpen: boolean;
@@ -123,22 +124,13 @@ export const SendCampaignModal: React.FC<SendCampaignModalProps> = ({
     setStartTime(new Date());
 
     try {
-      // Create campaign record via our FastAPI backend
-      const backendUrl = import.meta.env.REACT_APP_BACKEND_URL || 'http://localhost:8001';
-      
-      const campaignResponse = await fetch(`${backendUrl}/api/campaigns`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          title: campaignName,
-          subject: campaignTitle,
-          html_content: htmlContent,
-          selected_lists: selectedLists,
-          sender_sequence: senderSequence,
-          webhook_url: webhookUrl
-        })
+      const campaignResponse = await api.createCampaign({
+        title: campaignName,
+        subject: campaignTitle,
+        html_content: htmlContent,
+        selected_lists: selectedLists,
+        sender_sequence: senderSequence,
+        webhook_url: webhookUrl
       });
 
       if (!campaignResponse.ok) {
@@ -167,9 +159,7 @@ export const SendCampaignModal: React.FC<SendCampaignModalProps> = ({
   const monitorProgress = (id: string) => {
     const interval = setInterval(async () => {
       try {
-        const backendUrl = import.meta.env.REACT_APP_BACKEND_URL || 'http://localhost:8001';
-        
-        const response = await fetch(`${backendUrl}/api/campaigns/${id}`);
+        const response = await api.getCampaign(id);
         
         if (!response.ok) {
           console.error('Error monitoring campaign:', response.statusText);
@@ -215,19 +205,11 @@ export const SendCampaignModal: React.FC<SendCampaignModalProps> = ({
     if (!campaignId) return;
 
     try {
-      const backendUrl = import.meta.env.REACT_APP_BACKEND_URL || 'http://localhost:8001';
       const newStatus = status === 'sending' ? 'paused' : 'sending';
       
-      const endpoint = newStatus === 'paused' 
-        ? `${backendUrl}/api/campaigns/${campaignId}/pause`
-        : `${backendUrl}/api/campaigns/${campaignId}/resume`;
-      
-      const response = await fetch(endpoint, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        }
-      });
+      const response = newStatus === 'paused'
+        ? await api.pauseCampaign(campaignId)
+        : await api.resumeCampaign(campaignId);
 
       if (!response.ok) {
         throw new Error(`Failed to ${newStatus === 'paused' ? 'pause' : 'resume'} campaign`);
