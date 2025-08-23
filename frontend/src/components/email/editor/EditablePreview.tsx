@@ -584,6 +584,73 @@ export const EditablePreview: React.FC<EditablePreviewProps> = ({
           </div>
         </div>
       )}
+
+      {/* Color Picker Modal */}
+      {showColorPicker && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/20" onClick={() => setShowColorPicker(false)}>
+          <div className="bg-background border rounded-lg shadow-xl p-6 w-80 max-w-[90vw]" onClick={(e) => e.stopPropagation()}>
+            <div className="space-y-4">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-semibold">Text Colors</h3>
+                <Button variant="ghost" size="sm" onClick={() => setShowColorPicker(false)}>×</Button>
+              </div>
+              
+              <div className="grid grid-cols-4 gap-3">
+                {colors.map((color, index) => (
+                  <button
+                    key={index}
+                    className="w-12 h-12 rounded-lg border-2 border-gray-200 hover:border-gray-400 hover:scale-105 transition-all duration-200 shadow-sm"
+                    style={{ backgroundColor: color }}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      changeTextColor(color);
+                    }}
+                    title={`Apply ${color}`}
+                  />
+                ))}
+              </div>
+
+              <div className="pt-4 border-t text-sm text-muted-foreground text-center">
+                Select text first, then choose a color
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Emoji Picker Modal */}
+      {showEmojiPicker && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/20" onClick={() => setShowEmojiPicker(false)}>
+          <div className="bg-background border rounded-lg shadow-xl p-6 w-80 max-w-[90vw] max-h-[80vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+            <div className="space-y-4">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-semibold">Insert Emoji</h3>
+                <Button variant="ghost" size="sm" onClick={() => setShowEmojiPicker(false)}>×</Button>
+              </div>
+              
+              <div className="grid grid-cols-6 gap-2">
+                {emojis.map((emoji, index) => (
+                  <button
+                    key={index}
+                    className="w-10 h-10 hover:bg-muted rounded-lg text-xl transition-colors duration-200 flex items-center justify-center"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      insertEmoji(emoji);
+                    }}
+                    title={`Insert ${emoji}`}
+                  >
+                    {emoji}
+                  </button>
+                ))}
+              </div>
+
+              <div className="pt-4 border-t text-sm text-muted-foreground text-center">
+                Click an emoji to insert it at cursor position
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
