@@ -612,8 +612,8 @@ export const CampaignComposer: React.FC<CampaignComposerProps> = ({ onSave }) =>
                                         <div style="width: 40px; height: 40px; background: linear-gradient(135deg, ${themeColors.primary}, ${themeColors.accent}); border-radius: 10px; margin: 0 auto 12px; display: flex; align-items: center; justify-content: center;">
                                             <span style="color: white; font-size: 16px;">✨</span>
                                         </div>
-                                        <h4 style="margin: 0 0 6px 0; color: #334155; font-size: 13px; font-weight: 600; font-family: ${emailFontFamily};">Premium</h4>
-                                        <p style="margin: 0; color: #64748b; font-size: 12px; font-family: ${emailFontFamily};">Quality first</p>
+                                        <h4 style="margin: 0 0 6px 0; color: #334155; font-size: 13px; font-weight: 600; font-family: Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;">Premium</h4>
+                                        <p style="margin: 0; color: #64748b; font-size: 12px; font-family: Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;">Quality first</p>
                                     </div>
                                     <div style="flex: 1; background: #f8fafc; border-radius: 12px; padding: 20px; text-align: center; border: 1px solid #e2e8f0;">
                                         <div style="width: 40px; height: 40px; background: linear-gradient(135deg, ${themeColors.accent}, ${themeColors.secondary}); border-radius: 10px; margin: 0 auto 12px; display: flex; align-items: center; justify-content: center;">
