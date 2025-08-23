@@ -376,10 +376,9 @@ export const EditablePreview: React.FC<EditablePreviewProps> = ({
       const target = e.target as Node;
       if (colorPickerRef.current && colorPickerRef.current.contains(target)) return;
       if (emojiPickerRef.current && emojiPickerRef.current.contains(target)) return;
-      if (fontControlsRef.current && fontControlsRef.current.contains(target)) return;
+      // Don't close font controls via outside click since it's now a modal
       setShowColorPicker(false);
       setShowEmojiPicker(false);
-      setShowFontControls(false);
     };
     
     document.addEventListener('click', handleOutsideClick as any);
