@@ -121,40 +121,30 @@ export const SendCampaignModal: React.FC<SendCampaignModalProps> = ({
     setStartTime(new Date());
 
     try {
-      // Create campaign record
-      const { data: campaign, error: campaignError } = await supabase
-        .from('campaigns')
-        .insert({
-          user_id: DEMO_USER_ID,
-          name: campaignName,
+      // Create campaign record via our FastAPI backend
+      const backendUrl = import.meta.env.REACT_APP_BACKEND_URL || 'http://localhost:8001';
+      
+      const campaignResponse = await fetch(`${backendUrl}/api/campaigns`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          title: campaignName,
           subject: campaignTitle,
           html_content: htmlContent,
-          list_ids: selectedLists,
-          status: 'draft',
-          webhook_url: webhookUrl,
-          sender_sequence_number: senderSequence,
-          total_recipients: totalRecipients
+          selected_lists: selectedLists,
+          sender_sequence: senderSequence,
+          webhook_url: webhookUrl
         })
-        .select()
-        .single();
-
-      if (campaignError) throw campaignError;
-
-      setCampaignId(campaign.id);
-
-      // Start the background sending process
-      const { error: sendError } = await supabase.functions.invoke('send-campaign', {
-        body: {
-          campaignId: campaign.id,
-          webhookUrl,
-          title: campaignTitle,
-          html: htmlContent,
-          name: campaignName,
-          senderSequenceNumber: senderSequence
-        }
       });
 
-      if (sendError) throw sendError;
+      if (!campaignResponse.ok) {
+        throw new Error(`Failed to create campaign: ${campaignResponse.statusText}`);
+      }
+
+      const campaign = await campaignResponse.json();
+      setCampaignId(campaign.id);
 
       setStatus('sending');
       toast.success('Campaign started! Sending in background...');
