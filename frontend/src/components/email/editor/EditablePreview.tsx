@@ -419,61 +419,69 @@ export const EditablePreview: React.FC<EditablePreviewProps> = ({
               </Button>
               
               {showFontControls && (
-                <div className="absolute top-8 left-0 z-50 bg-background border rounded-lg shadow-lg p-4 w-80">
-                  <div className="space-y-4">
-                    <div>
-                      <Label className="text-xs font-medium mb-1 block">Font Family</Label>
-                      <Select value={currentFontFamily} onValueChange={setCurrentFontFamily}>
-                        <SelectTrigger className="h-8 text-xs">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {fontOptions.map(font => (
-                            <SelectItem key={font.value} value={font.value} className="text-xs">
-                              {font.label}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-3">
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/20" onClick={() => setShowFontControls(false)}>
+                  <div className="bg-background border rounded-lg shadow-xl p-6 w-96 max-w-[90vw] max-h-[80vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+                    <div className="space-y-4">
+                      <div className="flex items-center justify-between mb-4">
+                        <h3 className="text-lg font-semibold">Font Settings</h3>
+                        <Button variant="ghost" size="sm" onClick={() => setShowFontControls(false)}>×</Button>
+                      </div>
+                      
                       <div>
-                        <Label className="text-xs font-medium mb-1 block">Font Size</Label>
-                        <Select value={currentFontSize} onValueChange={setCurrentFontSize}>
-                          <SelectTrigger className="h-8 text-xs">
+                        <Label className="text-sm font-medium mb-2 block">Font Family</Label>
+                        <Select value={currentFontFamily} onValueChange={setCurrentFontFamily}>
+                          <SelectTrigger className="h-10">
                             <SelectValue />
                           </SelectTrigger>
                           <SelectContent>
-                            {['12', '13', '14', '15', '16', '17', '18', '20', '22', '24', '28', '32'].map(size => (
-                              <SelectItem key={size} value={size} className="text-xs">{size}px</SelectItem>
+                            {fontOptions.map(font => (
+                              <SelectItem key={font.value} value={font.value}>
+                                {font.label}
+                              </SelectItem>
                             ))}
                           </SelectContent>
                         </Select>
                       </div>
 
-                      <div>
-                        <Label className="text-xs font-medium mb-1 block">Line Height</Label>
-                        <Select value={currentLineHeight} onValueChange={setCurrentLineHeight}>
-                          <SelectTrigger className="h-8 text-xs">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {['1.2', '1.3', '1.4', '1.5', '1.6', '1.7', '1.8', '2.0'].map(height => (
-                              <SelectItem key={height} value={height} className="text-xs">{height}</SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <Label className="text-sm font-medium mb-2 block">Font Size</Label>
+                          <Select value={currentFontSize} onValueChange={setCurrentFontSize}>
+                            <SelectTrigger className="h-10">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {['12', '13', '14', '15', '16', '17', '18', '20', '22', '24', '28', '32'].map(size => (
+                                <SelectItem key={size} value={size}>{size}px</SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+
+                        <div>
+                          <Label className="text-sm font-medium mb-2 block">Line Height</Label>
+                          <Select value={currentLineHeight} onValueChange={setCurrentLineHeight}>
+                            <SelectTrigger className="h-10">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {['1.2', '1.3', '1.4', '1.5', '1.6', '1.7', '1.8', '2.0'].map(height => (
+                                <SelectItem key={height} value={height}>{height}</SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      </div>
+
+                      <div className="pt-4 border-t">
+                        <Button 
+                          onClick={applyGlobalFontSettings}
+                          className="w-full bg-primary hover:bg-primary/80"
+                        >
+                          Apply Font Settings to Entire Email
+                        </Button>
                       </div>
                     </div>
-
-                    <Button 
-                      onClick={applyGlobalFontSettings}
-                      size="sm"
-                      className="w-full bg-primary hover:bg-primary/80 text-xs"
-                    >
-                      Apply Font Settings to Entire Email
-                    </Button>
                   </div>
                 </div>
               )}
