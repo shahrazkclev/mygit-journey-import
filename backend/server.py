@@ -280,13 +280,14 @@ async def send_campaign_background(campaign_id: str):
                     sent_count += 1
                     logging.info(f"✅ Email {sent_count} simulated to {recipient['email']} with sender sequence {current_sender_sequence}")
                 
-                # Update progress
+                # Update progress (including current_recipient to maintain it)
                 await db.campaigns.update_one(
                     {"id": campaign_id},
                     {"$set": {
                         "sent_count": sent_count,
                         "failed_count": failed_count,
-                        "current_sender_sequence": current_sender_sequence
+                        "current_sender_sequence": current_sender_sequence,
+                        "current_recipient": recipient["email"]
                     }}
                 )
                 
