@@ -26,15 +26,19 @@ serve(async (req) => {
 3. Content prompt: ${prompt}
 4. Keep it professional but friendly
 5. Include clear call-to-action if relevant
-6. MANDATORY: End with an unsubscribe line: "If you no longer wish to receive these emails, you can unsubscribe here."
-7. Do NOT add signatures - that's handled by the template
+6. Add subtle brand color highlights using simple containers or accents that complement the design
+7. MANDATORY: End with this exact unsubscribe text at the very bottom: "If you no longer wish to receive these emails, you can unsubscribe here."
+8. Do NOT add signatures - that's handled by the template
 
-CRITICAL: You MUST use "Hey {{name}}," at the start and include the unsubscribe text at the end.
+CRITICAL: 
+- Use "Hey {{name}}," at the start
+- Put unsubscribe text at the very bottom, separated nicely
+- Add light brand color touches (containers, borders, highlights) that enhance readability
 
 Example format:
 Hey {{name}},
 
-[Your email content here...]
+[Your email content here with subtle brand color containers...]
 
 If you no longer wish to receive these emails, you can unsubscribe here.
 
@@ -71,7 +75,7 @@ Return only the email body content (no HTML tags).`;
 
     console.log('✅ [generate-email] Placeholder ensured:', aiContent.slice(0, 60));
 
-    // Add unsubscribe link at the end if not present
+    // Add unsubscribe link at the very bottom if not present
     if (!aiContent.toLowerCase().includes('unsubscribe')) {
       aiContent += '\n\nIf you no longer wish to receive these emails, you can unsubscribe here.';
     }
@@ -79,16 +83,21 @@ Return only the email body content (no HTML tags).`;
     // Clean and format the AI content
     const safeContent = aiContent.replace(/</g, '&lt;').replace(/>/g, '&gt;');
     
-    // Convert unsubscribe text to link and process paragraphs
+    // Convert unsubscribe text to link and add proper styling
     const contentWithUnsubscribe = safeContent.replace(
       /If you no longer wish to receive these emails, you can unsubscribe here\./g,
-      'If you no longer wish to receive these emails, you can <a href="https://unsub.cleverpoly.store/?email={{email}}" class="link">unsubscribe here</a>.'
+      '<div class="unsubscribe-footer">If you no longer wish to receive these emails, you can <a href="https://unsub.cleverpoly.store/?email={{email}}" class="link">unsubscribe here</a>.</div>'
     );
     
     const paragraphs = contentWithUnsubscribe
       .split('\n\n')
       .filter((p) => p.trim())
-      .map((p) => `<p class="paragraph">${p.trim()}</p>`)
+      .map((p) => {
+        if (p.includes('unsubscribe-footer')) {
+          return p; // Keep unsubscribe footer as-is
+        }
+        return `<p class="paragraph">${p.trim()}</p>`;
+      })
       .join('\n    ');
 
     // Style guide
@@ -150,6 +159,17 @@ Return only the email body content (no HTML tags).`;
     /* Footer */
     .footer { margin-top:28px; font-size:16px; line-height:1.7; color:#333333; font-family: ${signatureFont}; }
     .divider { height:1px; background:#E5E7EB; margin:28px 0; }
+    
+    /* Unsubscribe Footer */
+    .unsubscribe-footer { 
+      margin-top:32px; 
+      padding-top:20px; 
+      border-top:1px solid #E5E7EB; 
+      font-size:12px; 
+      color:#6B7280; 
+      text-align:center; 
+      line-height:1.5; 
+    }
 
     /* Responsive */
     @media (max-width: 640px) {
