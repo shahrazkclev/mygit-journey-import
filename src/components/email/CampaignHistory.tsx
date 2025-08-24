@@ -24,11 +24,14 @@ import {
   Zap,
   Filter,
   Search,
-  RefreshCw
+  RefreshCw,
+  Trash2,
+  AlertTriangle
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { DEMO_USER_ID } from '@/lib/demo-auth';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 
 interface Campaign {
   id: string;
@@ -66,6 +69,7 @@ export const CampaignHistory: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [campaignToDelete, setCampaignToDelete] = useState<Campaign | null>(null);
 
   // Stats
   const [stats, setStats] = useState({
@@ -123,11 +127,27 @@ export const CampaignHistory: React.FC = () => {
     }
   };
 
-  const refreshCampaigns = async () => {
-    setIsRefreshing(true);
-    await loadCampaigns();
-    setTimeout(() => setIsRefreshing(false), 500); // Minimum refresh animation time
-    toast.success('Campaigns refreshed');
+  const deleteCampaign = async (campaignId: string) => {
+    try {
+      const { error } = await supabase
+        .from('campaigns')
+        .delete()
+        .eq('id', campaignId)
+        .eq('user_id', DEMO_USER_ID);
+
+      if (error) {
+        console.error('Error deleting campaign:', error);
+        toast.error('Failed to delete campaign');
+        return;
+      }
+
+      toast.success('Campaign deleted successfully');
+      loadCampaigns();
+      setCampaignToDelete(null);
+    } catch (error) {
+      console.error('Error deleting campaign:', error);
+      toast.error('Failed to delete campaign');
+    }
   };
 
   const loadCampaignSends = async (campaignId: string) => {
@@ -136,13 +156,13 @@ export const CampaignHistory: React.FC = () => {
         .from('campaign_sends')
         .select('*')
         .eq('campaign_id', campaignId)
-        .order('sent_at', { ascending: false });
+        .order('created_at', { ascending: false });
 
       if (error) throw error;
       setCampaignSends(data || []);
     } catch (error) {
       console.error('Error loading campaign sends:', error);
-      toast.error('Failed to load campaign details');
+      toast.error('Failed to load campaign send details');
     }
   };
 
@@ -279,7 +299,10 @@ export const CampaignHistory: React.FC = () => {
         </div>
         
         <Button 
-          onClick={refreshCampaigns} 
+          onClick={() => {
+            setIsRefreshing(true);
+            loadCampaigns();
+          }} 
           disabled={isRefreshing}
           className="bg-email-primary hover:bg-email-primary/90 w-full lg:w-auto"
         >
@@ -454,9 +477,43 @@ export const CampaignHistory: React.FC = () => {
                         </div>
                       </div>
 
-                      <Button variant="ghost" size="sm" className="hover:bg-email-primary/10">
-                        <Eye className="h-4 w-4" />
-                      </Button>
+                      <div className="flex items-center space-x-2">
+                        <Button variant="ghost" size="sm" className="hover:bg-blue-50 hover:text-blue-600">
+                          <Eye className="h-4 w-4" />
+                        </Button>
+                        
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <Button variant="ghost" size="sm" className="hover:bg-red-50 hover:text-red-600">
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle className="flex items-center gap-2">
+                                <AlertTriangle className="h-5 w-5 text-red-600" />
+                                Delete Campaign
+                              </AlertDialogTitle>
+                              <AlertDialogDescription>
+                                Are you sure you want to delete "{campaign.name}"? This action cannot be undone.
+                                All campaign data and send history will be permanently removed.
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>Cancel</AlertDialogCancel>
+                              <AlertDialogAction 
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  deleteCampaign(campaign.id);
+                                }}
+                                className="bg-red-600 hover:bg-red-700"
+                              >
+                                Delete Campaign
+                              </AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
+                      </div>
                     </div>
                   </div>
                 </div>

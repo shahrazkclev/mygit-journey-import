@@ -184,11 +184,11 @@ export const SendCampaignModal: React.FC<SendCampaignModalProps> = ({
         if (campaign) {
           const total = campaign.total_recipients ?? 0;
           const sent = campaign.sent_count ?? 0;
+          const failed = total - sent; // Calculate failed count
 
           setTotalRecipients(total);
           setSentCount(sent);
-          // Failed count may not be tracked in DB; derive best-effort
-          setFailedCount(total > 0 ? Math.max(total - sent, 0) : 0);
+          setFailedCount(Math.max(failed, 0));
           setCurrentSenderSequence(campaign.sender_sequence_number || 1);
           setCurrentRecipient('');
           setStatus(campaign.status as any);
@@ -198,6 +198,11 @@ export const SendCampaignModal: React.FC<SendCampaignModalProps> = ({
             const progressPercent = (sent / total) * 100;
             setProgress(progressPercent);
             console.log(`📊 Progress: ${sent}/${total} (${progressPercent.toFixed(1)}%)`);
+          }
+
+          // Load individual send records for more detailed tracking
+          if (campaign.status === 'sending') {
+            loadCampaignSends(id, total, sent);
           }
 
           if (campaign.status === 'sent' || campaign.status === 'failed') {
@@ -216,10 +221,43 @@ export const SendCampaignModal: React.FC<SendCampaignModalProps> = ({
         setStatus('failed');
         setErrorMessage('Monitoring failed - check console');
       }
-    }, 2000); // Check every 2 seconds for more responsive updates
+    }, 1000); // Check every 1 second for more responsive updates
 
     // Clean up on component unmount
     return () => clearInterval(interval);
+  };
+
+  const loadCampaignSends = async (campaignId: string, total: number, sent: number) => {
+    try {
+      const { data: sends, error } = await supabase
+        .from('campaign_sends')
+        .select('contact_email, status, sent_at, error_message')
+        .eq('campaign_id', campaignId)
+        .order('created_at', { ascending: true });
+
+      if (error) {
+        console.error('Error loading campaign sends:', error);
+        return;
+      }
+
+      const details: RecipientDetails[] = sends?.map(send => ({
+        email: send.contact_email,
+        name: send.contact_email.split('@')[0],
+        status: send.status as any,
+        timestamp: send.sent_at || undefined,
+        error: send.error_message || undefined
+      })) || [];
+
+      setRecipientDetails(details);
+
+      // Set current recipient being processed
+      const pendingSend = details.find(d => d.status === 'pending');
+      if (pendingSend) {
+        setCurrentRecipient(pendingSend.email);
+      }
+    } catch (error) {
+      console.error('Error loading campaign sends:', error);
+    }
   };
 
   const pauseResumeCampaign = async () => {
@@ -468,46 +506,47 @@ export const SendCampaignModal: React.FC<SendCampaignModalProps> = ({
                   <div className="text-2xl font-bold text-red-600">{failedCount}</div>
                   <div className="text-xs text-muted-foreground">Failed</div>
                 </div>
-                <div className="bg-email-accent/10 rounded-lg p-3 border border-email-accent/20">
-                  <div className="text-2xl font-bold text-email-accent">{currentSenderSequence}</div>
+                <div className="bg-blue-50 rounded-lg p-3 border border-blue-200">
+                  <div className="text-2xl font-bold text-blue-600">{currentSenderSequence}</div>
                   <div className="text-xs text-muted-foreground">Sender #</div>
                 </div>
               </div>
 
-              {/* Current Activity */}
-              {currentRecipient && status === 'sending' && (
-                <div className="bg-gradient-to-r from-blue-50 to-email-accent/10 border border-blue-200 rounded-lg p-3">
-                  <div className="flex items-center gap-2">
-                    <div className="flex">
-                      <Send className="h-4 w-4 text-blue-600 animate-pulse" />
-                    </div>
-                    <div className="text-sm">
-                      <div className="font-medium text-blue-800">Currently sending to:</div>
-                      <div className="text-blue-600 font-mono text-xs break-all">{currentRecipient}</div>
-                    </div>
-                  </div>
+              {/* Current Recipient */}
+              {currentRecipient && (
+                <div className="bg-muted/50 rounded-lg p-3 border">
+                  <div className="text-sm font-medium text-muted-foreground">Currently Processing:</div>
+                  <div className="text-sm font-mono">{currentRecipient}</div>
                 </div>
               )}
 
-              {/* Campaign Info */}
-              <div className="bg-email-background/50 border border-email-primary/10 rounded-lg p-3">
-                <div className="text-xs text-muted-foreground mb-2">Campaign Details</div>
-                <div className="space-y-1 text-sm">
-                  <div><span className="font-medium">Subject:</span> {campaignTitle}</div>
-                  <div><span className="font-medium">Started:</span> {startTime?.toLocaleTimeString()}</div>
-                  <div><span className="font-medium">Lists:</span> {listNames.join(', ')}</div>
-                </div>
-              </div>
-
-              {/* Error Display */}
-              {errorMessage && (
-                <div className="bg-red-50 border border-red-200 rounded-lg p-3">
-                  <div className="flex items-start gap-2">
-                    <XCircle className="h-4 w-4 text-red-600 mt-0.5 flex-shrink-0" />
-                    <div className="text-sm text-red-800">
-                      <p className="font-medium">Error Details:</p>
-                      <p className="mt-1 text-xs">{errorMessage}</p>
-                    </div>
+              {/* Recipient Details Table */}
+              {recipientDetails.length > 0 && (
+                <div className="border rounded-lg max-h-60 overflow-y-auto">
+                  <div className="bg-muted/50 p-3 border-b">
+                    <h4 className="font-medium text-sm">Send Details</h4>
+                  </div>
+                  <div className="divide-y">
+                    {recipientDetails.map((recipient, index) => (
+                      <div key={index} className="p-3 flex items-center justify-between">
+                        <div className="flex-1">
+                          <div className="text-sm font-medium">{recipient.email}</div>
+                          {recipient.timestamp && (
+                            <div className="text-xs text-muted-foreground">
+                              {new Date(recipient.timestamp).toLocaleTimeString()}
+                            </div>
+                          )}
+                          {recipient.error && (
+                            <div className="text-xs text-red-600">{recipient.error}</div>
+                          )}
+                        </div>
+                        <div className="ml-2">
+                          {recipient.status === 'sent' && <CheckCircle className="h-4 w-4 text-green-600" />}
+                          {recipient.status === 'failed' && <XCircle className="h-4 w-4 text-red-600" />}
+                          {recipient.status === 'pending' && <Clock className="h-4 w-4 text-yellow-600 animate-pulse" />}
+                        </div>
+                      </div>
+                    ))}
                   </div>
                 </div>
               )}
