@@ -187,19 +187,19 @@ export const SendCampaignModal: React.FC<SendCampaignModalProps> = ({
         if (campaign) {
           const total = campaign.total_recipients ?? 0;
           const sent = campaign.sent_count ?? 0;
-          const failed = Math.max(0, total - sent); // Calculate remaining as potential failed
           const currentSenderSeq = campaign.sender_sequence_number || 1;
 
+          // Batch state updates to prevent flickering
           setTotalRecipients(total);
           setSentCount(sent);
-          setFailedCount(0); // Reset failed count, will be calculated properly
+          setFailedCount(0);
           setCurrentSenderSequence(currentSenderSeq);
-          setCurrentRecipient(''); // Clear current recipient since we don't track it
+          setCurrentRecipient('');
           setStatus(campaign.status as any);
           setErrorMessage((campaign as any).error_message);
           
           if (total > 0) {
-            const progressPercent = (sent / total) * 100;
+            const progressPercent = Math.min((sent / total) * 100, 100);
             setProgress(progressPercent);
             console.log(`📊 Progress: ${sent}/${total} (${progressPercent.toFixed(1)}%) - Sender #${currentSenderSeq}`);
           }
@@ -221,11 +221,16 @@ export const SendCampaignModal: React.FC<SendCampaignModalProps> = ({
         }
       } catch (error) {
         console.error('❌ Error monitoring campaign:', error);
-        clearInterval(interval);
-        setStatus('failed');
-        setErrorMessage('Monitoring failed - check console');
+        // Don't clear interval on temporary errors, just log them
+        if (error instanceof TypeError && error.message.includes('fetch')) {
+          console.log('🔄 Network error, retrying...');
+        } else {
+          clearInterval(interval);
+          setStatus('failed');
+          setErrorMessage('Monitoring failed - check console');
+        }
       }
-    }, 500); // Check every 500ms for more responsive updates
+    }, 1000); // Reduced frequency to 1 second to prevent flickering
 
     // Clean up on component unmount
     return () => clearInterval(interval);
@@ -265,12 +270,16 @@ export const SendCampaignModal: React.FC<SendCampaignModalProps> = ({
         };
       }) || [];
 
-      setRecipientDetails(details);
+      // Only update if there's actual change to prevent flickering
+      const hasChanged = JSON.stringify(details) !== JSON.stringify(recipientDetails);
+      if (hasChanged) {
+        setRecipientDetails(details);
 
-      // Set current recipient being processed
-      const pendingSend = details.find(d => d.status === 'pending');
-      if (pendingSend) {
-        setCurrentRecipient(pendingSend.email);
+        // Set current recipient being processed
+        const pendingSend = details.find(d => d.status === 'pending');
+        if (pendingSend && pendingSend.email !== currentRecipient) {
+          setCurrentRecipient(pendingSend.email);
+        }
       }
     } catch (error) {
       console.error('Error loading campaign sends:', error);
