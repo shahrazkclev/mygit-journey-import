@@ -18,22 +18,23 @@ serve(async (req) => {
     console.log('Generating AI content with beautiful styling');
 
     // Beautiful styling template with AI content
-    const systemPrompt = `You are creating email content that will be inserted into a beautiful, clean email template.
+    const systemPrompt = `You are creating email content. You MUST follow these requirements exactly:
 
-Create engaging email content for:
-Subject: "${subject}"
-Content: ${prompt}
+1. MANDATORY: Start with "Hey {{name}}," - DO NOT change this format
+2. Write engaging content for: "${subject}" 
+3. Content prompt: ${prompt}
+4. Keep it professional but friendly
+5. Include clear call-to-action if relevant
+6. End naturally without signatures
 
-Requirements:
-- Start with "Hey {{name}}," (ALWAYS include {{name}} placeholder for personalization)
-- Write natural, engaging content based on the prompt
-- Keep it professional but friendly
-- If it's about a product/service, include a clear call-to-action
-- End with a natural conclusion
-- Don't add "Best regards" or signatures - that's handled by the template
-- IMPORTANT: Use {{name}} placeholder where you want the recipient's name to appear
+CRITICAL: You MUST use "Hey {{name}}," at the start. Do not use "Hey," or any other greeting.
 
-Return ONLY the email body content (no HTML tags, just the text content).`;
+Example format:
+Hey {{name}},
+
+[Your email content here...]
+
+Return only the email body content (no HTML tags).`;
 
     const response = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
@@ -43,7 +44,7 @@ Return ONLY the email body content (no HTML tags, just the text content).`;
         'anthropic-version': '2023-06-01',
       },
       body: JSON.stringify({
-        model: 'claude-sonnet-4-20250514',
+        model: 'claude-opus-4-20250514',
         max_tokens: 1000,
         messages: [{
           role: 'user',
