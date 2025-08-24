@@ -91,7 +91,7 @@ serve(async (req) => {
     //   "user_id": "optional-user-id"
     // }
 
-    const { email, name, tags = [], action = 'create', user_id } = payload;
+    const { email, name, tags = [], action = 'create', user_id, status = 'subscribed' } = payload;
 
     if (!email) {
       return new Response(JSON.stringify({ error: 'Email is required' }), {
@@ -117,6 +117,7 @@ serve(async (req) => {
         first_name: firstName || null,
         last_name: lastName || null,
         tags: Array.isArray(tags) ? tags : [],
+        status,
         updated_at: new Date().toISOString()
       }, {
         onConflict: 'user_id,email'
