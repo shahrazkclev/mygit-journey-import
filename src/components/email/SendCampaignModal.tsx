@@ -720,10 +720,10 @@ const RecipientRow = React.memo<{ recipient: RecipientDetails; index: number }>(
         <div className="text-xs text-red-600">{recipient.error}</div>
       )}
     </div>
-    <div className="ml-2">
+    <div className="ml-2 flex-shrink-0">
       {recipient.status === 'sent' && <CheckCircle className="h-4 w-4 text-green-600" />}
       {recipient.status === 'failed' && <XCircle className="h-4 w-4 text-red-600" />}
-      {recipient.status === 'pending' && <Clock className="h-4 w-4 text-yellow-600 animate-pulse" />}
+      {(recipient.status === 'pending' || recipient.status === 'sending') && <Clock className="h-4 w-4 text-yellow-600" />}
     </div>
   </div>
 ));
