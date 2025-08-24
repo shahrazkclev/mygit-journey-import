@@ -18,40 +18,56 @@ serve(async (req) => {
 
     console.log('🧠 [generate-email] Request received', { subject });
 
-    // Explicit instructions to include the {{name}} placeholder
-    const systemPrompt = `You are creating email content with styled visual elements. You MUST follow these requirements exactly:
+    // Enhanced AI instructions for professional email design
+    const systemPrompt = `You are an expert email designer creating visually stunning marketing emails. You MUST follow these requirements exactly:
 
-1. MANDATORY: Start with "Hey {{name}}," - DO NOT change this format
-2. Write engaging content for: "${subject}" 
-3. Content prompt: ${prompt}
-4. Keep it professional but friendly
-5. Include clear call-to-action if relevant
-6. USE VISUAL STYLING: Add highlighted sections using these class names:
-   - <div class="card"> for important content boxes
-   - <a class="button"> for call-to-action buttons  
-   - <div class="highlight"> for key information
-7. MANDATORY: End with this exact unsubscribe text: "If you no longer wish to receive these emails, you can unsubscribe here."
-8. Do NOT add signatures - that's handled by the template
+MANDATORY STRUCTURE:
+1. Start with: Hey {{name}},
+2. Use MULTIPLE styled containers and sections
+3. Create visual hierarchy with proper spacing
+4. Include call-to-action buttons
+5. Make it look professional and branded
 
-STYLING EXAMPLES:
-- Put important updates in: <div class="card">Your important content here</div>
-- Add call-to-action buttons: <a href="#" class="button">Click Here</a>
-- Highlight key info: <div class="highlight">Special announcement!</div>
+REQUIRED HTML ELEMENTS TO USE:
+- <div class="hero-section">Main announcement</div>
+- <div class="card">Important updates in beautiful containers</div>  
+- <div class="highlight">Key information highlights</div>
+- <a href="#" class="button">Call to Action</a>
+- <div class="feature-grid">Multiple feature boxes</div>
+- <div class="quote">Customer testimonials or quotes</div>
 
-FORMAT:
+CONTENT REQUIREMENTS:
+- Subject: "${subject}"
+- Content: ${prompt}
+- Make it engaging and professional
+- Use multiple containers for different sections
+- Add visual elements and proper spacing
+- Include clear call-to-action
+
+EXAMPLE STRUCTURE:
 Hey {{name}},
 
-<div class="card">
-[Important content in styled container]
+<div class="hero-section">
+Main headline or announcement here
 </div>
 
-[Regular paragraph content]
+<div class="card">
+<h3>Important Update</h3>
+Your detailed content here...
+</div>
 
-<a href="#" class="button">Call to Action</a>
+<div class="highlight">
+Key information or special offer
+</div>
 
-If you no longer wish to receive these emails, you can unsubscribe here.
+<a href="#" class="button">Take Action Now</a>
 
-Return the content with HTML styling classes included.`;
+<div class="feature-grid">
+<div class="feature">Feature 1</div>
+<div class="feature">Feature 2</div>
+</div>
+
+Return ONLY the email content with proper HTML containers and classes.`;
 
     // Call Anthropic
     const response = await fetch('https://api.anthropic.com/v1/messages', {
@@ -149,47 +165,77 @@ Return the content with HTML styling classes included.`;
     .container { max-width:600px; margin:0 auto; background:#FFFFFF; border-radius:16px; padding:32px; }
     .hr { height:1px; background:#E5E7EB; margin:24px 0; }
 
-    /* Header */
+    /* Enhanced Header with Logo */
     .brand { 
-      text-align:center; 
-      font-size:32px; 
-      font-weight:800; 
-      color:${primaryColor}; 
-      margin:0 0 32px; 
-      letter-spacing:-0.5px;
-      background: linear-gradient(135deg, ${primaryColor}, ${primaryColor}CC);
+      text-align: center; 
+      font-size: 36px; 
+      font-weight: 900; 
+      margin: 0 0 40px; 
+      letter-spacing: -1px;
+      background: linear-gradient(135deg, ${primaryColor}, #8B7355, ${primaryColor});
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
       background-clip: text;
-      text-shadow: 0 2px 4px ${primaryColor}20;
+      position: relative;
+      padding: 20px 0;
+    }
+    .brand::before {
+      content: '';
+      position: absolute;
+      bottom: 0;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 60px;
+      height: 3px;
+      background: linear-gradient(135deg, ${primaryColor}, #8B7355);
+      border-radius: 2px;
     }
 
     /* Titles */
     .title { font-size:24px; font-weight:700; text-align:center; margin:0 0 16px; color:#333333; }
 
-    /* Content */
-    .paragraph { font-size:16px; margin:0 0 16px; line-height:1.6; }
-    .card { background: linear-gradient(135deg, ${primaryColor}08, ${primaryColor}12); border-left:4px solid ${primaryColor}; border-radius:12px; padding:20px; margin:20px 0; box-shadow:0 2px 8px rgba(0,0,0,0.05); }
-    .highlight { background: ${primaryColor}15; border-radius:8px; padding:12px 16px; margin:12px 0; border-left:3px solid ${primaryColor}; }
+    /* Enhanced Content Containers */
+    .paragraph { font-size: 16px; margin: 0 0 20px; line-height: 1.7; color: #333; }
+    .hero-section { background: linear-gradient(135deg, ${primaryColor}15, ${primaryColor}08); border-radius: 16px; padding: 32px; margin: 24px 0; text-align: center; border: 1px solid ${primaryColor}20; }
+    .card { background: linear-gradient(135deg, #ffffff, #fafafa); border: 1px solid ${primaryColor}20; border-left: 4px solid ${primaryColor}; border-radius: 12px; padding: 24px; margin: 24px 0; box-shadow: 0 4px 12px rgba(0,0,0,0.08); }
+    .highlight { background: linear-gradient(135deg, ${primaryColor}12, ${primaryColor}20); border-radius: 10px; padding: 16px 20px; margin: 16px 0; border-left: 3px solid ${primaryColor}; font-weight: 500; }
+    .feature-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin: 24px 0; }
+    .feature { background: ${primaryColor}08; border-radius: 8px; padding: 16px; text-align: center; border: 1px solid ${primaryColor}15; }
+    .quote { background: #f8f9fa; border-left: 4px solid ${primaryColor}; padding: 20px; margin: 20px 0; font-style: italic; border-radius: 0 8px 8px 0; }
 
-    /* Buttons / Links */
-    .button { display:inline-block; background: linear-gradient(135deg, ${primaryColor}, ${primaryColor}E6); color:#FFFFFF; padding:12px 24px; text-decoration:none; border-radius:8px; font-weight:600; margin:16px 0; box-shadow:0 4px 12px ${primaryColor}40; transition:all 0.3s ease; }
-    .button:hover { transform:translateY(-2px); box-shadow:0 6px 20px ${primaryColor}60; }
-    .link { color:${primaryColor}; text-decoration:none; }
+    /* Enhanced Buttons */
+    .button { 
+      display: inline-block; 
+      background: linear-gradient(135deg, ${primaryColor}, #8B7355); 
+      color: #ffffff; 
+      padding: 14px 28px; 
+      text-decoration: none; 
+      border-radius: 10px; 
+      font-weight: 600; 
+      margin: 20px 0; 
+      box-shadow: 0 6px 20px ${primaryColor}30; 
+      transition: all 0.3s ease;
+      text-align: center;
+      border: none;
+    }
+    .button:hover { transform: translateY(-2px); box-shadow: 0 8px 25px ${primaryColor}40; }
+    .link { color: ${primaryColor}; text-decoration: none; font-weight: 500; }
 
     /* Footer */
     .footer { margin-top:28px; font-size:16px; line-height:1.7; color:#333333; font-family: ${signatureFont}; }
     .divider { height:1px; background:#E5E7EB; margin:28px 0; }
     
-    /* Unsubscribe Footer */
+    /* Unsubscribe Container */
     .unsubscribe-footer { 
-      margin-top:32px; 
-      padding-top:20px; 
-      border-top:1px solid #E5E7EB; 
-      font-size:12px; 
-      color:#6B7280; 
-      text-align:center; 
-      line-height:1.5; 
+      margin-top: 40px; 
+      padding: 20px; 
+      background: #f8f9fa;
+      border: 1px solid #e9ecef;
+      border-radius: 8px;
+      font-size: 12px; 
+      color: #6c757d; 
+      text-align: center; 
+      line-height: 1.6;
     }
 
     /* Responsive */
