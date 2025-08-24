@@ -267,9 +267,6 @@ Return ONLY the email content following the instructions above.`;
 </head>
 <body>
   <div class="container">
-    <div class="brand">${brandName}</div>
-    <div class="hr"></div>
-
     ${paragraphs}
 
     <div class="divider"></div>
