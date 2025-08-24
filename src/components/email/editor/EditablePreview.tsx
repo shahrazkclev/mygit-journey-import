@@ -187,6 +187,7 @@ export const EditablePreview: React.FC<EditablePreviewProps> = ({
     const doc = iframe.contentDocument || iframe.contentWindow?.document;
     if (!doc) return;
     saveToHistory();
+    restoreSelection();
     try { doc.execCommand('styleWithCSS', false, 'true'); } catch {}
     // Use largest size then replace <font> with <span style>
     doc.execCommand('fontSize', false, '7');
@@ -194,7 +195,7 @@ export const EditablePreview: React.FC<EditablePreviewProps> = ({
     fonts.forEach((fontEl) => {
       const span = doc.createElement('span');
       span.style.fontSize = `${px}px`;
-      span.innerHTML = fontEl.innerHTML;
+      span.innerHTML = (fontEl as HTMLElement).innerHTML;
       (fontEl as HTMLElement).replaceWith(span);
     });
     const newHtml = doc.documentElement.outerHTML;
