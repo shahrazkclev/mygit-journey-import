@@ -149,6 +149,12 @@ export const CampaignHistory: React.FC = () => {
       toast.success('Campaign deleted successfully');
       loadCampaigns();
       setCampaignToDelete(null);
+      
+      // Close any open campaign details modal if the deleted campaign was being viewed
+      if (selectedCampaign?.id === campaignId) {
+        setSelectedCampaign(null);
+        setShowCampaignDetails(false);
+      }
     } catch (error) {
       console.error('Error deleting campaign:', error);
       toast.error('Failed to delete campaign');
@@ -673,7 +679,10 @@ export const CampaignHistory: React.FC = () => {
                               <AlertDialogFooter>
                                 <AlertDialogCancel onClick={() => setCampaignToDelete(null)}>Cancel</AlertDialogCancel>
                                 <AlertDialogAction 
-                                  onClick={() => deleteCampaign(campaign.id)}
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    deleteCampaign(campaign.id);
+                                  }}
                                   className="bg-destructive hover:bg-destructive/90"
                                 >
                                   Delete Campaign
