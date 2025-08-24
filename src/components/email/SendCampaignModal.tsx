@@ -51,6 +51,7 @@ export const SendCampaignModal: React.FC<SendCampaignModalProps> = ({
   const [estimatedTime, setEstimatedTime] = useState<string>('');
   const [startTime, setStartTime] = useState<Date | null>(null);
   const [delayBetweenEmails, setDelayBetweenEmails] = useState(2);
+  const [emailsPerSequence, setEmailsPerSequence] = useState(10); // How many emails before sequence increments
   
   // Enhanced recipient tracking  
   const [recipientDetails, setRecipientDetails] = useState<RecipientDetails[]>([]);
@@ -179,7 +180,8 @@ export const SendCampaignModal: React.FC<SendCampaignModalProps> = ({
         html_content: htmlContent,
         selected_lists: selectedLists,
         sender_sequence: senderSequence,
-        webhook_url: webhookUrl
+        webhook_url: webhookUrl,
+        emails_per_sequence: emailsPerSequence
       });
 
       if (!campaignResponse.ok) {
@@ -526,6 +528,25 @@ export const SendCampaignModal: React.FC<SendCampaignModalProps> = ({
                     Time to wait between individual emails (helps avoid rate limits)
                   </p>
                 </div>
+              </div>
+
+              <div className="space-y-3">
+                <Label htmlFor="emailsPerSequence" className="text-sm font-medium">Emails Per Sequence</Label>
+                <div className="flex items-center space-x-2">
+                  <Input
+                    id="emailsPerSequence"
+                    type="number"
+                    min="1"
+                    max="100"
+                    value={emailsPerSequence}
+                    onChange={(e) => setEmailsPerSequence(parseInt(e.target.value) || 10)}
+                    className="flex-1"
+                  />
+                  <span className="text-sm text-muted-foreground whitespace-nowrap">emails</span>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Number of emails to send before switching to next sender sequence
+                </p>
               </div>
 
               {/* Campaign Summary */}

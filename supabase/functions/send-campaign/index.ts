@@ -3,6 +3,7 @@ import { createClient, SupabaseClient } from "https://esm.sh/@supabase/supabase-
 
 interface SendCampaignRequest {
   campaignId: string;
+  emailsPerSequence?: number;
 }
 
 interface Contact {
@@ -121,8 +122,9 @@ async function handler(req: Request): Promise<Response> {
   }
 
   try {
-    const { campaignId }: SendCampaignRequest = await req.json();
+    const { campaignId, emailsPerSequence }: SendCampaignRequest = await req.json();
     console.log('🚀 Starting send for campaign:', campaignId);
+    console.log('📊 Emails per sequence:', emailsPerSequence || 10);
 
     const supabase = createSupabase();
     
@@ -151,7 +153,7 @@ async function handler(req: Request): Promise<Response> {
     console.log('📋 Campaign started, beginning send process...');
     
     // Start processing in background
-    EdgeRuntime.waitUntil(processSends(supabase, campaign, contacts));
+    EdgeRuntime.waitUntil(processSends(supabase, campaign, contacts, emailsPerSequence || 10));
     
     return new Response(JSON.stringify({ 
       success: true, 
@@ -193,8 +195,9 @@ async function getUserSettings(supabase: SupabaseClient, userId: string) {
   };
 }
 
-async function processSends(supabase: SupabaseClient, campaign: any, contacts: Contact[]) {
+async function processSends(supabase: SupabaseClient, campaign: any, contacts: Contact[], emailsPerSequence: number = 10) {
   console.log('🔄 Starting background send process...');
+  console.log('📊 Emails per sequence:', emailsPerSequence);
   
   const settings = await getUserSettings(supabase, campaign.user_id);
   console.log('⚙️ Using settings:', settings);
@@ -254,8 +257,11 @@ async function processSends(supabase: SupabaseClient, campaign: any, contacts: C
           sent_count: sentCount
         });
         
-        // Increment sender sequence for next email
-        currentSenderSequence++;
+        // Increment sender sequence only after sending specified number of emails
+        if ((sentCount % emailsPerSequence) === 0) {
+          currentSenderSequence++;
+          console.log(`🔄 Switching to sender sequence ${currentSenderSequence} after ${sentCount} emails`);
+        }
         
         // Delay between individual emails (except for the last one)
         if (i < contacts.length - 1 && settings.delay_between_emails > 0) {

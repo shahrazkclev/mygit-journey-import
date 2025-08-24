@@ -9,6 +9,7 @@ export const api = {
     selected_lists: string[];
     sender_sequence: number;
     webhook_url: string;
+    emails_per_sequence?: number;
   }) {
     try {
       // 1) Create the campaign record (using correct column names from schema)
@@ -40,6 +41,7 @@ export const api = {
           html: params.html_content,
           name: params.title,
           senderSequenceNumber: params.sender_sequence,
+          emailsPerSequence: params.emails_per_sequence || 10,
         },
       });
       if (sendError) throw sendError;
