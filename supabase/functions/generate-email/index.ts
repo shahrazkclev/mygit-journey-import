@@ -71,9 +71,17 @@ Return ONLY the clean email content.`;
 
     const aiInstructions = settings?.ai_instructions || defaultInstructions;
 
-    // Create system prompt with custom instructions
+    // Create system prompt with custom instructions and brand colors
+    const brandColors = styleGuide ? `
+BRAND COLORS TO USE:
+- Primary Color: ${styleGuide.primaryColor}
+- Secondary Color: ${styleGuide.secondaryColor || '#22d3ee'}
+- Accent Color: ${styleGuide.accentColor || '#34d399'}
+` : '';
+
     const systemPrompt = `${aiInstructions}
 
+${brandColors}
 CONTENT REQUIREMENTS:
 - Subject: "${subject}"
 - Content: ${prompt}
