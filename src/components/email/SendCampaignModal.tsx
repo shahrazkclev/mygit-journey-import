@@ -188,21 +188,20 @@ export const SendCampaignModal: React.FC<SendCampaignModalProps> = ({
           const total = campaign.total_recipients ?? 0;
           const sent = campaign.sent_count ?? 0;
           const failed = Math.max(0, total - sent); // Calculate remaining as potential failed
-          const currentRecipient = (campaign as any).current_recipient || '';
           const currentSenderSeq = campaign.sender_sequence_number || 1;
 
           setTotalRecipients(total);
           setSentCount(sent);
           setFailedCount(0); // Reset failed count, will be calculated properly
           setCurrentSenderSequence(currentSenderSeq);
-          setCurrentRecipient(currentRecipient);
+          setCurrentRecipient(''); // Clear current recipient since we don't track it
           setStatus(campaign.status as any);
           setErrorMessage((campaign as any).error_message);
           
           if (total > 0) {
             const progressPercent = (sent / total) * 100;
             setProgress(progressPercent);
-            console.log(`📊 Progress: ${sent}/${total} (${progressPercent.toFixed(1)}%) - Current: ${currentRecipient} - Sender #${currentSenderSeq}`);
+            console.log(`📊 Progress: ${sent}/${total} (${progressPercent.toFixed(1)}%) - Sender #${currentSenderSeq}`);
           }
 
           // Load individual send records for more detailed tracking

@@ -231,8 +231,7 @@ async function processSends(supabase: SupabaseClient, campaign: any, contacts: C
         // Update current progress before sending
         await updateCampaign(supabase, campaign.id, {
           sent_count: sentCount,
-          current_recipient: contact.email,
-          current_sender_sequence: currentSenderSequence
+          sender_sequence_number: currentSenderSequence
         });
         
         // Replace variables in HTML content
@@ -294,8 +293,7 @@ async function processSends(supabase: SupabaseClient, campaign: any, contacts: C
       status: 'sent',
       sent_count: sentCount,
       sent_at: new Date().toISOString(),
-      current_recipient: null,
-      current_sender_sequence: currentSenderSequence
+      sender_sequence_number: currentSenderSequence
     });
     
     console.log(`🎉 Campaign completed! Sent: ${sentCount}, Failed: ${failedCount}`);
