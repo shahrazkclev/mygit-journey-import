@@ -70,6 +70,11 @@ export const CampaignHistory: React.FC = () => {
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [campaignToDelete, setCampaignToDelete] = useState<Campaign | null>(null);
+  
+  // Bulk selection state
+  const [selectedCampaigns, setSelectedCampaigns] = useState<Set<string>>(new Set());
+  const [isSelectionMode, setIsSelectionMode] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   // Stats
   const [stats, setStats] = useState({
@@ -148,6 +153,57 @@ export const CampaignHistory: React.FC = () => {
       console.error('Error deleting campaign:', error);
       toast.error('Failed to delete campaign');
     }
+  };
+
+  const bulkDeleteCampaigns = async () => {
+    if (selectedCampaigns.size === 0) return;
+    
+    setIsDeleting(true);
+    try {
+      const campaignIds = Array.from(selectedCampaigns);
+      
+      const { error } = await supabase
+        .from('campaigns')
+        .delete()
+        .in('id', campaignIds)
+        .eq('user_id', DEMO_USER_ID);
+
+      if (error) {
+        console.error('Error deleting campaigns:', error);
+        toast.error('Failed to delete campaigns');
+        return;
+      }
+
+      toast.success(`Successfully deleted ${campaignIds.length} campaign(s)`);
+      setSelectedCampaigns(new Set());
+      setIsSelectionMode(false);
+      loadCampaigns();
+    } catch (error) {
+      console.error('Error deleting campaigns:', error);
+      toast.error('Failed to delete campaigns');
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
+  const toggleCampaignSelection = (campaignId: string) => {
+    const newSelection = new Set(selectedCampaigns);
+    if (newSelection.has(campaignId)) {
+      newSelection.delete(campaignId);
+    } else {
+      newSelection.add(campaignId);
+    }
+    setSelectedCampaigns(newSelection);
+  };
+
+  const selectAllCampaigns = () => {
+    const allIds = new Set(filteredCampaigns.map(c => c.id));
+    setSelectedCampaigns(allIds);
+  };
+
+  const clearSelection = () => {
+    setSelectedCampaigns(new Set());
+    setIsSelectionMode(false);
   };
 
   const loadCampaignSends = async (campaignId: string) => {
@@ -298,17 +354,28 @@ export const CampaignHistory: React.FC = () => {
           </p>
         </div>
         
-        <Button 
-          onClick={() => {
-            setIsRefreshing(true);
-            loadCampaigns();
-          }} 
-          disabled={isRefreshing}
-          className="bg-email-primary hover:bg-email-primary/90 w-full lg:w-auto"
-        >
-          <RefreshCw className={`h-4 w-4 mr-2 ${isRefreshing ? 'animate-spin' : ''}`} />
-          Refresh
-        </Button>
+        <div className="flex gap-2">
+          <Button 
+            onClick={() => {
+              setIsRefreshing(true);
+              loadCampaigns();
+            }} 
+            disabled={isRefreshing}
+            variant="outline"
+            className="w-full lg:w-auto"
+          >
+            <RefreshCw className={`h-4 w-4 mr-2 ${isRefreshing ? 'animate-spin' : ''}`} />
+            Refresh
+          </Button>
+          
+          <Button
+            onClick={() => setIsSelectionMode(!isSelectionMode)}
+            variant={isSelectionMode ? "default" : "outline"}
+            className="w-full lg:w-auto"
+          >
+            {isSelectionMode ? 'Exit Select' : 'Select Multiple'}
+          </Button>
+        </div>
       </div>
 
       {/* Stats Cards */}
@@ -398,6 +465,75 @@ export const CampaignHistory: React.FC = () => {
         </CardContent>
       </Card>
 
+      {/* Bulk Actions Bar */}
+      {isSelectionMode && (
+        <Card className="bg-gradient-to-r from-email-primary/10 to-email-accent/10 border-email-primary/30">
+          <CardContent className="p-4">
+            <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4">
+              <div className="flex items-center gap-4">
+                <span className="text-sm font-medium text-email-primary">
+                  {selectedCampaigns.size} of {filteredCampaigns.length} campaigns selected
+                </span>
+                <div className="flex gap-2">
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={selectAllCampaigns}
+                    disabled={selectedCampaigns.size === filteredCampaigns.length}
+                  >
+                    Select All
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={clearSelection}
+                    disabled={selectedCampaigns.size === 0}
+                  >
+                    Clear Selection
+                  </Button>
+                </div>
+              </div>
+              
+              <div className="flex gap-2">
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <Button
+                      size="sm"
+                      variant="destructive"
+                      disabled={selectedCampaigns.size === 0 || isDeleting}
+                    >
+                      <Trash2 className="h-4 w-4 mr-2" />
+                      {isDeleting ? 'Deleting...' : `Delete ${selectedCampaigns.size} Campaign(s)`}
+                    </Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle className="flex items-center gap-2 text-destructive">
+                        <AlertTriangle className="h-5 w-5" />
+                        Delete {selectedCampaigns.size} Campaign(s)
+                      </AlertDialogTitle>
+                      <AlertDialogDescription>
+                        Are you sure you want to delete {selectedCampaigns.size} selected campaign(s)? 
+                        This action cannot be undone and will permanently remove all campaign data including send history.
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>Cancel</AlertDialogCancel>
+                      <AlertDialogAction 
+                        onClick={bulkDeleteCampaigns}
+                        className="bg-destructive hover:bg-destructive/90"
+                      >
+                        Delete {selectedCampaigns.size} Campaign(s)
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Campaigns List */}
       <Card className="shadow-soft bg-gradient-to-br from-email-background to-background border-email-primary/20">
         <CardHeader>
@@ -421,10 +557,29 @@ export const CampaignHistory: React.FC = () => {
               filteredCampaigns.map((campaign) => (
                 <div
                   key={campaign.id}
-                  className="flex flex-col lg:flex-row items-start lg:items-center justify-between p-4 border rounded-lg cursor-pointer hover:bg-gray-50 transition-all duration-200 border-email-primary/10 hover:border-email-primary/30"
-                  onClick={() => openCampaignDetails(campaign)}
+                  className={`flex flex-col lg:flex-row items-start lg:items-center justify-between p-4 border rounded-lg transition-all duration-200 border-email-primary/10 hover:border-email-primary/30 ${
+                    selectedCampaigns.has(campaign.id) ? 'bg-email-primary/10 border-email-primary/40' : 'hover:bg-gray-50'
+                  } ${isSelectionMode ? '' : 'cursor-pointer'}`}
+                  onClick={() => {
+                    if (isSelectionMode) {
+                      toggleCampaignSelection(campaign.id);
+                    } else {
+                      openCampaignDetails(campaign);
+                    }
+                  }}
                 >
                   <div className="flex items-start space-x-4 w-full lg:w-auto mb-3 lg:mb-0">
+                    {isSelectionMode && (
+                      <div className="flex items-center">
+                        <input
+                          type="checkbox"
+                          checked={selectedCampaigns.has(campaign.id)}
+                          onChange={() => toggleCampaignSelection(campaign.id)}
+                          onClick={(e) => e.stopPropagation()}
+                          className="w-4 h-4 text-email-primary border-gray-300 rounded focus:ring-email-primary"
+                        />
+                      </div>
+                    )}
                     <div className="w-12 h-12 bg-gradient-to-br from-email-primary to-email-accent rounded-full flex items-center justify-center flex-shrink-0">
                       <Mail className="h-6 w-6 text-white" />
                     </div>
@@ -477,43 +632,57 @@ export const CampaignHistory: React.FC = () => {
                         </div>
                       </div>
 
-                      <div className="flex items-center space-x-2">
-                        <Button variant="ghost" size="sm" className="hover:bg-blue-50 hover:text-blue-600">
-                          <Eye className="h-4 w-4" />
-                        </Button>
-                        
-                        <AlertDialog>
-                          <AlertDialogTrigger asChild>
-                            <Button variant="ghost" size="sm" className="hover:bg-red-50 hover:text-red-600">
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          </AlertDialogTrigger>
-                          <AlertDialogContent>
-                            <AlertDialogHeader>
-                              <AlertDialogTitle className="flex items-center gap-2">
-                                <AlertTriangle className="h-5 w-5 text-red-600" />
-                                Delete Campaign
-                              </AlertDialogTitle>
-                              <AlertDialogDescription>
-                                Are you sure you want to delete "{campaign.name}"? This action cannot be undone.
-                                All campaign data and send history will be permanently removed.
-                              </AlertDialogDescription>
-                            </AlertDialogHeader>
-                            <AlertDialogFooter>
-                              <AlertDialogCancel>Cancel</AlertDialogCancel>
-                              <AlertDialogAction 
+                      {!isSelectionMode && (
+                        <div className="flex space-x-1">
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              openCampaignDetails(campaign);
+                            }}
+                            className="h-8 w-8 p-0"
+                          >
+                            <Eye className="h-4 w-4" />
+                          </Button>
+                          
+                          <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                              <Button
+                                size="sm"
+                                variant="ghost"
                                 onClick={(e) => {
                                   e.stopPropagation();
-                                  deleteCampaign(campaign.id);
+                                  setCampaignToDelete(campaign);
                                 }}
-                                className="bg-red-600 hover:bg-red-700"
+                                className="h-8 w-8 p-0 text-destructive hover:text-destructive"
                               >
-                                Delete Campaign
-                              </AlertDialogAction>
-                            </AlertDialogFooter>
-                          </AlertDialogContent>
-                        </AlertDialog>
-                      </div>
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                              <AlertDialogHeader>
+                                <AlertDialogTitle className="flex items-center gap-2 text-destructive">
+                                  <AlertTriangle className="h-5 w-5" />
+                                  Delete Campaign
+                                </AlertDialogTitle>
+                                <AlertDialogDescription>
+                                  Are you sure you want to delete "{campaign.name}"? This action cannot be undone and will permanently remove all campaign data including send history.
+                                </AlertDialogDescription>
+                              </AlertDialogHeader>
+                              <AlertDialogFooter>
+                                <AlertDialogCancel onClick={() => setCampaignToDelete(null)}>Cancel</AlertDialogCancel>
+                                <AlertDialogAction 
+                                  onClick={() => deleteCampaign(campaign.id)}
+                                  className="bg-destructive hover:bg-destructive/90"
+                                >
+                                  Delete Campaign
+                                </AlertDialogAction>
+                              </AlertDialogFooter>
+                            </AlertDialogContent>
+                          </AlertDialog>
+                        </div>
+                      )}
                     </div>
                   </div>
                 </div>
