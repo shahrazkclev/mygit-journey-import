@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -152,8 +152,11 @@ export const SendCampaignModal: React.FC<SendCampaignModalProps> = ({
       setStatus('sending');
       toast.success('Campaign started! Sending in background...');
 
-      // Start monitoring progress
-      monitorProgress(campaign.id);
+      // Start real-time monitoring
+      const unsubscribe = monitorProgress(campaign.id);
+      
+      // Clean up subscriptions when modal closes
+      return unsubscribe;
 
     } catch (error: any) {
       console.error('❌ Error starting campaign:', error);
@@ -165,76 +168,78 @@ export const SendCampaignModal: React.FC<SendCampaignModalProps> = ({
     }
   };
 
-  const monitorProgress = (id: string) => {
-    console.log('📊 Starting to monitor campaign:', id);
+  const monitorProgress = useCallback((id: string) => {
+    console.log('📊 Starting real-time monitoring for campaign:', id);
     
-    const interval = setInterval(async () => {
-      try {
-        console.log('🔄 Checking campaign progress...');
-        const response = await api.getCampaign(id);
-        
-        if (!response.ok) {
-          console.error('❌ Error monitoring campaign:', response.statusText);
-          clearInterval(interval);
-          setStatus('failed');
-          setErrorMessage(`Monitoring failed: ${response.statusText}`);
-          return;
-        }
-
-        const campaign = await response.json();
-        console.log('📈 Campaign status:', campaign);
-
-        if (campaign) {
-          const total = campaign.total_recipients ?? 0;
-          const sent = campaign.sent_count ?? 0;
-          const currentSenderSeq = campaign.sender_sequence_number || 1;
-
-          // Batch state updates only if values changed to prevent unnecessary re-renders
-          if (totalRecipients !== total) setTotalRecipients(total);
-          if (sentCount !== sent) setSentCount(sent);
-          if (currentSenderSequence !== currentSenderSeq) setCurrentSenderSequence(currentSenderSeq);
-          if (status !== campaign.status) setStatus(campaign.status as any);
-          if (errorMessage !== (campaign as any).error_message) setErrorMessage((campaign as any).error_message);
-          
-          if (total > 0) {
-            const progressPercent = Math.min((sent / total) * 100, 100);
-            setProgress(progressPercent);
-            console.log(`📊 Progress: ${sent}/${total} (${progressPercent.toFixed(1)}%) - Sender #${currentSenderSeq}`);
-          }
-
-          // Load individual send records for more detailed tracking
-          if (campaign.status === 'sending') {
-            loadCampaignSends(id, total, sent);
-          }
-
-          if (campaign.status === 'sent' || campaign.status === 'failed') {
-            clearInterval(interval);
-            const message = campaign.status === 'sent' 
-              ? `✅ Campaign completed! Sent to ${sent} recipients.`
-              : `❌ Campaign failed: ${((campaign as any).error_message) || 'Unknown error'}`;
+    // Subscribe to campaign changes
+    const campaignChannel = supabase
+      .channel(`campaign-${id}`)
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'campaigns',
+          filter: `id=eq.${id}`,
+        },
+        (payload) => {
+          console.log('📈 Campaign update:', payload);
+          const campaign = payload.new as any;
+          if (campaign) {
+            // Update individual fields only if they changed
+            setTotalRecipients(prev => (campaign.total_recipients ?? 0) !== prev ? (campaign.total_recipients ?? 0) : prev);
+            setSentCount(prev => (campaign.sent_count ?? 0) !== prev ? (campaign.sent_count ?? 0) : prev);
+            setCurrentSenderSequence(prev => (campaign.sender_sequence_number ?? 1) !== prev ? (campaign.sender_sequence_number ?? 1) : prev);
+            setStatus(prev => campaign.status !== prev ? campaign.status : prev);
+            setErrorMessage(prev => campaign.error_message !== prev ? campaign.error_message : prev);
             
-            toast.success(message);
-            console.log('🏁 Campaign finished:', campaign.status);
+            const total = campaign.total_recipients ?? 0;
+            const sent = campaign.sent_count ?? 0;
+            if (total > 0) {
+              const progressPercent = Math.min((sent / total) * 100, 100);
+              setProgress(prev => Math.abs(progressPercent - prev) > 0.1 ? progressPercent : prev);
+            }
+
+            if (campaign.status === 'sent' || campaign.status === 'failed') {
+              const message = campaign.status === 'sent' 
+                ? `✅ Campaign completed! Sent to ${sent} recipients.`
+                : `❌ Campaign failed: ${campaign.error_message || 'Unknown error'}`;
+              
+              toast.success(message);
+              console.log('🏁 Campaign finished:', campaign.status);
+            }
           }
         }
-      } catch (error) {
-        console.error('❌ Error monitoring campaign:', error);
-        // Don't clear interval on temporary errors, just log them
-        if (error instanceof TypeError && error.message.includes('fetch')) {
-          console.log('🔄 Network error, retrying...');
-        } else {
-          clearInterval(interval);
-          setStatus('failed');
-          setErrorMessage('Monitoring failed - check console');
+      )
+      .subscribe();
+
+    // Subscribe to campaign_sends changes for detailed progress
+    const sendsChannel = supabase
+      .channel(`campaign-sends-${id}`)
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'campaign_sends',
+          filter: `campaign_id=eq.${id}`,
+        },
+        async (payload) => {
+          console.log('📧 Send update:', payload);
+          
+          // Refresh recipient details when sends change
+          await loadCampaignSends(id);
         }
-      }
-    }, 2000); // Check every 2 seconds to prevent jumping
+      )
+      .subscribe();
 
-    // Clean up on component unmount
-    return () => clearInterval(interval);
-  };
+    return () => {
+      campaignChannel.unsubscribe();
+      sendsChannel.unsubscribe();
+    };
+  }, []);
 
-  const loadCampaignSends = async (campaignId: string, total: number, sent: number) => {
+  const loadCampaignSends = useCallback(async (campaignId: string) => {
     try {
       const { data: sends, error } = await supabase
         .from('campaign_sends')
@@ -268,21 +273,23 @@ export const SendCampaignModal: React.FC<SendCampaignModalProps> = ({
         };
       }) || [];
 
-      // Only update if there's actual change to prevent flickering
-      const hasChanged = JSON.stringify(details) !== JSON.stringify(recipientDetails);
-      if (hasChanged) {
-        setRecipientDetails(details);
-
-        // Set current recipient being processed
+      // Use functional update to prevent unnecessary re-renders
+      setRecipientDetails(prevDetails => {
+        const hasChanged = JSON.stringify(details) !== JSON.stringify(prevDetails);
+        if (!hasChanged) return prevDetails;
+        
+        // Update current recipient being processed
         const pendingSend = details.find(d => d.status === 'pending');
         if (pendingSend && pendingSend.email !== currentRecipient) {
           setCurrentRecipient(pendingSend.email);
         }
-      }
+        
+        return details;
+      });
     } catch (error) {
       console.error('Error loading campaign sends:', error);
     }
-  };
+  }, [currentRecipient]);
 
   const pauseResumeCampaign = async () => {
     if (!campaignId) return;
@@ -548,37 +555,20 @@ export const SendCampaignModal: React.FC<SendCampaignModalProps> = ({
               <div className="border rounded-lg flex-1 overflow-y-auto min-h-[200px]">
                 {recipientDetails.length > 0 ? (
                   <>
-                  <div className="bg-muted/50 p-3 border-b">
-                    <h4 className="font-medium text-sm">Send Details</h4>
-                  </div>
-                  <div className="divide-y">
-                    {recipientDetails.map((recipient, index) => (
-                      <div key={index} className="p-3 flex items-center justify-between">
-                        <div className="flex-1">
-                          <div className="text-sm font-medium">{recipient.email}</div>
-                          {recipient.timestamp && (
-                            <div className="text-xs text-muted-foreground">
-                              {new Date(recipient.timestamp).toLocaleTimeString()}
-                            </div>
-                          )}
-                          {recipient.error && (
-                            <div className="text-xs text-red-600">{recipient.error}</div>
-                          )}
-                        </div>
-                        <div className="ml-2">
-                          {recipient.status === 'sent' && <CheckCircle className="h-4 w-4 text-green-600" />}
-                          {recipient.status === 'failed' && <XCircle className="h-4 w-4 text-red-600" />}
-                          {recipient.status === 'pending' && <Clock className="h-4 w-4 text-yellow-600 animate-pulse" />}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
+                    <div className="bg-muted/50 p-3 border-b sticky top-0">
+                      <h4 className="font-medium text-sm">Send Progress ({recipientDetails.filter(r => r.status === 'sent').length}/{recipientDetails.length})</h4>
+                    </div>
+                    <div className="divide-y">
+                      {recipientDetails.map((recipient, index) => (
+                        <RecipientRow key={`${recipient.email}-${recipient.status}`} recipient={recipient} index={index} />
+                      ))}
+                    </div>
                   </>
                 ) : (
                   <div className="flex items-center justify-center h-full text-muted-foreground">
                     <div className="text-center">
                       <Clock className="h-8 w-8 mx-auto mb-2 opacity-50" />
-                      <p>Waiting for recipients...</p>
+                      <p>Preparing recipients...</p>
                     </div>
                   </div>
                 )}
@@ -620,3 +610,25 @@ export const SendCampaignModal: React.FC<SendCampaignModalProps> = ({
     </Dialog>
   );
 };
+
+// Memoized component for individual recipient rows to prevent unnecessary re-renders
+const RecipientRow = React.memo<{ recipient: RecipientDetails; index: number }>(({ recipient, index }) => (
+  <div className="p-3 flex items-center justify-between">
+    <div className="flex-1">
+      <div className="text-sm font-medium">{recipient.email}</div>
+      {recipient.timestamp && (
+        <div className="text-xs text-muted-foreground">
+          {new Date(recipient.timestamp).toLocaleTimeString()}
+        </div>
+      )}
+      {recipient.error && (
+        <div className="text-xs text-red-600">{recipient.error}</div>
+      )}
+    </div>
+    <div className="ml-2">
+      {recipient.status === 'sent' && <CheckCircle className="h-4 w-4 text-green-600" />}
+      {recipient.status === 'failed' && <XCircle className="h-4 w-4 text-red-600" />}
+      {recipient.status === 'pending' && <Clock className="h-4 w-4 text-yellow-600 animate-pulse" />}
+    </div>
+  </div>
+));
