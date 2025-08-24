@@ -117,16 +117,11 @@ Return ONLY the email content following the instructions above.`;
       .replace(/^\s*html\s*/i, '')  // Remove "html" text
       .trim();
 
-    // Remove ALL existing greetings completely
-    aiContent = aiContent.replace(/^.*hey\s*\{\{\s*name\s*\}\}.*$/gim, '');
-    aiContent = aiContent.replace(/^.*hi\s*\{\{\s*name\s*\}\}.*$/gim, '');
-    aiContent = aiContent.replace(/^.*hello\s*\{\{\s*name\s*\}\}.*$/gim, '');
-    
-    // Clean up any empty lines at the start
-    aiContent = aiContent.replace(/^\s*\n+/, '').trim();
-    
-    // Add single greeting at the top
-    aiContent = `Hey {{name}},\n\n${aiContent}`;
+    // Only add greeting if AI didn't include one
+    const hasGreeting = /^\s*(hey|hi|hello)\s*\{\{\s*name\s*\}\}/im.test(aiContent);
+    if (!hasGreeting) {
+      aiContent = `Hey {{name}},\n\n${aiContent}`;
+    }
 
     console.log('✅ [generate-email] Content cleaned:', aiContent.slice(0, 100));
 
