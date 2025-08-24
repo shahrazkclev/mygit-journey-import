@@ -511,19 +511,19 @@ export const SendCampaignModal: React.FC<SendCampaignModalProps> = ({
 
               {/* Stats Grid */}
               <div className="grid grid-cols-4 gap-3 text-center">
-                <div className="bg-email-muted/20 rounded-lg p-3 border border-email-primary/10">
+                <div className="bg-email-muted/20 rounded-lg p-3 border border-email-primary/10 min-h-[4rem] flex flex-col justify-center">
                   <div className="text-2xl font-bold text-email-primary">{totalRecipients}</div>
                   <div className="text-xs text-muted-foreground">Total</div>
                 </div>
-                <div className="bg-green-50 rounded-lg p-3 border border-green-200">
+                <div className="bg-green-50 rounded-lg p-3 border border-green-200 min-h-[4rem] flex flex-col justify-center">
                   <div className="text-2xl font-bold text-green-600">{sentCount}</div>
                   <div className="text-xs text-muted-foreground">Sent</div>
                 </div>
-                <div className="bg-red-50 rounded-lg p-3 border border-red-200">
+                <div className="bg-red-50 rounded-lg p-3 border border-red-200 min-h-[4rem] flex flex-col justify-center">
                   <div className="text-2xl font-bold text-red-600">{failedCount}</div>
                   <div className="text-xs text-muted-foreground">Failed</div>
                 </div>
-                <div className="bg-blue-50 rounded-lg p-3 border border-blue-200">
+                <div className="bg-blue-50 rounded-lg p-3 border border-blue-200 min-h-[4rem] flex flex-col justify-center">
                   <div className="text-2xl font-bold text-blue-600">{currentSenderSequence}</div>
                   <div className="text-xs text-muted-foreground">Sender #</div>
                 </div>

@@ -25,12 +25,13 @@ Subject: "${subject}"
 Content: ${prompt}
 
 Requirements:
-- Start with "Hey," (just that, no name needed)
+- Start with "Hey {{name}}," (ALWAYS include {{name}} placeholder for personalization)
 - Write natural, engaging content based on the prompt
 - Keep it professional but friendly
 - If it's about a product/service, include a clear call-to-action
 - End with a natural conclusion
 - Don't add "Best regards" or signatures - that's handled by the template
+- IMPORTANT: Use {{name}} placeholder where you want the recipient's name to appear
 
 Return ONLY the email body content (no HTML tags, just the text content).`;
 
@@ -174,7 +175,7 @@ Return ONLY the email body content (no HTML tags, just the text content).`;
   <div class="container">
     <div class="brand">${brandName}</div>
     <div class="hr"></div>
-    <p class="paragraph">Hey,</p>
+    <p class="paragraph">Hey {{name}},</p>
     <p class="paragraph">${safePrompt}</p>
     <div class="footer">
       ${emailSignature.split('\n').map(line => `<p style="margin:0 0 4px">${line}</p>`).join('')}
