@@ -217,12 +217,16 @@ async function processSends(supabase: SupabaseClient, campaign: any, contacts: C
           sender_sequence_number: currentSenderSequence
         });
         
-        // Send email with contact information (no HTML personalization)
+        // Personalize HTML content by replacing {{name}} placeholder
+        const contactName = contact.first_name || contact.email.split('@')[0] || 'Friend';
+        const personalizedHtml = campaign.html_content.replace(/\{\{name\}\}/g, contactName);
+        
+        // Send email with personalized content
         if (campaign.webhook_url) {
           await deliver(campaign.webhook_url, {
             to: contact.email,
             subject: campaign.subject,
-            html: campaign.html_content,
+            html: personalizedHtml,
             campaign_id: campaign.id,
             sender_sequence: currentSenderSequence,
             contact: {
@@ -230,7 +234,7 @@ async function processSends(supabase: SupabaseClient, campaign: any, contacts: C
               email: contact.email,
               first_name: contact.first_name,
               last_name: contact.last_name,
-              name: contact.first_name || contact.email.split('@')[0] || 'Friend'
+              name: contactName
             }
           });
         }
