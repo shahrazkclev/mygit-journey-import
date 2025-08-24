@@ -98,7 +98,7 @@ Return ONLY the email content following the instructions above.`;
       },
       body: JSON.stringify({
         model: 'claude-sonnet-4-20250514',
-        max_tokens: 1000,
+        max_tokens: 1500,
         messages: [{ role: 'user', content: systemPrompt }],
       }),
     });
@@ -117,10 +117,20 @@ Return ONLY the email content following the instructions above.`;
       .replace(/^\s*html\s*/i, '')  // Remove "html" text
       .trim();
 
-    // Early check: if AI returned a full HTML document, passthrough immediately (no modifications)
-    if (/<html[\s\S]*<\/html>/i.test(aiContent)) {
-      console.log('ℹ️ [generate-email] Full HTML from AI - passthrough');
-      return new Response(JSON.stringify({ htmlContent: aiContent }), {
+    // Early check: if AI returned a full HTML document or document-like content, passthrough immediately (no modifications)
+    const isDocumentLike = /<!DOCTYPE\s+html/i.test(aiContent) || /^\s*<html\b/i.test(aiContent) || (/<head\b/i.test(aiContent) && /<body\b/i.test(aiContent));
+    if (isDocumentLike) {
+      let passthrough = aiContent;
+      const hasHtmlClose = /<\/html>/i.test(passthrough);
+      const hasBodyClose = /<\/body>/i.test(passthrough);
+      if (!hasBodyClose && /<body\b/i.test(passthrough)) {
+        passthrough += '\n</body>';
+      }
+      if (!hasHtmlClose && /<html\b/i.test(passthrough)) {
+        passthrough += '\n</html>';
+      }
+      console.log('ℹ️ [generate-email] Document-like HTML from AI - passthrough');
+      return new Response(JSON.stringify({ htmlContent: passthrough }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
