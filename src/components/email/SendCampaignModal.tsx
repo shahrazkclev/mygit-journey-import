@@ -339,7 +339,7 @@ export const SendCampaignModal: React.FC<SendCampaignModalProps> = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
-      <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-lg max-h-[90vh] overflow-y-scroll">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 text-email-primary">
             <Send className="h-5 w-5" />
@@ -477,13 +477,13 @@ export const SendCampaignModal: React.FC<SendCampaignModalProps> = ({
           )}
 
           {(status === 'sending' || status === 'paused' || status === 'sent' || status === 'failed') && (
-            <div className="space-y-4">
+            <div className="space-y-4 min-h-[28rem]">
               {/* Status Header */}
               <div className="flex items-center justify-between">
                 <h3 className="font-medium text-email-primary">Campaign Progress</h3>
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 min-h-[28px] min-w-[140px] justify-end">
                   {status === 'sending' && (
-                    <Badge className="bg-email-accent/20 text-email-accent animate-pulse">
+                    <Badge className="bg-email-accent/20 text-email-accent">
                       <div className="flex items-center">
                         <div className="w-2 h-2 bg-email-accent rounded-full mr-2 animate-pulse"></div>
                         Sending...
@@ -500,7 +500,7 @@ export const SendCampaignModal: React.FC<SendCampaignModalProps> = ({
               <div className="space-y-2">
                 <div className="flex justify-between text-sm">
                   <span className="text-muted-foreground">Progress</span>
-                  <span className="font-medium text-email-primary">{Math.round(progress)}%</span>
+                  <span className="font-medium text-email-primary tabular-nums inline-block w-12 text-right">{Math.round(progress)}%</span>
                 </div>
                 <Progress value={progress} className="h-3" />
                 <div className="flex justify-between text-xs text-muted-foreground">
