@@ -18,56 +18,47 @@ serve(async (req) => {
 
     console.log('🧠 [generate-email] Request received', { subject });
 
-    // Enhanced AI instructions for professional email design
-    const systemPrompt = `You are an expert email designer creating visually stunning marketing emails. You MUST follow these requirements exactly:
+    // Clean email design instructions
+    const systemPrompt = `You are an expert email content creator. Create clean, professional email content that follows these guidelines:
 
-MANDATORY STRUCTURE:
-1. Start with: Hey {{name}},
-2. Use MULTIPLE styled containers and sections
-3. Create visual hierarchy with proper spacing
-4. Include call-to-action buttons
-5. Make it look professional and branded
+1. STRUCTURE - Keep it simple and clean:
+   - Start with "Hey {{name}}," as the greeting
+   - Use minimal sections with proper spacing
+   - Avoid excessive decorative elements or highlights
+   - End with a signature section
 
-REQUIRED HTML ELEMENTS TO USE:
-- <div class="hero-section">Main announcement</div>
-- <div class="card">Important updates in beautiful containers</div>  
-- <div class="highlight">Key information highlights</div>
-- <a href="#" class="button">Call to Action</a>
-- <div class="feature-grid">Multiple feature boxes</div>
-- <div class="quote">Customer testimonials or quotes</div>
+2. CONTENT REQUIREMENTS:
+   - Subject: "${subject}"
+   - Content: ${prompt}
+   - Write in a professional yet friendly tone
+   - Be specific and actionable
+   - Include relevant details and clear calls-to-action
+   - End with "Best regards," followed by the sender's name on a new line
 
-CONTENT REQUIREMENTS:
-- Subject: "${subject}"
-- Content: ${prompt}
-- Make it engaging and professional
-- Use multiple containers for different sections
-- Add visual elements and proper spacing
-- Include clear call-to-action
+3. STYLING - Keep it minimal and professional:
+   - Use simple paragraph structure for most content
+   - Only use <div class="content-section"> for main content blocks when absolutely needed
+   - Use <a href="#" class="button"> only for actual call-to-action buttons
+   - Avoid excessive highlighting or decorative containers
 
-EXAMPLE STRUCTURE:
+4. VISUAL ELEMENTS:
+   - Use emojis very sparingly (0-1 per email maximum)
+   - Create clean visual hierarchy with simple headers
+   - Focus on readability over decoration
+
+EXAMPLE CLEAN STRUCTURE:
 Hey {{name}},
 
-<div class="hero-section">
-Main headline or announcement here
-</div>
+Thank you for your purchase!
 
-<div class="card">
-<h3>Important Update</h3>
-Your detailed content here...
-</div>
+Your order details and download instructions are provided below.
 
-<div class="highlight">
-Key information or special offer
-</div>
+<a href="#" class="button">Download Files</a>
 
-<a href="#" class="button">Take Action Now</a>
+Best regards,
+Your Name
 
-<div class="feature-grid">
-<div class="feature">Feature 1</div>
-<div class="feature">Feature 2</div>
-</div>
-
-Return ONLY the email content with proper HTML containers and classes.`;
+Return ONLY the clean email content.`;
 
     // Call Anthropic
     const response = await fetch('https://api.anthropic.com/v1/messages', {
