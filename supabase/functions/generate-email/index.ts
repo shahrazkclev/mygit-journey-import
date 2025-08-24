@@ -268,16 +268,6 @@ Return ONLY the email content following the instructions above.`;
 <body>
   <div class="container">
     ${paragraphs}
-
-    <div class="divider"></div>
-
-    <div class="footer">
-      ${emailSignature.split('\n').map((line: string) => `<p style="margin:0 0 4px">${line}</p>`).join('')}
-    </div>
-    
-    <div class="unsubscribe-footer">
-      If you no longer wish to receive these emails, you can <a href="https://unsub.cleverpoly.store/?email={{email}}" class="link">unsubscribe here</a>.
-    </div>
   </div>
 </body>
 </html>`;
