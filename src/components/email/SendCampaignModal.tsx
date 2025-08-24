@@ -152,14 +152,32 @@ export const SendCampaignModal: React.FC<SendCampaignModalProps> = ({
       setStatus('sending');
       toast.success('Campaign started! Sending in background...');
 
-      // Start real-time monitoring
+      // Start real-time monitoring with fallback polling
       const unsubscribe = monitorProgress(campaign.id);
+      
+      // Also use polling as fallback to ensure we get updates
+      const pollInterval = setInterval(async () => {
+        try {
+          const response = await api.getCampaign(campaign.id);
+          if (response.ok) {
+            const campaignData = await response.json();
+            if (campaignData.status === 'sent' || campaignData.status === 'failed') {
+              clearInterval(pollInterval);
+            }
+          }
+        } catch (error) {
+          console.log('Polling error:', error);
+        }
+      }, 3000);
       
       // Initial load of campaign sends
       setTimeout(() => loadCampaignSends(campaign.id), 1000);
       
       // Clean up subscriptions when modal closes
-      return unsubscribe;
+      return () => {
+        if (unsubscribe) unsubscribe();
+        clearInterval(pollInterval);
+      };
 
     } catch (error: any) {
       console.error('❌ Error starting campaign:', error);
@@ -186,21 +204,24 @@ export const SendCampaignModal: React.FC<SendCampaignModalProps> = ({
           filter: `id=eq.${id}`,
         },
         (payload) => {
-          console.log('📈 Campaign update:', payload);
+          console.log('📈 Campaign real-time update:', payload);
           const campaign = payload.new as any;
           if (campaign) {
-            // Update individual fields only if they changed
-            setTotalRecipients(prev => (campaign.total_recipients ?? 0) !== prev ? (campaign.total_recipients ?? 0) : prev);
-            setSentCount(prev => (campaign.sent_count ?? 0) !== prev ? (campaign.sent_count ?? 0) : prev);
-            setCurrentSenderSequence(prev => (campaign.sender_sequence_number ?? 1) !== prev ? (campaign.sender_sequence_number ?? 1) : prev);
-            setStatus(prev => campaign.status !== prev ? campaign.status : prev);
-            setErrorMessage(prev => campaign.error_message !== prev ? campaign.error_message : prev);
+            console.log('Campaign status:', campaign.status, 'Sent:', campaign.sent_count, 'Total:', campaign.total_recipients);
+            
+            // Force update all fields to ensure UI reflects real state
+            setTotalRecipients(campaign.total_recipients ?? 0);
+            setSentCount(campaign.sent_count ?? 0);
+            setCurrentSenderSequence(campaign.sender_sequence_number ?? 1);
+            setStatus(campaign.status);
+            setErrorMessage(campaign.error_message);
             
             const total = campaign.total_recipients ?? 0;
             const sent = campaign.sent_count ?? 0;
             if (total > 0) {
               const progressPercent = Math.min((sent / total) * 100, 100);
-              setProgress(prev => Math.abs(progressPercent - prev) > 0.1 ? progressPercent : prev);
+              setProgress(progressPercent);
+              console.log(`Progress update: ${sent}/${total} (${progressPercent.toFixed(1)}%)`);
             }
 
             if (campaign.status === 'sent' || campaign.status === 'failed') {
@@ -210,11 +231,16 @@ export const SendCampaignModal: React.FC<SendCampaignModalProps> = ({
               
               toast.success(message);
               console.log('🏁 Campaign finished:', campaign.status);
+              
+              // Load final campaign sends to show completed list
+              setTimeout(() => loadCampaignSends(id), 500);
             }
           }
         }
       )
-      .subscribe();
+      .subscribe((status) => {
+        console.log('Campaign subscription status:', status);
+      });
 
     // Subscribe to campaign_sends changes for detailed progress
     const sendsChannel = supabase
@@ -227,8 +253,8 @@ export const SendCampaignModal: React.FC<SendCampaignModalProps> = ({
           table: 'campaign_sends',
           filter: `campaign_id=eq.${id}`,
         },
-        async (payload) => {
-          console.log('📧 Send update:', payload);
+        (payload) => {
+          console.log('📧 Send real-time update:', payload);
           
           // Small delay to ensure database consistency, then refresh
           setTimeout(() => {
@@ -236,7 +262,9 @@ export const SendCampaignModal: React.FC<SendCampaignModalProps> = ({
           }, 200);
         }
       )
-      .subscribe();
+      .subscribe((status) => {
+        console.log('Campaign sends subscription status:', status);
+      });
 
     return () => {
       campaignChannel.unsubscribe();
@@ -549,10 +577,22 @@ export const SendCampaignModal: React.FC<SendCampaignModalProps> = ({
               </div>
 
               {/* Current Recipient */}
-              {currentRecipient && (
+              {status === 'sending' && currentRecipient && (
                 <div className="bg-muted/50 rounded-lg p-3 border">
                   <div className="text-sm font-medium text-muted-foreground">Currently Processing:</div>
                   <div className="text-sm font-mono">{currentRecipient}</div>
+                </div>
+              )}
+
+              {/* Real-time Status Display */}
+              {status === 'sending' && (
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                  <div className="text-sm font-medium text-blue-800">
+                    Campaign Status: {status.toUpperCase()}
+                  </div>
+                  <div className="text-xs text-blue-600 mt-1">
+                    Progress: {sentCount}/{totalRecipients} emails sent ({Math.round(progress)}%)
+                  </div>
                 </div>
               )}
 
@@ -572,6 +612,13 @@ export const SendCampaignModal: React.FC<SendCampaignModalProps> = ({
                       {recipientDetails.map((recipient, index) => (
                         <RecipientRow key={`${recipient.email}-${recipient.status}`} recipient={recipient} index={index} />
                       ))}
+                    </div>
+                  ) : status === 'sent' ? (
+                    <div className="flex items-center justify-center h-full text-muted-foreground">
+                      <div className="text-center">
+                        <CheckCircle className="h-8 w-8 mx-auto mb-2 text-green-600" />
+                        <p className="text-sm">Campaign completed successfully!</p>
+                      </div>
                     </div>
                   ) : (
                     <div className="flex items-center justify-center h-full text-muted-foreground">
