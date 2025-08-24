@@ -290,6 +290,7 @@ export const StyleGuide = () => {
         body: {
           prompt: "Create a preview email showcasing the brand style",
           subject: "Style Guide Preview Email",
+          userId: DEMO_USER_ID,
           styleGuide: {
             brandName: brandIdentity.name,
             primaryColor: brandIdentity.primaryColor,

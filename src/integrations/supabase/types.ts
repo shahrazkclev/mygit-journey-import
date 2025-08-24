@@ -372,6 +372,7 @@ export type Database = {
       }
       user_settings: {
         Row: {
+          ai_instructions: string | null
           batch_size: number | null
           created_at: string
           delay_between_batches: number | null
@@ -385,6 +386,7 @@ export type Database = {
           webhook_url: string | null
         }
         Insert: {
+          ai_instructions?: string | null
           batch_size?: number | null
           created_at?: string
           delay_between_batches?: number | null
@@ -398,6 +400,7 @@ export type Database = {
           webhook_url?: string | null
         }
         Update: {
+          ai_instructions?: string | null
           batch_size?: number | null
           created_at?: string
           delay_between_batches?: number | null

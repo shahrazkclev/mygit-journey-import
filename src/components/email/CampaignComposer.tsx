@@ -522,6 +522,7 @@ export const CampaignComposer: React.FC<CampaignComposerProps> = ({ onSave }) =>
         body: {
           prompt: enhancedPrompt,
           subject: subject,
+          userId: DEMO_USER_ID,
           regenId: Date.now(),
           themeColors: themeColors,
           styleGuide: styleGuide ? {

@@ -14,12 +14,23 @@ serve(async (req) => {
   }
 
   try {
-    const { subject = 'Hello', prompt = '', styleGuide } = await req.json();
+    const { subject = 'Hello', prompt = '', styleGuide, userId = '550e8400-e29b-41d4-a716-446655440000' } = await req.json();
 
     console.log('🧠 [generate-email] Request received', { subject });
 
-    // Clean email design instructions
-    const systemPrompt = `You are an expert email content creator. Create clean, professional email content that follows these guidelines:
+    // Get custom AI instructions from database
+    const { createClient } = await import('https://esm.sh/@supabase/supabase-js@2');
+    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+    const supabase = createClient(supabaseUrl, supabaseServiceKey);
+
+    const { data: settings } = await supabase
+      .from('user_settings')
+      .select('ai_instructions')
+      .eq('user_id', userId)
+      .single();
+
+    const defaultInstructions = `You are an expert email content creator. Create clean, professional email content that follows these guidelines:
 
 1. STRUCTURE - Keep it simple and clean:
    - Start with "Hey {{name}}," as the greeting
@@ -28,8 +39,6 @@ serve(async (req) => {
    - End with a signature section
 
 2. CONTENT REQUIREMENTS:
-   - Subject: "${subject}"
-   - Content: ${prompt}
    - Write in a professional yet friendly tone
    - Be specific and actionable
    - Include relevant details and clear calls-to-action
@@ -59,6 +68,17 @@ Best regards,
 Your Name
 
 Return ONLY the clean email content.`;
+
+    const aiInstructions = settings?.ai_instructions || defaultInstructions;
+
+    // Create system prompt with custom instructions
+    const systemPrompt = `${aiInstructions}
+
+CONTENT REQUIREMENTS:
+- Subject: "${subject}"
+- Content: ${prompt}
+
+Return ONLY the email content following the instructions above.`;
 
     // Call Anthropic
     const response = await fetch('https://api.anthropic.com/v1/messages', {
