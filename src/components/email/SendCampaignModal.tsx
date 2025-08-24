@@ -261,8 +261,9 @@ export const SendCampaignModal: React.FC<SendCampaignModalProps> = ({
               toast.success(message);
               console.log('🏁 Campaign finished:', campaign.status);
               
-              // Load final campaign sends to show completed list
-              setTimeout(() => loadCampaignSends(id), 500);
+              // Load final campaign sends to show completed list with latest statuses
+              setTimeout(() => loadCampaignSends(id), 100);
+              setTimeout(() => loadCampaignSends(id), 1000); // Extra refresh to ensure all statuses are updated
             }
           }
         }
@@ -631,9 +632,6 @@ export const SendCampaignModal: React.FC<SendCampaignModalProps> = ({
                 <div className="bg-muted/50 p-3 border-b flex-shrink-0">
                   <h4 className="font-medium text-sm">
                     Send Progress ({sentDisplay}/{totalDisplay})
-                    {recipientDetails.length === 0 && status === 'sending' && (
-                      <span className="ml-2 text-xs text-muted-foreground animate-pulse">● Preparing recipients...</span>
-                    )}
                     {status === 'sent' && (
                       <span className="ml-2 text-xs text-green-600">✅ Completed</span>
                     )}
@@ -653,18 +651,23 @@ export const SendCampaignModal: React.FC<SendCampaignModalProps> = ({
                         <p className="text-sm">Campaign completed successfully!</p>
                       </div>
                     </div>
-                  ) : (
-                    <div className="flex items-center justify-center h-full text-muted-foreground">
-                      <div className="text-center">
-                        <Clock className="h-8 w-8 mx-auto mb-2 opacity-50" />
-                        <p className="text-sm">
-                          {status === 'sending' ? 'Preparing recipients...' : 'No recipients yet'}
-                        </p>
-                        {status === 'sending' && (
-                          <p className="text-xs mt-1 opacity-75">This may take a few moments</p>
-                        )}
-                      </div>
-                    </div>
+                   ) : (
+                     <div className="flex items-center justify-center h-full text-muted-foreground">
+                       <div className="text-center">
+                         {status === 'sending' ? (
+                           <>
+                             <div className="animate-spin rounded-full h-8 w-8 mx-auto mb-2 border-2 border-gray-300 border-t-blue-600"></div>
+                             <p className="text-sm font-medium">Preparing recipients...</p>
+                             <p className="text-xs mt-1 opacity-75">This may take a few moments</p>
+                           </>
+                         ) : (
+                           <>
+                             <Clock className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                             <p className="text-sm">No recipients yet</p>
+                           </>
+                         )}
+                       </div>
+                     </div>
                   )}
                 </div>
               </div>
