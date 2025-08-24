@@ -110,30 +110,29 @@ Return ONLY the email content following the instructions above.`;
     const data = await response.json();
     let aiContent: string = data.content?.[0]?.text || String(prompt || '');
 
-    // Fix the greeting to ensure single {{name}} placeholder
-    if (!aiContent.toLowerCase().startsWith('hey {{name}}')) {
-      // Remove any existing greeting and add the correct one
-      aiContent = aiContent.replace(/^\s*Hey\s*[^,\n]*[,\n]\s*/i, '');
-      aiContent = `Hey {{name}},\n\n${aiContent}`;
+    // Normalize and enforce a single greeting once
+    const greetingPattern = /^\s*hey\s*\{\{\s*name\s*\}\}\s*,?\s*/i;
+    if (greetingPattern.test(aiContent)) {
+      aiContent = aiContent.replace(greetingPattern, '');
+    } else {
+      // Remove any other greeting-like first line (Hey/Hi/Hello ...)
+      aiContent = aiContent.replace(/^\s*(hey|hi|hello)[^\n]*\n+/i, '');
     }
+    aiContent = `Hey {{name}},\n\n${aiContent.trim()}`;
 
-    console.log('✅ [generate-email] Placeholder ensured:', aiContent.slice(0, 60));
+    // Strip any additional duplicate greetings later in the content (plain text or HTML)
+    aiContent = aiContent.replace(/\n\n\s*hey\s*\{\{\s*name\s*\}\}\s*,?\s*\n\n/gi, '\n\n');
+    aiContent = aiContent.replace(/<p[^>]*>\s*hey\s*\{\{\s*name\s*\}\}\s*,?\s*<\/p>\s*/gi, '');
 
-    // Add unsubscribe link at the very bottom if not present
-    if (!aiContent.toLowerCase().includes('unsubscribe')) {
-      aiContent += '\n\nIf you no longer wish to receive these emails, you can unsubscribe here.';
-    }
+    console.log('✅ [generate-email] Greeting normalized:', aiContent.slice(0, 80));
 
-    // Remove unsubscribe from AI content since we'll add it after signature
-    const contentWithoutUnsubscribe = aiContent.replace(
-      /If you no longer wish to receive these emails, you can unsubscribe here\.?/gi,
-      ''
-    ).trim();
+    // Do NOT add or duplicate unsubscribe text; let sender handle compliance
+    const sanitizedContent = aiContent.replace(/(^|\n).*unsubscribe.*$/gim, '').trim();
     
     // Process content - it may already contain HTML from AI
-    const paragraphs = contentWithoutUnsubscribe
+    const paragraphs = sanitizedContent
       .split('\n\n')
-      .filter((p) => p.trim())
+      .filter((p, idx) => p.trim() && (idx === 0 || !/^\s*hey\s*\{\{\s*name\s*\}\}\s*,?\s*$/i.test(p)))
       .map((p) => {
         if (p.includes('<div') || p.includes('<a')) {
           return p; // Keep HTML elements as-is

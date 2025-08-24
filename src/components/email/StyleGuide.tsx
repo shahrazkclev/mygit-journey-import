@@ -7,7 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { ColorPicker } from "@/components/ui/color-picker";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Palette, Type, Image, Sparkles, Save, Eye, Settings } from "lucide-react";
+import { Palette, Image, Sparkles, Save, Eye, Settings } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { DEMO_USER_ID } from "@/lib/demo-auth";
