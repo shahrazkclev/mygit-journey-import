@@ -16,6 +16,7 @@ import { DEMO_USER_ID } from "@/lib/demo-auth";
 export const CampaignSettings = () => {
   const [webhookUrl, setWebhookUrl] = useState("");
   const [aiInstructions, setAiInstructions] = useState("");
+  const [showFullPrompt, setShowFullPrompt] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [isTestingWebhook, setIsTestingWebhook] = useState(false);
   const [isSavingAi, setIsSavingAi] = useState(false);
@@ -162,6 +163,16 @@ Return ONLY the clean email content.`;
     toast.success("Reset to default AI instructions");
   };
 
+  const generateFullPromptPreview = (subject = "Your Subject", prompt = "Your email content") => {
+    return `${aiInstructions}
+
+CONTENT REQUIREMENTS:
+- Subject: "${subject}"
+- Content: ${prompt}
+
+Return ONLY the email content following the instructions above.`;
+  };
+
   const handleTestWebhook = async () => {
     if (!webhookUrl.trim()) {
       toast.error('Please enter a webhook URL first');
@@ -267,6 +278,34 @@ Return ONLY the clean email content.`;
               className="font-mono text-sm"
             />
           </div>
+          
+          {/* Full Prompt Preview */}
+          <Collapsible open={showFullPrompt} onOpenChange={setShowFullPrompt}>
+            <CollapsibleTrigger asChild>
+              <Button variant="ghost" className="w-full justify-between p-0 h-auto">
+                <span className="text-sm text-muted-foreground">
+                  {showFullPrompt ? "Hide" : "Show"} Complete AI Prompt (What Claude Actually Sees)
+                </span>
+                {showFullPrompt ? (
+                  <ChevronDown className="h-4 w-4" />
+                ) : (
+                  <ChevronRight className="h-4 w-4" />
+                )}
+              </Button>
+            </CollapsibleTrigger>
+            <CollapsibleContent className="space-y-2 mt-2">
+              <div className="p-4 bg-muted rounded-lg">
+                <Label className="text-xs text-muted-foreground">COMPLETE PROMPT SENT TO CLAUDE:</Label>
+                <pre className="text-xs whitespace-pre-wrap font-mono mt-2 max-h-60 overflow-y-auto">
+                  {generateFullPromptPreview()}
+                </pre>
+              </div>
+              <div className="text-xs text-muted-foreground">
+                ⚠️ The AI gets your custom instructions above PLUS additional dynamic content requirements (subject, prompt) and formatting rules.
+              </div>
+            </CollapsibleContent>
+          </Collapsible>
+
           <div className="flex gap-3">
             <Button 
               onClick={resetToDefaults}
