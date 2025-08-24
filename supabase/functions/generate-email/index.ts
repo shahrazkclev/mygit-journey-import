@@ -26,14 +26,17 @@ serve(async (req) => {
 3. Content prompt: ${prompt}
 4. Keep it professional but friendly
 5. Include clear call-to-action if relevant
-6. End naturally without signatures
+6. MANDATORY: End with an unsubscribe line: "If you no longer wish to receive these emails, you can unsubscribe here."
+7. Do NOT add signatures - that's handled by the template
 
-CRITICAL: You MUST use "Hey {{name}}," at the start. Do not use "Hey," or any other greeting.
+CRITICAL: You MUST use "Hey {{name}}," at the start and include the unsubscribe text at the end.
 
 Example format:
 Hey {{name}},
 
 [Your email content here...]
+
+If you no longer wish to receive these emails, you can unsubscribe here.
 
 Return only the email body content (no HTML tags).`;
 
@@ -59,19 +62,30 @@ Return only the email body content (no HTML tags).`;
     const data = await response.json();
     let aiContent: string = data.content?.[0]?.text || String(prompt || '');
 
-    // Force include the {{name}} placeholder at the greeting
-    // Replace variations like "Hey,", "Hey John,", "hey," etc.
-    aiContent = aiContent.replace(/^\s*Hey\s*[,\-–]?\s*/i, 'Hey {{name}}, ');
-    aiContent = aiContent.replace(/^\s*Hey\s+[^,]+,\s*/i, 'Hey {{name}}, ');
-    if (!/\{\{\s*name\s*\}\}/i.test(aiContent)) {
+    // Fix the greeting to ensure single {{name}} placeholder
+    if (!aiContent.toLowerCase().startsWith('hey {{name}}')) {
+      // Remove any existing greeting and add the correct one
+      aiContent = aiContent.replace(/^\s*Hey\s*[^,\n]*[,\n]\s*/i, '');
       aiContent = `Hey {{name}},\n\n${aiContent}`;
     }
 
     console.log('✅ [generate-email] Placeholder ensured:', aiContent.slice(0, 60));
 
+    // Add unsubscribe link at the end if not present
+    if (!aiContent.toLowerCase().includes('unsubscribe')) {
+      aiContent += '\n\nIf you no longer wish to receive these emails, you can unsubscribe here.';
+    }
+
     // Clean and format the AI content
     const safeContent = aiContent.replace(/</g, '&lt;').replace(/>/g, '&gt;');
-    const paragraphs = safeContent
+    
+    // Convert unsubscribe text to link and process paragraphs
+    const contentWithUnsubscribe = safeContent.replace(
+      /If you no longer wish to receive these emails, you can unsubscribe here\./g,
+      'If you no longer wish to receive these emails, you can <a href="https://unsub.cleverpoly.store/?email={{email}}" class="link">unsubscribe here</a>.'
+    );
+    
+    const paragraphs = contentWithUnsubscribe
       .split('\n\n')
       .filter((p) => p.trim())
       .map((p) => `<p class="paragraph">${p.trim()}</p>`)
