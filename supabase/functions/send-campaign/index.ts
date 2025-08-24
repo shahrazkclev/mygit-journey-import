@@ -218,75 +218,84 @@ async function processSends(supabase: SupabaseClient, campaign: any, contacts: C
   
   let sentCount = 0;
   let failedCount = 0;
+  let currentSenderSequence = campaign.sender_sequence_number || 1;
   
   try {
-    // Process contacts in batches
-    for (let i = 0; i < contacts.length; i += settings.batch_size) {
-      const batch = contacts.slice(i, i + settings.batch_size);
-      console.log(`📦 Processing batch ${Math.floor(i / settings.batch_size) + 1} with ${batch.length} contacts`);
+    // Process contacts one by one for proper timing and sequence tracking
+    for (let i = 0; i < contacts.length; i++) {
+      const contact = contacts[i];
       
-      // Process batch in parallel
-      const batchPromises = batch.map(async (contact) => {
-        try {
-          console.log(`📧 Sending to: ${contact.email}`);
-          
-          // Replace variables in HTML content
-          const personalizedHtml = replaceVariablesInHtml(campaign.html_content, contact);
-          
-          // Simulate sending (replace with actual email service)
-          if (campaign.webhook_url) {
-            await deliver(campaign.webhook_url, {
-              to: contact.email,
-              subject: campaign.subject,
-              html: personalizedHtml,
-              campaign_id: campaign.id
-            });
-          }
-          
-          // Mark as sent
-          await markSend(supabase, campaign.id, contact.email, {
-            status: 'sent',
-            sent_at: new Date().toISOString()
-          });
-          
-          sentCount++;
-          console.log(`✅ Sent to ${contact.email} (${sentCount}/${contacts.length})`);
-          
-          // Delay between individual emails
-          if (settings.delay_between_emails > 0) {
-            await new Promise(resolve => setTimeout(resolve, settings.delay_between_emails * 1000));
-          }
-          
-        } catch (error: any) {
-          console.error(`❌ Failed to send to ${contact.email}:`, error);
-          failedCount++;
-          
-          // Mark as failed
-          await markSend(supabase, campaign.id, contact.email, {
-            status: 'failed',
-            error_message: error.message
+      try {
+        console.log(`📧 Sending to: ${contact.email} (${i + 1}/${contacts.length}) - Sender #${currentSenderSequence}`);
+        
+        // Update current progress before sending
+        await updateCampaign(supabase, campaign.id, {
+          sent_count: sentCount,
+          current_recipient: contact.email,
+          current_sender_sequence: currentSenderSequence
+        });
+        
+        // Replace variables in HTML content
+        const personalizedHtml = replaceVariablesInHtml(campaign.html_content, contact);
+        
+        // Simulate sending (replace with actual email service)
+        if (campaign.webhook_url) {
+          await deliver(campaign.webhook_url, {
+            to: contact.email,
+            subject: campaign.subject,
+            html: personalizedHtml,
+            campaign_id: campaign.id,
+            sender_sequence: currentSenderSequence
           });
         }
-      });
-      
-      await Promise.all(batchPromises);
-      
-      // Update campaign progress
-      await updateCampaign(supabase, campaign.id, {
-        sent_count: sentCount
-      });
-      
-      // Delay between batches (except for the last batch)
-      if (i + settings.batch_size < contacts.length && settings.delay_between_batches > 0) {
-        console.log(`⏳ Waiting ${settings.delay_between_batches}s before next batch...`);
-        await new Promise(resolve => setTimeout(resolve, settings.delay_between_batches * 1000));
+        
+        // Mark as sent
+        await markSend(supabase, campaign.id, contact.email, {
+          status: 'sent',
+          sent_at: new Date().toISOString()
+        });
+        
+        sentCount++;
+        console.log(`✅ Sent to ${contact.email} (${sentCount}/${contacts.length})`);
+        
+        // Update progress after successful send
+        await updateCampaign(supabase, campaign.id, {
+          sent_count: sentCount
+        });
+        
+        // Increment sender sequence for next email
+        currentSenderSequence++;
+        
+        // Delay between individual emails (except for the last one)
+        if (i < contacts.length - 1 && settings.delay_between_emails > 0) {
+          console.log(`⏳ Waiting ${settings.delay_between_emails}s before next email...`);
+          await new Promise(resolve => setTimeout(resolve, settings.delay_between_emails * 1000));
+        }
+        
+      } catch (error: any) {
+        console.error(`❌ Failed to send to ${contact.email}:`, error);
+        failedCount++;
+        
+        // Mark as failed
+        await markSend(supabase, campaign.id, contact.email, {
+          status: 'failed',
+          error_message: error.message
+        });
+        
+        // Update progress even on failure
+        await updateCampaign(supabase, campaign.id, {
+          sent_count: sentCount
+        });
       }
     }
     
     // Campaign completed
     await updateCampaign(supabase, campaign.id, {
       status: 'sent',
-      sent_count: sentCount
+      sent_count: sentCount,
+      sent_at: new Date().toISOString(),
+      current_recipient: null,
+      current_sender_sequence: currentSenderSequence
     });
     
     console.log(`🎉 Campaign completed! Sent: ${sentCount}, Failed: ${failedCount}`);

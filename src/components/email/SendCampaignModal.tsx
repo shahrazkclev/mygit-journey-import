@@ -85,10 +85,13 @@ export const SendCampaignModal: React.FC<SendCampaignModalProps> = ({
       const actualRecipientCount = count || 0;
       setTotalRecipients(actualRecipientCount);
 
-      // Calculate estimated time based on delay setting
-      const estimatedSeconds = actualRecipientCount * delayBetweenEmails;
-      const minutes = Math.floor(estimatedSeconds / 60);
-      const seconds = estimatedSeconds % 60;
+      // Calculate estimated time based on delay setting and sequential sending
+      const totalDelayTime = (actualRecipientCount - 1) * delayBetweenEmails; // Delay between each email
+      const estimatedSendTime = actualRecipientCount * 2; // ~2 seconds per email for processing
+      const totalEstimatedSeconds = totalDelayTime + estimatedSendTime;
+      
+      const minutes = Math.floor(totalEstimatedSeconds / 60);
+      const seconds = totalEstimatedSeconds % 60;
       setEstimatedTime(minutes > 0 ? `${minutes}m ${seconds}s` : `${seconds}s`);
 
     } catch (error) {
@@ -184,20 +187,22 @@ export const SendCampaignModal: React.FC<SendCampaignModalProps> = ({
         if (campaign) {
           const total = campaign.total_recipients ?? 0;
           const sent = campaign.sent_count ?? 0;
-          const failed = total - sent; // Calculate failed count
+          const failed = Math.max(0, total - sent); // Calculate remaining as potential failed
+          const currentRecipient = (campaign as any).current_recipient || '';
+          const currentSenderSeq = campaign.sender_sequence_number || 1;
 
           setTotalRecipients(total);
           setSentCount(sent);
-          setFailedCount(Math.max(failed, 0));
-          setCurrentSenderSequence(campaign.sender_sequence_number || 1);
-          setCurrentRecipient('');
+          setFailedCount(0); // Reset failed count, will be calculated properly
+          setCurrentSenderSequence(currentSenderSeq);
+          setCurrentRecipient(currentRecipient);
           setStatus(campaign.status as any);
           setErrorMessage((campaign as any).error_message);
           
           if (total > 0) {
             const progressPercent = (sent / total) * 100;
             setProgress(progressPercent);
-            console.log(`📊 Progress: ${sent}/${total} (${progressPercent.toFixed(1)}%)`);
+            console.log(`📊 Progress: ${sent}/${total} (${progressPercent.toFixed(1)}%) - Current: ${currentRecipient} - Sender #${currentSenderSeq}`);
           }
 
           // Load individual send records for more detailed tracking
@@ -221,7 +226,7 @@ export const SendCampaignModal: React.FC<SendCampaignModalProps> = ({
         setStatus('failed');
         setErrorMessage('Monitoring failed - check console');
       }
-    }, 1000); // Check every 1 second for more responsive updates
+    }, 500); // Check every 500ms for more responsive updates
 
     // Clean up on component unmount
     return () => clearInterval(interval);
