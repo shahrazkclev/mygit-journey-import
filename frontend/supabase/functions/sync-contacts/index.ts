@@ -82,11 +82,12 @@ serve(async (req) => {
     }
 
     // Handle regular contact sync format
-    // Expected format from Google Sheets via Make.com:
+    // Expected format from Google Sheets via Make.com or webhook:
     // {
     //   "email": "customer@example.com",
     //   "name": "John Doe", 
     //   "tags": ["customer", "premium", "lazy-motion-library"],
+    //   "status": "subscribed",
     //   "action": "create" | "update",
     //   "user_id": "optional-user-id"
     // }
@@ -94,11 +95,17 @@ serve(async (req) => {
     const { email, name, tags = [], action = 'create', user_id, status = 'subscribed' } = payload;
 
     if (!email) {
-      return new Response(JSON.stringify({ error: 'Email is required' }), {
+      console.error('Missing email in payload:', payload);
+      return new Response(JSON.stringify({ 
+        error: 'Email is required for contact sync',
+        received_payload: payload 
+      }), {
         status: 400,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
+
+    console.log(`Processing contact sync for: ${email}`);
 
     // Use provided user_id or default to demo user
     const finalUserId = user_id || '550e8400-e29b-41d4-a716-446655440000';
