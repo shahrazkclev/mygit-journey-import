@@ -58,7 +58,11 @@ Return only the email body content (no HTML tags).`;
     }
 
     const data = await response.json();
-    const aiContent = data.content[0]?.text || prompt;
+    let aiContent = data.content[0]?.text || prompt;
+    
+    // Force ensure {{name}} placeholder is included - replace "Hey," with "Hey {{name}},"
+    aiContent = aiContent.replace(/^Hey,/i, 'Hey {{name}},');
+    aiContent = aiContent.replace(/Hey [^,]*,/i, 'Hey {{name}},');
 
     // Clean and format the AI content
     const safeContent = String(aiContent).replace(/</g, '&lt;').replace(/>/g, '&gt;');
