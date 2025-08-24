@@ -114,23 +114,6 @@ async function deliver(webhookUrl: string, body: unknown) {
   });
 }
 
-// Function to replace variables in HTML content
-function replaceVariablesInHtml(htmlContent: string, contact: Contact): string {
-  let result = htmlContent;
-  
-  // Generate name from email if no first name
-  const firstName = contact.first_name || contact.email.split('@')[0] || 'Friend';
-  const lastName = contact.last_name || '';
-  const fullName = lastName ? `${firstName} ${lastName}` : firstName;
-  
-  // Replace variables
-  result = result.replace(/\{\{firstName\}\}/g, firstName);
-  result = result.replace(/\{\{lastName\}\}/g, lastName);
-  result = result.replace(/\{\{fullName\}\}/g, fullName);
-  result = result.replace(/\{\{email\}\}/g, contact.email);
-  
-  return result;
-}
 
 async function handler(req: Request): Promise<Response> {
   if (req.method === 'OPTIONS') {
@@ -234,17 +217,21 @@ async function processSends(supabase: SupabaseClient, campaign: any, contacts: C
           sender_sequence_number: currentSenderSequence
         });
         
-        // Replace variables in HTML content
-        const personalizedHtml = replaceVariablesInHtml(campaign.html_content, contact);
-        
-        // Simulate sending (replace with actual email service)
+        // Send email with contact information (no HTML personalization)
         if (campaign.webhook_url) {
           await deliver(campaign.webhook_url, {
             to: contact.email,
             subject: campaign.subject,
-            html: personalizedHtml,
+            html: campaign.html_content,
             campaign_id: campaign.id,
-            sender_sequence: currentSenderSequence
+            sender_sequence: currentSenderSequence,
+            contact: {
+              id: contact.id,
+              email: contact.email,
+              first_name: contact.first_name,
+              last_name: contact.last_name,
+              name: contact.first_name || contact.email.split('@')[0] || 'Friend'
+            }
           });
         }
         
