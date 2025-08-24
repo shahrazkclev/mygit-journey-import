@@ -56,6 +56,12 @@ export const SendCampaignModal: React.FC<SendCampaignModalProps> = ({
   const [recipientDetails, setRecipientDetails] = useState<RecipientDetails[]>([]);
   const [listNames, setListNames] = useState<string[]>([]);
 
+  // Derived metrics from recipientDetails as a reliable fallback for UI
+  const sentDerived = useMemo(() => recipientDetails.filter(r => r.status === 'sent').length, [recipientDetails]);
+  const failedDerived = useMemo(() => recipientDetails.filter(r => r.status === 'failed').length, [recipientDetails]);
+  const totalDerived = useMemo(() => (recipientDetails.length > 0 ? recipientDetails.length : totalRecipients), [recipientDetails, totalRecipients]);
+  const progressDisplay = useMemo(() => (totalDerived > 0 ? Math.min((sentDerived / totalDerived) * 100, 100) : progress), [sentDerived, totalDerived, progress]);
+
   // Load list details on modal open
   useEffect(() => {
     if (isOpen && selectedLists.length > 0) {
@@ -372,11 +378,11 @@ export const SendCampaignModal: React.FC<SendCampaignModalProps> = ({
   };
 
   const getRemainingTime = () => {
-    if (!startTime || sentCount === 0) return estimatedTime;
+    if (!startTime || sentDerived === 0) return estimatedTime;
     
     const elapsed = (new Date().getTime() - startTime.getTime()) / 1000;
-    const rate = sentCount / elapsed; // emails per second
-    const remaining = (totalRecipients - sentCount) / rate;
+    const rate = sentDerived / elapsed; // emails per second
+    const remaining = (totalDerived - sentDerived) / (rate || 1);
     
     const minutes = Math.floor(remaining / 60);
     const seconds = Math.floor(remaining % 60);
@@ -548,11 +554,11 @@ export const SendCampaignModal: React.FC<SendCampaignModalProps> = ({
               <div className="space-y-2">
                 <div className="flex justify-between text-sm">
                   <span className="text-muted-foreground">Progress</span>
-                  <span className="font-medium text-email-primary tabular-nums inline-block w-12 text-right">{Math.round(progress)}%</span>
+                  <span className="font-medium text-email-primary tabular-nums inline-block w-12 text-right">{Math.round(progressDisplay)}%</span>
                 </div>
-                <Progress value={progress} className="h-3" />
+                <Progress value={progressDisplay} className="h-3" />
                 <div className="flex justify-between text-xs text-muted-foreground">
-                  <span>{sentCount} of {totalRecipients} sent</span>
+                  <span>{sentDerived} of {totalDerived} sent</span>
                   <span>{status === 'sending' ? 'Time remaining: ' + getRemainingTime() : getElapsedTime()}</span>
                 </div>
               </div>
@@ -560,15 +566,15 @@ export const SendCampaignModal: React.FC<SendCampaignModalProps> = ({
               {/* Stats Grid */}
               <div className="grid grid-cols-4 gap-3 text-center">
                 <div className="bg-email-muted/20 rounded-lg p-3 border border-email-primary/10 min-h-[4rem] flex flex-col justify-center">
-                  <div className="text-2xl font-bold text-email-primary">{totalRecipients}</div>
+                  <div className="text-2xl font-bold text-email-primary">{totalDerived}</div>
                   <div className="text-xs text-muted-foreground">Total</div>
                 </div>
                 <div className="bg-green-50 rounded-lg p-3 border border-green-200 min-h-[4rem] flex flex-col justify-center">
-                  <div className="text-2xl font-bold text-green-600">{sentCount}</div>
+                  <div className="text-2xl font-bold text-green-600">{sentDerived}</div>
                   <div className="text-xs text-muted-foreground">Sent</div>
                 </div>
                 <div className="bg-red-50 rounded-lg p-3 border border-red-200 min-h-[4rem] flex flex-col justify-center">
-                  <div className="text-2xl font-bold text-red-600">{failedCount}</div>
+                  <div className="text-2xl font-bold text-red-600">{failedDerived}</div>
                   <div className="text-xs text-muted-foreground">Failed</div>
                 </div>
                 <div className="bg-blue-50 rounded-lg p-3 border border-blue-200 min-h-[4rem] flex flex-col justify-center">
@@ -592,7 +598,7 @@ export const SendCampaignModal: React.FC<SendCampaignModalProps> = ({
                     Campaign Status: {status.toUpperCase()}
                   </div>
                   <div className="text-xs text-blue-600 mt-1">
-                    Progress: {sentCount}/{totalRecipients} emails sent ({Math.round(progress)}%)
+                    Progress: {sentDerived}/{totalDerived} emails sent ({Math.round(progressDisplay)}%)
                   </div>
                 </div>
               )}
