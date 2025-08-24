@@ -110,30 +110,33 @@ Return ONLY the email content following the instructions above.`;
     const data = await response.json();
     let aiContent: string = data.content?.[0]?.text || String(prompt || '');
 
-    // Cleanup markdown fences and normalize greeting
-    aiContent = aiContent.replace(/```(?:\w+)?/g, '');
+    // Clean up any markdown artifacts and normalize content
+    aiContent = aiContent
+      .replace(/```html\s*/gi, '')  // Remove opening markdown fence
+      .replace(/```\s*$/g, '')      // Remove closing markdown fence
+      .replace(/^\s*html\s*/i, '')  // Remove "html" text
+      .trim();
 
-    // Remove any occurrences of the greeting anywhere
-    aiContent = aiContent.replace(/\b(hey|hi|hello)\s*\{\{\s*name\s*\}\}\s*,?/gi, '');
-
-    // Also remove a generic first-line greeting if present
-    aiContent = aiContent.replace(/^\s*(hey|hi|hello)[^\n]*\n+/i, '');
-
-    // Re-add a single canonical greeting at the very top
-    aiContent = `Hey {{name}},\n\n${aiContent.trim()}`;
-
-    console.log('✅ [generate-email] Greeting normalized:', aiContent.slice(0, 80));
-
-    // Do NOT add or duplicate unsubscribe text; let sender handle compliance
-    const sanitizedContent = aiContent.replace(/(^|\n).*unsubscribe.*$/gim, '').trim();
+    // Remove ALL existing greetings completely
+    aiContent = aiContent.replace(/^.*hey\s*\{\{\s*name\s*\}\}.*$/gim, '');
+    aiContent = aiContent.replace(/^.*hi\s*\{\{\s*name\s*\}\}.*$/gim, '');
+    aiContent = aiContent.replace(/^.*hello\s*\{\{\s*name\s*\}\}.*$/gim, '');
     
-    // Process content - it may already contain HTML from AI
-    const paragraphs = sanitizedContent
+    // Clean up any empty lines at the start
+    aiContent = aiContent.replace(/^\s*\n+/, '').trim();
+    
+    // Add single greeting at the top
+    aiContent = `Hey {{name}},\n\n${aiContent}`;
+
+    console.log('✅ [generate-email] Content cleaned:', aiContent.slice(0, 100));
+
+    // Process content - convert plain text paragraphs to HTML
+    const paragraphs = aiContent
       .split('\n\n')
-      .filter((p, idx) => p.trim() && (idx === 0 || !/^\s*hey\s*\{\{\s*name\s*\}\}\s*,?\s*$/i.test(p)))
+      .filter(p => p.trim())
       .map((p) => {
-        if (p.includes('<div') || p.includes('<a')) {
-          return p; // Keep HTML elements as-is
+        if (p.includes('<') || p.includes('>')) {
+          return p; // Keep HTML as-is
         }
         return `<p class="paragraph">${p.trim()}</p>`;
       })
