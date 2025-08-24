@@ -71,22 +71,14 @@ Return ONLY the clean email content.`;
 
     const aiInstructions = settings?.ai_instructions || defaultInstructions;
 
-    // Create system prompt with custom instructions and brand colors
-    const brandColors = styleGuide ? `
-BRAND COLORS TO USE:
-- Primary Color: ${styleGuide.primaryColor}
-- Secondary Color: ${styleGuide.secondaryColor || '#22d3ee'}
-- Accent Color: ${styleGuide.accentColor || '#34d399'}
-` : '';
-
+    // Simple system prompt that only uses the user's direct prompt (ignores style guide/brand colors)
     const systemPrompt = `${aiInstructions}
 
-${brandColors}
 CONTENT REQUIREMENTS:
 - Subject: "${subject}"
 - Content: ${prompt}
 
-Return ONLY the email content following the instructions above.`;
+Return ONLY the email content following the instructions above. Do not use any predefined brand colors or styling.`;
 
     // Call Anthropic
     const response = await fetch('https://api.anthropic.com/v1/messages', {
@@ -157,34 +149,14 @@ Return ONLY the email content following the instructions above.`;
       bodyContent = blocks.map((b) => `<p class="paragraph">${b.trim()}</p>`).join('\n    ');
     }
 
-    // Style guide
-    const brandName = styleGuide?.brandName || 'Cleverpoly.Store';
-    const primaryColor = styleGuide?.primaryColor || '#6A7059';
-    const fontFamily = styleGuide?.fontFamily || "Inter, Lato, 'Open Sans', Arial, sans-serif";
-    const emailSignature = styleGuide?.emailSignature || 'Best regards,\nCleverpoly';
-    const signatureFont = styleGuide?.signatureFont || "'Inter', sans-serif";
+    // Use simple neutral styling (no brand colors from database)
+    const brandName = 'Your Company';
+    const primaryColor = '#6366f1'; // Simple neutral color
+    const fontFamily = "Inter, Arial, sans-serif";
+    const emailSignature = 'Best regards,\nYour Team';
+    const signatureFont = "'Inter', sans-serif";
 
-    const googleFontsImport = signatureFont.includes('Inter')
-      ? "@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap');"
-      : signatureFont.includes('Roboto')
-      ? "@import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap');"
-      : signatureFont.includes('Open Sans')
-      ? "@import url('https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;500;600&display=swap');"
-      : signatureFont.includes('Lato')
-      ? "@import url('https://fonts.googleapis.com/css2?family=Lato:wght@400;700&display=swap');"
-      : signatureFont.includes('Playfair Display')
-      ? "@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&display=swap');"
-      : signatureFont.includes('Merriweather')
-      ? "@import url('https://fonts.googleapis.com/css2?family=Merriweather:wght@400;700&display=swap');"
-      : signatureFont.includes('Source Code Pro')
-      ? "@import url('https://fonts.googleapis.com/css2?family=Source+Code+Pro:wght@400;500&display=swap');"
-      : signatureFont.includes('Dancing Script')
-      ? "@import url('https://fonts.googleapis.com/css2?family=Dancing+Script:wght@400;700&display=swap');"
-      : signatureFont.includes('Pacifico')
-      ? "@import url('https://fonts.googleapis.com/css2?family=Pacifico&display=swap');"
-      : signatureFont.includes('Lobster')
-      ? "@import url('https://fonts.googleapis.com/css2?family=Lobster&display=swap');"
-      : '';
+    const googleFontsImport = "@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap');";
 
     const htmlContent = `<!DOCTYPE html>
 <html lang="en">
@@ -295,11 +267,11 @@ Return ONLY the email content following the instructions above.`;
   } catch (error: any) {
     console.error('❌ [generate-email] Error:', error?.message || error);
 
-    // Fallback with user's prompt and forced placeholder
-    const brandName = 'Cleverpoly.Store';
-    const primaryColor = '#6A7059';
+    // Fallback with neutral styling (no brand colors)
+    const brandName = 'Your Company';
+    const primaryColor = '#6366f1';
     const fontFamily = "Inter, sans-serif";
-    const emailSignature = 'Best regards,\nCleverpoly';
+    const emailSignature = 'Best regards,\nYour Team';
     const signatureFont = "'Inter', sans-serif";
 
     const safePrompt = String(error?.prompt || '').replace(/</g, '&lt;').replace(/>/g, '&gt;');
