@@ -647,7 +647,7 @@ export const SendCampaignModal: React.FC<SendCampaignModalProps> = ({
 
               {/* Recipient Details Table */}
               <div className="border rounded-lg flex-1 overflow-hidden flex flex-col min-h-[300px]">
-                <div className="bg-muted/50 p-3 border-b flex-shrink-0">
+                <div className="bg-muted/50 p-3 border-b flex-shrink-0 sticky top-0 z-10 backdrop-blur supports-[backdrop-filter]:bg-muted/50">
                   <h4 className="font-medium text-sm">
                     Send Progress ({sentDisplay}/{totalDisplay})
                     {status === 'sent' && (
