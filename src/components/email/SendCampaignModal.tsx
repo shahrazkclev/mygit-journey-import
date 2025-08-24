@@ -386,53 +386,54 @@ export const SendCampaignModal: React.FC<SendCampaignModalProps> = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
-      <DialogContent className="max-w-2xl max-h-[85vh] overflow-hidden flex flex-col">
-        <DialogHeader className="flex-shrink-0">
+      <DialogContent className="max-w-3xl max-h-[85vh] overflow-hidden flex flex-col">
+        <DialogHeader className="flex-shrink-0 px-6 pt-6">
           <DialogTitle className="flex items-center gap-2 text-email-primary">
             <Send className="h-5 w-5" />
             Send Campaign
           </DialogTitle>
         </DialogHeader>
 
-        <div className="flex-1 overflow-y-auto space-y-4 pr-2">
+        <div className="flex-1 overflow-y-auto px-6 pb-6 space-y-6">
           {status === 'idle' && (
-            <>
-              <div className="space-y-2">
-                <Label htmlFor="title">Campaign Title</Label>
+            <div className="space-y-6">
+              <div className="space-y-3">
+                <Label htmlFor="title" className="text-sm font-medium">Campaign Title</Label>
                 <Input
                   id="title"
                   value={campaignTitle}
                   onChange={(e) => setCampaignTitle(e.target.value)}
                   placeholder="Enter campaign title..."
-                  className="border-email-primary/30 focus:border-email-primary"
+                  className="border-email-primary/30 focus:border-email-primary w-full"
                 />
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="name">Campaign Name</Label>
+              <div className="space-y-3">
+                <Label htmlFor="name" className="text-sm font-medium">Campaign Name</Label>
                 <Input
                   id="name"
                   value={campaignName}
                   onChange={(e) => setCampaignName(e.target.value)}
                   placeholder="Enter campaign name..."
-                  className="border-email-primary/30 focus:border-email-primary"
+                  className="border-email-primary/30 focus:border-email-primary w-full"
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="sequence">Sender Sequence</Label>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-3">
+                  <Label htmlFor="sequence" className="text-sm font-medium">Sender Sequence</Label>
                   <Input
                     id="sequence"
                     type="number"
                     min="1"
                     value={senderSequence}
                     onChange={(e) => setSenderSequence(parseInt(e.target.value) || 1)}
+                    className="w-full"
                   />
                 </div>
                 
-                <div className="space-y-2">
-                  <Label htmlFor="delay">Delay Between Emails</Label>
+                <div className="space-y-3">
+                  <Label htmlFor="delay" className="text-sm font-medium">Delay Between Emails</Label>
                   <div className="flex items-center space-x-2">
                     <Input
                       id="delay"
@@ -443,7 +444,7 @@ export const SendCampaignModal: React.FC<SendCampaignModalProps> = ({
                       onChange={(e) => setDelayBetweenEmails(parseInt(e.target.value) || 2)}
                       className="flex-1"
                     />
-                    <span className="text-sm text-muted-foreground">seconds</span>
+                    <span className="text-sm text-muted-foreground whitespace-nowrap">seconds</span>
                   </div>
                   <p className="text-xs text-muted-foreground">
                     Time to wait between individual emails (helps avoid rate limits)
@@ -520,7 +521,7 @@ export const SendCampaignModal: React.FC<SendCampaignModalProps> = ({
                   )}
                 </Button>
               </div>
-            </>
+            </div>
           )}
 
           {(status === 'sending' || status === 'paused' || status === 'sent' || status === 'failed') && (
