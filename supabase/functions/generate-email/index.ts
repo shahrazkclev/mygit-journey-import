@@ -110,19 +110,17 @@ Return ONLY the email content following the instructions above.`;
     const data = await response.json();
     let aiContent: string = data.content?.[0]?.text || String(prompt || '');
 
-    // Normalize and enforce a single greeting once
-    const greetingPattern = /^\s*hey\s*\{\{\s*name\s*\}\}\s*,?\s*/i;
-    if (greetingPattern.test(aiContent)) {
-      aiContent = aiContent.replace(greetingPattern, '');
-    } else {
-      // Remove any other greeting-like first line (Hey/Hi/Hello ...)
-      aiContent = aiContent.replace(/^\s*(hey|hi|hello)[^\n]*\n+/i, '');
-    }
-    aiContent = `Hey {{name}},\n\n${aiContent.trim()}`;
+    // Cleanup markdown fences and normalize greeting
+    aiContent = aiContent.replace(/```(?:\w+)?/g, '');
 
-    // Strip any additional duplicate greetings later in the content (plain text or HTML)
-    aiContent = aiContent.replace(/\n\n\s*hey\s*\{\{\s*name\s*\}\}\s*,?\s*\n\n/gi, '\n\n');
-    aiContent = aiContent.replace(/<p[^>]*>\s*hey\s*\{\{\s*name\s*\}\}\s*,?\s*<\/p>\s*/gi, '');
+    // Remove any occurrences of the greeting anywhere
+    aiContent = aiContent.replace(/\b(hey|hi|hello)\s*\{\{\s*name\s*\}\}\s*,?/gi, '');
+
+    // Also remove a generic first-line greeting if present
+    aiContent = aiContent.replace(/^\s*(hey|hi|hello)[^\n]*\n+/i, '');
+
+    // Re-add a single canonical greeting at the very top
+    aiContent = `Hey {{name}},\n\n${aiContent.trim()}`;
 
     console.log('✅ [generate-email] Greeting normalized:', aiContent.slice(0, 80));
 
