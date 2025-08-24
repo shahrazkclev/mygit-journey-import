@@ -339,7 +339,7 @@ export const SendCampaignModal: React.FC<SendCampaignModalProps> = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
-      <DialogContent className="max-w-lg max-h-[90vh] overflow-y-scroll">
+      <DialogContent className="max-w-lg max-h-[90vh] overflow-y-scroll fixed-size">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 text-email-primary">
             <Send className="h-5 w-5" />
@@ -477,7 +477,7 @@ export const SendCampaignModal: React.FC<SendCampaignModalProps> = ({
           )}
 
           {(status === 'sending' || status === 'paused' || status === 'sent' || status === 'failed') && (
-            <div className="space-y-4 min-h-[28rem]">
+            <div className="space-y-4 min-h-[30rem] w-full">
               {/* Status Header */}
               <div className="flex items-center justify-between">
                 <h3 className="font-medium text-email-primary">Campaign Progress</h3>

@@ -89,18 +89,18 @@ Return the content with HTML styling classes included.`;
       aiContent += '\n\nIf you no longer wish to receive these emails, you can unsubscribe here.';
     }
 
-    // Convert unsubscribe text to link and add proper styling
-    const contentWithUnsubscribe = aiContent.replace(
-      /If you no longer wish to receive these emails, you can unsubscribe here\./g,
-      '<div class="unsubscribe-footer">If you no longer wish to receive these emails, you can <a href="https://unsub.cleverpoly.store/?email={{email}}" class="link">unsubscribe here</a>.</div>'
-    );
+    // Remove unsubscribe from AI content since we'll add it after signature
+    const contentWithoutUnsubscribe = aiContent.replace(
+      /If you no longer wish to receive these emails, you can unsubscribe here\.?/gi,
+      ''
+    ).trim();
     
     // Process content - it may already contain HTML from AI
-    const paragraphs = contentWithUnsubscribe
+    const paragraphs = contentWithoutUnsubscribe
       .split('\n\n')
       .filter((p) => p.trim())
       .map((p) => {
-        if (p.includes('<div') || p.includes('<a') || p.includes('unsubscribe-footer')) {
+        if (p.includes('<div') || p.includes('<a')) {
           return p; // Keep HTML elements as-is
         }
         return `<p class="paragraph">${p.trim()}</p>`;
@@ -150,7 +150,19 @@ Return the content with HTML styling classes included.`;
     .hr { height:1px; background:#E5E7EB; margin:24px 0; }
 
     /* Header */
-    .brand { text-align:center; font-size:28px; font-weight:700; color:${primaryColor}; margin:8px 0 24px; }
+    .brand { 
+      text-align:center; 
+      font-size:32px; 
+      font-weight:800; 
+      color:${primaryColor}; 
+      margin:0 0 32px; 
+      letter-spacing:-0.5px;
+      background: linear-gradient(135deg, ${primaryColor}, ${primaryColor}CC);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      text-shadow: 0 2px 4px ${primaryColor}20;
+    }
 
     /* Titles */
     .title { font-size:24px; font-weight:700; text-align:center; margin:0 0 16px; color:#333333; }
@@ -199,6 +211,10 @@ Return the content with HTML styling classes included.`;
 
     <div class="footer">
       ${emailSignature.split('\n').map((line: string) => `<p style="margin:0 0 4px">${line}</p>`).join('')}
+    </div>
+    
+    <div class="unsubscribe-footer">
+      If you no longer wish to receive these emails, you can <a href="https://unsub.cleverpoly.store/?email={{email}}" class="link">unsubscribe here</a>.
     </div>
   </div>
 </body>
