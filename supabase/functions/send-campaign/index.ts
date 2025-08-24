@@ -4,6 +4,7 @@ import { createClient, SupabaseClient } from "https://esm.sh/@supabase/supabase-
 interface SendCampaignRequest {
   campaignId: string;
   emailsPerSequence?: number;
+  maxSenderSequences?: number;
 }
 
 interface Contact {
@@ -122,9 +123,10 @@ async function handler(req: Request): Promise<Response> {
   }
 
   try {
-    const { campaignId, emailsPerSequence }: SendCampaignRequest = await req.json();
+    const { campaignId, emailsPerSequence, maxSenderSequences }: SendCampaignRequest = await req.json();
     console.log('🚀 Starting send for campaign:', campaignId);
     console.log('📊 Emails per sequence:', emailsPerSequence || 10);
+    console.log('🔄 Max sender sequences:', maxSenderSequences || 3);
 
     const supabase = createSupabase();
     
@@ -153,7 +155,7 @@ async function handler(req: Request): Promise<Response> {
     console.log('📋 Campaign started, beginning send process...');
     
     // Start processing in background
-    EdgeRuntime.waitUntil(processSends(supabase, campaign, contacts, emailsPerSequence || 10));
+    EdgeRuntime.waitUntil(processSends(supabase, campaign, contacts, emailsPerSequence || 10, maxSenderSequences || 3));
     
     return new Response(JSON.stringify({ 
       success: true, 
@@ -195,9 +197,10 @@ async function getUserSettings(supabase: SupabaseClient, userId: string) {
   };
 }
 
-async function processSends(supabase: SupabaseClient, campaign: any, contacts: Contact[], emailsPerSequence: number = 10) {
+async function processSends(supabase: SupabaseClient, campaign: any, contacts: Contact[], emailsPerSequence: number = 10, maxSenderSequences: number = 3) {
   console.log('🔄 Starting background send process...');
   console.log('📊 Emails per sequence:', emailsPerSequence);
+  console.log('🔄 Max sender sequences (will cycle):', maxSenderSequences);
   
   const settings = await getUserSettings(supabase, campaign.user_id);
   console.log('⚙️ Using settings:', settings);
@@ -257,10 +260,16 @@ async function processSends(supabase: SupabaseClient, campaign: any, contacts: C
           sent_count: sentCount
         });
         
-        // Increment sender sequence only after sending specified number of emails
+        // Cycle sender sequence: increment after specified emails and reset when reaching max
         if ((sentCount % emailsPerSequence) === 0) {
           currentSenderSequence++;
-          console.log(`🔄 Switching to sender sequence ${currentSenderSequence} after ${sentCount} emails`);
+          // Cycle back to 1 when reaching max sequences
+          if (currentSenderSequence > maxSenderSequences) {
+            currentSenderSequence = 1;
+            console.log(`🔄 Cycling back to sender sequence 1 after reaching max (${maxSenderSequences})`);
+          } else {
+            console.log(`🔄 Switching to sender sequence ${currentSenderSequence} after ${sentCount} emails`);
+          }
         }
         
         // Delay between individual emails (except for the last one)

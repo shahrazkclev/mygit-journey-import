@@ -52,6 +52,7 @@ export const SendCampaignModal: React.FC<SendCampaignModalProps> = ({
   const [startTime, setStartTime] = useState<Date | null>(null);
   const [delayBetweenEmails, setDelayBetweenEmails] = useState(2);
   const [emailsPerSequence, setEmailsPerSequence] = useState(10); // How many emails before sequence increments
+  const [maxSenderSequences, setMaxSenderSequences] = useState(3); // Max sequences before cycling back to 1
   
   // Enhanced recipient tracking  
   const [recipientDetails, setRecipientDetails] = useState<RecipientDetails[]>([]);
@@ -181,7 +182,8 @@ export const SendCampaignModal: React.FC<SendCampaignModalProps> = ({
         selected_lists: selectedLists,
         sender_sequence: senderSequence,
         webhook_url: webhookUrl,
-        emails_per_sequence: emailsPerSequence
+        emails_per_sequence: emailsPerSequence,
+        max_sender_sequences: maxSenderSequences
       });
 
       if (!campaignResponse.ok) {
@@ -530,23 +532,44 @@ export const SendCampaignModal: React.FC<SendCampaignModalProps> = ({
                 </div>
               </div>
 
-              <div className="space-y-3">
-                <Label htmlFor="emailsPerSequence" className="text-sm font-medium">Emails Per Sequence</Label>
-                <div className="flex items-center space-x-2">
-                  <Input
-                    id="emailsPerSequence"
-                    type="number"
-                    min="1"
-                    max="100"
-                    value={emailsPerSequence}
-                    onChange={(e) => setEmailsPerSequence(parseInt(e.target.value) || 10)}
-                    className="flex-1"
-                  />
-                  <span className="text-sm text-muted-foreground whitespace-nowrap">emails</span>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-3">
+                  <Label htmlFor="emailsPerSequence" className="text-sm font-medium">Emails Per Sequence</Label>
+                  <div className="flex items-center space-x-2">
+                    <Input
+                      id="emailsPerSequence"
+                      type="number"
+                      min="1"
+                      max="100"
+                      value={emailsPerSequence}
+                      onChange={(e) => setEmailsPerSequence(parseInt(e.target.value) || 10)}
+                      className="flex-1"
+                    />
+                    <span className="text-sm text-muted-foreground whitespace-nowrap">emails</span>
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    Number of emails before switching to next sequence
+                  </p>
                 </div>
-                <p className="text-xs text-muted-foreground">
-                  Number of emails to send before switching to next sender sequence
-                </p>
+
+                <div className="space-y-3">
+                  <Label htmlFor="maxSequences" className="text-sm font-medium">Max Sender Sequences</Label>
+                  <div className="flex items-center space-x-2">
+                    <Input
+                      id="maxSequences"
+                      type="number"
+                      min="1"
+                      max="10"
+                      value={maxSenderSequences}
+                      onChange={(e) => setMaxSenderSequences(parseInt(e.target.value) || 3)}
+                      className="flex-1"
+                    />
+                    <span className="text-sm text-muted-foreground whitespace-nowrap">sequences</span>
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    Will cycle: 1→2→3→1→2→3... (if set to 3)
+                  </p>
+                </div>
               </div>
 
               {/* Campaign Summary */}
