@@ -158,23 +158,38 @@ export const SendCampaignModal: React.FC<SendCampaignModalProps> = ({
       setStatus('sending');
       toast.success('Campaign started! Sending in background...');
 
-      // Start real-time monitoring with fallback polling
+      // Start real-time monitoring with aggressive fallback polling
       const unsubscribe = monitorProgress(campaign.id);
       
-      // Also use polling as fallback to ensure we get updates
+      // Aggressive polling as fallback to ensure we get final state
       const pollInterval = setInterval(async () => {
         try {
+          console.log('🔄 Polling campaign status...');
           const response = await api.getCampaign(campaign.id);
           if (response.ok) {
             const campaignData = await response.json();
+            console.log('📊 Polled campaign data:', campaignData);
+            
+            // Force update the UI with polled data
+            setTotalRecipients(campaignData.total_recipients || 0);
+            setSentCount(campaignData.sent_count || 0);
+            setStatus(campaignData.status as 'idle' | 'sending' | 'paused' | 'sent' | 'failed');
+            
+            if (campaignData.total_recipients > 0) {
+              const percent = Math.min((campaignData.sent_count || 0) / campaignData.total_recipients * 100, 100);
+              setProgress(percent);
+            }
+            
             if (campaignData.status === 'sent' || campaignData.status === 'failed') {
+              console.log('🏁 Campaign finished via polling:', campaignData.status);
               clearInterval(pollInterval);
+              toast.success(`✅ Campaign ${campaignData.status}! Sent ${campaignData.sent_count} emails.`);
             }
           }
         } catch (error) {
           console.log('Polling error:', error);
         }
-      }, 3000);
+      }, 2000); // Poll every 2 seconds
       
       // Initial load of campaign sends
       setTimeout(() => loadCampaignSends(campaign.id), 1000);
@@ -607,9 +622,12 @@ export const SendCampaignModal: React.FC<SendCampaignModalProps> = ({
               <div className="border rounded-lg flex-1 overflow-hidden flex flex-col min-h-[300px]">
                 <div className="bg-muted/50 p-3 border-b flex-shrink-0">
                   <h4 className="font-medium text-sm">
-                    Send Progress ({recipientDetails.filter(r => r.status === 'sent').length}/{recipientDetails.length})
+                    Send Progress ({sentDerived}/{totalDerived})
                     {recipientDetails.length === 0 && status === 'sending' && (
                       <span className="ml-2 text-xs text-muted-foreground animate-pulse">● Preparing recipients...</span>
+                    )}
+                    {status === 'sent' && (
+                      <span className="ml-2 text-xs text-green-600">✅ Completed</span>
                     )}
                   </h4>
                 </div>
