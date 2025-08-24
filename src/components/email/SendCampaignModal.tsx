@@ -189,14 +189,12 @@ export const SendCampaignModal: React.FC<SendCampaignModalProps> = ({
           const sent = campaign.sent_count ?? 0;
           const currentSenderSeq = campaign.sender_sequence_number || 1;
 
-          // Batch state updates to prevent flickering
-          setTotalRecipients(total);
-          setSentCount(sent);
-          setFailedCount(0);
-          setCurrentSenderSequence(currentSenderSeq);
-          setCurrentRecipient('');
-          setStatus(campaign.status as any);
-          setErrorMessage((campaign as any).error_message);
+          // Batch state updates only if values changed to prevent unnecessary re-renders
+          if (totalRecipients !== total) setTotalRecipients(total);
+          if (sentCount !== sent) setSentCount(sent);
+          if (currentSenderSequence !== currentSenderSeq) setCurrentSenderSequence(currentSenderSeq);
+          if (status !== campaign.status) setStatus(campaign.status as any);
+          if (errorMessage !== (campaign as any).error_message) setErrorMessage((campaign as any).error_message);
           
           if (total > 0) {
             const progressPercent = Math.min((sent / total) * 100, 100);
@@ -230,7 +228,7 @@ export const SendCampaignModal: React.FC<SendCampaignModalProps> = ({
           setErrorMessage('Monitoring failed - check console');
         }
       }
-    }, 1000); // Reduced frequency to 1 second to prevent flickering
+    }, 2000); // Check every 2 seconds to prevent jumping
 
     // Clean up on component unmount
     return () => clearInterval(interval);
@@ -348,7 +346,7 @@ export const SendCampaignModal: React.FC<SendCampaignModalProps> = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
-      <DialogContent className="max-w-lg max-h-[90vh] overflow-y-scroll fixed-size">
+      <DialogContent className="max-w-lg h-[600px] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 text-email-primary">
             <Send className="h-5 w-5" />
@@ -486,7 +484,7 @@ export const SendCampaignModal: React.FC<SendCampaignModalProps> = ({
           )}
 
           {(status === 'sending' || status === 'paused' || status === 'sent' || status === 'failed') && (
-            <div className="space-y-4 min-h-[30rem] w-full">
+            <div className="space-y-4 h-[450px] w-full flex flex-col">
               {/* Status Header */}
               <div className="flex items-center justify-between">
                 <h3 className="font-medium text-email-primary">Campaign Progress</h3>
@@ -547,8 +545,9 @@ export const SendCampaignModal: React.FC<SendCampaignModalProps> = ({
               )}
 
               {/* Recipient Details Table */}
-              {recipientDetails.length > 0 && (
-                <div className="border rounded-lg max-h-60 overflow-y-auto">
+              <div className="border rounded-lg flex-1 overflow-y-auto min-h-[200px]">
+                {recipientDetails.length > 0 ? (
+                  <>
                   <div className="bg-muted/50 p-3 border-b">
                     <h4 className="font-medium text-sm">Send Details</h4>
                   </div>
@@ -574,8 +573,16 @@ export const SendCampaignModal: React.FC<SendCampaignModalProps> = ({
                       </div>
                     ))}
                   </div>
-                </div>
-              )}
+                  </>
+                ) : (
+                  <div className="flex items-center justify-center h-full text-muted-foreground">
+                    <div className="text-center">
+                      <Clock className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                      <p>Waiting for recipients...</p>
+                    </div>
+                  </div>
+                )}
+              </div>
 
               {/* Action Buttons */}
               <div className="flex gap-2">
