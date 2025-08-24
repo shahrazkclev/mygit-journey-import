@@ -117,15 +117,7 @@ Return ONLY the email content following the instructions above.`;
       .replace(/^\s*html\s*/i, '')  // Remove "html" text
       .trim();
 
-    // Only add greeting if AI didn't include one
-    const hasGreeting = /^\s*(hey|hi|hello)\s*\{\{\s*name\s*\}\}/im.test(aiContent);
-    if (!hasGreeting) {
-      aiContent = `Hey {{name}},\n\n${aiContent}`;
-    }
-
-    console.log('✅ [generate-email] Content cleaned:', aiContent.slice(0, 100));
-
-    // If AI returned a full HTML document, passthrough immediately
+    // Early check: if AI returned a full HTML document, passthrough immediately (no modifications)
     if (/<html[\s\S]*<\/html>/i.test(aiContent)) {
       console.log('ℹ️ [generate-email] Full HTML from AI - passthrough');
       return new Response(JSON.stringify({ htmlContent: aiContent }), {
@@ -133,9 +125,21 @@ Return ONLY the email content following the instructions above.`;
       });
     }
 
+    // Determine if AI returned HTML fragments (not a full document)
+    const containsHtml = /<(div|section|table|article|header|footer|p|h1|h2|h3|ul|ol|li|a|button|style|span)\b/i.test(aiContent);
+
+    // For plain text only: add greeting if completely missing
+    if (!containsHtml) {
+      const hasGreetingAnywhere = /(hey|hi|hello)\s*\{\{\s*name\s*\}\}/i.test(aiContent);
+      if (!hasGreetingAnywhere) {
+        aiContent = `Hey {{name}},\n\n${aiContent}`;
+      }
+    }
+
+    console.log('✅ [generate-email] Content cleaned:', aiContent.slice(0, 100));
+
     // Determine body content (preserve HTML if present)
     let bodyContent: string;
-    const containsHtml = /<(div|section|table|article|header|footer|p|h1|h2|h3|ul|ol|li|a|button|style|span)\b/i.test(aiContent);
     if (containsHtml) {
       bodyContent = aiContent;
     } else {
