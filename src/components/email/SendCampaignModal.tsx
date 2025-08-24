@@ -155,6 +155,9 @@ export const SendCampaignModal: React.FC<SendCampaignModalProps> = ({
       // Start real-time monitoring
       const unsubscribe = monitorProgress(campaign.id);
       
+      // Initial load of campaign sends
+      setTimeout(() => loadCampaignSends(campaign.id), 1000);
+      
       // Clean up subscriptions when modal closes
       return unsubscribe;
 
@@ -227,8 +230,10 @@ export const SendCampaignModal: React.FC<SendCampaignModalProps> = ({
         async (payload) => {
           console.log('📧 Send update:', payload);
           
-          // Refresh recipient details when sends change
-          await loadCampaignSends(id);
+          // Small delay to ensure database consistency, then refresh
+          setTimeout(() => {
+            loadCampaignSends(id);
+          }, 200);
         }
       )
       .subscribe();
@@ -353,15 +358,15 @@ export const SendCampaignModal: React.FC<SendCampaignModalProps> = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
-      <DialogContent className="max-w-lg h-[600px] overflow-y-auto">
-        <DialogHeader>
+      <DialogContent className="max-w-2xl max-h-[85vh] overflow-hidden flex flex-col">
+        <DialogHeader className="flex-shrink-0">
           <DialogTitle className="flex items-center gap-2 text-email-primary">
             <Send className="h-5 w-5" />
             Send Campaign
           </DialogTitle>
         </DialogHeader>
 
-        <div className="space-y-4">
+        <div className="flex-1 overflow-y-auto space-y-4 pr-2">
           {status === 'idle' && (
             <>
               <div className="space-y-2">
@@ -491,7 +496,7 @@ export const SendCampaignModal: React.FC<SendCampaignModalProps> = ({
           )}
 
           {(status === 'sending' || status === 'paused' || status === 'sent' || status === 'failed') && (
-            <div className="space-y-4 h-[450px] w-full flex flex-col">
+            <div className="space-y-4 flex flex-col h-full">
               {/* Status Header */}
               <div className="flex items-center justify-between">
                 <h3 className="font-medium text-email-primary">Campaign Progress</h3>
@@ -552,30 +557,40 @@ export const SendCampaignModal: React.FC<SendCampaignModalProps> = ({
               )}
 
               {/* Recipient Details Table */}
-              <div className="border rounded-lg flex-1 overflow-y-auto min-h-[200px]">
-                {recipientDetails.length > 0 ? (
-                  <>
-                    <div className="bg-muted/50 p-3 border-b sticky top-0">
-                      <h4 className="font-medium text-sm">Send Progress ({recipientDetails.filter(r => r.status === 'sent').length}/{recipientDetails.length})</h4>
-                    </div>
+              <div className="border rounded-lg flex-1 overflow-hidden flex flex-col min-h-[300px]">
+                <div className="bg-muted/50 p-3 border-b flex-shrink-0">
+                  <h4 className="font-medium text-sm">
+                    Send Progress ({recipientDetails.filter(r => r.status === 'sent').length}/{recipientDetails.length})
+                    {recipientDetails.length === 0 && status === 'sending' && (
+                      <span className="ml-2 text-xs text-muted-foreground animate-pulse">● Preparing recipients...</span>
+                    )}
+                  </h4>
+                </div>
+                <div className="flex-1 overflow-y-auto">
+                  {recipientDetails.length > 0 ? (
                     <div className="divide-y">
                       {recipientDetails.map((recipient, index) => (
                         <RecipientRow key={`${recipient.email}-${recipient.status}`} recipient={recipient} index={index} />
                       ))}
                     </div>
-                  </>
-                ) : (
-                  <div className="flex items-center justify-center h-full text-muted-foreground">
-                    <div className="text-center">
-                      <Clock className="h-8 w-8 mx-auto mb-2 opacity-50" />
-                      <p>Preparing recipients...</p>
+                  ) : (
+                    <div className="flex items-center justify-center h-full text-muted-foreground">
+                      <div className="text-center">
+                        <Clock className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                        <p className="text-sm">
+                          {status === 'sending' ? 'Preparing recipients...' : 'No recipients yet'}
+                        </p>
+                        {status === 'sending' && (
+                          <p className="text-xs mt-1 opacity-75">This may take a few moments</p>
+                        )}
+                      </div>
                     </div>
-                  </div>
-                )}
+                  )}
+                </div>
               </div>
 
               {/* Action Buttons */}
-              <div className="flex gap-2">
+              <div className="flex gap-2 flex-shrink-0 border-t pt-4">
                 {status === 'sending' && (
                   <Button onClick={pauseResumeCampaign} variant="outline" className="flex-1 border-orange-500 text-orange-600 hover:bg-orange-50">
                     <Pause className="h-4 w-4 mr-2" />
