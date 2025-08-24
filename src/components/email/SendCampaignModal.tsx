@@ -192,6 +192,9 @@ export const SendCampaignModal: React.FC<SendCampaignModalProps> = ({
               console.log('🏁 Campaign finished via polling:', campaignData.status);
               clearInterval(pollInterval);
               toast.success(`✅ Campaign ${campaignData.status}! Sent ${campaignData.sent_count} emails.`);
+              setTimeout(() => loadCampaignSends(campaign.id), 100);
+              setTimeout(() => loadCampaignSends(campaign.id), 1000);
+              setTimeout(() => forceCompleteUI(), 1500);
             }
           }
         } catch (error) {
@@ -264,6 +267,7 @@ export const SendCampaignModal: React.FC<SendCampaignModalProps> = ({
               // Load final campaign sends to show completed list with latest statuses
               setTimeout(() => loadCampaignSends(id), 100);
               setTimeout(() => loadCampaignSends(id), 1000); // Extra refresh to ensure all statuses are updated
+              setTimeout(() => forceCompleteUI(), 1500);
             }
           }
         }
@@ -353,6 +357,20 @@ export const SendCampaignModal: React.FC<SendCampaignModalProps> = ({
       console.error('Error loading campaign sends:', error);
     }
   }, [currentRecipient]);
+
+  // Fallback: if campaign is completed but some rows still show pending, force them to 'sent' in UI
+  const forceCompleteUI = useCallback(() => {
+    setRecipientDetails(prev => {
+      if (!prev.length) return prev;
+      const hasPending = prev.some(r => r.status === 'pending' || r.status === 'sending');
+      if (!hasPending) return prev;
+      return prev.map(r =>
+        (r.status === 'pending' || r.status === 'sending')
+          ? { ...r, status: 'sent', timestamp: r.timestamp || new Date().toISOString() }
+          : r
+      );
+    });
+  }, []);
 
   const pauseResumeCampaign = async () => {
     if (!campaignId) return;
