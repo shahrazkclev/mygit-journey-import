@@ -318,10 +318,30 @@ export const EmailEditor: React.FC<EmailEditorProps> = ({
     toast.success('Element deleted');
   };
 
-  const generateHTML = useCallback((list: EmailElement[] = elements) => {
+  const generateHTML = useCallback((list: EmailElement[] = elements, replaceVariables: boolean = false, contactData?: { firstName?: string; lastName?: string; email?: string }) => {
     const sortedElements = [...list].sort((a, b) => 
       a.gridPosition.y - b.gridPosition.y || a.gridPosition.x - b.gridPosition.x
     );
+
+    // Function to replace variables in content
+    const replaceVariablesInContent = (content: string) => {
+      if (!replaceVariables || !contactData) return content;
+      
+      let result = content;
+      
+      // Generate name from email if no first name
+      const firstName = contactData.firstName || contactData.email?.split('@')[0] || 'Friend';
+      const lastName = contactData.lastName || '';
+      const fullName = lastName ? `${firstName} ${lastName}` : firstName;
+      
+      // Replace variables
+      result = result.replace(/\{\{firstName\}\}/g, firstName);
+      result = result.replace(/\{\{lastName\}\}/g, lastName);
+      result = result.replace(/\{\{fullName\}\}/g, fullName);
+      result = result.replace(/\{\{email\}\}/g, contactData.email || '');
+      
+      return result;
+    };
 
     const emailHTML = `
       <!DOCTYPE html>
@@ -347,11 +367,13 @@ export const EmailEditor: React.FC<EmailEditorProps> = ({
                 .map(([key, value]) => `${key.replace(/([A-Z])/g, '-$1').toLowerCase()}: ${value}`)
                 .join('; ');
 
+              const processedContent = replaceVariablesInContent(element.content);
+
               switch (element.type) {
                 case 'text':
-                  return `<div class="element text-element" style="${styleString}">${element.content}</div>`;
+                  return `<div class="element text-element" style="${styleString}">${processedContent}</div>`;
                 case 'button':
-                  return `<div style="text-align: ${element.styles.textAlign || 'center'}; padding: 16px;"><a href="#" class="element button-element" style="${styleString}">${element.content}</a></div>`;
+                  return `<div style="text-align: ${element.styles.textAlign || 'center'}; padding: 16px;"><a href="#" class="element button-element" style="${styleString}">${processedContent}</a></div>`;
                 case 'image':
                   return `<div style="text-align: ${element.styles.textAlign || 'center'}; padding: 16px;"><img src="${element.content}" class="element image-element" style="${styleString}" alt="Email image" /></div>`;
                 case 'spacer':

@@ -240,13 +240,26 @@ export const SendCampaignModal: React.FC<SendCampaignModalProps> = ({
         return;
       }
 
-      const details: RecipientDetails[] = sends?.map(send => ({
-        email: send.contact_email,
-        name: send.contact_email.split('@')[0],
-        status: send.status as any,
-        timestamp: send.sent_at || undefined,
-        error: send.error_message || undefined
-      })) || [];
+      // Get contact details for names
+      const { data: contactDetails } = await supabase
+        .from('contacts')
+        .select('email, first_name, last_name')
+        .in('email', sends?.map(s => s.contact_email) || []);
+
+      const details: RecipientDetails[] = sends?.map(send => {
+        const contact = contactDetails?.find(c => c.email === send.contact_email);
+        const firstName = contact?.first_name || send.contact_email.split('@')[0];
+        const lastName = contact?.last_name || '';
+        const name = lastName ? `${firstName} ${lastName}` : firstName;
+        
+        return {
+          email: send.contact_email,
+          name,
+          status: send.status as any,
+          timestamp: send.sent_at || undefined,
+          error: send.error_message || undefined
+        };
+      }) || [];
 
       setRecipientDetails(details);
 

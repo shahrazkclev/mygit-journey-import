@@ -56,16 +56,19 @@ export const ElementToolbar: React.FC<ElementToolbarProps> = ({
               <Textarea
                 value={element.content}
                 onChange={(e) => updateContent(e.target.value)}
-                placeholder="Enter text content..."
+                placeholder="Enter text content... Use {{firstName}}, {{lastName}}, {{fullName}}, {{email}}"
                 rows={3}
               />
             ) : (
               <Input
                 value={element.content}
                 onChange={(e) => updateContent(e.target.value)}
-                placeholder={element.type === 'button' ? 'Button text' : 'Text content'}
+                placeholder={element.type === 'button' ? 'Button text' : 'Text content... Use {{firstName}}, {{lastName}}, {{fullName}}, {{email}}'}
               />
             )}
+            <div className="text-xs text-muted-foreground">
+              Variables: {'{'}{'{'} firstName {'}'}{'}'}, {'{'}{'{'} lastName {'}'}{'}'}, {'{'}{'{'} fullName {'}'}{'}'}, {'{'}{'{'} email {'}'}{'}'} 
+            </div>
           </div>
         )}
 
