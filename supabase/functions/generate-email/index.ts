@@ -19,30 +19,39 @@ serve(async (req) => {
     console.log('🧠 [generate-email] Request received', { subject });
 
     // Explicit instructions to include the {{name}} placeholder
-    const systemPrompt = `You are creating email content. You MUST follow these requirements exactly:
+    const systemPrompt = `You are creating email content with styled visual elements. You MUST follow these requirements exactly:
 
 1. MANDATORY: Start with "Hey {{name}}," - DO NOT change this format
 2. Write engaging content for: "${subject}" 
 3. Content prompt: ${prompt}
 4. Keep it professional but friendly
 5. Include clear call-to-action if relevant
-6. Add subtle brand color highlights using simple containers or accents that complement the design
-7. MANDATORY: End with this exact unsubscribe text at the very bottom: "If you no longer wish to receive these emails, you can unsubscribe here."
+6. USE VISUAL STYLING: Add highlighted sections using these class names:
+   - <div class="card"> for important content boxes
+   - <a class="button"> for call-to-action buttons  
+   - <div class="highlight"> for key information
+7. MANDATORY: End with this exact unsubscribe text: "If you no longer wish to receive these emails, you can unsubscribe here."
 8. Do NOT add signatures - that's handled by the template
 
-CRITICAL: 
-- Use "Hey {{name}}," at the start
-- Put unsubscribe text at the very bottom, separated nicely
-- Add light brand color touches (containers, borders, highlights) that enhance readability
+STYLING EXAMPLES:
+- Put important updates in: <div class="card">Your important content here</div>
+- Add call-to-action buttons: <a href="#" class="button">Click Here</a>
+- Highlight key info: <div class="highlight">Special announcement!</div>
 
-Example format:
+FORMAT:
 Hey {{name}},
 
-[Your email content here with subtle brand color containers...]
+<div class="card">
+[Important content in styled container]
+</div>
+
+[Regular paragraph content]
+
+<a href="#" class="button">Call to Action</a>
 
 If you no longer wish to receive these emails, you can unsubscribe here.
 
-Return only the email body content (no HTML tags).`;
+Return the content with HTML styling classes included.`;
 
     // Call Anthropic
     const response = await fetch('https://api.anthropic.com/v1/messages', {
@@ -80,21 +89,19 @@ Return only the email body content (no HTML tags).`;
       aiContent += '\n\nIf you no longer wish to receive these emails, you can unsubscribe here.';
     }
 
-    // Clean and format the AI content
-    const safeContent = aiContent.replace(/</g, '&lt;').replace(/>/g, '&gt;');
-    
     // Convert unsubscribe text to link and add proper styling
-    const contentWithUnsubscribe = safeContent.replace(
+    const contentWithUnsubscribe = aiContent.replace(
       /If you no longer wish to receive these emails, you can unsubscribe here\./g,
       '<div class="unsubscribe-footer">If you no longer wish to receive these emails, you can <a href="https://unsub.cleverpoly.store/?email={{email}}" class="link">unsubscribe here</a>.</div>'
     );
     
+    // Process content - it may already contain HTML from AI
     const paragraphs = contentWithUnsubscribe
       .split('\n\n')
       .filter((p) => p.trim())
       .map((p) => {
-        if (p.includes('unsubscribe-footer')) {
-          return p; // Keep unsubscribe footer as-is
+        if (p.includes('<div') || p.includes('<a') || p.includes('unsubscribe-footer')) {
+          return p; // Keep HTML elements as-is
         }
         return `<p class="paragraph">${p.trim()}</p>`;
       })
@@ -150,10 +157,12 @@ Return only the email body content (no HTML tags).`;
 
     /* Content */
     .paragraph { font-size:16px; margin:0 0 16px; line-height:1.6; }
-    .card { background:#F9F8F5; border-radius:12px; padding:24px; margin:20px 0; }
+    .card { background: linear-gradient(135deg, ${primaryColor}08, ${primaryColor}12); border-left:4px solid ${primaryColor}; border-radius:12px; padding:20px; margin:20px 0; box-shadow:0 2px 8px rgba(0,0,0,0.05); }
+    .highlight { background: ${primaryColor}15; border-radius:8px; padding:12px 16px; margin:12px 0; border-left:3px solid ${primaryColor}; }
 
     /* Buttons / Links */
-    .button { display:inline-block; background:${primaryColor}; color:#FFFFFF; padding:12px 24px; text-decoration:none; border-radius:8px; font-weight:600; margin:12px 0; }
+    .button { display:inline-block; background: linear-gradient(135deg, ${primaryColor}, ${primaryColor}E6); color:#FFFFFF; padding:12px 24px; text-decoration:none; border-radius:8px; font-weight:600; margin:16px 0; box-shadow:0 4px 12px ${primaryColor}40; transition:all 0.3s ease; }
+    .button:hover { transform:translateY(-2px); box-shadow:0 6px 20px ${primaryColor}60; }
     .link { color:${primaryColor}; text-decoration:none; }
 
     /* Footer */
