@@ -130,17 +130,23 @@ Return ONLY the email content following the instructions above.`;
 
     console.log('✅ [generate-email] Content cleaned:', aiContent.slice(0, 100));
 
-    // Process content - convert plain text paragraphs to HTML
-    const paragraphs = aiContent
-      .split('\n\n')
-      .filter(p => p.trim())
-      .map((p) => {
-        if (p.includes('<') || p.includes('>')) {
-          return p; // Keep HTML as-is
-        }
-        return `<p class="paragraph">${p.trim()}</p>`;
-      })
-      .join('\n    ');
+    // If AI returned a full HTML document, passthrough immediately
+    if (/<html[\s\S]*<\/html>/i.test(aiContent)) {
+      console.log('ℹ️ [generate-email] Full HTML from AI - passthrough');
+      return new Response(JSON.stringify({ htmlContent: aiContent }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    // Determine body content (preserve HTML if present)
+    let bodyContent: string;
+    const containsHtml = /<(div|section|table|article|header|footer|p|h1|h2|h3|ul|ol|li|a|button|style|span)\b/i.test(aiContent);
+    if (containsHtml) {
+      bodyContent = aiContent;
+    } else {
+      const blocks = aiContent.split('\n\n').filter(b => b.trim());
+      bodyContent = blocks.map((b) => `<p class="paragraph">${b.trim()}</p>`).join('\n    ');
+    }
 
     // Style guide
     const brandName = styleGuide?.brandName || 'Cleverpoly.Store';
@@ -267,7 +273,7 @@ Return ONLY the email content following the instructions above.`;
 </head>
 <body>
   <div class="container">
-    ${paragraphs}
+    ${bodyContent}
   </div>
 </body>
 </html>`;
