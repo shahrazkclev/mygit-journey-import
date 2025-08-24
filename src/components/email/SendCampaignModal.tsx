@@ -52,9 +52,11 @@ export const SendCampaignModal: React.FC<SendCampaignModalProps> = ({
   const [startTime, setStartTime] = useState<Date | null>(null);
   const [delayBetweenEmails, setDelayBetweenEmails] = useState(2);
   
-  // Enhanced recipient tracking
+  // Enhanced recipient tracking  
   const [recipientDetails, setRecipientDetails] = useState<RecipientDetails[]>([]);
   const [listNames, setListNames] = useState<string[]>([]);
+  const [contactsPreview, setContactsPreview] = useState<Array<{email: string, name: string}>>([]);
+  const [showContactsPreview, setShowContactsPreview] = useState(false);
 
   // Derived metrics from recipientDetails as a reliable fallback for UI
   const sentDerived = useMemo(() => recipientDetails.filter(r => r.status === 'sent').length, [recipientDetails]);
@@ -70,15 +72,16 @@ export const SendCampaignModal: React.FC<SendCampaignModalProps> = ({
   const progressFromCampaign = useMemo(() => (totalRecipients > 0 ? (sentCount / totalRecipients) * 100 : 0), [sentCount, totalRecipients]);
   const progressDisplay = useMemo(() => Math.min(Math.max(progressFromDetails, progressFromCampaign, progress), 100), [progressFromDetails, progressFromCampaign, progress]);
 
-  // Load list details on modal open
+  // Load list details and contacts preview on modal open
   useEffect(() => {
     if (isOpen && selectedLists.length > 0) {
-      loadListDetails();
+      loadListDetailsAndContacts();
     }
   }, [isOpen, selectedLists]);
 
-  const loadListDetails = async () => {
+  const loadListDetailsAndContacts = async () => {
     try {
+      // Load list names
       const { data: lists, error } = await supabase
         .from('email_lists')
         .select('name')
@@ -88,20 +91,45 @@ export const SendCampaignModal: React.FC<SendCampaignModalProps> = ({
       
       setListNames(lists.map(list => list.name));
       
-      // Load actual recipient count from contact_lists
-      const { count, error: countError } = await supabase
+      // Load contacts preview
+      const { data: contactsData, error: contactsError } = await supabase
         .from('contact_lists')
-        .select('contact_id', { count: 'exact' })
+        .select(`
+          contacts!inner (
+            email,
+            first_name,
+            last_name,
+            status
+          )
+        `)
         .in('list_id', selectedLists);
 
-      if (countError) throw countError;
-      
-      const actualRecipientCount = count || 0;
-      setTotalRecipients(actualRecipientCount);
+      if (contactsError) throw contactsError;
+
+      // Filter for subscribed contacts and prepare preview
+      const subscribedContacts = contactsData
+        ?.filter(cl => (cl.contacts as any).status === 'subscribed')
+        .map(cl => {
+          const contact = cl.contacts as any;
+          const firstName = contact.first_name || contact.email.split('@')[0];
+          const lastName = contact.last_name || '';
+          return {
+            email: contact.email,
+            name: lastName ? `${firstName} ${lastName}` : firstName
+          };
+        }) || [];
+
+      // Remove duplicates
+      const uniqueContacts = subscribedContacts.filter((contact, index, self) => 
+        self.findIndex(c => c.email === contact.email) === index
+      );
+
+      setContactsPreview(uniqueContacts);
+      setTotalRecipients(uniqueContacts.length);
 
       // Calculate estimated time based on delay setting and sequential sending
-      const totalDelayTime = (actualRecipientCount - 1) * delayBetweenEmails; // Delay between each email
-      const estimatedSendTime = actualRecipientCount * 2; // ~2 seconds per email for processing
+      const totalDelayTime = (uniqueContacts.length - 1) * delayBetweenEmails;
+      const estimatedSendTime = uniqueContacts.length * 2;
       const totalEstimatedSeconds = totalDelayTime + estimatedSendTime;
       
       const minutes = Math.floor(totalEstimatedSeconds / 60);
@@ -109,7 +137,7 @@ export const SendCampaignModal: React.FC<SendCampaignModalProps> = ({
       setEstimatedTime(minutes > 0 ? `${minutes}m ${seconds}s` : `${seconds}s`);
 
     } catch (error) {
-      console.error('Error loading list details:', error);
+      console.error('Error loading list details and contacts:', error);
     }
   };
 
@@ -526,8 +554,18 @@ export const SendCampaignModal: React.FC<SendCampaignModalProps> = ({
                 </div>
 
                 <div className="pt-2 border-t border-email-primary/10">
-                  <div className="text-xs text-muted-foreground">Target Lists:</div>
-                  <div className="flex flex-wrap gap-1 mt-1">
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="text-xs text-muted-foreground">Target Lists:</div>
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      onClick={() => setShowContactsPreview(true)}
+                      className="text-xs h-6 px-2"
+                    >
+                      Preview Recipients ({contactsPreview.length})
+                    </Button>
+                  </div>
+                  <div className="flex flex-wrap gap-1">
                     {listNames.map((name, index) => (
                       <Badge key={index} variant="outline" className="text-xs border-email-primary/30 text-email-primary">
                         {name}
@@ -722,6 +760,38 @@ export const SendCampaignModal: React.FC<SendCampaignModalProps> = ({
             </div>
           )}
         </div>
+
+        {/* Contacts Preview Dialog */}
+        <Dialog open={showContactsPreview} onOpenChange={setShowContactsPreview}>
+          <DialogContent className="max-w-2xl max-h-[80vh] overflow-hidden flex flex-col">
+            <DialogHeader>
+              <DialogTitle>Campaign Recipients Preview</DialogTitle>
+            </DialogHeader>
+            <div className="flex-1 overflow-y-auto">
+              <div className="space-y-2">
+                <div className="text-sm text-muted-foreground mb-3">
+                  {contactsPreview.length} recipients will receive this campaign:
+                </div>
+                <div className="border rounded-lg divide-y max-h-60 overflow-y-auto">
+                  {contactsPreview.map((contact, index) => (
+                    <div key={contact.email} className="p-3 flex items-center justify-between">
+                      <div>
+                        <div className="text-sm font-medium">{contact.name}</div>
+                        <div className="text-xs text-muted-foreground">{contact.email}</div>
+                      </div>
+                      <div className="text-xs text-muted-foreground">#{index + 1}</div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+            <div className="flex justify-end pt-4 border-t">
+              <Button onClick={() => setShowContactsPreview(false)} variant="outline">
+                Close Preview
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
       </DialogContent>
     </Dialog>
   );
