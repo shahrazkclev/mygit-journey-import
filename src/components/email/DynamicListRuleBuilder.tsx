@@ -197,23 +197,27 @@ export const DynamicListRuleBuilder = ({
                     </SelectTrigger>
                     <SelectContent>
                       {rule.type.includes('lists') ? (
-                        availableLists.map(list => (
-                          <SelectItem key={list.id} value={list.id}>
-                            <div className="flex items-center space-x-2">
-                              <List className="h-3 w-3" />
-                              <span>{list.name}</span>
-                            </div>
-                          </SelectItem>
-                        ))
+                        availableLists
+                          .filter(list => list.id && list.id.trim().length > 0)
+                          .map(list => (
+                            <SelectItem key={list.id} value={list.id}>
+                              <div className="flex items-center space-x-2">
+                                <List className="h-3 w-3" />
+                                <span>{list.name}</span>
+                              </div>
+                            </SelectItem>
+                          ))
                       ) : (
-                        availableTags.map(tag => (
-                          <SelectItem key={tag} value={tag}>
-                            <div className="flex items-center space-x-2">
-                              <Tag className="h-3 w-3" />
-                              <span>{tag}</span>
-                            </div>
-                          </SelectItem>
-                        ))
+                        availableTags
+                          .filter(tag => tag && tag.trim().length > 0)
+                          .map(tag => (
+                            <SelectItem key={tag} value={tag}>
+                              <div className="flex items-center space-x-2">
+                                <Tag className="h-3 w-3" />
+                                <span>{tag}</span>
+                              </div>
+                            </SelectItem>
+                          ))
                       )}
                     </SelectContent>
                   </Select>
