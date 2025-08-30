@@ -346,6 +346,45 @@ export type Database = {
         }
         Relationships: []
       }
+      tag_rules: {
+        Row: {
+          add_tags: string[] | null
+          created_at: string
+          description: string | null
+          enabled: boolean
+          id: string
+          name: string | null
+          remove_tags: string[] | null
+          trigger_tag: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          add_tags?: string[] | null
+          created_at?: string
+          description?: string | null
+          enabled?: boolean
+          id?: string
+          name?: string | null
+          remove_tags?: string[] | null
+          trigger_tag: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          add_tags?: string[] | null
+          created_at?: string
+          description?: string | null
+          enabled?: boolean
+          id?: string
+          name?: string | null
+          remove_tags?: string[] | null
+          trigger_tag?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       unsubscribes: {
         Row: {
           email: string

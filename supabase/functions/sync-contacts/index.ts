@@ -114,7 +114,20 @@ serve(async (req) => {
     const [firstName, ...rest] = nameTrimmed.split(/\s+/);
     const lastName = rest.join(" ");
 
-    // Upsert contact with correct schema
+    // Get existing contact to merge tags
+    const { data: existingContact } = await supabase
+      .from('contacts')
+      .select('*')
+      .eq('email', email)
+      .eq('user_id', finalUserId)
+      .single();
+
+    // Merge tags with existing ones (don't replace)
+    const existingTags = existingContact?.tags || [];
+    const newTags = Array.isArray(tags) ? tags : [];
+    const mergedTags = [...new Set([...existingTags, ...newTags])];
+
+    // Upsert contact with merged tags
     const { data: contact, error: contactError } = await supabase
       .from('contacts')
       .upsert({
@@ -122,7 +135,7 @@ serve(async (req) => {
         user_id: finalUserId,
         first_name: firstName || null,
         last_name: lastName || null,
-        tags: Array.isArray(tags) ? tags : [],
+        tags: mergedTags,
         status,
         updated_at: new Date().toISOString()
       }, {
@@ -140,6 +153,9 @@ serve(async (req) => {
     }
 
     console.log('Contact upserted:', contact);
+
+    // Apply tag rules to the updated contact
+    await applyTagRules(supabase, contact as any, finalUserId, mergedTags);
 
     // Process dynamic lists - check if contact should be added to any rule-based lists
     const { data: dynamicLists, error: listsError } = await supabase
@@ -200,4 +216,65 @@ serve(async (req) => {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   }
-});
+})
+
+// Function to apply tag rules
+async function applyTagRules(supabase: any, contact: any, userId: string, currentTags: string[]) {
+  try {
+    // Fetch tag rules for the user
+    const { data: tagRules, error } = await supabase
+      .from('tag_rules')
+      .select('*')
+      .eq('user_id', userId)
+      .eq('enabled', true);
+
+    if (error || !tagRules?.length) return;
+
+    let updatedTags = [...currentTags];
+    let hasChanges = false;
+
+    for (const rule of tagRules) {
+      // Check if any of the current tags trigger this rule
+      if (currentTags.includes(rule.trigger_tag)) {
+        console.log(`Applying tag rule: ${rule.name || 'Unnamed'} for trigger: ${rule.trigger_tag}`);
+
+        // Add tags if specified
+        if (rule.add_tags?.length) {
+          for (const tagToAdd of rule.add_tags) {
+            if (!updatedTags.includes(tagToAdd)) {
+              updatedTags.push(tagToAdd);
+              hasChanges = true;
+            }
+          }
+        }
+
+        // Remove tags if specified
+        if (rule.remove_tags?.length) {
+          for (const tagToRemove of rule.remove_tags) {
+            const index = updatedTags.indexOf(tagToRemove);
+            if (index > -1) {
+              updatedTags.splice(index, 1);
+              hasChanges = true;
+            }
+          }
+        }
+      }
+    }
+
+    // Update contact if tags changed
+    if (hasChanges) {
+      const { error: updateError } = await supabase
+        .from('contacts')
+        .update({ tags: updatedTags })
+        .eq('id', contact.id);
+
+      if (updateError) {
+        console.error('Error updating contact tags after rule application:', updateError);
+      } else {
+        console.log(`Updated contact tags from [${currentTags.join(', ')}] to [${updatedTags.join(', ')}]`);
+      }
+    }
+  } catch (error) {
+    console.error('Error applying tag rules:', error);
+  }
+}
