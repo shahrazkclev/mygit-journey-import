@@ -233,7 +233,10 @@ async function applyTagRules(supabase: any, contact: any, userId: string, curren
     if (error || !tagRules?.length) return;
 
     const trimOnly = (s: any) => (typeof s === 'string' ? s.trim() : '');
-    const toNorm = (s: any) => (typeof s === 'string' ? s.trim().toLowerCase() : '');
+    const toNorm = (s: any) =>
+      typeof s === 'string'
+        ? s.replace(/^[\s\-–—•*]+/u, '').replace(/\s+/g, ' ').trim().toLowerCase()
+        : '';
     const baseText = (s: any) => (typeof s === 'string' ? s.split('---')[0].trim() : ''); // handle labels like "tag --- Category"
 
     // Prepare working tags and a normalized index for robust matching
