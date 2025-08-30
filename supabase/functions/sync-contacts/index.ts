@@ -122,12 +122,22 @@ serve(async (req) => {
       .eq('user_id', finalUserId)
       .single();
 
-    // Normalize and merge tags with existing ones (don't replace)
-    const normalize = (t: any) => (typeof t === 'string' ? t.trim() : '');
-    const existingTags = (existingContact?.tags || []).map(normalize).filter(Boolean);
-    const incomingTags = (Array.isArray(tags) ? tags : []).map(normalize).filter(Boolean);
-    const mergedTags = Array.from(new Set([...existingTags, ...incomingTags]));
-    console.log('Tag merge:', { existingTags, incomingTags, mergedTags });
+// Normalize and merge tags with existing ones (don't replace)
+const splitParts = (s: string) => s.split(/[,;\n]/).map((p) => p.trim()).filter(Boolean);
+const parseTags = (input: any): string[] => {
+  if (!input) return [];
+  if (Array.isArray(input)) {
+    return Array.from(new Set(input.flatMap((t: any) => (typeof t === 'string' ? splitParts(t) : []) )));
+  }
+  if (typeof input === 'string') return Array.from(new Set(splitParts(input)));
+  return [];
+};
+
+const normalize = (t: any) => (typeof t === 'string' ? t.trim() : '');
+const existingTags = (existingContact?.tags || []).map(normalize).filter(Boolean);
+const incomingTags = parseTags(tags);
+const mergedTags = Array.from(new Set([...existingTags, ...incomingTags]));
+console.log('Tag merge:', { existingTags, rawIncoming: tags, incomingTags, mergedTags });
 
     // Upsert contact with merged tags
     const { data: contact, error: contactError } = await supabase
@@ -176,12 +186,13 @@ serve(async (req) => {
 
         let shouldInclude = false;
 
-        // Check if contact matches the rule
-        if (ruleConfig.requiredTags && Array.isArray(ruleConfig.requiredTags)) {
-          shouldInclude = ruleConfig.requiredTags.some((tag: string) => 
-            (Array.isArray(tags) ? tags : []).includes(tag)
-          );
-        }
+// Check if contact matches the rule
+if (ruleConfig.requiredTags && Array.isArray(ruleConfig.requiredTags)) {
+  const mergedTagSet = new Set(mergedTags.map((t: string) => t.trim()));
+  shouldInclude = ruleConfig.requiredTags.some((tag: string) =>
+    mergedTagSet.has(typeof tag === 'string' ? tag.trim() : tag)
+  );
+}
 
         if (shouldInclude) {
           // Add contact to list (upsert to avoid duplicates)
