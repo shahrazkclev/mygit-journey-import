@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -14,6 +13,8 @@ import { Trash2, Plus, List, Zap, Users, Tag, UserPlus, Edit, Copy, Search } fro
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { DEMO_USER_ID } from "@/lib/demo-auth";
+import { DynamicListRuleBuilder } from "./DynamicListRuleBuilder";
+import { ContactFilter } from "./ContactFilter";
 
 interface EmailList {
   id: string;
@@ -45,6 +46,7 @@ export const SmartListManager = () => {
   const [listContacts, setListContacts] = useState<Contact[]>([]);
   const [selectedContactsToAdd, setSelectedContactsToAdd] = useState<Set<string>>(new Set());
   const [contactSearchTerm, setContactSearchTerm] = useState('');
+  const [filteredContactIds, setFilteredContactIds] = useState<string[]>([]);
   
   // Edit list state
   const [showEditListDialog, setShowEditListDialog] = useState(false);
@@ -53,8 +55,7 @@ export const SmartListManager = () => {
     name: '',
     description: '',
     list_type: 'static' as 'static' | 'dynamic',
-    requiredTags: [] as string[],
-    tagInput: ''
+    ruleConfig: null as any
   });
 
   // Create list dialog state
@@ -63,8 +64,7 @@ export const SmartListManager = () => {
     name: "",
     description: "",
     list_type: "static" as "static" | "dynamic",
-    requiredTags: [] as string[],
-    tagInput: ""
+    ruleConfig: null as any
   });
 
   useEffect(() => {
@@ -141,16 +141,11 @@ export const SmartListManager = () => {
     }
 
     try {
-      let ruleConfig = null;
+      let ruleConfig = newList.ruleConfig;
       
-      if (newList.list_type === 'dynamic') {
-        if (newList.requiredTags.length === 0) {
-          toast.error("Dynamic lists require at least one tag rule");
-          return;
-        }
-        ruleConfig = {
-          requiredTags: newList.requiredTags
-        };
+      if (newList.list_type === 'dynamic' && !ruleConfig) {
+        toast.error("Dynamic lists require rules to be configured");
+        return;
       }
 
       const { data: listData, error: listError } = await supabase
@@ -181,8 +176,7 @@ export const SmartListManager = () => {
         name: "",
         description: "",
         list_type: "static",
-        requiredTags: [],
-        tagInput: ""
+        ruleConfig: null
       });
       setIsCreateDialogOpen(false);
       loadData();
@@ -194,14 +188,38 @@ export const SmartListManager = () => {
 
   const populateDynamicList = async (listId: string, ruleConfig: any) => {
     try {
-      // Find contacts that match the rule
+      // Enhanced rule evaluation logic
       const matchingContacts = contacts.filter(contact => {
-        if (ruleConfig.requiredTags && Array.isArray(ruleConfig.requiredTags)) {
-          return ruleConfig.requiredTags.some((tag: string) => 
-            contact.tags?.includes(tag)
-          );
+        if (!ruleConfig.rules || !Array.isArray(ruleConfig.rules)) {
+          // Legacy support for simple tag rules
+          if (ruleConfig.requiredTags && Array.isArray(ruleConfig.requiredTags)) {
+            return ruleConfig.requiredTags.some((tag: string) => 
+              contact.tags?.includes(tag)
+            );
+          }
+          return false;
         }
-        return false;
+
+        const ruleResults = ruleConfig.rules.map((rule: any) => {
+          switch (rule.type) {
+            case 'has_any_tags':
+              return rule.values.some((tag: string) => contact.tags?.includes(tag));
+            case 'has_all_tags':
+              return rule.values.every((tag: string) => contact.tags?.includes(tag));
+            case 'not_has_tags':
+              return !rule.values.some((tag: string) => contact.tags?.includes(tag));
+            // List-based rules would need contact-list membership data
+            default:
+              return false;
+          }
+        });
+
+        // Apply global operator
+        if (ruleConfig.globalOperator === 'and') {
+          return ruleResults.every(result => result);
+        } else {
+          return ruleResults.some(result => result);
+        }
       });
 
       // Add matching contacts to the list
@@ -252,23 +270,6 @@ export const SmartListManager = () => {
       console.error('Error deleting list:', error);
       toast.error("Failed to delete list");
     }
-  };
-
-  const addTagToNewList = (tag: string) => {
-    if (!newList.requiredTags.includes(tag)) {
-      setNewList({
-        ...newList,
-        requiredTags: [...newList.requiredTags, tag],
-        tagInput: ""
-      });
-    }
-  };
-
-  const removeTagFromNewList = (tagToRemove: string) => {
-    setNewList({
-      ...newList,
-      requiredTags: newList.requiredTags.filter(tag => tag !== tagToRemove)
-    });
   };
 
   const handleRefreshDynamicList = async (list: EmailList) => {
@@ -398,8 +399,7 @@ export const SmartListManager = () => {
       name: list.name,
       description: list.description,
       list_type: list.list_type,
-      requiredTags: list.rule_config?.requiredTags || [],
-      tagInput: ''
+      ruleConfig: list.rule_config
     });
     setShowEditListDialog(true);
   };
@@ -411,16 +411,11 @@ export const SmartListManager = () => {
     }
 
     try {
-      let ruleConfig = null;
+      let ruleConfig = editListForm.ruleConfig;
       
-      if (editListForm.list_type === 'dynamic') {
-        if (editListForm.requiredTags.length === 0) {
-          toast.error("Dynamic lists require at least one tag rule");
-          return;
-        }
-        ruleConfig = {
-          requiredTags: editListForm.requiredTags
-        };
+      if (editListForm.list_type === 'dynamic' && !ruleConfig) {
+        toast.error("Dynamic lists require rules to be configured");
+        return;
       }
 
       const { error } = await supabase
@@ -498,29 +493,18 @@ export const SmartListManager = () => {
     }
   };
 
-  const addTagToEditList = (tag: string) => {
-    if (!editListForm.requiredTags.includes(tag)) {
-      setEditListForm({
-        ...editListForm,
-        requiredTags: [...editListForm.requiredTags, tag],
-        tagInput: ""
-      });
-    }
-  };
-
-  const removeTagFromEditList = (tagToRemove: string) => {
-    setEditListForm({
-      ...editListForm,
-      requiredTags: editListForm.requiredTags.filter(tag => tag !== tagToRemove)
-    });
-  };
-
-  // Filter contacts based on search term
-  const filteredAvailableContacts = availableContacts.filter(contact =>
-    contact.name.toLowerCase().includes(contactSearchTerm.toLowerCase()) ||
-    contact.email.toLowerCase().includes(contactSearchTerm.toLowerCase()) ||
-    contact.tags.some(tag => tag.toLowerCase().includes(contactSearchTerm.toLowerCase()))
-  );
+  // Filter contacts based on search term and advanced filters
+  const filteredAvailableContacts = availableContacts.filter(contact => {
+    const matchesSearch = !contactSearchTerm || 
+      contact.name.toLowerCase().includes(contactSearchTerm.toLowerCase()) ||
+      contact.email.toLowerCase().includes(contactSearchTerm.toLowerCase()) ||
+      contact.tags.some(tag => tag.toLowerCase().includes(contactSearchTerm.toLowerCase()));
+    
+    const matchesAdvancedFilter = filteredContactIds.length === 0 || 
+      filteredContactIds.includes(contact.id);
+    
+    return matchesSearch && matchesAdvancedFilter;
+  });
 
   if (isLoading) {
     return <div className="p-6">Loading lists...</div>;
@@ -537,7 +521,7 @@ export const SmartListManager = () => {
                 <span className="text-email-secondary">Smart Lists ({lists.length})</span>
               </CardTitle>
               <CardDescription>
-                Create static lists you control manually, or dynamic lists that auto-update based on tags
+                Create static lists you control manually, or dynamic lists that auto-update based on advanced rules
               </CardDescription>
             </div>
             <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
@@ -547,7 +531,7 @@ export const SmartListManager = () => {
                   Create List
                 </Button>
               </DialogTrigger>
-              <DialogContent className="max-w-2xl">
+              <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
                 <DialogHeader>
                   <DialogTitle>Create New List</DialogTitle>
                   <DialogDescription>
@@ -561,7 +545,7 @@ export const SmartListManager = () => {
                       id="listName"
                       value={newList.name}
                       onChange={(e) => setNewList({...newList, name: e.target.value})}
-                      placeholder="e.g., Lazy Motion Library Buyers"
+                      placeholder="e.g., High-Value Customers"
                     />
                   </div>
                   
@@ -584,7 +568,7 @@ export const SmartListManager = () => {
                           id="static"
                           name="listType"
                           checked={newList.list_type === 'static'}
-                          onChange={() => setNewList({...newList, list_type: 'static'})}
+                          onChange={() => setNewList({...newList, list_type: 'static', ruleConfig: null})}
                         />
                         <Label htmlFor="static" className="flex items-center space-x-2">
                           <Users className="h-4 w-4" />
@@ -601,79 +585,21 @@ export const SmartListManager = () => {
                         />
                         <Label htmlFor="dynamic" className="flex items-center space-x-2">
                           <Zap className="h-4 w-4" />
-                          <span>Dynamic List - Auto-update based on tags</span>
+                          <span>Dynamic List - Auto-update based on advanced rules</span>
                         </Label>
                       </div>
                     </div>
                   </div>
 
                   {newList.list_type === 'dynamic' && (
-                    <div className="space-y-3 p-4 bg-blue-50 rounded-lg border">
-                      <Label>Tag Rules</Label>
-                      <p className="text-sm text-gray-600">
-                        Contacts with any of these tags will automatically be added to this list
-                      </p>
-                      
-                      <div className="space-y-2">
-                        <div className="flex space-x-2">
-                          <Input
-                            value={newList.tagInput}
-                            onChange={(e) => setNewList({...newList, tagInput: e.target.value})}
-                            placeholder="Type a tag and press Enter"
-                            onKeyPress={(e) => {
-                              if (e.key === 'Enter' && newList.tagInput.trim()) {
-                                addTagToNewList(newList.tagInput.trim());
-                              }
-                            }}
-                          />
-                          <Button
-                            type="button"
-                            onClick={() => {
-                              if (newList.tagInput.trim()) {
-                                addTagToNewList(newList.tagInput.trim());
-                              }
-                            }}
-                            variant="outline"
-                          >
-                            Add
-                          </Button>
-                        </div>
-
-                        {newList.requiredTags.length > 0 && (
-                          <div className="flex flex-wrap gap-2">
-                            {newList.requiredTags.map(tag => (
-                              <Badge
-                                key={tag}
-                                variant="secondary"
-                                className="cursor-pointer"
-                                onClick={() => removeTagFromNewList(tag)}
-                              >
-                                {tag} ×
-                              </Badge>
-                            ))}
-                          </div>
-                        )}
-
-                        {allTags.length > 0 && (
-                          <div className="space-y-2">
-                            <Label className="text-sm">Available Tags:</Label>
-                            <div className="flex flex-wrap gap-1">
-                              {allTags.map(tag => (
-                                <Badge
-                                  key={tag}
-                                  variant="outline"
-                                  className="cursor-pointer text-xs hover:bg-blue-100"
-                                  onClick={() => addTagToNewList(tag)}
-                                >
-                                  <Tag className="h-3 w-3 mr-1" />
-                                  {tag}
-                                </Badge>
-                              ))}
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                    </div>
+                    <Card className="p-4 bg-blue-50">
+                      <DynamicListRuleBuilder
+                        ruleConfig={newList.ruleConfig}
+                        onRuleChange={(ruleConfig) => setNewList({...newList, ruleConfig})}
+                        availableTags={allTags}
+                        availableLists={lists.map(l => ({ id: l.id, name: l.name }))}
+                      />
+                    </Card>
                   )}
 
                   <div className="flex space-x-2">
@@ -722,13 +648,11 @@ export const SmartListManager = () => {
                     <span className="text-sm text-gray-500">
                       {list.contact_count || 0} contacts
                     </span>
-                    {list.list_type === 'dynamic' && list.rule_config?.requiredTags && (
+                    {list.list_type === 'dynamic' && list.rule_config?.rules && (
                       <div className="flex flex-wrap gap-1">
-                        {list.rule_config.requiredTags.map((tag: string) => (
-                          <Badge key={tag} variant="outline" className="text-xs border-email-accent/30 text-email-accent">
-                            {tag}
-                          </Badge>
-                        ))}
+                        <Badge variant="outline" className="text-xs border-email-accent/30 text-email-accent">
+                          {list.rule_config.rules.length} rule{list.rule_config.rules.length !== 1 ? 's' : ''}
+                        </Badge>
                       </div>
                     )}
                   </div>
@@ -798,11 +722,11 @@ export const SmartListManager = () => {
 
       {/* Manage Contacts Dialog */}
       <Dialog open={showManageContactsDialog} onOpenChange={setShowManageContactsDialog}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Manage Contacts - {selectedListForManagement?.name}</DialogTitle>
             <DialogDescription>
-              Add or remove contacts from this list
+              Add or remove contacts from this list using advanced filtering
             </DialogDescription>
           </DialogHeader>
 
@@ -818,21 +742,29 @@ export const SmartListManager = () => {
                 )}
               </div>
               
-              {/* Search Input */}
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-                <Input
-                  value={contactSearchTerm}
-                  onChange={(e) => setContactSearchTerm(e.target.value)}
-                  placeholder="Search contacts by name, email, or tags..."
-                  className="pl-10"
+              {/* Search and Filter Controls */}
+              <div className="space-y-2">
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                  <Input
+                    value={contactSearchTerm}
+                    onChange={(e) => setContactSearchTerm(e.target.value)}
+                    placeholder="Search contacts by name, email, or tags..."
+                    className="pl-10"
+                  />
+                </div>
+                <ContactFilter
+                  onFilterChange={setFilteredContactIds}
+                  availableTags={allTags}
+                  availableLists={lists.map(l => ({ id: l.id, name: l.name }))}
+                  allContacts={availableContacts.map(c => ({ id: c.id, tags: c.tags }))}
                 />
               </div>
               
               <div className="border rounded-lg p-4 max-h-80 overflow-y-auto bg-email-muted/10">
                 {filteredAvailableContacts.length === 0 ? (
                   <p className="text-muted-foreground text-center py-4">
-                    {contactSearchTerm ? "No contacts found matching search" : "All contacts are already in this list"}
+                    {contactSearchTerm || filteredContactIds.length > 0 ? "No contacts found matching filters" : "All contacts are already in this list"}
                   </p>
                 ) : (
                   <div className="space-y-2">
@@ -943,6 +875,7 @@ export const SmartListManager = () => {
               onClick={() => {
                 setShowManageContactsDialog(false);
                 setSelectedContactsToAdd(new Set());
+                setFilteredContactIds([]);
               }}
             >
               Close
@@ -953,7 +886,7 @@ export const SmartListManager = () => {
 
       {/* Edit List Dialog */}
       <Dialog open={showEditListDialog} onOpenChange={setShowEditListDialog}>
-        <DialogContent className="max-w-2xl">
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Edit List</DialogTitle>
             <DialogDescription>
@@ -967,7 +900,7 @@ export const SmartListManager = () => {
                 id="editListName"
                 value={editListForm.name}
                 onChange={(e) => setEditListForm({...editListForm, name: e.target.value})}
-                placeholder="e.g., Lazy Motion Library Buyers"
+                placeholder="e.g., High-Value Customers"
               />
             </div>
             
@@ -990,7 +923,7 @@ export const SmartListManager = () => {
                     id="edit-static"
                     name="editListType"
                     checked={editListForm.list_type === 'static'}
-                    onChange={() => setEditListForm({...editListForm, list_type: 'static'})}
+                    onChange={() => setEditListForm({...editListForm, list_type: 'static', ruleConfig: null})}
                   />
                   <Label htmlFor="edit-static" className="flex items-center space-x-2">
                     <Users className="h-4 w-4" />
@@ -1007,79 +940,21 @@ export const SmartListManager = () => {
                   />
                   <Label htmlFor="edit-dynamic" className="flex items-center space-x-2">
                     <Zap className="h-4 w-4" />
-                    <span>Dynamic List - Auto-update based on tags</span>
+                    <span>Dynamic List - Auto-update based on advanced rules</span>
                   </Label>
                 </div>
               </div>
             </div>
 
             {editListForm.list_type === 'dynamic' && (
-              <div className="space-y-3 p-4 bg-blue-50 rounded-lg border">
-                <Label>Tag Rules</Label>
-                <p className="text-sm text-gray-600">
-                  Contacts with any of these tags will automatically be added to this list
-                </p>
-                
-                <div className="space-y-2">
-                  <div className="flex space-x-2">
-                    <Input
-                      value={editListForm.tagInput}
-                      onChange={(e) => setEditListForm({...editListForm, tagInput: e.target.value})}
-                      placeholder="Type a tag and press Enter"
-                      onKeyPress={(e) => {
-                        if (e.key === 'Enter' && editListForm.tagInput.trim()) {
-                          addTagToEditList(editListForm.tagInput.trim());
-                        }
-                      }}
-                    />
-                    <Button
-                      type="button"
-                      onClick={() => {
-                        if (editListForm.tagInput.trim()) {
-                          addTagToEditList(editListForm.tagInput.trim());
-                        }
-                      }}
-                      variant="outline"
-                    >
-                      Add
-                    </Button>
-                  </div>
-
-                  {editListForm.requiredTags.length > 0 && (
-                    <div className="flex flex-wrap gap-2">
-                      {editListForm.requiredTags.map(tag => (
-                        <Badge
-                          key={tag}
-                          variant="secondary"
-                          className="cursor-pointer"
-                          onClick={() => removeTagFromEditList(tag)}
-                        >
-                          {tag} ×
-                        </Badge>
-                      ))}
-                    </div>
-                  )}
-
-                  {allTags.length > 0 && (
-                    <div className="space-y-2">
-                      <Label className="text-sm">Available Tags:</Label>
-                      <div className="flex flex-wrap gap-1">
-                        {allTags.map(tag => (
-                          <Badge
-                            key={tag}
-                            variant="outline"
-                            className="cursor-pointer text-xs hover:bg-blue-100"
-                            onClick={() => addTagToEditList(tag)}
-                          >
-                            <Tag className="h-3 w-3 mr-1" />
-                            {tag}
-                          </Badge>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </div>
+              <Card className="p-4 bg-blue-50">
+                <DynamicListRuleBuilder
+                  ruleConfig={editListForm.ruleConfig}
+                  onRuleChange={(ruleConfig) => setEditListForm({...editListForm, ruleConfig})}
+                  availableTags={allTags}
+                  availableLists={lists.map(l => ({ id: l.id, name: l.name }))}
+                />
+              </Card>
             )}
 
             <div className="flex space-x-2">

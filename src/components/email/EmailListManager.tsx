@@ -13,8 +13,7 @@ import { Plus, Upload, Edit, Trash2, Users, Package, List, Search, Filter, Downl
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { DEMO_USER_ID } from "@/lib/demo-auth";
-
-// Data types matching our Supabase schema
+import { ContactFilter } from "./ContactFilter";
 
 type Product = {
   id: string;
@@ -69,6 +68,7 @@ export const EmailListManager = () => {
   const [listSearchQuery, setListSearchQuery] = useState("");
   const [filterTag, setFilterTag] = useState<string>("all");
   const [selectedProducts, setSelectedProducts] = useState<string[]>([]);
+  const [filteredContactIds, setFilteredContactIds] = useState<string[]>([]);
   
   // Form state
   const [newListName, setNewListName] = useState("");
@@ -576,7 +576,7 @@ export const EmailListManager = () => {
     });
   };
 
-  // Filter contacts based on search and filters
+  // Filter contacts based on search, tag filters, and advanced filters
   const filteredContacts = contacts.filter(contact => {
     const matchesSearch = !searchQuery || 
       contact.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -586,7 +586,10 @@ export const EmailListManager = () => {
     const matchesTag = filterTag === "all" || 
       (contact.tags && contact.tags.includes(filterTag));
     
-    return matchesSearch && matchesTag;
+    const matchesAdvancedFilter = filteredContactIds.length === 0 || 
+      filteredContactIds.includes(contact.id);
+    
+    return matchesSearch && matchesTag && matchesAdvancedFilter;
   });
 
   // Get lists that a contact belongs to
@@ -779,6 +782,12 @@ export const EmailListManager = () => {
                     ))}
                   </SelectContent>
                 </Select>
+                <ContactFilter
+                  onFilterChange={setFilteredContactIds}
+                  availableTags={uniqueTags}
+                  availableLists={lists.map(l => ({ id: l.id, name: l.name }))}
+                  allContacts={contacts.map(c => ({ id: c.id, tags: c.tags }))}
+                />
               </div>
 
               <div className="border rounded-lg">
