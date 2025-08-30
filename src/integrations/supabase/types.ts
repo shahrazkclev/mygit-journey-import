@@ -355,7 +355,9 @@ export type Database = {
           id: string
           name: string | null
           remove_tags: string[] | null
+          trigger_match_type: string | null
           trigger_tag: string
+          trigger_tags: string[] | null
           updated_at: string
           user_id: string
         }
@@ -367,7 +369,9 @@ export type Database = {
           id?: string
           name?: string | null
           remove_tags?: string[] | null
+          trigger_match_type?: string | null
           trigger_tag: string
+          trigger_tags?: string[] | null
           updated_at?: string
           user_id: string
         }
@@ -379,7 +383,9 @@ export type Database = {
           id?: string
           name?: string | null
           remove_tags?: string[] | null
+          trigger_match_type?: string | null
           trigger_tag?: string
+          trigger_tags?: string[] | null
           updated_at?: string
           user_id?: string
         }
