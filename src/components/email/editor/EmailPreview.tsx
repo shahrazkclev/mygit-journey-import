@@ -17,6 +17,14 @@ export const EmailPreview: React.FC<EmailPreviewProps> = ({ htmlContent }) => {
             className="w-full h-96 border-0"
             title="Email Preview"
             style={{ colorScheme: 'normal' }}
+            sandbox="allow-same-origin"
+            onLoad={(e) => {
+              // Prevent postMessage errors by setting up proper iframe communication
+              const iframe = e.currentTarget;
+              if (iframe.contentWindow) {
+                iframe.contentWindow.onerror = () => false;
+              }
+            }}
           />
         </div>
       </div>

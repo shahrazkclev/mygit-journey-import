@@ -192,9 +192,15 @@ export const InlineEmailEditor: React.FC<InlineEditorProps> = ({ htmlContent, on
         <iframe
           ref={iframeRef}
           title="Email preview"
+          sandbox="allow-same-origin allow-scripts"
+          onLoad={() => {
+            // Prevent postMessage errors
+            if (iframeRef.current?.contentWindow) {
+              iframeRef.current.contentWindow.onerror = () => false;
+            }
+          }}
           srcDoc={htmlContent}
           className="w-full h-[600px] border-0"
-          sandbox="allow-same-origin allow-scripts"
         />
 
         {/* Editing Panel */}

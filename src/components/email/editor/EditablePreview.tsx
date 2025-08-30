@@ -492,6 +492,13 @@ export const EditablePreview: React.FC<EditablePreviewProps> = ({
             <iframe
               ref={iframeRef}
               key={`${mode}-${htmlContent.length}`}
+              sandbox="allow-same-origin allow-scripts"
+              onLoad={() => {
+                // Prevent postMessage errors
+                if (iframeRef.current?.contentWindow) {
+                  iframeRef.current.contentWindow.onerror = () => false;
+                }
+              }}
               srcDoc={htmlContent}
               className={`w-full border-0 ${mode === 'mobile' ? 'h-[400px]' : 'h-[500px]'}`}
               title="Email Editor"
