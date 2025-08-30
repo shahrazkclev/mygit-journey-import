@@ -122,10 +122,12 @@ serve(async (req) => {
       .eq('user_id', finalUserId)
       .single();
 
-    // Merge tags with existing ones (don't replace)
-    const existingTags = existingContact?.tags || [];
-    const newTags = Array.isArray(tags) ? tags : [];
-    const mergedTags = [...new Set([...existingTags, ...newTags])];
+    // Normalize and merge tags with existing ones (don't replace)
+    const normalize = (t: any) => (typeof t === 'string' ? t.trim() : '');
+    const existingTags = (existingContact?.tags || []).map(normalize).filter(Boolean);
+    const incomingTags = (Array.isArray(tags) ? tags : []).map(normalize).filter(Boolean);
+    const mergedTags = Array.from(new Set([...existingTags, ...incomingTags]));
+    console.log('Tag merge:', { existingTags, incomingTags, mergedTags });
 
     // Upsert contact with merged tags
     const { data: contact, error: contactError } = await supabase
@@ -230,18 +232,23 @@ async function applyTagRules(supabase: any, contact: any, userId: string, curren
 
     if (error || !tagRules?.length) return;
 
-    let updatedTags = [...currentTags];
+    // Normalize current tags to avoid whitespace mismatches
+    const norm = (s: any) => (typeof s === 'string' ? s.trim() : '');
+    let updatedTags = currentTags.map(norm).filter(Boolean);
+    const originalTags = [...updatedTags];
     let hasChanges = false;
 
     for (const rule of tagRules) {
+      const trigger = norm(rule.trigger_tag);
       // Check if any of the current tags trigger this rule
-      if (currentTags.includes(rule.trigger_tag)) {
-        console.log(`Applying tag rule: ${rule.name || 'Unnamed'} for trigger: ${rule.trigger_tag}`);
+      if (updatedTags.includes(trigger)) {
+        console.log(`Applying tag rule: ${rule.name || 'Unnamed'} for trigger: ${trigger}`);
 
         // Add tags if specified
         if (rule.add_tags?.length) {
-          for (const tagToAdd of rule.add_tags) {
-            if (!updatedTags.includes(tagToAdd)) {
+          for (const raw of rule.add_tags) {
+            const tagToAdd = norm(raw);
+            if (tagToAdd && !updatedTags.includes(tagToAdd)) {
               updatedTags.push(tagToAdd);
               hasChanges = true;
             }
@@ -250,7 +257,8 @@ async function applyTagRules(supabase: any, contact: any, userId: string, curren
 
         // Remove tags if specified
         if (rule.remove_tags?.length) {
-          for (const tagToRemove of rule.remove_tags) {
+          for (const raw of rule.remove_tags) {
+            const tagToRemove = norm(raw);
             const index = updatedTags.indexOf(tagToRemove);
             if (index > -1) {
               updatedTags.splice(index, 1);
@@ -271,7 +279,7 @@ async function applyTagRules(supabase: any, contact: any, userId: string, curren
       if (updateError) {
         console.error('Error updating contact tags after rule application:', updateError);
       } else {
-        console.log(`Updated contact tags from [${currentTags.join(', ')}] to [${updatedTags.join(', ')}]`);
+        console.log(`Updated contact tags from [${originalTags.join(', ')}] to [${updatedTags.join(', ')}]`);
       }
     }
   } catch (error) {
