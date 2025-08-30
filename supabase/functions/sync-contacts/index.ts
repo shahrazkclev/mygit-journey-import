@@ -232,38 +232,69 @@ async function applyTagRules(supabase: any, contact: any, userId: string, curren
 
     if (error || !tagRules?.length) return;
 
-    // Normalize current tags to avoid whitespace mismatches
-    const norm = (s: any) => (typeof s === 'string' ? s.trim() : '');
-    let updatedTags = currentTags.map(norm).filter(Boolean);
+    const trimOnly = (s: any) => (typeof s === 'string' ? s.trim() : '');
+    const toNorm = (s: any) => (typeof s === 'string' ? s.trim().toLowerCase() : '');
+    const baseText = (s: any) => (typeof s === 'string' ? s.split('---')[0].trim() : ''); // handle labels like "tag --- Category"
+
+    // Prepare working tags and a normalized index for robust matching
+    let updatedTags = (currentTags || []).map(trimOnly).filter(Boolean);
     const originalTags = [...updatedTags];
+    const indexByNorm = new Map<string, number>();
+    const rebuildIndex = () => {
+      indexByNorm.clear();
+      updatedTags.forEach((val, idx) => {
+        const n1 = toNorm(val);
+        const n2 = toNorm(baseText(val));
+        // Map multiple normalized keys to the same index (first wins)
+        if (!indexByNorm.has(n1)) indexByNorm.set(n1, idx);
+        if (!indexByNorm.has(n2)) indexByNorm.set(n2, idx);
+      });
+    };
+    rebuildIndex();
+
     let hasChanges = false;
 
     for (const rule of tagRules) {
-      const trigger = norm(rule.trigger_tag);
-      // Check if any of the current tags trigger this rule
-      if (updatedTags.includes(trigger)) {
-        console.log(`Applying tag rule: ${rule.name || 'Unnamed'} for trigger: ${trigger}`);
+      const triggerNorm = toNorm(rule.trigger_tag);
+      const triggerBaseNorm = toNorm(baseText(rule.trigger_tag));
+      const triggerHit = indexByNorm.has(triggerNorm) || indexByNorm.has(triggerBaseNorm);
 
-        // Add tags if specified
-        if (rule.add_tags?.length) {
-          for (const raw of rule.add_tags) {
-            const tagToAdd = norm(raw);
-            if (tagToAdd && !updatedTags.includes(tagToAdd)) {
-              updatedTags.push(tagToAdd);
-              hasChanges = true;
-            }
+      if (!triggerHit) continue;
+
+      console.log(`Applying tag rule: ${rule.name || 'Unnamed'} (trigger: ${rule.trigger_tag})`);
+
+      // Add tags
+      if (Array.isArray(rule.add_tags) && rule.add_tags.length) {
+        for (const raw of rule.add_tags) {
+          const add = trimOnly(raw);
+          if (!add) continue;
+          const addNorm = toNorm(add);
+          const addBaseNorm = toNorm(baseText(add));
+          if (!indexByNorm.has(addNorm) && !indexByNorm.has(addBaseNorm)) {
+            updatedTags.push(add);
+            hasChanges = true;
+            console.log(' + Added tag via rule:', add);
+            rebuildIndex();
           }
         }
+      }
 
-        // Remove tags if specified
-        if (rule.remove_tags?.length) {
-          for (const raw of rule.remove_tags) {
-            const tagToRemove = norm(raw);
-            const index = updatedTags.indexOf(tagToRemove);
-            if (index > -1) {
-              updatedTags.splice(index, 1);
-              hasChanges = true;
-            }
+      // Remove tags
+      if (Array.isArray(rule.remove_tags) && rule.remove_tags.length) {
+        for (const raw of rule.remove_tags) {
+          const rem = trimOnly(raw);
+          if (!rem) continue;
+          const remNorm = toNorm(rem);
+          const remBaseNorm = toNorm(baseText(rem));
+          let idx = indexByNorm.get(remNorm);
+          if (idx === undefined) idx = indexByNorm.get(remBaseNorm);
+          if (idx !== undefined) {
+            const removed = updatedTags.splice(idx, 1);
+            hasChanges = true;
+            console.log(' - Removed tag via rule:', removed[0], '(pattern:', rem, ')');
+            rebuildIndex();
+          } else {
+            console.log(' ! No match to remove for:', rem, 'available keys:', Array.from(indexByNorm.keys()));
           }
         }
       }
@@ -279,7 +310,7 @@ async function applyTagRules(supabase: any, contact: any, userId: string, curren
       if (updateError) {
         console.error('Error updating contact tags after rule application:', updateError);
       } else {
-        console.log(`Updated contact tags from [${originalTags.join(', ')}] to [${updatedTags.join(', ')}]`);
+        console.log(`Tags updated by rules; before=[${originalTags.join(', ')}], after=[${updatedTags.join(', ')}]`);
       }
     }
   } catch (error) {
