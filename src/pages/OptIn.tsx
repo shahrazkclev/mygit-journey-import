@@ -121,11 +121,6 @@ export default function OptIn() {
       sessionStorage.setItem("opted_in_tags", JSON.stringify(updatedOptedTags));
       setHasOptedIn(true);
       setIsSuccess(true);
-      
-      toast({
-        title: "Successfully opted in!",
-        description: `Welcome ${name}! You've been added to our contact list.`
-      });
 
     } catch (error: any) {
       console.error('Error adding contact:', error);
