@@ -197,27 +197,35 @@ export const DynamicListRuleBuilder = ({
                     </SelectTrigger>
                     <SelectContent className="z-[60]">
                       {rule.type.includes('lists') ? (
-                        availableLists
-                          .filter(list => list.id && list.id.trim().length > 0)
-                          .map(list => (
-                            <SelectItem key={list.id} value={list.id}>
-                              <div className="flex items-center space-x-2">
-                                <List className="h-3 w-3" />
-                                <span>{list.name}</span>
-                              </div>
-                            </SelectItem>
-                          ))
+                        availableLists && availableLists.length > 0 ? (
+                          availableLists
+                            .filter(list => list && list.id && typeof list.id === 'string' && list.id.trim().length > 0)
+                            .map(list => (
+                              <SelectItem key={list.id} value={list.id}>
+                                <div className="flex items-center space-x-2">
+                                  <List className="h-3 w-3" />
+                                  <span>{list.name}</span>
+                                </div>
+                              </SelectItem>
+                            ))
+                        ) : (
+                          <SelectItem value="no-lists" disabled>No lists available</SelectItem>
+                        )
                       ) : (
-                        availableTags
-                          .filter(tag => tag && tag.trim().length > 0)
-                          .map(tag => (
-                            <SelectItem key={tag} value={tag}>
-                              <div className="flex items-center space-x-2">
-                                <Tag className="h-3 w-3" />
-                                <span>{tag}</span>
-                              </div>
-                            </SelectItem>
-                          ))
+                        availableTags && availableTags.length > 0 ? (
+                          availableTags
+                            .filter(tag => tag && typeof tag === 'string' && tag.trim().length > 0)
+                            .map(tag => (
+                              <SelectItem key={tag} value={tag}>
+                                <div className="flex items-center space-x-2">
+                                  <Tag className="h-3 w-3" />
+                                  <span>{tag}</span>
+                                </div>
+                              </SelectItem>
+                            ))
+                        ) : (
+                          <SelectItem value="no-tags" disabled>No tags available</SelectItem>
+                        )
                       )}
                     </SelectContent>
                   </Select>
