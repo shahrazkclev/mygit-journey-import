@@ -25,18 +25,17 @@ export default function OptIn() {
   const nameParam = searchParams.get("name") || "";
 
   useEffect(() => {
-    // Check if user has already opted in for these specific tags
+    // Check if user has already opted in for any of these specific tags
     const sessionOptedTags = sessionStorage.getItem("opted_in_tags");
     if (sessionOptedTags) {
       const optedTagsArray = JSON.parse(sessionOptedTags);
       const currentTags = [...tags];
       if (product) currentTags.push(product);
       
-      // Check if current tags are exactly the same as previously opted tags
-      const hasSameTags = currentTags.length === optedTagsArray.length && 
-        currentTags.every(tag => optedTagsArray.includes(tag));
+      // Check if any of the current tags were already opted in
+      const hasOverlappingTags = currentTags.some(tag => optedTagsArray.includes(tag));
       
-      if (hasSameTags) {
+      if (hasOverlappingTags && currentTags.length > 0) {
         setHasOptedIn(true);
       }
     }
@@ -115,8 +114,11 @@ export default function OptIn() {
         }
       }
 
-      // Store the specific tags opted in for this session
-      sessionStorage.setItem("opted_in_tags", JSON.stringify(allTags));
+      // Add new tags to existing opted-in tags for this session
+      const sessionOptedTags = sessionStorage.getItem("opted_in_tags");
+      const existingOptedTags = sessionOptedTags ? JSON.parse(sessionOptedTags) : [];
+      const updatedOptedTags = [...new Set([...existingOptedTags, ...allTags])];
+      sessionStorage.setItem("opted_in_tags", JSON.stringify(updatedOptedTags));
       setHasOptedIn(true);
       setIsSuccess(true);
       
