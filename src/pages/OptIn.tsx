@@ -25,17 +25,27 @@ export default function OptIn() {
   const nameParam = searchParams.get("name") || "";
 
   useEffect(() => {
-    // Check if user has already opted in this session
-    const sessionOptIn = sessionStorage.getItem("opted_in_session");
-    if (sessionOptIn) {
-      setHasOptedIn(true);
+    // Check if user has already opted in for these specific tags
+    const sessionOptedTags = sessionStorage.getItem("opted_in_tags");
+    if (sessionOptedTags) {
+      const optedTagsArray = JSON.parse(sessionOptedTags);
+      const currentTags = [...tags];
+      if (product) currentTags.push(product);
+      
+      // Check if current tags are exactly the same as previously opted tags
+      const hasSameTags = currentTags.length === optedTagsArray.length && 
+        currentTags.every(tag => optedTagsArray.includes(tag));
+      
+      if (hasSameTags) {
+        setHasOptedIn(true);
+      }
     }
 
     // Prefill name if provided in URL
     if (nameParam) {
       setName(nameParam);
     }
-  }, [nameParam]);
+  }, [nameParam, tags, product]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -77,12 +87,23 @@ export default function OptIn() {
         });
 
       if (error) {
-        // If it's a duplicate email, update the existing record
+        // If it's a duplicate email, merge tags with existing record
         if (error.code === '23505') {
+          // First get existing contact to merge tags
+          const { data: existingContact } = await supabase
+            .from('contacts')
+            .select('tags')
+            .eq('email', email.toLowerCase().trim())
+            .eq('user_id', DEMO_USER_ID)
+            .single();
+
+          const existingTags = existingContact?.tags || [];
+          const mergedTags = [...new Set([...existingTags, ...allTags])];
+
           const { error: updateError } = await supabase
             .from('contacts')
             .update({
-              tags: allTags.length > 0 ? allTags : null,
+              tags: mergedTags.length > 0 ? mergedTags : null,
               status: 'subscribed'
             })
             .eq('email', email.toLowerCase().trim())
@@ -94,8 +115,8 @@ export default function OptIn() {
         }
       }
 
-      // Mark as opted in for this session
-      sessionStorage.setItem("opted_in_session", "true");
+      // Store the specific tags opted in for this session
+      sessionStorage.setItem("opted_in_tags", JSON.stringify(allTags));
       setHasOptedIn(true);
       setIsSuccess(true);
       
