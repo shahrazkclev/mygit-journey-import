@@ -173,7 +173,7 @@ export const DynamicListRuleBuilder = ({
                     <SelectTrigger>
                       <SelectValue />
                     </SelectTrigger>
-                    <SelectContent className="z-[60]">
+                    <SelectContent className="z-[120] bg-background">
                       <SelectItem value="has_any_tags">Has any of these tags</SelectItem>
                       <SelectItem value="has_all_tags">Has all of these tags</SelectItem>
                       <SelectItem value="not_has_tags">Does not have these tags</SelectItem>
@@ -195,7 +195,7 @@ export const DynamicListRuleBuilder = ({
                     <SelectTrigger>
                       <SelectValue placeholder={`Add ${rule.type.includes('lists') ? 'list' : 'tag'}...`} />
                     </SelectTrigger>
-                    <SelectContent className="z-[60]">
+                    <SelectContent className="z-[120] bg-background">
                       {rule.type.includes('lists') ? (
                         availableLists && availableLists.length > 0 ? (
                           availableLists

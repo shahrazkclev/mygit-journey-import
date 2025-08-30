@@ -194,7 +194,7 @@ export const ContactFilter = ({ onFilterChange, availableTags, availableLists, a
                 <SelectTrigger className="w-32">
                   <SelectValue />
                 </SelectTrigger>
-                        <SelectContent className="z-[60]">
+                        <SelectContent className="z-[120] bg-background">
                   <SelectItem value="and">All filters</SelectItem>
                   <SelectItem value="or">Any filter</SelectItem>
                 </SelectContent>
@@ -229,7 +229,7 @@ export const ContactFilter = ({ onFilterChange, availableTags, availableLists, a
                         <SelectTrigger>
                           <SelectValue />
                         </SelectTrigger>
-                        <SelectContent className="z-[60]">
+                        <SelectContent className="z-[120] bg-background">
                           <SelectItem value="has_tags">Has tags</SelectItem>
                           <SelectItem value="not_has_tags">Does not have tags</SelectItem>
                           <SelectItem value="in_lists">In lists</SelectItem>
@@ -248,7 +248,7 @@ export const ContactFilter = ({ onFilterChange, availableTags, availableLists, a
                         <SelectTrigger>
                           <SelectValue />
                         </SelectTrigger>
-                        <SelectContent className="z-[60]">
+                        <SelectContent className="z-[120] bg-background">
                           <SelectItem value="or">Any selected</SelectItem>
                           <SelectItem value="and">All selected</SelectItem>
                         </SelectContent>
@@ -264,7 +264,7 @@ export const ContactFilter = ({ onFilterChange, availableTags, availableLists, a
                         <SelectTrigger>
                           <SelectValue placeholder="Select values..." />
                         </SelectTrigger>
-                        <SelectContent className="z-[60]">
+                        <SelectContent className="z-[120] bg-background">
                           {filter.type.includes('tags') ? (
                             availableTags && availableTags.length > 0 ? (
                               availableTags
