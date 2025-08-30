@@ -123,21 +123,9 @@ export default function OptIn() {
           <CardContent className="pt-6 text-center">
             <CheckCircle className="w-16 h-16 text-green-500 mx-auto mb-4" />
             <h2 className="text-2xl font-bold text-foreground mb-2">You're all set!</h2>
-            <p className="text-muted-foreground mb-4">
-              Thanks for opting in. You'll receive updates about {campaign}.
+            <p className="text-muted-foreground">
+              Thanks for joining! You'll receive updates soon.
             </p>
-            {tags.length > 0 && (
-              <div className="mt-4">
-                <p className="text-sm text-muted-foreground mb-2">You're subscribed to:</p>
-                <div className="flex flex-wrap gap-2 justify-center">
-                  {tags.map((tag, index) => (
-                    <span key={index} className="px-2 py-1 bg-primary/10 text-primary rounded-full text-xs">
-                      {tag}
-                    </span>
-                  ))}
-                </div>
-              </div>
-            )}
           </CardContent>
         </Card>
       </div>
