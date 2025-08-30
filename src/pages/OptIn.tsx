@@ -22,6 +22,7 @@ export default function OptIn() {
   const tags = searchParams.get("tags")?.split(",") || [];
   const product = searchParams.get("product");
   const campaign = searchParams.get("campaign") || "General Opt-in";
+  const nameParam = searchParams.get("name") || "";
 
   useEffect(() => {
     // Check if user has already opted in this session
@@ -29,7 +30,12 @@ export default function OptIn() {
     if (sessionOptIn) {
       setHasOptedIn(true);
     }
-  }, []);
+
+    // Prefill name if provided in URL
+    if (nameParam) {
+      setName(nameParam);
+    }
+  }, [nameParam]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
