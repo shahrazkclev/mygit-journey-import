@@ -9,6 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Checkbox } from "@/components/ui/checkbox";
+import { TagInput } from "@/components/ui/tag-input";
 import { Trash2, Plus, List, Zap, Users, Tag, UserPlus, Edit, Copy, Search } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -69,6 +70,7 @@ export const SmartListManager = () => {
 
   useEffect(() => {
     loadData();
+    loadAllTags();
   }, []);
 
   const loadData = async () => {
@@ -131,6 +133,53 @@ export const SmartListManager = () => {
       toast.error("Failed to load data");
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const loadAllTags = async () => {
+    try {
+      // Get tags from contacts
+      const { data: contacts, error: contactsError } = await supabase
+        .from('contacts')
+        .select('tags')
+        .eq('user_id', DEMO_USER_ID);
+
+      if (contactsError) throw contactsError;
+
+      // Get tags from existing tag rules
+      const { data: tagRules, error: rulesError } = await supabase
+        .from('tag_rules')
+        .select('trigger_tags, add_tags, remove_tags')
+        .eq('user_id', DEMO_USER_ID);
+
+      if (rulesError) throw rulesError;
+
+      // Combine all tags
+      const allTagsSet = new Set<string>();
+      
+      // Add tags from contacts
+      contacts?.forEach(contact => {
+        if (contact.tags) {
+          contact.tags.forEach((tag: string) => allTagsSet.add(tag.trim()));
+        }
+      });
+
+      // Add tags from rules
+      tagRules?.forEach(rule => {
+        if (rule.trigger_tags) {
+          rule.trigger_tags.forEach((tag: string) => allTagsSet.add(tag.trim()));
+        }
+        if (rule.add_tags) {
+          rule.add_tags.forEach((tag: string) => allTagsSet.add(tag.trim()));
+        }
+        if (rule.remove_tags) {
+          rule.remove_tags.forEach((tag: string) => allTagsSet.add(tag.trim()));
+        }
+      });
+
+      setAllTags(Array.from(allTagsSet).filter(Boolean).sort());
+    } catch (error) {
+      console.error('Error loading tags:', error);
     }
   };
 
