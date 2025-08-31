@@ -8,6 +8,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { TagInput } from "@/components/ui/tag-input";
 import { Trash2, Plus, Settings, Edit } from "lucide-react";
 import { toast } from "sonner";
 
@@ -27,6 +28,7 @@ export const TagRulesManager = () => {
   const [rules, setRules] = useState<TagRule[]>([]);
   const [isCreating, setIsCreating] = useState(false);
   const [editingRule, setEditingRule] = useState<string | null>(null);
+  const [allTags, setAllTags] = useState<string[]>([]);
   const [newRule, setNewRule] = useState({
     name: "",
     description: "",
@@ -46,6 +48,7 @@ export const TagRulesManager = () => {
 
   useEffect(() => {
     loadRules();
+    loadAllTags();
   }, []);
 
   const loadRules = async () => {
@@ -61,6 +64,53 @@ export const TagRulesManager = () => {
     } catch (error) {
       console.error('Error loading tag rules:', error);
       toast.error('Failed to load tag rules');
+    }
+  };
+
+  const loadAllTags = async () => {
+    try {
+      // Get tags from contacts
+      const { data: contacts, error: contactsError } = await supabase
+        .from('contacts')
+        .select('tags')
+        .eq('user_id', '550e8400-e29b-41d4-a716-446655440000');
+
+      if (contactsError) throw contactsError;
+
+      // Get tags from existing tag rules
+      const { data: tagRules, error: rulesError } = await supabase
+        .from('tag_rules')
+        .select('trigger_tags, add_tags, remove_tags')
+        .eq('user_id', '550e8400-e29b-41d4-a716-446655440000');
+
+      if (rulesError) throw rulesError;
+
+      // Combine all tags
+      const allTagsSet = new Set<string>();
+      
+      // Add tags from contacts
+      contacts?.forEach(contact => {
+        if (contact.tags) {
+          contact.tags.forEach((tag: string) => allTagsSet.add(tag.trim()));
+        }
+      });
+
+      // Add tags from rules
+      tagRules?.forEach(rule => {
+        if (rule.trigger_tags) {
+          rule.trigger_tags.forEach((tag: string) => allTagsSet.add(tag.trim()));
+        }
+        if (rule.add_tags) {
+          rule.add_tags.forEach((tag: string) => allTagsSet.add(tag.trim()));
+        }
+        if (rule.remove_tags) {
+          rule.remove_tags.forEach((tag: string) => allTagsSet.add(tag.trim()));
+        }
+      });
+
+      setAllTags(Array.from(allTagsSet).filter(Boolean).sort());
+    } catch (error) {
+      console.error('Error loading tags:', error);
     }
   };
 
@@ -226,12 +276,12 @@ export const TagRulesManager = () => {
               />
             </div>
             <div>
-              <Label htmlFor="trigger-tags">Trigger Tags (comma separated)</Label>
-              <Input
-                id="trigger-tags"
-                placeholder="e.g., bought-product-x, premium-customer"
+              <Label htmlFor="trigger-tags">Trigger Tags</Label>
+              <TagInput
                 value={newRule.trigger_tags}
-                onChange={(e) => setNewRule({ ...newRule, trigger_tags: e.target.value })}
+                onChange={(value) => setNewRule({ ...newRule, trigger_tags: value })}
+                suggestions={allTags}
+                placeholder="e.g., bought-product-x, premium-customer"
               />
               <p className="text-xs text-muted-foreground mt-1">
                 When a contact gets these tags, the rule will be triggered
@@ -256,21 +306,21 @@ export const TagRulesManager = () => {
               </p>
             </div>
             <div>
-              <Label htmlFor="add-tags">Tags to Add (comma separated)</Label>
-              <Input
-                id="add-tags"
-                placeholder="e.g., customer, premium"
+              <Label htmlFor="add-tags">Tags to Add</Label>
+              <TagInput
                 value={newRule.add_tags}
-                onChange={(e) => setNewRule({ ...newRule, add_tags: e.target.value })}
+                onChange={(value) => setNewRule({ ...newRule, add_tags: value })}
+                suggestions={allTags}
+                placeholder="e.g., customer, premium"
               />
             </div>
             <div>
-              <Label htmlFor="remove-tags">Tags to Remove (comma separated)</Label>
-              <Input
-                id="remove-tags"
-                placeholder="e.g., interested-in-discount, prospect"
+              <Label htmlFor="remove-tags">Tags to Remove</Label>
+              <TagInput
                 value={newRule.remove_tags}
-                onChange={(e) => setNewRule({ ...newRule, remove_tags: e.target.value })}
+                onChange={(value) => setNewRule({ ...newRule, remove_tags: value })}
+                suggestions={allTags}
+                placeholder="e.g., interested-in-discount, prospect"
               />
             </div>
           </CardContent>
@@ -350,11 +400,12 @@ export const TagRulesManager = () => {
                       />
                     </div>
                     <div>
-                      <Label htmlFor="edit-trigger-tags">Trigger Tags (comma separated)</Label>
-                      <Input
-                        id="edit-trigger-tags"
+                      <Label htmlFor="edit-trigger-tags">Trigger Tags</Label>
+                      <TagInput
                         value={editRule.trigger_tags}
-                        onChange={(e) => setEditRule({ ...editRule, trigger_tags: e.target.value })}
+                        onChange={(value) => setEditRule({ ...editRule, trigger_tags: value })}
+                        suggestions={allTags}
+                        placeholder="e.g., bought-product-x, premium-customer"
                       />
                     </div>
                     <div>
@@ -373,19 +424,21 @@ export const TagRulesManager = () => {
                       </Select>
                     </div>
                     <div>
-                      <Label htmlFor="edit-add-tags">Tags to Add (comma separated)</Label>
-                      <Input
-                        id="edit-add-tags"
+                      <Label htmlFor="edit-add-tags">Tags to Add</Label>
+                      <TagInput
                         value={editRule.add_tags}
-                        onChange={(e) => setEditRule({ ...editRule, add_tags: e.target.value })}
+                        onChange={(value) => setEditRule({ ...editRule, add_tags: value })}
+                        suggestions={allTags}
+                        placeholder="e.g., customer, premium"
                       />
                     </div>
                     <div>
-                      <Label htmlFor="edit-remove-tags">Tags to Remove (comma separated)</Label>
-                      <Input
-                        id="edit-remove-tags"
+                      <Label htmlFor="edit-remove-tags">Tags to Remove</Label>
+                      <TagInput
                         value={editRule.remove_tags}
-                        onChange={(e) => setEditRule({ ...editRule, remove_tags: e.target.value })}
+                        onChange={(value) => setEditRule({ ...editRule, remove_tags: value })}
+                        suggestions={allTags}
+                        placeholder="e.g., interested-in-discount, prospect"
                       />
                     </div>
                     <div className="flex gap-2">
