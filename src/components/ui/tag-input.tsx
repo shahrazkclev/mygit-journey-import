@@ -33,8 +33,9 @@ export const TagInput = React.forwardRef<HTMLInputElement, TagInputProps>(
         setShowSuggestions(filtered.length > 0);
       } else {
         setShowSuggestions(false);
+        setFilteredSuggestions([]);
       }
-    }, [inputValue, suggestions.length, tags.length]); // Changed dependencies to avoid infinite loops
+    }, [inputValue, suggestions, tags]); // Use actual arrays to ensure proper independence
 
     const addTag = (tag: string) => {
       if (tag && !tags.includes(tag)) {
