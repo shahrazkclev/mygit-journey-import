@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Checkbox } from "@/components/ui/checkbox";
+import { TagInput } from "@/components/ui/tag-input";
 import { Trash2, Plus, Tag, Users, Link, ChevronDown, ChevronRight, Edit, Upload, FileSpreadsheet, User } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -93,6 +94,7 @@ export const SimpleContactManager = () => {
     loadContacts();
     loadEmailLists();
     loadContactLists();
+    loadAllTags();
   }, []);
 
   useEffect(() => {
@@ -204,6 +206,53 @@ export const SimpleContactManager = () => {
       setContactLists(contactListsMap);
     } catch (error) {
       console.error('Error loading contact lists:', error);
+    }
+  };
+
+  const loadAllTags = async () => {
+    try {
+      // Get tags from contacts
+      const { data: contacts, error: contactsError } = await supabase
+        .from('contacts')
+        .select('tags')
+        .eq('user_id', DEMO_USER_ID);
+
+      if (contactsError) throw contactsError;
+
+      // Get tags from existing tag rules
+      const { data: tagRules, error: rulesError } = await supabase
+        .from('tag_rules')
+        .select('trigger_tags, add_tags, remove_tags')
+        .eq('user_id', DEMO_USER_ID);
+
+      if (rulesError) throw rulesError;
+
+      // Combine all tags
+      const allTagsSet = new Set<string>();
+      
+      // Add tags from contacts
+      contacts?.forEach(contact => {
+        if (contact.tags) {
+          contact.tags.forEach((tag: string) => allTagsSet.add(tag.trim()));
+        }
+      });
+
+      // Add tags from rules
+      tagRules?.forEach(rule => {
+        if (rule.trigger_tags) {
+          rule.trigger_tags.forEach((tag: string) => allTagsSet.add(tag.trim()));
+        }
+        if (rule.add_tags) {
+          rule.add_tags.forEach((tag: string) => allTagsSet.add(tag.trim()));
+        }
+        if (rule.remove_tags) {
+          rule.remove_tags.forEach((tag: string) => allTagsSet.add(tag.trim()));
+        }
+      });
+
+      setAllTags(Array.from(allTagsSet).filter(Boolean).sort());
+    } catch (error) {
+      console.error('Error loading tags:', error);
     }
   };
 
@@ -866,13 +915,12 @@ export const SimpleContactManager = () => {
                       />
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="tags">Tags (comma-separated)</Label>
-                      <Input
-                        id="tags"
+                      <Label htmlFor="tags">Tags</Label>
+                      <TagInput
                         value={newContact.tags}
-                        onChange={(e) => setNewContact({...newContact, tags: e.target.value})}
+                        onChange={(value) => setNewContact({...newContact, tags: value})}
+                        suggestions={allTags}
                         placeholder="customer, premium, lazy-motion-library"
-                        className="border-email-primary/30 focus:border-email-primary"
                       />
                     </div>
                     <div className="flex space-x-2">
@@ -1073,24 +1121,22 @@ export const SimpleContactManager = () => {
             
             {bulkTagOperation === 'add' ? (
               <div className="space-y-2">
-                <Label htmlFor="bulkTags">Tags to Add (comma-separated)</Label>
-                <Input
-                  id="bulkTags"
+                <Label htmlFor="bulkTags">Tags to Add</Label>
+                <TagInput
                   value={bulkTags}
-                  onChange={(e) => setBulkTags(e.target.value)}
+                  onChange={setBulkTags}
+                  suggestions={allTags}
                   placeholder="premium, newsletter, product-customer"
-                  className="border-email-primary/30 focus:border-email-primary"
                 />
               </div>
             ) : (
               <div className="space-y-2">
-                <Label htmlFor="bulkTagsRemove">Tags to Remove (comma-separated)</Label>
-                <Input
-                  id="bulkTagsRemove"
+                <Label htmlFor="bulkTagsRemove">Tags to Remove</Label>
+                <TagInput
                   value={bulkTagsToRemove}
-                  onChange={(e) => setBulkTagsToRemove(e.target.value)}
+                  onChange={setBulkTagsToRemove}
+                  suggestions={allTags}
                   placeholder="premium, newsletter, product-customer"
-                  className="border-email-primary/30 focus:border-email-primary"
                 />
               </div>
             )}

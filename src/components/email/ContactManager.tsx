@@ -7,6 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { TagInput } from '@/components/ui/tag-input';
 import { Plus, Edit, Trash2, ShoppingCart, User, Users, Tag } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
@@ -64,8 +65,9 @@ export const ContactManager: React.FC = () => {
   const [contactLists, setContactLists] = useState<ContactList[]>([]);
   const [allContactProducts, setAllContactProducts] = useState<ContactProduct[]>([]);
   const [allContactLists, setAllContactLists] = useState<ContactList[]>([]);
+  const [allTags, setAllTags] = useState<string[]>([]);
   
-  const [newContact, setNewContact] = useState({ email: '', first_name: '', last_name: '' });
+  const [newContact, setNewContact] = useState({ email: '', first_name: '', last_name: '', tags: '' });
   const [showAddContact, setShowAddContact] = useState(false);
   const [showContactDetails, setShowContactDetails] = useState(false);
   const [editingContact, setEditingContact] = useState<Contact | null>(null);
@@ -83,6 +85,7 @@ export const ContactManager: React.FC = () => {
     loadEmailLists();
     loadAllContactProducts();
     loadAllContactLists();
+    loadAllTags();
   }, []);
 
   const loadContacts = async () => {
@@ -165,6 +168,61 @@ export const ContactManager: React.FC = () => {
     }
   };
 
+  const loadAllTags = async () => {
+    try {
+      // Get tags from contacts
+      const { data: contacts, error: contactsError } = await supabase
+        .from('contacts')
+        .select('tags')
+        .eq('user_id', DEMO_USER_ID);
+
+      if (contactsError) throw contactsError;
+
+      // Get tags from existing tag rules
+      const { data: tagRules, error: rulesError } = await supabase
+        .from('tag_rules')
+        .select('trigger_tags, add_tags, remove_tags')
+        .eq('user_id', DEMO_USER_ID);
+
+      if (rulesError) throw rulesError;
+
+      // Combine all tags
+      const allTagsSet = new Set<string>();
+      
+      // Add tags from contacts
+      contacts?.forEach(contact => {
+        if (contact.tags) {
+          contact.tags.forEach((tag: string) => allTagsSet.add(tag.trim()));
+        }
+      });
+
+      // Add tags from rules
+      tagRules?.forEach(rule => {
+        if (rule.trigger_tags) {
+          rule.trigger_tags.forEach((tag: string) => allTagsSet.add(tag.trim()));
+        }
+        if (rule.add_tags) {
+          rule.add_tags.forEach((tag: string) => allTagsSet.add(tag.trim()));
+        }
+        if (rule.remove_tags) {
+          rule.remove_tags.forEach((tag: string) => allTagsSet.add(tag.trim()));
+        }
+      });
+
+      // Add product names as tag suggestions
+      products.forEach(product => {
+        allTagsSet.add(product.name.trim());
+        if (product.category) {
+          allTagsSet.add(product.category.trim());
+        }
+      });
+
+      setAllTags(Array.from(allTagsSet).filter(Boolean).sort());
+    } catch (error) {
+      console.error('Error loading tags:', error);
+    }
+  };
+
   const loadContactProducts = async (contactId: string) => {
     try {
       const { data, error } = await supabase
@@ -206,6 +264,8 @@ export const ContactManager: React.FC = () => {
     }
 
     try {
+      const tags = newContact.tags ? newContact.tags.split(',').map(t => t.trim()).filter(t => t) : [];
+      
       const { data, error } = await supabase
         .from('contacts')
         .insert([{
@@ -213,6 +273,7 @@ export const ContactManager: React.FC = () => {
           email: newContact.email,
           first_name: newContact.first_name || null,
           last_name: newContact.last_name || null,
+          tags: tags.length > 0 ? tags : null,
           status: 'subscribed'
         }])
         .select()
@@ -221,8 +282,9 @@ export const ContactManager: React.FC = () => {
       if (error) throw error;
 
       setContacts(prev => [data, ...prev]);
-      setNewContact({ email: '', first_name: '', last_name: '' });
+      setNewContact({ email: '', first_name: '', last_name: '', tags: '' });
       setShowAddContact(false);
+      loadAllTags(); // Refresh tags
       toast.success('Contact added successfully');
     } catch (error) {
       console.error('Error adding contact:', error);
@@ -381,6 +443,15 @@ export const ContactManager: React.FC = () => {
                   value={newContact.last_name}
                   onChange={(e) => setNewContact(prev => ({ ...prev, last_name: e.target.value }))}
                   placeholder="Doe"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="tags">Tags</Label>
+                <TagInput
+                  value={newContact.tags}
+                  onChange={(value) => setNewContact(prev => ({ ...prev, tags: value }))}
+                  suggestions={allTags}
+                  placeholder="customer, premium, newsletter"
                 />
               </div>
               <div className="flex justify-end space-x-2">

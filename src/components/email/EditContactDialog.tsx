@@ -7,6 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { TagInput } from '@/components/ui/tag-input';
 import { ShoppingCart, Trash2, Calendar, DollarSign } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
@@ -65,6 +66,7 @@ export const EditContactDialog: React.FC<EditContactDialogProps> = ({
   const [productPrices, setProductPrices] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(false);
   const [showProductSuggestions, setShowProductSuggestions] = useState(false);
+  const [allTags, setAllTags] = useState<string[]>([]);
   
   const dropdownRef = useRef<HTMLDivElement>(null);
 
@@ -86,6 +88,7 @@ export const EditContactDialog: React.FC<EditContactDialogProps> = ({
   useEffect(() => {
     if (isOpen) {
       loadProducts();
+      loadAllTags();
     }
   }, [isOpen]);
 
@@ -117,6 +120,61 @@ export const EditContactDialog: React.FC<EditContactDialogProps> = ({
     } catch (error) {
       console.error('Error loading products:', error);
       toast.error('Failed to load products');
+    }
+  };
+
+  const loadAllTags = async () => {
+    try {
+      // Get tags from contacts
+      const { data: contacts, error: contactsError } = await supabase
+        .from('contacts')
+        .select('tags')
+        .eq('user_id', '550e8400-e29b-41d4-a716-446655440000');
+
+      if (contactsError) throw contactsError;
+
+      // Get tags from existing tag rules
+      const { data: tagRules, error: rulesError } = await supabase
+        .from('tag_rules')
+        .select('trigger_tags, add_tags, remove_tags')
+        .eq('user_id', '550e8400-e29b-41d4-a716-446655440000');
+
+      if (rulesError) throw rulesError;
+
+      // Combine all tags
+      const allTagsSet = new Set<string>();
+      
+      // Add tags from contacts
+      contacts?.forEach(contact => {
+        if (contact.tags) {
+          contact.tags.forEach((tag: string) => allTagsSet.add(tag.trim()));
+        }
+      });
+
+      // Add tags from rules
+      tagRules?.forEach(rule => {
+        if (rule.trigger_tags) {
+          rule.trigger_tags.forEach((tag: string) => allTagsSet.add(tag.trim()));
+        }
+        if (rule.add_tags) {
+          rule.add_tags.forEach((tag: string) => allTagsSet.add(tag.trim()));
+        }
+        if (rule.remove_tags) {
+          rule.remove_tags.forEach((tag: string) => allTagsSet.add(tag.trim()));
+        }
+      });
+
+      // Add product names as tag suggestions
+      products.forEach(product => {
+        allTagsSet.add(product.name.trim());
+        if (product.category) {
+          allTagsSet.add(product.category.trim());
+        }
+      });
+
+      setAllTags(Array.from(allTagsSet).filter(Boolean).sort());
+    } catch (error) {
+      console.error('Error loading tags:', error);
     }
   };
 
@@ -288,48 +346,13 @@ export const EditContactDialog: React.FC<EditContactDialogProps> = ({
             </div>
 
             <div>
-              <Label htmlFor="tags">Tags (comma-separated)</Label>
-              <div className="relative" ref={dropdownRef}>
-                <Input
-                  id="tags"
-                  value={formData.tags}
-                  onChange={(e) => setFormData({ ...formData, tags: e.target.value })}
-                  onFocus={() => setShowProductSuggestions(true)}
-                  placeholder="customer, premium, newsletter"
-                />
-                {showProductSuggestions && products.length > 0 && (
-                  <div className="absolute top-full left-0 right-0 z-50 mt-1 bg-white border border-gray-200 rounded-lg shadow-xl max-h-48 overflow-y-auto">
-                    <div className="p-2 border-b bg-gray-50">
-                      <p className="text-sm font-medium text-gray-700">Product Suggestions:</p>
-                    </div>
-                    <div className="p-2 space-y-1">
-                      {products.map((product) => (
-                        <div
-                          key={product.id}
-                          onClick={() => addProductAsTag(product.name)}
-                          className="flex items-center p-2 rounded hover:bg-email-primary/10 cursor-pointer transition-colors"
-                        >
-                          <ShoppingCart className="h-4 w-4 mr-2 text-email-primary flex-shrink-0" />
-                          <span className="text-sm flex-1">{product.name}</span>
-                          {product.category && (
-                            <Badge variant="outline" className="ml-2 text-xs flex-shrink-0">
-                              {product.category}
-                            </Badge>
-                          )}
-                        </div>
-                      ))}
-                    </div>
-                    <div className="p-2 border-t bg-gray-50">
-                      <button
-                        onClick={() => setShowProductSuggestions(false)}
-                        className="text-xs text-gray-500 hover:text-gray-700 w-full text-left"
-                      >
-                        Close suggestions
-                      </button>
-                    </div>
-                  </div>
-                )}
-              </div>
+              <Label htmlFor="tags">Tags</Label>
+              <TagInput
+                value={formData.tags}
+                onChange={(value) => setFormData({ ...formData, tags: value })}
+                suggestions={allTags}
+                placeholder="customer, premium, newsletter"
+              />
             </div>
 
             <div>
