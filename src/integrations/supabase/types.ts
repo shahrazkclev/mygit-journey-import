@@ -553,7 +553,7 @@ export type Database = {
         Returns: undefined
       }
       handle_unsubscribe: {
-        Args: { p_email: string; p_reason?: string; p_user_id?: string }
+        Args: { p_email?: string; p_reason?: string; p_user_id?: string }
         Returns: undefined
       }
       reapply_tag_rules_for_user: {
