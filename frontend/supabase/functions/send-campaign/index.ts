@@ -15,7 +15,7 @@ interface SendCampaignRequest {
   senderSequenceNumber: number;
 }
 
-interface Contact { email: string; first_name?: string | null; last_name?: string | null }
+interface Contact { id: string; email: string; first_name?: string | null; last_name?: string | null }
 
 const getEnv = (k: string) => {
   const v = Deno.env.get(k);
@@ -42,7 +42,7 @@ async function getContactsForLists(supabase: SupabaseClient, listIds: string[] |
   if (!listIds || listIds.length === 0) return [];
   const { data, error } = await supabase
     .from('contact_lists')
-    .select('contacts:contacts!inner(email,first_name,last_name)')
+    .select('contacts:contacts!inner(id,email,first_name,last_name)')
     .in('list_id', listIds);
   if (error) throw new Error(`Error getting contacts: ${error.message}`);
   const contacts: Contact[] = (data ?? []).map((r: any) => r.contacts).filter(Boolean);
@@ -146,7 +146,7 @@ async function processSends(
         // Generate unsubscribe token for this contact
         const { data: tokenData } = await supabase.functions.invoke('generate-unsubscribe-token', {
           body: { 
-            email: contact.email, 
+            contact_id: contact.id, 
             campaign_id: campaignId,
             user_id: '550e8400-e29b-41d4-a716-446655440000'
           }

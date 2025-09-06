@@ -107,7 +107,7 @@ Deno.serve(async (req) => {
       console.error('Error adding unsubscribe:', unsubscribeError);
     }
 
-    // Update contact status to unsubscribed
+    // Update contact status to unsubscribed using email and user_id from token
     const { error: contactError } = await supabase
       .from('contacts')
       .update({ status: 'unsubscribed' })

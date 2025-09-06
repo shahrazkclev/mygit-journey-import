@@ -12,11 +12,11 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const { email, campaign_id, user_id = '550e8400-e29b-41d4-a716-446655440000' } = await req.json();
+    const { contact_id, campaign_id, user_id = '550e8400-e29b-41d4-a716-446655440000' } = await req.json();
 
-    if (!email) {
+    if (!contact_id) {
       return new Response(
-        JSON.stringify({ error: 'Email is required' }),
+        JSON.stringify({ error: 'Contact ID is required' }),
         { 
           status: 400,
           headers: { ...corsHeaders, 'Content-Type': 'application/json' }
@@ -30,10 +30,28 @@ Deno.serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     );
 
+    // Get contact email from contact_id
+    const { data: contact, error: contactError } = await supabase
+      .from('contacts')
+      .select('email')
+      .eq('id', contact_id)
+      .eq('user_id', user_id)
+      .single();
+
+    if (contactError || !contact) {
+      return new Response(
+        JSON.stringify({ error: 'Contact not found' }),
+        { 
+          status: 404,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        }
+      );
+    }
+
     // Generate unsubscribe token using the database function
     const { data: token, error } = await supabase
       .rpc('generate_unsubscribe_token', {
-        p_email: email,
+        p_email: contact.email,
         p_campaign_id: campaign_id,
         p_user_id: user_id
       });
