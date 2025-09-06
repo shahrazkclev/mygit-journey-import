@@ -38,15 +38,10 @@ export const ContactFilter = ({ onFilterChange, availableTags, availableLists, a
 
   const loadContactListMemberships = async () => {
     try {
-      // Load contact list memberships for subscribed contacts only
+      // Load contact list memberships
       const { data, error } = await supabase
         .from('contact_lists')
-        .select(`
-          contact_id, 
-          list_id,
-          contacts!inner(status)
-        `)
-        .eq('contacts.status', 'subscribed');
+        .select('contact_id, list_id');
 
       if (error) throw error;
 

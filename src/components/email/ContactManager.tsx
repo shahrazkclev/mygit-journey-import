@@ -160,9 +160,8 @@ export const ContactManager: React.FC = () => {
         .select(`
           *,
           email_list:email_lists(*),
-          contact:contacts!inner(*)
-        `)
-        .eq('contact.status', 'subscribed');
+          contact:contacts(*)
+        `);
 
       if (error) throw error;
       setAllContactLists(data || []);

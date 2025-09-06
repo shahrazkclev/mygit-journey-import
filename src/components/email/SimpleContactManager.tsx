@@ -203,10 +203,8 @@ export const SimpleContactManager = () => {
         .from('contact_lists')
         .select(`
           contact_id,
-          email_lists!inner(id, name, list_type),
-          contacts!inner(status)
-        `)
-        .eq('contacts.status', 'subscribed');
+          email_lists!inner(id, name, list_type)
+        `);
 
       if (error) {
         console.error('Error loading contact lists:', error);

@@ -114,14 +114,10 @@ export const EmailListManager = () => {
 
       if (contactsError) throw contactsError;
 
-      // Load contact-list relationships with only subscribed contacts
+      // Load contact-list relationships
       const { data: contactListsData, error: contactListsError } = await supabase
         .from('contact_lists')
-        .select(`
-          *,
-          contacts!inner(status)
-        `)
-        .eq('contacts.status', 'subscribed');
+        .select('*');
 
       if (contactListsError) throw contactListsError;
 
