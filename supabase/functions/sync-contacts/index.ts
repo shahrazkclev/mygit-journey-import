@@ -90,7 +90,7 @@ serve(async (req) => {
     //   "user_id": "optional-user-id"
     // }
 
-    const { email, name, tags = [], action = 'create', user_id, status = 'subscribed' } = payload;
+    const { email, name, tags = [], action = 'create', user_id, status = 'subscribed', password } = payload;
 
     if (!email) {
       console.error('Missing email in payload:', payload);
@@ -135,6 +135,68 @@ const parseTags = (input: any): string[] => {
 const normalize = (t: any) => (typeof t === 'string' ? t.trim() : '');
 const existingTags = (existingContact?.tags || []).map(normalize).filter(Boolean);
 const incomingTags = parseTags(tags);
+
+// Check for password-protected tags
+const { data: protectedRules, error: rulesError } = await supabase
+  .from('tag_rules')
+  .select('add_tags, password')
+  .eq('user_id', finalUserId)
+  .eq('protected', true);
+
+if (rulesError) {
+  console.error('Error fetching protected tag rules:', rulesError);
+} else if (protectedRules && protectedRules.length > 0) {
+  const protectedTags: string[] = [];
+  protectedRules.forEach(rule => {
+    if (rule.add_tags) {
+      rule.add_tags.forEach((tag: string) => {
+        if (incomingTags.includes(tag) && !protectedTags.includes(tag)) {
+          protectedTags.push(tag);
+        }
+      });
+    }
+  });
+
+  // If there are protected tags in the incoming tags, validate password
+  if (protectedTags.length > 0) {
+    if (!password) {
+      console.error('Password required for protected tags:', protectedTags);
+      return new Response(JSON.stringify({ 
+        error: `Password required for protected tags: ${protectedTags.join(', ')}`,
+        protected_tags: protectedTags
+      }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    // Validate password
+    let passwordValid = false;
+    for (const rule of protectedRules) {
+      if (rule.add_tags) {
+        const hasProtectedTag = rule.add_tags.some((tag: string) => protectedTags.includes(tag));
+        if (hasProtectedTag && rule.password === password) {
+          passwordValid = true;
+          break;
+        }
+      }
+    }
+
+    if (!passwordValid) {
+      console.error('Invalid password for protected tags:', protectedTags);
+      return new Response(JSON.stringify({ 
+        error: 'Invalid password for protected tags',
+        protected_tags: protectedTags
+      }), {
+        status: 403,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    console.log('Password validated for protected tags:', protectedTags);
+  }
+}
+
 const mergedTags = Array.from(new Set([...existingTags, ...incomingTags]));
 console.log('Tag merge:', { existingTags, rawIncoming: tags, incomingTags, mergedTags });
 

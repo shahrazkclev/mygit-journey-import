@@ -354,6 +354,8 @@ export type Database = {
           enabled: boolean
           id: string
           name: string | null
+          password: string | null
+          protected: boolean | null
           remove_tags: string[] | null
           replace_all_tags: boolean | null
           trigger_match_type: string | null
@@ -369,6 +371,8 @@ export type Database = {
           enabled?: boolean
           id?: string
           name?: string | null
+          password?: string | null
+          protected?: boolean | null
           remove_tags?: string[] | null
           replace_all_tags?: boolean | null
           trigger_match_type?: string | null
@@ -384,6 +388,8 @@ export type Database = {
           enabled?: boolean
           id?: string
           name?: string | null
+          password?: string | null
+          protected?: boolean | null
           remove_tags?: string[] | null
           replace_all_tags?: boolean | null
           trigger_match_type?: string | null

@@ -23,6 +23,8 @@ interface TagRule {
   remove_tags: string[];
   replace_all_tags: boolean;
   enabled: boolean;
+  protected: boolean;
+  password: string;
 }
 
 export const TagRulesManager = () => {
@@ -38,7 +40,9 @@ export const TagRulesManager = () => {
     trigger_match_type: "any" as 'any' | 'all',
     add_tags: [] as string[],
     remove_tags: [] as string[],
-    replace_all_tags: false
+    replace_all_tags: false,
+    protected: false,
+    password: ""
   });
   const [editRule, setEditRule] = useState({
     name: "",
@@ -47,7 +51,9 @@ export const TagRulesManager = () => {
     trigger_match_type: "any" as 'any' | 'all',
     add_tags: [] as string[],
     remove_tags: [] as string[],
-    replace_all_tags: false
+    replace_all_tags: false,
+    protected: false,
+    password: ""
   });
 
   useEffect(() => {
@@ -137,13 +143,15 @@ export const TagRulesManager = () => {
           add_tags: newRule.add_tags,
           remove_tags: newRule.remove_tags,
           replace_all_tags: newRule.replace_all_tags,
+          protected: newRule.protected,
+          password: newRule.password,
           enabled: true
         });
 
       if (error) throw error;
 
       toast.success('Tag rule created successfully');
-      setNewRule({ name: "", description: "", trigger_tags: [], trigger_match_type: "any", add_tags: [], remove_tags: [], replace_all_tags: false });
+      setNewRule({ name: "", description: "", trigger_tags: [], trigger_match_type: "any", add_tags: [], remove_tags: [], replace_all_tags: false, protected: false, password: "" });
       setIsCreating(false);
       loadRules();
     } catch (error) {
@@ -169,7 +177,9 @@ export const TagRulesManager = () => {
           trigger_match_type: editRule.trigger_match_type,
           add_tags: editRule.add_tags,
           remove_tags: editRule.remove_tags,
-          replace_all_tags: editRule.replace_all_tags
+          replace_all_tags: editRule.replace_all_tags,
+          protected: editRule.protected,
+          password: editRule.password
         })
         .eq('id', ruleId);
 
@@ -193,7 +203,9 @@ export const TagRulesManager = () => {
       trigger_match_type: (rule.trigger_match_type as 'any' | 'all') || 'any',
       add_tags: rule.add_tags || [],
       remove_tags: rule.remove_tags || [],
-      replace_all_tags: rule.replace_all_tags || false
+      replace_all_tags: rule.replace_all_tags || false,
+      protected: rule.protected || false,
+      password: rule.password || ""
     });
   };
 
@@ -379,6 +391,34 @@ export const TagRulesManager = () => {
                 onCheckedChange={(checked) => setNewRule({ ...newRule, replace_all_tags: checked })}
               />
             </div>
+            <div className="flex items-center justify-between">
+              <div className="space-y-0.5">
+                <Label htmlFor="protected-tags">Password Protected Tags</Label>
+                <p className="text-xs text-muted-foreground">
+                  When enabled, requires a password to add these tags to contacts via API/forms.
+                </p>
+              </div>
+              <Switch
+                id="protected-tags"
+                checked={newRule.protected}
+                onCheckedChange={(checked) => setNewRule({ ...newRule, protected: checked })}
+              />
+            </div>
+            {newRule.protected && (
+              <div>
+                <Label htmlFor="tag-password">Password</Label>
+                <Input
+                  id="tag-password"
+                  type="password"
+                  placeholder="Enter password to protect these tags"
+                  value={newRule.password}
+                  onChange={(e) => setNewRule({ ...newRule, password: e.target.value })}
+                />
+                <p className="text-xs text-muted-foreground mt-1">
+                  This password will be required when adding these tags via API or forms.
+                </p>
+              </div>
+            )}
           </CardContent>
           <CardFooter className="flex gap-2">
             <Button onClick={handleCreateRule}>Create Rule</Button>
@@ -510,6 +550,34 @@ export const TagRulesManager = () => {
                         onCheckedChange={(checked) => setEditRule({ ...editRule, replace_all_tags: checked })}
                       />
                     </div>
+                    <div className="flex items-center justify-between">
+                      <div className="space-y-0.5">
+                        <Label htmlFor="edit-protected-tags">Password Protected Tags</Label>
+                        <p className="text-xs text-muted-foreground">
+                          When enabled, requires a password to add these tags to contacts via API/forms.
+                        </p>
+                      </div>
+                      <Switch
+                        id="edit-protected-tags"
+                        checked={editRule.protected}
+                        onCheckedChange={(checked) => setEditRule({ ...editRule, protected: checked })}
+                      />
+                    </div>
+                    {editRule.protected && (
+                      <div>
+                        <Label htmlFor="edit-tag-password">Password</Label>
+                        <Input
+                          id="edit-tag-password"
+                          type="password"
+                          placeholder="Enter password to protect these tags"
+                          value={editRule.password}
+                          onChange={(e) => setEditRule({ ...editRule, password: e.target.value })}
+                        />
+                        <p className="text-xs text-muted-foreground mt-1">
+                          This password will be required when adding these tags via API or forms.
+                        </p>
+                      </div>
+                    )}
                     <div className="flex gap-2">
                       <Button onClick={() => handleUpdateRule(rule.id)}>Save Changes</Button>
                       <Button variant="outline" onClick={() => setEditingRule(null)}>Cancel</Button>

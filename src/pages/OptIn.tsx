@@ -14,9 +14,12 @@ export default function OptIn() {
   const [searchParams] = useSearchParams();
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
   const [hasOptedIn, setHasOptedIn] = useState(false);
+  const [protectedTags, setProtectedTags] = useState<string[]>([]);
+  const [requiresPassword, setRequiresPassword] = useState(false);
   const { toast } = useToast();
 
   const tags = searchParams.get("tags")?.split(",") || [];
@@ -44,7 +47,43 @@ export default function OptIn() {
     if (nameParam) {
       setName(nameParam);
     }
+
+    // Check for protected tags
+    checkProtectedTags();
   }, [nameParam, tags, product]);
+
+  const checkProtectedTags = async () => {
+    try {
+      const allTags = [...tags];
+      if (product) allTags.push(product);
+
+      if (allTags.length === 0) return;
+
+      const { data: tagRules, error } = await supabase
+        .from('tag_rules')
+        .select('add_tags, protected, password')
+        .eq('user_id', DEMO_USER_ID)
+        .eq('protected', true);
+
+      if (error) throw error;
+
+      const protectedTagsList: string[] = [];
+      tagRules?.forEach(rule => {
+        if (rule.add_tags) {
+          rule.add_tags.forEach((tag: string) => {
+            if (allTags.includes(tag) && !protectedTagsList.includes(tag)) {
+              protectedTagsList.push(tag);
+            }
+          });
+        }
+      });
+
+      setProtectedTags(protectedTagsList);
+      setRequiresPassword(protectedTagsList.length > 0);
+    } catch (error) {
+      console.error('Error checking protected tags:', error);
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -65,6 +104,57 @@ export default function OptIn() {
         variant: "destructive"
       });
       return;
+    }
+
+    // Validate password for protected tags
+    if (requiresPassword && protectedTags.length > 0) {
+      if (!password) {
+        toast({
+          title: "Password required",
+          description: `Password is required for protected tags: ${protectedTags.join(', ')}`,
+          variant: "destructive"
+        });
+        return;
+      }
+
+      // Verify password against protected tag rules
+      try {
+        const { data: tagRules, error } = await supabase
+          .from('tag_rules')
+          .select('add_tags, password')
+          .eq('user_id', DEMO_USER_ID)
+          .eq('protected', true);
+
+        if (error) throw error;
+
+        let passwordValid = false;
+        for (const rule of tagRules || []) {
+          if (rule.add_tags) {
+            const hasProtectedTag = rule.add_tags.some((tag: string) => protectedTags.includes(tag));
+            if (hasProtectedTag && rule.password === password) {
+              passwordValid = true;
+              break;
+            }
+          }
+        }
+
+        if (!passwordValid) {
+          toast({
+            title: "Invalid password",
+            description: "The password provided is incorrect for the protected tags.",
+            variant: "destructive"
+          });
+          return;
+        }
+      } catch (error) {
+        console.error('Error validating password:', error);
+        toast({
+          title: "Error",
+          description: "Failed to validate password. Please try again.",
+          variant: "destructive"
+        });
+        return;
+      }
     }
 
     setIsSubmitting(true);
@@ -211,6 +301,22 @@ export default function OptIn() {
                 required
               />
             </div>
+            {requiresPassword && (
+              <div>
+                <Label htmlFor="password">Password</Label>
+                <Input
+                  id="password"
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="Enter password for protected tags"
+                  required
+                />
+                <p className="text-xs text-muted-foreground mt-1">
+                  Password required for: {protectedTags.join(', ')}
+                </p>
+              </div>
+            )}
             <Button 
               type="submit" 
               className="w-full" 
