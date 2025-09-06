@@ -186,13 +186,19 @@ serve(async (req) => {
       first_name = existingContact.first_name;
       last_name = existingContact.last_name;
     } else {
+      // Extract name from email - only use the part before @
       const emailPart = finalEmail.split('@')[0];
       const cleanedName = emailPart.replace(/[._-]/g, ' ').replace(/\d+/g, '').trim();
       if (cleanedName) {
         const [first, ...rest] = cleanedName.split(/\s+/);
-        first_name = first ? first.charAt(0).toUpperCase() + first.slice(1).toLowerCase() : null;
+        first_name = first ? first.charAt(0).toUpperCase() + first.slice(1).toLowerCase() : finalEmail;
         last_name = rest.length > 0 ? rest.join(' ').toLowerCase().replace(/\b\w/g, (l) => l.toUpperCase()) : null;
+      } else {
+        // If no clean name can be extracted, just use the email part before @
+        first_name = emailPart || finalEmail;
+        last_name = null;
       }
+    }
     }
 
     // Validate password only if trying to add protected tags
