@@ -156,9 +156,9 @@ export const UnsubscribeManager = () => {
 
   const handleRestoreUser = async (user: UnsubscribedUser) => {
     try {
-      console.log('🔄 Restoring (tag-based) user:', user.email);
+      console.log('🔄 Restoring user by removing "unsub" tag:', user.email);
 
-      // Remove 'unsub' tag from the contact
+      // Get current contact data
       const { data: contact, error: fetchErr } = await supabase
         .from('contacts')
         .select('id, tags')
@@ -167,25 +167,36 @@ export const UnsubscribeManager = () => {
 
       if (fetchErr) throw fetchErr;
 
-      const currentTags: string[] = Array.isArray(contact?.tags) ? contact!.tags : [];
-      const newTags = currentTags.filter(t => (t || '').trim().toLowerCase() !== 'unsub');
+      if (!contact) {
+        toast.error("Contact not found");
+        return;
+      }
 
+      // Only remove the "unsub" tag, keep everything else intact
+      const currentTags: string[] = Array.isArray(contact.tags) ? contact.tags : [];
+      const newTags = currentTags.filter(tag => 
+        tag && tag.trim().toLowerCase() !== 'unsub'
+      );
+
+      // Update only the tags field, keep everything else as is
       const { error: updateErr } = await supabase
         .from('contacts')
-        .update({ tags: newTags.length ? newTags : null, status: 'subscribed' })
+        .update({ tags: newTags })
         .eq('id', user.id);
 
       if (updateErr) throw updateErr;
 
+      // Reload the unsubscribers list
       await loadUnsubscribeData();
 
+      // Remove from selection
       setSelectedUsers(prev => {
         const newSet = new Set(prev);
         newSet.delete(user.id);
         return newSet;
       });
 
-      toast.success(`${user.email} has been restored to active subscribers`);
+      toast.success(`Removed "unsub" tag from ${user.email}`);
       window.dispatchEvent(new CustomEvent('contactsUpdated'));
     } catch (error: any) {
       toast.error("Failed to restore user: " + error.message);
