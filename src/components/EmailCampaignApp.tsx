@@ -12,7 +12,8 @@ import { CampaignHistory } from "./email/CampaignHistory";
 import { UnsubscribeManager } from "./email/UnsubscribeManager";
 import { StyleGuide } from "./email/StyleGuide";
 import { TagRulesManager } from "./email/TagRulesManager";
-import { Mail, Users, List, Settings, BarChart3, Package, ChevronDown, Palette, UserX, Link, Tags } from "lucide-react";
+import { LockTagsManager } from "./email/LockTagsManager";
+import { Mail, Users, List, Settings, BarChart3, Package, ChevronDown, Palette, UserX, Link, Tags, Lock } from "lucide-react";
 
 export const EmailCampaignApp = () => {
   const [activeTab, setActiveTab] = useState("compose");
@@ -128,6 +129,16 @@ export const EmailCampaignApp = () => {
                   <DropdownMenuItem 
                     onClick={() => {
                       setActiveTab("settings");
+                      setSettingsSubTab("lock-tags");
+                    }}
+                    className="flex items-center gap-2 cursor-pointer"
+                  >
+                    <Lock className="h-4 w-4" />
+                    Lock Tags
+                  </DropdownMenuItem>
+                  <DropdownMenuItem 
+                    onClick={() => {
+                      setActiveTab("settings");
                       setSettingsSubTab("unsubscribe");
                     }}
                     className="flex items-center gap-2 cursor-pointer"
@@ -198,6 +209,15 @@ export const EmailCampaignApp = () => {
                     Tag Rules
                   </Button>
                   <Button
+                    variant={settingsSubTab === "lock-tags" ? "default" : "outline"}
+                    onClick={() => setSettingsSubTab("lock-tags")}
+                    size="sm"
+                    className="flex items-center gap-2"
+                  >
+                    <Lock className="h-4 w-4" />
+                    Lock Tags
+                  </Button>
+                  <Button
                     variant={settingsSubTab === "unsubscribe" ? "default" : "outline"}
                     onClick={() => setSettingsSubTab("unsubscribe")}
                     size="sm"
@@ -214,6 +234,7 @@ export const EmailCampaignApp = () => {
                 {settingsSubTab === "integration" && <CampaignSettings />}
                 {settingsSubTab === "style" && <StyleGuide />}
                 {settingsSubTab === "tag-rules" && <TagRulesManager />}
+                {settingsSubTab === "lock-tags" && <LockTagsManager />}
                 {settingsSubTab === "unsubscribe" && <UnsubscribeManager />}
               </div>
             </div>
