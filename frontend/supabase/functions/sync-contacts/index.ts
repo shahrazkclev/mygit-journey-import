@@ -81,46 +81,67 @@ serve(async (req) => {
 
     const { email, name, tags = [], action = 'create', user_id, status = 'subscribed', password, contact_id } = payload;
 
-    // Accept either email or contact_id
-    if (!email && !contact_id) {
-      console.error('Missing both email and contact_id in payload:', payload);
-      return new Response(JSON.stringify({ 
-        error: 'Either email or contact_id is required for contact sync',
-        received_payload: payload 
-      }), {
-        status: 400,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
-    }
+    // Normalize inputs to handle empty strings as missing
+    const normalizedEmail = typeof email === 'string' && email.trim() ? email.trim() : undefined;
+    const normalizedContactId = contact_id ? String(contact_id).trim() : undefined;
 
-    let finalEmail = email;
+    console.log('DEBUG: Processing payload:', {
+      hasEmail: !!normalizedEmail,
+      hasContactId: !!normalizedContactId,
+      email: normalizedEmail || 'MISSING',
+      contact_id: normalizedContactId || 'MISSING'
+    });
+
+    let finalEmail = normalizedEmail;
     let finalUserId = user_id || '550e8400-e29b-41d4-a716-446655440000';
 
-    // Resolve contact by ID if provided and email is empty
-    if (contact_id && !email) {
+    // If no email but we have contact_id, resolve it first
+    if (!finalEmail && normalizedContactId) {
+      console.log(`Resolving contact_id ${normalizedContactId} to email...`);
+      
       const { data: found, error: findErr } = await supabase
         .from('contacts')
         .select('email, user_id')
-        .eq('id', contact_id)
+        .eq('id', normalizedContactId)
         .maybeSingle();
 
       if (findErr) {
         console.error('Error looking up contact by contact_id:', findErr);
         return new Response(JSON.stringify({ 
-          error: 'Failed to fetch contact by contact_id', details: findErr.message 
-        }), { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+          error: 'Failed to fetch contact by contact_id', 
+          details: findErr.message 
+        }), { 
+          status: 500, 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        });
       }
 
       if (!found) {
-        console.error('Contact not found for contact_id:', contact_id);
+        console.error('Contact not found for contact_id:', normalizedContactId);
         return new Response(JSON.stringify({ 
-          error: 'Contact not found for the provided contact_id', contact_id 
-        }), { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+          error: 'Contact not found for the provided contact_id', 
+          contact_id: normalizedContactId 
+        }), { 
+          status: 404, 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        });
       }
 
       finalEmail = found.email;
       finalUserId = found.user_id;
-      console.log(`Resolved contact_id ${contact_id} to email ${finalEmail}`);
+      console.log(`Successfully resolved contact_id ${normalizedContactId} to email: ${finalEmail}`);
+    }
+
+    // Final validation - we must have an email at this point
+    if (!finalEmail) {
+      console.error('No email available after resolution. Payload:', payload);
+      return new Response(JSON.stringify({ 
+        error: 'Either email or valid contact_id is required for contact sync',
+        received_payload: payload 
+      }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
     }
 
     console.log(`Processing contact sync for: ${finalEmail}`);
