@@ -89,35 +89,52 @@ export const UnsubscribeManager = () => {
         throw error;
       }
 
-      // Get contact details from unsubscribed_contacts table
+      // Get contact details from unsubscribed_contacts table and fallback to contacts if needed
       let enrichedData = data;
       if (data && data.length > 0) {
         const emails = data.map(u => u.email);
+
+        // 1) Fetch unsubscribed_contacts for this user (avoid email case-sensitivity issues)
         const { data: unsubscribedContacts } = await supabase
           .from('unsubscribed_contacts')
           .select('email, first_name, last_name, tags')
+          .eq('user_id', '550e8400-e29b-41d4-a716-446655440000');
+
+        // 2) Fetch contacts as a fallback (in case some records existed before backfill)
+        const { data: fallbackContacts } = await supabase
+          .from('contacts')
+          .select('email, first_name, last_name, tags, status, user_id')
           .in('email', emails)
           .eq('user_id', '550e8400-e29b-41d4-a716-446655440000');
 
         console.log('📋 Unsubscribed contacts data:', unsubscribedContacts);
+        console.log('📋 Fallback contacts data:', fallbackContacts);
 
-        // Map unsubscribed contacts to unsubscribes
+        const ucMap = new Map<string, any>();
+        unsubscribedContacts?.forEach(c => ucMap.set((c.email || '').toLowerCase(), c));
+        const fbMap = new Map<string, any>();
+        fallbackContacts?.forEach(c => fbMap.set((c.email || '').toLowerCase(), c));
+
+        // Map enriched contact details prioritizing unsubscribed_contacts, then contacts
         enrichedData = data.map(unsub => {
-          const contact = unsubscribedContacts?.find(c => c.email === unsub.email);
+          const key = (unsub.email || '').toLowerCase();
+          const uc = ucMap.get(key);
+          const fb = fbMap.get(key);
+          const src = uc || fb;
           return {
             ...unsub,
-            contact: contact ? {
-              id: contact.email, // using email as id since we don't have actual contact id
-              email: contact.email,
-              first_name: contact.first_name,
-              last_name: contact.last_name,
-              tags: contact.tags || []
-            } : { 
-              id: '', 
-              email: unsub.email, 
-              first_name: '', 
-              last_name: '', 
-              tags: [] 
+            contact: src ? {
+              id: src.email,
+              email: src.email,
+              first_name: src.first_name || '',
+              last_name: src.last_name || '',
+              tags: Array.isArray(src.tags) ? src.tags : []
+            } : {
+              id: '',
+              email: unsub.email,
+              first_name: '',
+              last_name: '',
+              tags: []
             }
           };
         });
