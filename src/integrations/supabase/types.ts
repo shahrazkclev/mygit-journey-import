@@ -427,6 +427,42 @@ export type Database = {
         }
         Relationships: []
       }
+      unsubscribed_contacts: {
+        Row: {
+          created_at: string
+          email: string
+          first_name: string | null
+          id: string
+          last_name: string | null
+          original_contact_id: string | null
+          tags: string[] | null
+          unsubscribed_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          email: string
+          first_name?: string | null
+          id?: string
+          last_name?: string | null
+          original_contact_id?: string | null
+          tags?: string[] | null
+          unsubscribed_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          email?: string
+          first_name?: string | null
+          id?: string
+          last_name?: string | null
+          original_contact_id?: string | null
+          tags?: string[] | null
+          unsubscribed_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       unsubscribes: {
         Row: {
           email: string
@@ -504,6 +540,14 @@ export type Database = {
       generate_unsubscribe_token: {
         Args: { p_campaign_id?: string; p_email: string; p_user_id?: string }
         Returns: string
+      }
+      handle_restore_contact: {
+        Args: { p_email: string; p_user_id?: string }
+        Returns: undefined
+      }
+      handle_unsubscribe: {
+        Args: { p_email: string; p_reason?: string; p_user_id?: string }
+        Returns: undefined
       }
     }
     Enums: {

@@ -94,28 +94,53 @@ Deno.serve(async (req) => {
       console.error('Error marking token as used:', markUsedError);
     }
 
-    // Add to unsubscribes table
-    const { error: unsubscribeError } = await supabase
-      .from('unsubscribes')
-      .insert({
-        user_id: tokenData.user_id,
-        email: tokenData.email,
-        reason: 'Unsubscribed via email link'
-      });
+    // Use the new handle_unsubscribe function
+    const { error: unsubscribeError } = await supabase.rpc('handle_unsubscribe', {
+      p_email: tokenData.email,
+      p_user_id: tokenData.user_id,
+      p_reason: 'Unsubscribed via email link'
+    });
 
     if (unsubscribeError) {
-      console.error('Error adding unsubscribe:', unsubscribeError);
-    }
-
-    // Update contact status to unsubscribed using email and user_id from token
-    const { error: contactError } = await supabase
-      .from('contacts')
-      .update({ status: 'unsubscribed' })
-      .eq('email', tokenData.email)
-      .eq('user_id', tokenData.user_id);
-
-    if (contactError) {
-      console.error('Error updating contact status:', contactError);
+      console.error('Error processing unsubscribe:', unsubscribeError);
+      return new Response(`
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <title>Error</title>
+          <meta charset="UTF-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1.0">
+          <style>
+            body { 
+              font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+              max-width: 600px; 
+              margin: 100px auto; 
+              padding: 40px; 
+              text-align: center;
+              background-color: #f9fafb;
+            }
+            .container {
+              background: white;
+              padding: 40px;
+              border-radius: 8px;
+              box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            }
+            h1 { color: #dc2626; margin-bottom: 20px; }
+            p { color: #6b7280; line-height: 1.6; }
+          </style>
+        </head>
+        <body>
+          <div class="container">
+            <h1>❌ Error Processing Unsubscribe</h1>
+            <p>There was an error processing your unsubscribe request.</p>
+            <p>Please try again later or contact us directly.</p>
+          </div>
+        </body>
+        </html>
+      `, {
+        status: 500,
+        headers: { ...corsHeaders, 'Content-Type': 'text/html' }
+      });
     }
 
     // Return a simple unsubscribe confirmation page

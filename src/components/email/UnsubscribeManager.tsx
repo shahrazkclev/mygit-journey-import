@@ -76,10 +76,11 @@ export const UnsubscribeManager = () => {
       const { data: { user } } = await supabase.auth.getUser();
       console.log('👤 Current user:', user?.id);
       
-      // Query unsubscribes and manually join with contacts using email
+      // Query unsubscribes with demo user filter
       const { data, error } = await supabase
         .from('unsubscribes')
-        .select('*');
+        .select('*')
+        .eq('user_id', '550e8400-e29b-41d4-a716-446655440000');
 
       console.log('📊 Basic query result:', { data, error, count: data?.length });
 
@@ -88,19 +89,26 @@ export const UnsubscribeManager = () => {
         throw error;
       }
 
-      // Get contact details for each unsubscribed user
+      // Get contact details from unsubscribed_contacts table
       let enrichedData = data;
       if (data && data.length > 0) {
         const emails = data.map(u => u.email);
-        const { data: contacts } = await supabase
-          .from('contacts')
-          .select('id, email, first_name, last_name, tags')
-          .in('email', emails);
+        const { data: unsubscribedContacts } = await supabase
+          .from('unsubscribed_contacts')
+          .select('email, first_name, last_name, tags')
+          .in('email', emails)
+          .eq('user_id', '550e8400-e29b-41d4-a716-446655440000');
 
-        // Map contacts to unsubscribes
+        // Map unsubscribed contacts to unsubscribes
         enrichedData = data.map(unsub => ({
           ...unsub,
-          contact: contacts?.find(c => c.email === unsub.email) || null
+          contact: unsubscribedContacts?.find(c => c.email === unsub.email) || { 
+            id: '', 
+            email: unsub.email, 
+            first_name: '', 
+            last_name: '', 
+            tags: [] 
+          }
         }));
       }
 
@@ -202,21 +210,11 @@ export const UnsubscribeManager = () => {
 
   const handleRestoreUser = async (user: UnsubscribedUser) => {
     try {
-      // Update contact status back to subscribed
-      if (user.contact?.id) {
-        const { error: contactError } = await supabase
-          .from('contacts')
-          .update({ status: 'subscribed' })
-          .eq('id', user.contact.id);
-
-        if (contactError) throw contactError;
-      }
-
-      // Remove from unsubscribes table
-      const { error } = await supabase
-        .from('unsubscribes')
-        .delete()
-        .eq('id', user.id);
+      // Use the new handle_restore_contact function
+      const { error } = await supabase.rpc('handle_restore_contact', {
+        p_email: user.email,
+        p_user_id: '550e8400-e29b-41d4-a716-446655440000'
+      });
 
       if (error) throw error;
 
@@ -242,27 +240,26 @@ export const UnsubscribeManager = () => {
     try {
       const usersToRestore = unsubscribedUsers.filter(user => selectedUsers.has(user.id));
       
-      // Update contacts status
-      for (const user of usersToRestore) {
-        if (user.contact?.id) {
-          await supabase
-            .from('contacts')
-            .update({ status: 'subscribed' })
-            .eq('id', user.contact.id);
-        }
+      // Use the new handle_restore_contact function for each user
+      const promises = usersToRestore.map(user => 
+        supabase.rpc('handle_restore_contact', {
+          p_email: user.email,
+          p_user_id: '550e8400-e29b-41d4-a716-446655440000'
+        })
+      );
+
+      const results = await Promise.all(promises);
+      const errors = results.filter(result => result.error);
+
+      if (errors.length > 0) {
+        console.error('❌ Errors restoring contacts:', errors);
+        toast.error(`Failed to restore ${errors.length} users`);
+      } else {
+        toast.success(`${usersToRestore.length} users restored successfully`);
       }
-
-      // Remove from unsubscribes table
-      const { error } = await supabase
-        .from('unsubscribes')
-        .delete()
-        .in('id', Array.from(selectedUsers));
-
-      if (error) throw error;
 
       setUnsubscribedUsers(users => users.filter(user => !selectedUsers.has(user.id)));
       setSelectedUsers(new Set());
-      toast.success(`${usersToRestore.length} users restored successfully`);
     } catch (error: any) {
       toast.error("Failed to restore users: " + error.message);
       console.error('Error in bulk restore:', error);
