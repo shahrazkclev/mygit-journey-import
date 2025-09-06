@@ -13,11 +13,10 @@ Deno.serve(async (req) => {
 
   try {
     const url = new URL(req.url);
-    const email = url.searchParams.get('email');
-    const campaignId = url.searchParams.get('campaign');
+    const token = url.searchParams.get('token');
 
-    if (!email) {
-      return new Response('Email parameter is required', { 
+    if (!token) {
+      return new Response('Invalid unsubscribe link', { 
         status: 400,
         headers: corsHeaders 
       });
@@ -29,12 +28,78 @@ Deno.serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     );
 
+    // Validate and consume the unsubscribe token
+    const { data: tokenData, error: tokenError } = await supabase
+      .from('unsubscribe_tokens')
+      .select('*')
+      .eq('token', token)
+      .gt('expires_at', new Date().toISOString())
+      .eq('is_used', false)
+      .single();
+
+    if (tokenError || !tokenData) {
+      console.error('Invalid or expired token:', tokenError);
+      return new Response(`
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <title>Invalid Link</title>
+          <meta charset="UTF-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1.0">
+          <style>
+            body { 
+              font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+              max-width: 600px; 
+              margin: 100px auto; 
+              padding: 40px; 
+              text-align: center;
+              background-color: #f9fafb;
+            }
+            .container {
+              background: white;
+              padding: 40px;
+              border-radius: 8px;
+              box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            }
+            h1 { color: #dc2626; margin-bottom: 20px; }
+            p { color: #6b7280; line-height: 1.6; }
+          </style>
+        </head>
+        <body>
+          <div class="container">
+            <h1>❌ Invalid Unsubscribe Link</h1>
+            <p>This unsubscribe link is invalid, expired, or has already been used.</p>
+            <p>If you still wish to unsubscribe, please contact us directly.</p>
+          </div>
+        </body>
+        </html>
+      `, {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'text/html' }
+      });
+    }
+
+    const email = tokenData.email;
+
+    // Mark token as used
+    const { error: markUsedError } = await supabase
+      .from('unsubscribe_tokens')
+      .update({ 
+        is_used: true, 
+        used_at: new Date().toISOString() 
+      })
+      .eq('token', token);
+
+    if (markUsedError) {
+      console.error('Error marking token as used:', markUsedError);
+    }
+
     // Add to unsubscribes table
     const { error: unsubscribeError } = await supabase
       .from('unsubscribes')
       .insert({
-        user_id: '550e8400-e29b-41d4-a716-446655440000', // Demo user ID
-        email,
+        user_id: tokenData.user_id,
+        email: tokenData.email,
         reason: 'Unsubscribed via email link'
       });
 
@@ -46,8 +111,8 @@ Deno.serve(async (req) => {
     const { error: contactError } = await supabase
       .from('contacts')
       .update({ status: 'unsubscribed' })
-      .eq('email', email)
-      .eq('user_id', '550e8400-e29b-41d4-a716-446655440000');
+      .eq('email', tokenData.email)
+      .eq('user_id', tokenData.user_id);
 
     if (contactError) {
       console.error('Error updating contact status:', contactError);

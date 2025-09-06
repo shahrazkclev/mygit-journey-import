@@ -143,7 +143,31 @@ async function processSends(
     // Process emails one by one with individual delays
     for (const contact of batch) {
       try {
-        const body = { title, html, name, senderSequenceNumber, recipient: { email: contact.email, firstName: contact.first_name ?? undefined, lastName: contact.last_name ?? undefined }, campaignId };
+        // Generate unsubscribe token for this contact
+        const { data: tokenData } = await supabase.functions.invoke('generate-unsubscribe-token', {
+          body: { 
+            email: contact.email, 
+            campaign_id: campaignId,
+            user_id: '550e8400-e29b-41d4-a716-446655440000'
+          }
+        });
+
+        const unsubscribeUrl = tokenData?.unsubscribe_url || '';
+        
+        const body = { 
+          title, 
+          html, 
+          name, 
+          senderSequenceNumber, 
+          recipient: { 
+            email: contact.email, 
+            firstName: contact.first_name ?? undefined, 
+            lastName: contact.last_name ?? undefined 
+          }, 
+          campaignId,
+          unsubscribeUrl
+        };
+        
         await deliver(webhookUrl, body);
         await markSend(supabase, campaignId, contact.email, { status: 'sent', sent_at: new Date().toISOString(), error_message: null });
         sentCount++;
