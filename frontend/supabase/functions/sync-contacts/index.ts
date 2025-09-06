@@ -135,44 +135,48 @@ serve(async (req) => {
     if (!finalEmail && normalizedContactId) {
       console.log(`Resolving contact_id ${normalizedContactId} to email...`);
       
-      // Try resolve from contacts by id
-      const { data: found, error: findErr } = await supabase
-        .from('contacts')
-        .select('email, user_id')
-        .eq('id', normalizedContactId)
+      // First try resolve from unsubscribed_contacts by original_contact_id
+      const { data: unsubFound, error: unsubErr } = await supabase
+        .from('unsubscribed_contacts')
+        .select('email, user_id, original_contact_id')
+        .eq('original_contact_id', normalizedContactId)
         .maybeSingle();
 
-      if (findErr) {
-        console.error('Error looking up contact by contact_id:', findErr);
-        return new Response(JSON.stringify({ 
-          error: 'Failed to fetch contact by contact_id', 
-          details: findErr.message 
-        }), { 
-          status: 500, 
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+      if (unsubErr) {
+        console.error('Error looking up unsubscribed contact by original_contact_id:', unsubErr);
+        return new Response(JSON.stringify({
+          error: 'Failed to fetch unsubscribed contact by contact_id',
+          details: unsubErr.message
+        }), {
+          status: 500,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
         });
       }
 
-      if (!found) {
-        // Fallback: resolve from unsubscribed_contacts by original_contact_id
-        const { data: unsubFound, error: unsubErr } = await supabase
-          .from('unsubscribed_contacts')
-          .select('email, user_id, original_contact_id')
-          .eq('original_contact_id', normalizedContactId)
+      if (unsubFound) {
+        finalEmail = unsubFound.email;
+        finalUserId = unsubFound.user_id;
+        console.log(`Resolved unsubscribed contact_id ${normalizedContactId} to email: ${finalEmail}`);
+      } else {
+        // Fallback: Try resolve from contacts by id
+        const { data: found, error: findErr } = await supabase
+          .from('contacts')
+          .select('email, user_id')
+          .eq('id', normalizedContactId)
           .maybeSingle();
 
-        if (unsubErr) {
-          console.error('Error looking up unsubscribed contact by original_contact_id:', unsubErr);
-          return new Response(JSON.stringify({
-            error: 'Failed to fetch unsubscribed contact by contact_id',
-            details: unsubErr.message
-          }), {
-            status: 500,
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        if (findErr) {
+          console.error('Error looking up contact by contact_id:', findErr);
+          return new Response(JSON.stringify({ 
+            error: 'Failed to fetch contact by contact_id', 
+            details: findErr.message 
+          }), { 
+            status: 500, 
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
           });
         }
 
-        if (!unsubFound) {
+        if (!found) {
           console.error('Contact not found for contact_id in contacts or unsubscribed_contacts:', normalizedContactId);
           return new Response(JSON.stringify({ 
             error: 'Contact not found for the provided contact_id', 
@@ -183,10 +187,6 @@ serve(async (req) => {
           });
         }
 
-        finalEmail = unsubFound.email;
-        finalUserId = unsubFound.user_id;
-        console.log(`Resolved unsubscribed contact_id ${normalizedContactId} to email: ${finalEmail}`);
-      } else {
         finalEmail = found.email;
         finalUserId = found.user_id;
         console.log(`Successfully resolved contact_id ${normalizedContactId} to email: ${finalEmail}`);
