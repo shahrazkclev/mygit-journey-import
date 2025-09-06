@@ -356,14 +356,15 @@ export const SmartListManager = () => {
       return;
     }
 
-    // Load contacts already in this list
+    // Load contacts already in this list (only subscribed contacts)
     const { data: listMemberships, error: membershipError } = await supabase
       .from('contact_lists')
       .select(`
         contact_id,
-        contacts(id, first_name, last_name, email, tags)
+        contacts!inner(id, first_name, last_name, email, tags, status)
       `)
-      .eq('list_id', list.id);
+      .eq('list_id', list.id)
+      .eq('contacts.status', 'subscribed');
 
     if (membershipError) {
       console.error('Error loading list memberships:', membershipError);
