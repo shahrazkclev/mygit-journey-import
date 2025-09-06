@@ -129,7 +129,7 @@ export const SimpleContactManager = () => {
         .from('contacts')
         .select('id, user_id, created_at, updated_at, email, first_name, last_name, status, tags')
         .eq('user_id', DEMO_USER_ID)
-        .neq('status', 'unsubscribed') // Filter out unsubscribed contacts
+        .eq('status', 'subscribed') // Only load subscribed contacts
         .order('created_at', { ascending: false });
 
       console.log('📊 Contacts query result:', { data, error, count: data?.length });

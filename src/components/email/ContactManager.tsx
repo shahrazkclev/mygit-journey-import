@@ -94,6 +94,7 @@ export const ContactManager: React.FC = () => {
         .from('contacts')
         .select('*')
         .eq('user_id', DEMO_USER_ID)
+        .eq('status', 'subscribed') // Only load subscribed contacts
         .order('created_at', { ascending: false });
 
       if (error) throw error;
