@@ -29,33 +29,69 @@ serve(async (req) => {
       
       const results = [];
       for (const unsubscribe of payload.unsubscribes) {
-        const { user_id, reason = 'No longer interested' } = unsubscribe;
-        
-        if (!user_id) {
-          console.error('user_id missing in unsubscribe entry:', unsubscribe);
-          continue;
-        }
-
         try {
-          // Use the handle_unsubscribe function which properly handles the unsubscribe process
+          const { user_id, reason = 'No longer interested', email: unsubEmail, contact_id } = unsubscribe;
+
+          // Resolve target email to unsubscribe
+          let emailToUnsub: string | null = (typeof unsubEmail === 'string' && unsubEmail.trim()) ? unsubEmail.trim().toLowerCase() : null;
+          const identifier = contact_id ?? user_id; // caller sometimes passes contact_id in user_id
+
+          if (!emailToUnsub && identifier) {
+            const idStr = String(identifier).trim();
+
+            if (idStr.includes('@')) {
+              // Identifier is actually an email
+              emailToUnsub = idStr.toLowerCase();
+            } else {
+              // 1) Try resolve from contacts by contact id
+              const { data: contactById } = await supabase
+                .from('contacts')
+                .select('email')
+                .eq('id', idStr)
+                .maybeSingle();
+
+              if (contactById?.email) {
+                emailToUnsub = contactById.email.toLowerCase();
+              } else {
+                // 2) Try resolve from unsubscribed_contacts by original_contact_id
+                const { data: unsubByOrig } = await supabase
+                  .from('unsubscribed_contacts')
+                  .select('email')
+                  .eq('original_contact_id', idStr)
+                  .maybeSingle();
+
+                if (unsubByOrig?.email) {
+                  emailToUnsub = unsubByOrig.email.toLowerCase();
+                }
+              }
+            }
+          }
+
+          if (!emailToUnsub) {
+            console.error('No email resolved for unsubscribe entry:', unsubscribe);
+            results.push({ identifier: identifier ?? null, success: false, error: 'No contact email found from identifier' });
+            continue;
+          }
+
+          // Perform unsubscribe using DB function
           const { error: handleError } = await supabase.rpc('handle_unsubscribe', {
-            p_email: null, // Not using email anymore
-            p_user_id: user_id,
+            p_email: emailToUnsub,
+            p_user_id: '550e8400-e29b-41d4-a716-446655440000',
             p_reason: reason
           });
 
           if (handleError) {
             console.error('Error handling unsubscribe:', handleError);
-            results.push({ user_id, success: false, error: handleError.message });
+            results.push({ email: emailToUnsub, success: false, error: handleError.message });
             continue;
           }
 
-          console.log(`Processed unsubscribe for user_id: ${user_id}`);
-          results.push({ user_id, success: true });
+          console.log(`Processed unsubscribe for email: ${emailToUnsub}`);
+          results.push({ email: emailToUnsub, success: true });
 
         } catch (error) {
-          console.error(`Error processing unsubscribe for ${user_id}:`, error);
-          results.push({ user_id, success: false, error: error.message });
+          console.error('Exception processing unsubscribe:', error);
+          results.push({ success: false, error: (error as Error).message });
         }
       }
 
@@ -99,6 +135,7 @@ serve(async (req) => {
     if (!finalEmail && normalizedContactId) {
       console.log(`Resolving contact_id ${normalizedContactId} to email...`);
       
+      // Try resolve from contacts by id
       const { data: found, error: findErr } = await supabase
         .from('contacts')
         .select('email, user_id')
@@ -117,19 +154,43 @@ serve(async (req) => {
       }
 
       if (!found) {
-        console.error('Contact not found for contact_id:', normalizedContactId);
-        return new Response(JSON.stringify({ 
-          error: 'Contact not found for the provided contact_id', 
-          contact_id: normalizedContactId 
-        }), { 
-          status: 404, 
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
-        });
-      }
+        // Fallback: resolve from unsubscribed_contacts by original_contact_id
+        const { data: unsubFound, error: unsubErr } = await supabase
+          .from('unsubscribed_contacts')
+          .select('email, user_id, original_contact_id')
+          .eq('original_contact_id', normalizedContactId)
+          .maybeSingle();
 
-      finalEmail = found.email;
-      finalUserId = found.user_id;
-      console.log(`Successfully resolved contact_id ${normalizedContactId} to email: ${finalEmail}`);
+        if (unsubErr) {
+          console.error('Error looking up unsubscribed contact by original_contact_id:', unsubErr);
+          return new Response(JSON.stringify({
+            error: 'Failed to fetch unsubscribed contact by contact_id',
+            details: unsubErr.message
+          }), {
+            status: 500,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+          });
+        }
+
+        if (!unsubFound) {
+          console.error('Contact not found for contact_id in contacts or unsubscribed_contacts:', normalizedContactId);
+          return new Response(JSON.stringify({ 
+            error: 'Contact not found for the provided contact_id', 
+            contact_id: normalizedContactId 
+          }), { 
+            status: 404, 
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+          });
+        }
+
+        finalEmail = unsubFound.email;
+        finalUserId = unsubFound.user_id;
+        console.log(`Resolved unsubscribed contact_id ${normalizedContactId} to email: ${finalEmail}`);
+      } else {
+        finalEmail = found.email;
+        finalUserId = found.user_id;
+        console.log(`Successfully resolved contact_id ${normalizedContactId} to email: ${finalEmail}`);
+      }
     }
 
     // Final validation - we must have an email at this point
@@ -145,6 +206,16 @@ serve(async (req) => {
     }
 
     console.log(`Processing contact sync for: ${finalEmail}`);
+
+    // Restore unsubscribed contact if exists (maintains original contact id)
+    const { error: restoreError } = await supabase.rpc('handle_restore_contact', {
+      p_email: finalEmail,
+      p_user_id: finalUserId
+    });
+
+    if (restoreError) {
+      console.error('Error restoring contact:', restoreError);
+    }
     
     // Fetch existing contact for merging and name preservation
     const { data: existingContact } = await supabase
