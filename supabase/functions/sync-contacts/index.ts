@@ -127,9 +127,16 @@ serve(async (req) => {
 
     const { email, name, tags = [], action = 'create', user_id, status = 'subscribed', password, contact_id } = payload;
 
+    console.log('DEBUG: Received payload fields:', { 
+      hasEmail: !!email, 
+      hasContactId: !!contact_id, 
+      email: email || 'NOT_PROVIDED',
+      contact_id: contact_id || 'NOT_PROVIDED'
+    });
+
     // Validate that we have either email or contact_id
     if (!email && !contact_id) {
-      console.error('Missing both email and contact_id in payload:', payload);
+      console.error('VALIDATION ERROR: Missing both email and contact_id in payload:', payload);
       return new Response(JSON.stringify({ 
         error: 'Either email or contact_id is required for contact sync',
         received_payload: payload 
@@ -138,6 +145,8 @@ serve(async (req) => {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
+
+    console.log('DEBUG: Validation passed, proceeding with processing');
 
     let finalEmail = email;
     let finalUserId = user_id || '550e8400-e29b-41d4-a716-446655440000';
