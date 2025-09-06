@@ -28,48 +28,69 @@ serve(async (req) => {
       
       const results = [];
       for (const unsubscribe of payload.unsubscribes) {
-        const { user_id, reason = 'No longer interested' } = unsubscribe;
-        
-        if (!user_id) {
-          console.error('user_id missing in unsubscribe entry:', unsubscribe);
-          continue;
-        }
-
         try {
-          // First get the email for this contact ID
-          const { data: contact, error: contactError } = await supabase
-            .from('contacts')
-            .select('email')
-            .eq('id', user_id)
-            .single();
-          
-          if (contactError || !contact) {
-            console.error('Contact not found for user_id:', user_id, contactError);
-            results.push({ user_id, success: false, error: 'Contact not found' });
+          const { user_id, reason = 'No longer interested', email: unsubEmail, contact_id } = unsubscribe;
+
+          // Resolve target email to unsubscribe
+          let emailToUnsub: string | null = (typeof unsubEmail === 'string' && unsubEmail.trim()) ? unsubEmail.trim().toLowerCase() : null;
+          const identifier = contact_id ?? user_id; // caller sometimes passes contact_id in user_id
+
+          if (!emailToUnsub && identifier) {
+            const idStr = String(identifier).trim();
+
+            if (idStr.includes('@')) {
+              // Identifier is actually an email
+              emailToUnsub = idStr.toLowerCase();
+            } else {
+              // 1) Try resolve from contacts by contact id
+              const { data: contactById } = await supabase
+                .from('contacts')
+                .select('email')
+                .eq('id', idStr)
+                .maybeSingle();
+
+              if (contactById?.email) {
+                emailToUnsub = contactById.email.toLowerCase();
+              } else {
+                // 2) Try resolve from unsubscribed_contacts by original_contact_id
+                const { data: unsubByOrig } = await supabase
+                  .from('unsubscribed_contacts')
+                  .select('email')
+                  .eq('original_contact_id', idStr)
+                  .maybeSingle();
+
+                if (unsubByOrig?.email) {
+                  emailToUnsub = unsubByOrig.email.toLowerCase();
+                }
+              }
+            }
+          }
+
+          if (!emailToUnsub) {
+            console.error('No email resolved for unsubscribe entry:', unsubscribe);
+            results.push({ identifier: identifier ?? null, success: false, error: 'No contact email found from identifier' });
             continue;
           }
-          
-          console.log(`Found email ${contact.email} for contact ID: ${user_id}`);
-          
-          // Use the handle_unsubscribe function with the email
+
+          // Perform unsubscribe using DB function
           const { error: handleError } = await supabase.rpc('handle_unsubscribe', {
-            p_email: contact.email,
+            p_email: emailToUnsub,
             p_user_id: '550e8400-e29b-41d4-a716-446655440000',
             p_reason: reason
           });
 
           if (handleError) {
             console.error('Error handling unsubscribe:', handleError);
-            results.push({ user_id, success: false, error: handleError.message });
+            results.push({ email: emailToUnsub, success: false, error: handleError.message });
             continue;
           }
 
-          console.log(`Processed unsubscribe for user_id: ${user_id}`);
-          results.push({ user_id, success: true });
+          console.log(`Processed unsubscribe for email: ${emailToUnsub}`);
+          results.push({ email: emailToUnsub, success: true });
 
         } catch (error) {
-          console.error(`Error processing unsubscribe for ${user_id}:`, error);
-          results.push({ user_id, success: false, error: error.message });
+          console.error('Exception processing unsubscribe:', error);
+          results.push({ success: false, error: (error as Error).message });
         }
       }
 
