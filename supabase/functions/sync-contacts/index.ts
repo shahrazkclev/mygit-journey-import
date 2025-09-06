@@ -170,6 +170,16 @@ serve(async (req) => {
     }
 
     console.log(`Processing contact sync for: ${finalEmail}`);
+
+    // Restore unsubscribed contact if exists (maintains original contact id)
+    const { error: restoreError } = await supabase.rpc('handle_restore_contact', {
+      p_email: finalEmail,
+      p_user_id: finalUserId
+    });
+
+    if (restoreError) {
+      console.error('Error restoring contact:', restoreError);
+    }
     
     // Fetch existing contact for merging and name preservation
     const { data: existingContact } = await supabase
@@ -218,7 +228,6 @@ serve(async (req) => {
         // If no clean name can be extracted, just use the email part before @
         first_name = emailPart || finalEmail;
         last_name = null;
-      }
     }
     }
 
