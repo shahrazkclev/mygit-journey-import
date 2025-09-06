@@ -28,46 +28,45 @@ serve(async (req) => {
       
       const results = [] as any[];
       for (const unsubscribe of payload.unsubscribes) {
-        const { email, reason = 'No longer interested' } = unsubscribe;
+        const { email, user_id, reason = 'No longer interested' } = unsubscribe;
         
-        if (!email) {
-          console.error('Email missing in unsubscribe entry:', unsubscribe);
+        if (!email && !user_id) {
+          console.error('Both email and user_id missing in unsubscribe entry:', unsubscribe);
           continue;
         }
 
         try {
-          // Add to unsubscribes table (user_id will be auto-populated by trigger)
-          const { data: unsubscribeData, error: unsubscribeError } = await supabase
-            .from('unsubscribes')
-            .insert({
-              email,
-              reason
-            })
-            .select()
-            .single();
+          // Use the handle_unsubscribe database function to properly handle the unsubscribe
+          const { error: unsubscribeError } = await supabase.rpc('handle_unsubscribe', {
+            p_email: email || null,
+            p_user_id: user_id || '550e8400-e29b-41d4-a716-446655440000',
+            p_reason: reason
+          });
 
           if (unsubscribeError) {
-            console.error('Error adding unsubscribe:', unsubscribeError);
-            results.push({ email, success: false, error: unsubscribeError.message });
+            console.error('Error processing unsubscribe:', unsubscribeError);
+            results.push({ 
+              email: email || `user_id:${user_id}`, 
+              success: false, 
+              error: unsubscribeError.message 
+            });
             continue;
           }
 
-          // Update contact status to unsubscribed
-          const { error: contactError } = await supabase
-            .from('contacts')
-            .update({ status: 'unsubscribed' })
-            .eq('email', email);
-
-          if (contactError) {
-            console.error('Error updating contact status:', contactError);
-          }
-
-          console.log(`Processed unsubscribe for: ${email}`);
-          results.push({ email, success: true, unsubscribe: unsubscribeData });
+          console.log(`Processed unsubscribe for: ${email || `user_id:${user_id}`}`);
+          results.push({ 
+            email: email || `user_id:${user_id}`, 
+            success: true, 
+            message: 'Unsubscribed successfully' 
+          });
 
         } catch (error: any) {
-          console.error(`Error processing unsubscribe for ${email}:`, error);
-          results.push({ email, success: false, error: error.message });
+          console.error(`Error processing unsubscribe for ${email || `user_id:${user_id}`}:`, error);
+          results.push({ 
+            email: email || `user_id:${user_id}`, 
+            success: false, 
+            error: error.message 
+          });
         }
       }
 
