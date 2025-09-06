@@ -391,6 +391,42 @@ export type Database = {
         }
         Relationships: []
       }
+      unsubscribe_tokens: {
+        Row: {
+          campaign_id: string | null
+          created_at: string
+          email: string
+          expires_at: string
+          id: string
+          is_used: boolean
+          token: string
+          used_at: string | null
+          user_id: string
+        }
+        Insert: {
+          campaign_id?: string | null
+          created_at?: string
+          email: string
+          expires_at?: string
+          id?: string
+          is_used?: boolean
+          token: string
+          used_at?: string | null
+          user_id: string
+        }
+        Update: {
+          campaign_id?: string | null
+          created_at?: string
+          email?: string
+          expires_at?: string
+          id?: string
+          is_used?: boolean
+          token?: string
+          used_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       unsubscribes: {
         Row: {
           email: string
@@ -465,7 +501,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      generate_unsubscribe_token: {
+        Args: { p_campaign_id?: string; p_email: string; p_user_id?: string }
+        Returns: string
+      }
     }
     Enums: {
       [_ in never]: never
