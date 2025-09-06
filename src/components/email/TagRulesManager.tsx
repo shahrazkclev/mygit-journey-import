@@ -9,7 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { TagInput } from "@/components/ui/tag-input";
-import { Trash2, Plus, Settings, Edit } from "lucide-react";
+import { Trash2, Plus, Settings, Edit, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
 
 interface TagRule {
@@ -30,6 +30,7 @@ export const TagRulesManager = () => {
   const [isCreating, setIsCreating] = useState(false);
   const [editingRule, setEditingRule] = useState<string | null>(null);
   const [allTags, setAllTags] = useState<string[]>([]);
+  const [isReapplying, setIsReapplying] = useState(false);
     const [newRule, setNewRule] = useState({
     name: "",
     description: "",
@@ -209,7 +210,7 @@ export const TagRulesManager = () => {
         rule.id === ruleId ? { ...rule, enabled } : rule
       ));
       
-      toast.success(`Rule ${enabled ? 'enabled' : 'disabled'}. Tag rules will be reapplied to all contacts automatically.`);
+      toast.success(`Rule ${enabled ? 'enabled' : 'disabled'}. Use "Reapply Rules" button to update all contacts.`);
     } catch (error) {
       console.error('Error updating rule:', error);
       toast.error('Failed to update rule');
@@ -235,6 +236,35 @@ export const TagRulesManager = () => {
     }
   };
 
+  const reapplyTagRules = async () => {
+    setIsReapplying(true);
+    try {
+      // Reapply tag rules for both regular and unsubscribed contacts
+      const { error: contactsError } = await supabase.rpc('reapply_tag_rules_for_user', {
+        p_user_id: '550e8400-e29b-41d4-a716-446655440000'
+      });
+
+      if (contactsError) throw contactsError;
+
+      const { error: unsubscribedError } = await supabase.rpc('reapply_tag_rules_to_unsubscribed_contacts', {
+        p_user_id: '550e8400-e29b-41d4-a716-446655440000'
+      });
+
+      if (unsubscribedError) throw unsubscribedError;
+
+      toast.success('Tag rules reapplied to all contacts successfully');
+      
+      // Trigger a global refresh of contacts
+      window.dispatchEvent(new CustomEvent('contactsUpdated'));
+      
+    } catch (error) {
+      console.error('Error reapplying tag rules:', error);
+      toast.error('Failed to reapply tag rules');
+    } finally {
+      setIsReapplying(false);
+    }
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -244,10 +274,21 @@ export const TagRulesManager = () => {
             Automatically manage contact tags based on triggers. When a contact gets a trigger tag, the rule will add/remove other tags.
           </p>
         </div>
-        <Button onClick={() => setIsCreating(true)} className="flex items-center gap-2">
-          <Plus className="h-4 w-4" />
-          Create Rule
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button 
+            variant="outline"
+            onClick={reapplyTagRules}
+            disabled={isReapplying}
+            className="flex items-center gap-2"
+          >
+            <RefreshCw className={`h-4 w-4 ${isReapplying ? 'animate-spin' : ''}`} />
+            {isReapplying ? 'Reapplying...' : 'Reapply Rules'}
+          </Button>
+          <Button onClick={() => setIsCreating(true)} className="flex items-center gap-2">
+            <Plus className="h-4 w-4" />
+            Create Rule
+          </Button>
+        </div>
       </div>
 
       {isCreating && (
