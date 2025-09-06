@@ -125,23 +125,70 @@ serve(async (req) => {
     //   "user_id": "optional-user-id"
     // }
 
-const { email, name, tags = [], action = 'create', user_id, status = 'subscribed', password, contact_id } = payload;
+    const { email, name, tags = [], action = 'create', user_id, status = 'subscribed', password, contact_id } = payload;
 
-const normalizedEmail = typeof email === 'string' ? email.trim() : '';
-const normalizedContactId = contact_id ? String(contact_id).trim() : '';
+    // Normalize inputs - treat empty strings as missing
+    const normalizedEmail = typeof email === 'string' && email.trim() ? email.trim() : undefined;
+    const normalizedContactId = contact_id ? String(contact_id).trim() : undefined;
 
-console.log('DEBUG: Received payload fields:', {
-  hasEmail: !!normalizedEmail,
-  hasContactId: !!normalizedContactId,
-  email: normalizedEmail || 'NOT_PROVIDED',
-  contact_id: normalizedContactId || 'NOT_PROVIDED'
-});
+    console.log('DEBUG: Processing payload:', {
+      hasEmail: !!normalizedEmail,
+      hasContactId: !!normalizedContactId,
+      email: normalizedEmail || 'MISSING',
+      contact_id: normalizedContactId || 'MISSING'
+    });
 
-// Resolve by contact_id first if no usable email was provided
-let finalEmail = normalizedEmail || undefined;
-let finalUserId = user_id || '550e8400-e29b-41d4-a716-446655440000';
+    let finalEmail = normalizedEmail;
+    let finalUserId = user_id || '550e8400-e29b-41d4-a716-446655440000';
 
-if (!finalEmail && normalizedContactId) {
+    // If no email but we have contact_id, resolve it first
+    if (!finalEmail && normalizedContactId) {
+      console.log(`Resolving contact_id ${normalizedContactId} to email...`);
+      
+      const { data: found, error: findErr } = await supabase
+        .from('contacts')
+        .select('email, user_id')
+        .eq('id', normalizedContactId)
+        .maybeSingle();
+
+      if (findErr) {
+        console.error('Error looking up contact by contact_id:', findErr);
+        return new Response(JSON.stringify({ 
+          error: 'Failed to fetch contact by contact_id', 
+          details: findErr.message 
+        }), { 
+          status: 500, 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        });
+      }
+
+      if (!found) {
+        console.error('Contact not found for contact_id:', normalizedContactId);
+        return new Response(JSON.stringify({ 
+          error: 'Contact not found for the provided contact_id', 
+          contact_id: normalizedContactId 
+        }), { 
+          status: 404, 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        });
+      }
+
+      finalEmail = found.email;
+      finalUserId = found.user_id;
+      console.log(`Successfully resolved contact_id ${normalizedContactId} to email: ${finalEmail}`);
+    }
+
+    // Final validation - we must have an email at this point
+    if (!finalEmail) {
+      console.error('No email available after resolution. Payload:', payload);
+      return new Response(JSON.stringify({ 
+        error: 'Either email or valid contact_id is required for contact sync',
+        received_payload: payload 
+      }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
   try {
     const { data: contact, error: contactError } = await supabase
       .from('contacts')
