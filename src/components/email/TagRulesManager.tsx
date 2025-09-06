@@ -61,6 +61,7 @@ export const TagRulesManager = () => {
         .from('tag_rules')
         .select('*')
         .eq('user_id', '550e8400-e29b-41d4-a716-446655440000')
+        .eq('protected', false)
         .order('created_at', { ascending: false });
 
       if (error) throw error;

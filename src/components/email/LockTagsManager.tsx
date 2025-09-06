@@ -6,20 +6,26 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { TagInput } from "@/components/ui/tag-input";
-import { Trash2, Plus, Lock, Unlock } from "lucide-react";
+import { Trash2, Plus, Lock, Unlock, Edit } from "lucide-react";
 import { toast } from "sonner";
 
 interface LockedTag {
   id: string;
   tag: string;
   password: string;
+  isEditing?: boolean;
 }
 
 export const LockTagsManager = () => {
   const [lockedTags, setLockedTags] = useState<LockedTag[]>([]);
   const [isCreating, setIsCreating] = useState(false);
   const [allTags, setAllTags] = useState<string[]>([]);
+  const [editingTag, setEditingTag] = useState<string | null>(null);
   const [newLock, setNewLock] = useState({
+    tags: [] as string[],
+    password: ""
+  });
+  const [editLock, setEditLock] = useState({
     tags: [] as string[],
     password: ""
   });
@@ -40,19 +46,19 @@ export const LockTagsManager = () => {
 
       if (error) throw error;
 
-      // Flatten the tag rules into individual locked tags
-      const flattened: LockedTag[] = [];
+      // Group by rule for editing
+      const ruleGroups: { [key: string]: LockedTag } = {};
       data?.forEach(rule => {
-        rule.add_tags?.forEach((tag: string) => {
-          flattened.push({
-            id: `${rule.id}-${tag}`,
-            tag: tag,
+        if (rule.add_tags && rule.add_tags.length > 0) {
+          ruleGroups[rule.id] = {
+            id: rule.id,
+            tag: rule.add_tags.join(', '),
             password: rule.password || ''
-          });
-        });
+          };
+        }
       });
 
-      setLockedTags(flattened);
+      setLockedTags(Object.values(ruleGroups));
     } catch (error) {
       console.error('Error loading locked tags:', error);
       toast.error('Failed to load locked tags');
@@ -126,13 +132,10 @@ export const LockTagsManager = () => {
     if (!confirm(`Are you sure you want to unlock the tag "${lockedTag.tag}"?`)) return;
 
     try {
-      // Find and delete the tag rule that protects this tag
-      const ruleId = lockedTag.id.split('-')[0];
-      
       const { error } = await supabase
         .from('tag_rules')
         .delete()
-        .eq('id', ruleId);
+        .eq('id', lockedTag.id);
 
       if (error) throw error;
 
@@ -141,6 +144,40 @@ export const LockTagsManager = () => {
     } catch (error) {
       console.error('Error unlocking tag:', error);
       toast.error('Failed to unlock tag');
+    }
+  };
+
+  const startEditing = (lockedTag: LockedTag) => {
+    setEditingTag(lockedTag.id);
+    setEditLock({
+      tags: lockedTag.tag.split(', ').map(t => t.trim()),
+      password: lockedTag.password
+    });
+  };
+
+  const handleUpdateLock = async (ruleId: string) => {
+    if (editLock.tags.length === 0 || !editLock.password) {
+      toast.error('Please select tags and enter a password');
+      return;
+    }
+
+    try {
+      const { error } = await supabase
+        .from('tag_rules')
+        .update({
+          add_tags: editLock.tags,
+          password: editLock.password
+        })
+        .eq('id', ruleId);
+
+      if (error) throw error;
+
+      toast.success('Locked tags updated successfully');
+      setEditingTag(null);
+      loadLockedTags();
+    } catch (error) {
+      console.error('Error updating locked tags:', error);
+      toast.error('Failed to update locked tags');
     }
   };
 
@@ -243,24 +280,62 @@ export const LockTagsManager = () => {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="flex flex-wrap gap-2">
+              <div className="space-y-4">
                 {lockedTags.map((lockedTag) => (
-                  <Badge 
-                    key={lockedTag.id} 
-                    variant="secondary" 
-                    className="flex items-center gap-2 px-3 py-1"
-                  >
-                    <Lock className="h-3 w-3" />
-                    {lockedTag.tag}
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => unlockTag(lockedTag)}
-                      className="h-auto p-0 ml-1 hover:bg-transparent"
-                    >
-                      <Unlock className="h-3 w-3 text-muted-foreground hover:text-destructive" />
-                    </Button>
-                  </Badge>
+                  <div key={lockedTag.id} className="border rounded-lg p-4">
+                    {editingTag === lockedTag.id ? (
+                      <div className="space-y-4">
+                        <div>
+                          <Label>Tags</Label>
+                          <TagInput
+                            value={editLock.tags.join(', ')}
+                            onChange={(value) => setEditLock({ ...editLock, tags: value.split(',').map(t => t.trim()).filter(Boolean) })}
+                            suggestions={allTags}
+                            placeholder="Select tags to lock"
+                          />
+                        </div>
+                        <div>
+                          <Label>Password</Label>
+                          <Input
+                            type="password"
+                            value={editLock.password}
+                            onChange={(e) => setEditLock({ ...editLock, password: e.target.value })}
+                            placeholder="Enter password"
+                          />
+                        </div>
+                        <div className="flex gap-2">
+                          <Button size="sm" onClick={() => handleUpdateLock(lockedTag.id)}>Save</Button>
+                          <Button size="sm" variant="outline" onClick={() => setEditingTag(null)}>Cancel</Button>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <Lock className="h-4 w-4" />
+                          <Badge variant="secondary" className="px-3 py-1">
+                            {lockedTag.tag}
+                          </Badge>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => startEditing(lockedTag)}
+                          >
+                            <Edit className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => unlockTag(lockedTag)}
+                            className="text-destructive hover:text-destructive"
+                          >
+                            <Unlock className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
                 ))}
               </div>
             </CardContent>
