@@ -79,12 +79,13 @@ serve(async (req) => {
     //   "user_id": "optional-user-id"
     // }
 
-    const { email, name, tags = [], action = 'create', user_id, status = 'subscribed' } = payload;
+    const { email, name, tags = [], action = 'create', user_id, status = 'subscribed', password, contact_id } = payload;
 
-    if (!email) {
-      console.error('Missing email in payload:', payload);
+    // Accept either email or contact_id
+    if (!email && !contact_id) {
+      console.error('Missing both email and contact_id in payload:', payload);
       return new Response(JSON.stringify({ 
-        error: 'Email is required for contact sync',
+        error: 'Either email or contact_id is required for contact sync',
         received_payload: payload 
       }), {
         status: 400,
@@ -92,25 +93,130 @@ serve(async (req) => {
       });
     }
 
-    console.log(`Processing contact sync for: ${email}`);
+    let finalEmail = email;
+    let finalUserId = user_id || '550e8400-e29b-41d4-a716-446655440000';
 
-    // Use provided user_id or default to demo user
-    const finalUserId = user_id || '550e8400-e29b-41d4-a716-446655440000';
+    // Resolve contact by ID if provided and email is empty
+    if (contact_id && !email) {
+      const { data: found, error: findErr } = await supabase
+        .from('contacts')
+        .select('email, user_id')
+        .eq('id', contact_id)
+        .maybeSingle();
+
+      if (findErr) {
+        console.error('Error looking up contact by contact_id:', findErr);
+        return new Response(JSON.stringify({ 
+          error: 'Failed to fetch contact by contact_id', details: findErr.message 
+        }), { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+      }
+
+      if (!found) {
+        console.error('Contact not found for contact_id:', contact_id);
+        return new Response(JSON.stringify({ 
+          error: 'Contact not found for the provided contact_id', contact_id 
+        }), { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+      }
+
+      finalEmail = found.email;
+      finalUserId = found.user_id;
+      console.log(`Resolved contact_id ${contact_id} to email ${finalEmail}`);
+    }
+
+    console.log(`Processing contact sync for: ${finalEmail}`);
     
-    // Parse name into first_name and last_name
-    const nameTrimmed = (name || "").trim();
-    const [firstName, ...rest] = nameTrimmed.split(/\s+/);
-    const lastName = rest.join(" ");
+    // Fetch existing contact for merging and name preservation
+    const { data: existingContact } = await supabase
+      .from('contacts')
+      .select('*')
+      .eq('email', finalEmail)
+      .eq('user_id', finalUserId)
+      .maybeSingle();
 
-    // Upsert contact with correct schema
+    // Helpers to normalize and parse tags
+    const splitParts = (s: string) => s.split(/[,;\n]/).map((p) => p.trim()).filter(Boolean);
+    const parseTags = (input: any): string[] => {
+      if (!input) return [];
+      if (Array.isArray(input)) {
+        return Array.from(new Set(input.flatMap((t: any) => (typeof t === 'string' ? splitParts(t) : []) )));
+      }
+      if (typeof input === 'string') return Array.from(new Set(splitParts(input)));
+      return [];
+    };
+
+    const normalize = (t: any) => (typeof t === 'string' ? t.trim() : '');
+    const existingTags = (existingContact?.tags || []).map(normalize).filter(Boolean);
+    const incomingTags = parseTags(tags);
+
+    // Validate password only if trying to add protected tags
+    if (password) {
+      const { data: protectedRules, error: rulesError } = await supabase
+        .from('tag_rules')
+        .select('add_tags, password')
+        .eq('user_id', finalUserId)
+        .eq('protected', true);
+
+      if (!rulesError && protectedRules?.length) {
+        const protectedTags: string[] = [];
+        protectedRules.forEach((rule: any) => {
+          if (rule.add_tags) {
+            rule.add_tags.forEach((tag: string) => {
+              if (incomingTags.includes(tag) && !protectedTags.includes(tag)) {
+                protectedTags.push(tag);
+              }
+            });
+          }
+        });
+
+        if (protectedTags.length > 0) {
+          let passwordValid = false;
+          for (const rule of protectedRules) {
+            if (rule.add_tags && rule.add_tags.some((t: string) => protectedTags.includes(t))) {
+              if (rule.password === password) { passwordValid = true; break; }
+            }
+          }
+          if (!passwordValid) {
+            return new Response(JSON.stringify({ 
+              error: `Invalid password for protected tags: ${protectedTags.join(', ')}`
+            }), { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+          }
+        }
+      }
+    }
+
+    const mergedTags = Array.from(new Set([...existingTags, ...incomingTags]));
+
+    // Name preservation and derivation
+    let first_name: string | null = null;
+    let last_name: string | null = null;
+
+    if (name && name.trim()) {
+      const nameTrimmed = name.trim();
+      const [first, ...rest] = nameTrimmed.split(/\s+/);
+      first_name = first || null;
+      last_name = rest.join(' ') || null;
+    } else if (existingContact && (existingContact.first_name || existingContact.last_name)) {
+      first_name = existingContact.first_name;
+      last_name = existingContact.last_name;
+    } else {
+      const emailPart = finalEmail.split('@')[0];
+      const cleanedName = emailPart.replace(/[._-]/g, ' ').replace(/\d+/g, '').trim();
+      if (cleanedName) {
+        const [first, ...rest] = cleanedName.split(/\s+/);
+        first_name = first ? first.charAt(0).toUpperCase() + first.slice(1).toLowerCase() : null;
+        last_name = rest.length > 0 ? rest.join(' ').toLowerCase().replace(/\b\w/g, (l) => l.toUpperCase()) : null;
+      }
+    }
+
+    // Upsert contact with merged tags
     const { data: contact, error: contactError } = await supabase
       .from('contacts')
       .upsert({
-        email,
+        email: finalEmail,
         user_id: finalUserId,
-        first_name: firstName || null,
-        last_name: lastName || null,
-        tags: Array.isArray(tags) ? tags : [],
+        first_name,
+        last_name,
+        tags: mergedTags,
         status,
         updated_at: new Date().toISOString()
       }, {
@@ -149,7 +255,7 @@ serve(async (req) => {
         // Check if contact matches the rule
         if (ruleConfig.requiredTags && Array.isArray(ruleConfig.requiredTags)) {
           shouldInclude = ruleConfig.requiredTags.some((tag: string) => 
-            tags.includes(tag)
+            mergedTags.includes(typeof tag === 'string' ? tag.trim() : tag)
           );
         }
 
