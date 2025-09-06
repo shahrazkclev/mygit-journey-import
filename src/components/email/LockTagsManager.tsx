@@ -169,7 +169,22 @@ export const LockTagsManager = () => {
           </CardHeader>
           <CardContent className="space-y-4">
             <div>
-              <Label htmlFor="tags-to-lock">Tags to Lock</Label>
+              <div className="flex items-center gap-2 mb-2">
+                <Label htmlFor="tags-to-lock">Tags to Lock</Label>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    const uniqueTags = Array.from(new Set([...newLock.tags, ...allTags]));
+                    setNewLock({ ...newLock, tags: uniqueTags });
+                  }}
+                  className="h-auto py-1 px-2 text-xs"
+                >
+                  <Plus className="h-3 w-3 mr-1" />
+                  Add All
+                </Button>
+              </div>
               <TagInput
                 value={newLock.tags.join(', ')}
                 onChange={(value) => setNewLock({ ...newLock, tags: value.split(',').map(t => t.trim()).filter(Boolean) })}
