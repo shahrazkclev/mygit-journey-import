@@ -122,39 +122,80 @@ serve(async (req) => {
 
     // If no email but we have contact_id, resolve it first
     if (!finalEmail && normalizedContactId) {
-      console.log(`Resolving contact_id ${normalizedContactId} to email...`);
+      const idTrimmed = normalizedContactId.trim();
+      console.log(`Resolving contact_id ${idTrimmed} to email...`);
       
-      const { data: found, error: findErr } = await supabase
-        .from('contacts')
+      // 1) Try resolve from unsubscribed_contacts by original_contact_id
+      const { data: unsubByOrig, error: unsubOrigErr } = await supabase
+        .from('unsubscribed_contacts')
         .select('email, user_id')
-        .eq('id', normalizedContactId)
+        .eq('original_contact_id', idTrimmed)
         .maybeSingle();
 
-      if (findErr) {
-        console.error('Error looking up contact by contact_id:', findErr);
+      if (unsubOrigErr) {
+        console.error('Error looking up unsubscribed contact by original_contact_id:', unsubOrigErr);
         return new Response(JSON.stringify({ 
-          error: 'Failed to fetch contact by contact_id', 
-          details: findErr.message 
+          error: 'Failed to fetch unsubscribed contact by contact_id', 
+          details: unsubOrigErr.message 
         }), { 
           status: 500, 
           headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
         });
       }
 
-      if (!found) {
-        console.error('Contact not found for contact_id:', normalizedContactId);
-        return new Response(JSON.stringify({ 
-          error: 'Contact not found for the provided contact_id', 
-          contact_id: normalizedContactId 
-        }), { 
-          status: 404, 
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
-        });
-      }
+      if (unsubByOrig) {
+        finalEmail = unsubByOrig.email;
+        finalUserId = unsubByOrig.user_id;
+        console.log(`Found in unsubscribed_contacts (original_contact_id): ${idTrimmed} -> ${finalEmail}`);
+      } else {
+        // 2) Maybe the caller passed the unsubscribed_contacts.id instead of the original id
+        const { data: unsubById, error: unsubIdErr } = await supabase
+          .from('unsubscribed_contacts')
+          .select('email, user_id')
+          .eq('id', idTrimmed)
+          .maybeSingle();
+        if (unsubIdErr) {
+          console.error('Error looking up unsubscribed contact by id:', unsubIdErr);
+        }
+        if (unsubById) {
+          finalEmail = unsubById.email;
+          finalUserId = unsubById.user_id;
+          console.log(`Found in unsubscribed_contacts (id): ${idTrimmed} -> ${finalEmail}`);
+        } else {
+          // 3) Fallback: Try resolve from contacts by id
+          const { data: found, error: findErr } = await supabase
+            .from('contacts')
+            .select('email, user_id')
+            .eq('id', idTrimmed)
+            .maybeSingle();
 
-      finalEmail = found.email;
-      finalUserId = found.user_id;
-      console.log(`Successfully resolved contact_id ${normalizedContactId} to email: ${finalEmail}`);
+          if (findErr) {
+            console.error('Error looking up contact by contact_id:', findErr);
+            return new Response(JSON.stringify({ 
+              error: 'Failed to fetch contact by contact_id', 
+              details: findErr.message 
+            }), { 
+              status: 500, 
+              headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+            });
+          }
+
+          if (found) {
+            finalEmail = found.email;
+            finalUserId = found.user_id;
+            console.log(`Found in contacts: ${idTrimmed} -> ${finalEmail}`);
+          } else {
+            console.error('Contact not found in either contacts or unsubscribed_contacts for contact_id:', idTrimmed);
+            return new Response(JSON.stringify({ 
+              error: 'Contact not found for the provided contact_id', 
+              contact_id: idTrimmed 
+            }), { 
+              status: 404, 
+              headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+            });
+          }
+        }
+      }
     }
 
     // Final validation - we must have an email at this point
