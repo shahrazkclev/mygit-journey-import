@@ -137,7 +137,7 @@ serve(async (req) => {
           .from('contacts')
           .select('email, user_id')
           .eq('id', contact_id)
-          .single();
+          .maybeSingle();
           
         if (contactError || !contact) {
           console.error('Contact not found for contact_id:', contact_id);
@@ -164,10 +164,11 @@ serve(async (req) => {
       }
     }
 
-    if (!finalEmail) {
+    // Now check if we have either email or successfully resolved contact_id
+    if (!finalEmail && !contact_id) {
       console.error('Missing email or contact_id in payload:', payload);
       return new Response(JSON.stringify({ 
-        error: 'Email or contact_id is required for contact sync',
+        error: 'Either email or contact_id is required for contact sync',
         received_payload: payload 
       }), {
         status: 400,
