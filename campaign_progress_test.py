@@ -11,7 +11,7 @@ import sys
 from datetime import datetime
 
 # Get backend URL from environment
-BACKEND_URL = "https://micro-edits.preview.emergentagent.com/api"
+BACKEND_URL = "https://unsub-restore-tool.preview.emergentagent.com/api"
 
 def test_campaign_progress_tracking():
     """
