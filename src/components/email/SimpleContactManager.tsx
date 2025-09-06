@@ -161,7 +161,8 @@ export const SimpleContactManager = () => {
         };
       });
 
-      setContacts(uiContacts);
+      const filteredUiContacts = uiContacts.filter(c => !(c.tags || []).some(t => (t || '').trim().toLowerCase() === 'unsub'));
+      setContacts(filteredUiContacts);
       console.log(`✅ Loaded ${uiContacts.length} contacts successfully`);
       
       // Extract all unique tags from DB rows

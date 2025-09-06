@@ -99,7 +99,8 @@ export const ContactManager: React.FC = () => {
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      setContacts(data || []);
+      const cleaned = (data || []).filter((c: any) => !((c.tags || []).some((t: string) => (t || '').trim().toLowerCase() === 'unsub')));
+      setContacts(cleaned);
     } catch (error) {
       console.error('Error loading contacts:', error);
       toast.error('Failed to load contacts');

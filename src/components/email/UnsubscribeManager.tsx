@@ -70,114 +70,32 @@ export const UnsubscribeManager = () => {
 
   const loadUnsubscribeData = async () => {
     try {
-      console.log('🔍 Loading unsubscribe data from Supabase...');
-      
-      // Get current user
-      const { data: { user } } = await supabase.auth.getUser();
-      console.log('👤 Current user:', user?.id);
-      
-      // Query unsubscribes with demo user filter
+      console.log('🔍 Loading unsubscribe data (tag-based)...');
       const { data, error } = await supabase
-        .from('unsubscribes')
-        .select('*')
-        .eq('user_id', '550e8400-e29b-41d4-a716-446655440000');
+        .from('contacts')
+        .select('id, email, first_name, last_name, tags, created_at, updated_at, status')
+        .eq('user_id', '550e8400-e29b-41d4-a716-446655440000')
+        .contains('tags', ['unsub']);
 
-      console.log('📊 Basic query result:', { data, error, count: data?.length });
+      if (error) throw error;
 
-      if (error) {
-        console.error('❌ Supabase error:', error);
-        throw error;
-      }
+      const mapped = (data || []).map((c: any) => ({
+        id: c.id,
+        email: c.email,
+        unsubscribed_at: c.updated_at || c.created_at,
+        reason: undefined,
+        user_id: '550e8400-e29b-41d4-a716-446655440000',
+        contact: {
+          id: c.id,
+          email: c.email,
+          first_name: c.first_name || '',
+          last_name: c.last_name || '',
+          tags: Array.isArray(c.tags) ? c.tags : [],
+        },
+      }));
 
-      // Get contact details from unsubscribed_contacts table and fallback to contacts if needed
-      let enrichedData = data;
-      if (data && data.length > 0) {
-        const emails = data.map(u => u.email);
-
-        // 1) Fetch unsubscribed_contacts for this user (avoid email case-sensitivity issues)
-        const { data: unsubscribedContacts } = await supabase
-          .from('unsubscribed_contacts')
-          .select('email, first_name, last_name, tags')
-          .eq('user_id', '550e8400-e29b-41d4-a716-446655440000');
-
-        // 2) Fetch contacts as a fallback (in case some records existed before backfill)
-        const { data: fallbackContacts } = await supabase
-          .from('contacts')
-          .select('email, first_name, last_name, tags, status, user_id')
-          .in('email', emails)
-          .eq('user_id', '550e8400-e29b-41d4-a716-446655440000');
-
-        console.log('📋 Unsubscribed contacts data:', unsubscribedContacts);
-        console.log('📋 Fallback contacts data:', fallbackContacts);
-
-        const ucMap = new Map<string, any>();
-        unsubscribedContacts?.forEach(c => ucMap.set((c.email || '').toLowerCase(), c));
-        const fbMap = new Map<string, any>();
-        fallbackContacts?.forEach(c => fbMap.set((c.email || '').toLowerCase(), c));
-
-        // Map enriched contact details prioritizing unsubscribed_contacts, then contacts
-        enrichedData = data.map(unsub => {
-          const key = (unsub.email || '').toLowerCase();
-          const uc = ucMap.get(key);
-          const fb = fbMap.get(key);
-          const src = uc || fb;
-          return {
-            ...unsub,
-            contact: src ? {
-              id: src.email,
-              email: src.email,
-              first_name: src.first_name || '',
-              last_name: src.last_name || '',
-              tags: Array.isArray(src.tags) ? src.tags : []
-            } : {
-              id: '',
-              email: unsub.email,
-              first_name: '',
-              last_name: '',
-              tags: []
-            }
-          };
-        });
-      }
-
-      setUnsubscribedUsers(enrichedData);
-      console.log(`✅ Found ${enrichedData.length} unsubscribed users`);
-      return;
-
-      // If no data, it might be due to RLS. Let's try bypassing with service role
-      if (!data || data.length === 0) {
-        console.log('⚠️ No data found - might be RLS policy issue');
-        console.log('💡 You may need to:');
-        console.log('1. Update RLS policy to allow reading unsubscribes');
-        console.log('2. Or ensure user_id matches when creating unsubscribe records');
-        
-        // For now, let's try with user context
-        const { data: userData, error: userError } = await supabase
-          .from('unsubscribes')
-          .select('*')
-          .eq('user_id', user?.id);
-        
-        console.log('📊 User-specific query:', { data: userData, error: userError });
-        
-        // Get contact details for user-specific data
-        let enrichedUserData = userData;
-        if (userData && userData.length > 0) {
-          const emails = userData.map(u => u.email);
-          const { data: contacts } = await supabase
-            .from('contacts')
-            .select('id, email, first_name, last_name, tags')
-            .in('email', emails);
-
-          enrichedUserData = userData.map(unsub => ({
-            ...unsub,
-            contact: contacts?.find(c => c.email === unsub.email) || null
-          }));
-        }
-        
-        setUnsubscribedUsers(enrichedUserData || []);
-        console.log(`✅ Found ${enrichedUserData?.length || 0} unsubscribed users for current user`);
-        return;
-      }
+      setUnsubscribedUsers(mapped);
+      console.log(`✅ Found ${mapped.length} unsubscribed contacts via tag`);
     } catch (error: any) {
       console.error('❌ Error loading unsubscribe data:', error);
       toast.error("Failed to load unsubscribe data: " + error.message);
@@ -238,33 +156,36 @@ export const UnsubscribeManager = () => {
 
   const handleRestoreUser = async (user: UnsubscribedUser) => {
     try {
-      console.log('🔄 Attempting to restore user:', user.email);
-      
-      // Use the new handle_restore_contact function
-      const { data, error } = await supabase.rpc('handle_restore_contact', {
-        p_email: user.email,
-        p_user_id: '550e8400-e29b-41d4-a716-446655440000'
-      });
+      console.log('🔄 Restoring (tag-based) user:', user.email);
 
-      console.log('📊 Restore result:', { data, error });
+      // Remove 'unsub' tag from the contact
+      const { data: contact, error: fetchErr } = await supabase
+        .from('contacts')
+        .select('id, tags')
+        .eq('id', user.id)
+        .maybeSingle();
 
-      if (error) {
-        console.error('❌ Restore error:', error);
-        throw error;
-      }
+      if (fetchErr) throw fetchErr;
 
-      // Reload data to get fresh state
+      const currentTags: string[] = Array.isArray(contact?.tags) ? contact!.tags : [];
+      const newTags = currentTags.filter(t => (t || '').trim().toLowerCase() !== 'unsub');
+
+      const { error: updateErr } = await supabase
+        .from('contacts')
+        .update({ tags: newTags.length ? newTags : null, status: 'subscribed' })
+        .eq('id', user.id);
+
+      if (updateErr) throw updateErr;
+
       await loadUnsubscribeData();
-      
+
       setSelectedUsers(prev => {
         const newSet = new Set(prev);
         newSet.delete(user.id);
         return newSet;
       });
-      
+
       toast.success(`${user.email} has been restored to active subscribers`);
-      
-      // Also trigger a reload of contacts in the parent if possible
       window.dispatchEvent(new CustomEvent('contactsUpdated'));
     } catch (error: any) {
       toast.error("Failed to restore user: " + error.message);
@@ -280,18 +201,24 @@ export const UnsubscribeManager = () => {
 
     try {
       const usersToRestore = unsubscribedUsers.filter(user => selectedUsers.has(user.id));
-      console.log('🔄 Bulk restoring users:', usersToRestore.map(u => u.email));
-      
-      // Use the updated handle_restore_contact function for each user
-      const promises = usersToRestore.map(user => 
-        supabase.rpc('handle_restore_contact', {
-          p_email: user.email,
-          p_user_id: '550e8400-e29b-41d4-a716-446655440000'
-        })
-      );
+      console.log('🔄 Bulk restoring users (tag-based):', usersToRestore.map(u => u.email));
 
-      const results = await Promise.all(promises);
-      const errors = results.filter(result => result.error);
+      const updates = usersToRestore.map(async (user) => {
+        const { data: contact } = await supabase
+          .from('contacts')
+          .select('id, tags')
+          .eq('id', user.id)
+          .maybeSingle();
+        const currentTags: string[] = Array.isArray(contact?.tags) ? contact!.tags : [];
+        const newTags = currentTags.filter(t => (t || '').trim().toLowerCase() !== 'unsub');
+        return supabase
+          .from('contacts')
+          .update({ tags: newTags.length ? newTags : null, status: 'subscribed' })
+          .eq('id', user.id);
+      });
+
+      const results = await Promise.all(updates);
+      const errors = results.filter(r => (r as any).error);
 
       if (errors.length > 0) {
         console.error('❌ Errors restoring contacts:', errors);
@@ -300,8 +227,7 @@ export const UnsubscribeManager = () => {
         toast.success(`${usersToRestore.length} users restored successfully`);
       }
 
-      // Remove from local state immediately
-      setUnsubscribedUsers(prev => prev.filter(user => !selectedUsers.has(user.id)));
+      await loadUnsubscribeData();
       setSelectedUsers(new Set());
     } catch (error: any) {
       toast.error("Failed to restore users: " + error.message);
