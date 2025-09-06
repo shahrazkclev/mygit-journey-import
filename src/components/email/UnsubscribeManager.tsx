@@ -254,7 +254,7 @@ export const UnsubscribeManager = () => {
       const usersToRestore = unsubscribedUsers.filter(user => selectedUsers.has(user.id));
       console.log('🔄 Bulk restoring users:', usersToRestore.map(u => u.email));
       
-      // Use the new handle_restore_contact function for each user
+      // Use the updated handle_restore_contact function for each user
       const promises = usersToRestore.map(user => 
         supabase.rpc('handle_restore_contact', {
           p_email: user.email,
@@ -272,8 +272,8 @@ export const UnsubscribeManager = () => {
         toast.success(`${usersToRestore.length} users restored successfully`);
       }
 
-      // Reload data to get fresh state
-      await loadUnsubscribeData();
+      // Remove from local state immediately
+      setUnsubscribedUsers(prev => prev.filter(user => !selectedUsers.has(user.id)));
       setSelectedUsers(new Set());
     } catch (error: any) {
       toast.error("Failed to restore users: " + error.message);
