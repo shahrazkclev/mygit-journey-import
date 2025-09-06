@@ -91,9 +91,7 @@ export const ContactManager: React.FC = () => {
   const loadContacts = async () => {
     try {
       // First, reapply tag rules for all contacts
-      await supabase.rpc('reapply_tag_rules_for_user', { 
-        p_user_id: DEMO_USER_ID 
-      });
+      await supabase.rpc('reapply_tag_rules_for_user', { p_user_id: DEMO_USER_ID });
 
       const { data, error } = await supabase
         .from('contacts')
