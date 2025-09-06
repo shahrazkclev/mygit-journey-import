@@ -212,19 +212,28 @@ export const UnsubscribeManager = () => {
 
     try {
       const usersToRestore = unsubscribedUsers.filter(user => selectedUsers.has(user.id));
-      console.log('🔄 Bulk restoring users (tag-based):', usersToRestore.map(u => u.email));
+      console.log('🔄 Bulk restoring users by removing "unsub" tag:', usersToRestore.map(u => u.email));
 
       const updates = usersToRestore.map(async (user) => {
+        // Get current tags
         const { data: contact } = await supabase
           .from('contacts')
           .select('id, tags')
           .eq('id', user.id)
           .maybeSingle();
-        const currentTags: string[] = Array.isArray(contact?.tags) ? contact!.tags : [];
-        const newTags = currentTags.filter(t => (t || '').trim().toLowerCase() !== 'unsub');
+
+        if (!contact) return { error: 'Contact not found' };
+
+        // Only remove "unsub" tag, keep everything else
+        const currentTags: string[] = Array.isArray(contact.tags) ? contact.tags : [];
+        const newTags = currentTags.filter(tag => 
+          tag && tag.trim().toLowerCase() !== 'unsub'
+        );
+
+        // Update only the tags field
         return supabase
           .from('contacts')
-          .update({ tags: newTags.length ? newTags : null, status: 'subscribed' })
+          .update({ tags: newTags })
           .eq('id', user.id);
       });
 
@@ -235,7 +244,7 @@ export const UnsubscribeManager = () => {
         console.error('❌ Errors restoring contacts:', errors);
         toast.error(`Failed to restore ${errors.length} users`);
       } else {
-        toast.success(`${usersToRestore.length} users restored successfully`);
+        toast.success(`Removed "unsub" tag from ${usersToRestore.length} users`);
       }
 
       await loadUnsubscribeData();
