@@ -228,7 +228,7 @@ serve(async (req) => {
         // If no clean name can be extracted, just use the email part before @
         first_name = emailPart || finalEmail;
         last_name = null;
-    }
+      }
     }
 
     // Validate password only if trying to add protected tags
@@ -268,6 +268,40 @@ serve(async (req) => {
     }
 
     const mergedTags = Array.from(new Set([...existingTags, ...incomingTags]));
+
+    // Handle subscription status changes
+    if (status === 'unsubscribed') {
+      // Move to unsubscribed_contacts and remove from contacts
+      const { error: unsubError } = await supabase.rpc('handle_unsubscribe', {
+        p_email: finalEmail,
+        p_user_id: finalUserId,
+        p_reason: 'Contact sync - status changed to unsubscribed'
+      });
+
+      if (unsubError) {
+        console.error('Error handling unsubscribe via sync:', unsubError);
+        return new Response(JSON.stringify({ error: 'Failed to unsubscribe contact' }), {
+          status: 500,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+
+      return new Response(JSON.stringify({ 
+        success: true, 
+        message: 'Contact unsubscribed successfully',
+        email: finalEmail
+      }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    // For subscribed status, ensure contact is in contacts table and NOT in unsubscribed_contacts
+    // First remove from unsubscribed_contacts if exists
+    await supabase
+      .from('unsubscribed_contacts')
+      .delete()
+      .eq('email', finalEmail)
+      .eq('user_id', finalUserId);
 
     // Upsert contact with merged tags
     const { data: contact, error: contactError } = await supabase
