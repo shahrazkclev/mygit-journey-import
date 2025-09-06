@@ -125,12 +125,49 @@ serve(async (req) => {
     //   "user_id": "optional-user-id"
     // }
 
-    const { email, name, tags = [], action = 'create', user_id, status = 'subscribed', password } = payload;
+    const { email, name, tags = [], action = 'create', user_id, status = 'subscribed', password, contact_id } = payload;
 
-    if (!email) {
-      console.error('Missing email in payload:', payload);
+    let finalEmail = email;
+    let finalUserId = user_id || '550e8400-e29b-41d4-a716-446655440000';
+
+    // Handle contact_id if provided instead of email
+    if (contact_id && !email) {
+      try {
+        const { data: contact, error: contactError } = await supabase
+          .from('contacts')
+          .select('email, user_id')
+          .eq('id', contact_id)
+          .single();
+          
+        if (contactError || !contact) {
+          console.error('Contact not found for contact_id:', contact_id);
+          return new Response(JSON.stringify({ 
+            error: 'Contact not found for the provided contact_id',
+            contact_id: contact_id 
+          }), {
+            status: 404,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          });
+        }
+        
+        finalEmail = contact.email;
+        finalUserId = contact.user_id;
+      } catch (error: any) {
+        console.error('Error fetching contact:', error);
+        return new Response(JSON.stringify({ 
+          error: 'Failed to fetch contact by contact_id',
+          details: error.message 
+        }), {
+          status: 500,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+    }
+
+    if (!finalEmail) {
+      console.error('Missing email or contact_id in payload:', payload);
       return new Response(JSON.stringify({ 
-        error: 'Email is required for contact sync',
+        error: 'Email or contact_id is required for contact sync',
         received_payload: payload 
       }), {
         status: 400,
@@ -138,23 +175,40 @@ serve(async (req) => {
       });
     }
 
-    console.log(`Processing contact sync for: ${email}`);
+    console.log(`Processing contact sync for: ${finalEmail}`);
 
-    // Use provided user_id or default to demo user
-    const finalUserId = user_id || '550e8400-e29b-41d4-a716-446655440000';
-    
-    // Parse name into first_name and last_name
-    const nameTrimmed = (name || "").trim();
-    const [firstName, ...rest] = nameTrimmed.split(/\s+/);
-    const lastName = rest.join(" ");
-
-    // Get existing contact to merge tags
+    // Get existing contact to merge tags and preserve names
     const { data: existingContact } = await supabase
       .from('contacts')
       .select('*')
-      .eq('email', email)
+      .eq('email', finalEmail)
       .eq('user_id', finalUserId)
-      .single();
+      .maybeSingle();
+
+    // Handle name logic: preserve existing name if new name is null/empty
+    let firstName = null;
+    let lastName = null;
+    
+    if (name && name.trim()) {
+      // New name provided, use it
+      const nameTrimmed = name.trim();
+      const [first, ...rest] = nameTrimmed.split(/\s+/);
+      firstName = first || null;
+      lastName = rest.join(" ") || null;
+    } else if (existingContact && (existingContact.first_name || existingContact.last_name)) {
+      // No new name but existing contact has name, preserve it
+      firstName = existingContact.first_name;
+      lastName = existingContact.last_name;
+    } else if (!name || !name.trim()) {
+      // No name provided and no existing name, extract from email
+      const emailPart = finalEmail.split('@')[0];
+      const cleanedName = emailPart.replace(/[._-]/g, ' ').replace(/\d+/g, '').trim();
+      if (cleanedName) {
+        const [first, ...rest] = cleanedName.split(/\s+/);
+        firstName = first.charAt(0).toUpperCase() + first.slice(1).toLowerCase() || null;
+        lastName = rest.length > 0 ? rest.join(" ").toLowerCase().replace(/\b\w/g, l => l.toUpperCase()) : null;
+      }
+    }
 
 // Normalize and merge tags with existing ones (don't replace)
 const splitParts = (s: string) => s.split(/[,;\n]/).map((p) => p.trim()).filter(Boolean);
@@ -227,10 +281,10 @@ console.log('Tag merge:', { existingTags, rawIncoming: tags, incomingTags, merge
     const { data: contact, error: contactError } = await supabase
       .from('contacts')
       .upsert({
-        email,
+        email: finalEmail,
         user_id: finalUserId,
-        first_name: firstName || null,
-        last_name: lastName || null,
+        first_name: firstName,
+        last_name: lastName,
         tags: mergedTags,
         status,
         updated_at: new Date().toISOString()
