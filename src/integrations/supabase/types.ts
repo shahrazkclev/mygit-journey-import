@@ -474,21 +474,21 @@ export type Database = {
       }
       unsubscribes: {
         Row: {
-          email: string
+          email: string | null
           id: string
           reason: string | null
           unsubscribed_at: string
           user_id: string | null
         }
         Insert: {
-          email: string
+          email?: string | null
           id?: string
           reason?: string | null
           unsubscribed_at?: string
           user_id?: string | null
         }
         Update: {
-          email?: string
+          email?: string | null
           id?: string
           reason?: string | null
           unsubscribed_at?: string
