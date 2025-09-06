@@ -21,6 +21,7 @@ interface TagRule {
   trigger_match_type: string;
   add_tags: string[];
   remove_tags: string[];
+  replace_all_tags: boolean;
   enabled: boolean;
 }
 
@@ -35,7 +36,8 @@ export const TagRulesManager = () => {
     trigger_tags: [] as string[],
     trigger_match_type: "any" as 'any' | 'all',
     add_tags: [] as string[],
-    remove_tags: [] as string[]
+    remove_tags: [] as string[],
+    replace_all_tags: false
   });
   const [editRule, setEditRule] = useState({
     name: "",
@@ -43,7 +45,8 @@ export const TagRulesManager = () => {
     trigger_tags: [] as string[],
     trigger_match_type: "any" as 'any' | 'all',
     add_tags: [] as string[],
-    remove_tags: [] as string[]
+    remove_tags: [] as string[],
+    replace_all_tags: false
   });
 
   useEffect(() => {
@@ -132,13 +135,14 @@ export const TagRulesManager = () => {
           trigger_match_type: newRule.trigger_match_type,
           add_tags: newRule.add_tags,
           remove_tags: newRule.remove_tags,
+          replace_all_tags: newRule.replace_all_tags,
           enabled: true
         });
 
       if (error) throw error;
 
       toast.success('Tag rule created successfully');
-      setNewRule({ name: "", description: "", trigger_tags: [], trigger_match_type: "any", add_tags: [], remove_tags: [] });
+      setNewRule({ name: "", description: "", trigger_tags: [], trigger_match_type: "any", add_tags: [], remove_tags: [], replace_all_tags: false });
       setIsCreating(false);
       loadRules();
     } catch (error) {
@@ -163,7 +167,8 @@ export const TagRulesManager = () => {
           trigger_tags: editRule.trigger_tags,
           trigger_match_type: editRule.trigger_match_type,
           add_tags: editRule.add_tags,
-          remove_tags: editRule.remove_tags
+          remove_tags: editRule.remove_tags,
+          replace_all_tags: editRule.replace_all_tags
         })
         .eq('id', ruleId);
 
@@ -186,7 +191,8 @@ export const TagRulesManager = () => {
       trigger_tags: rule.trigger_tags || [rule.trigger_tag].filter(Boolean),
       trigger_match_type: (rule.trigger_match_type as 'any' | 'all') || 'any',
       add_tags: rule.add_tags || [],
-      remove_tags: rule.remove_tags || []
+      remove_tags: rule.remove_tags || [],
+      replace_all_tags: rule.replace_all_tags || false
     });
   };
 
@@ -319,6 +325,19 @@ export const TagRulesManager = () => {
                 placeholder="e.g., interested-in-discount, prospect"
               />
             </div>
+            <div className="flex items-center justify-between">
+              <div className="space-y-0.5">
+                <Label htmlFor="replace-all-tags">Replace All Tags</Label>
+                <p className="text-xs text-muted-foreground">
+                  When enabled, replaces ALL existing tags with only the "Tags to Add". Otherwise, adds/removes specific tags.
+                </p>
+              </div>
+              <Switch
+                id="replace-all-tags"
+                checked={newRule.replace_all_tags}
+                onCheckedChange={(checked) => setNewRule({ ...newRule, replace_all_tags: checked })}
+              />
+            </div>
           </CardContent>
           <CardFooter className="flex gap-2">
             <Button onClick={handleCreateRule}>Create Rule</Button>
@@ -435,6 +454,19 @@ export const TagRulesManager = () => {
                         onChange={(value) => setEditRule({ ...editRule, remove_tags: value.split(',').map(t => t.trim()).filter(Boolean) })}
                         suggestions={allTags}
                         placeholder="e.g., interested-in-discount, prospect"
+                      />
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <div className="space-y-0.5">
+                        <Label htmlFor="edit-replace-all-tags">Replace All Tags</Label>
+                        <p className="text-xs text-muted-foreground">
+                          When enabled, replaces ALL existing tags with only the "Tags to Add"
+                        </p>
+                      </div>
+                      <Switch
+                        id="edit-replace-all-tags"
+                        checked={editRule.replace_all_tags}
+                        onCheckedChange={(checked) => setEditRule({ ...editRule, replace_all_tags: checked })}
                       />
                     </div>
                     <div className="flex gap-2">
