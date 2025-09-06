@@ -36,10 +36,25 @@ serve(async (req) => {
         }
 
         try {
-          // Use the handle_unsubscribe function which properly handles the unsubscribe process
+          // First get the email for this contact ID
+          const { data: contact, error: contactError } = await supabase
+            .from('contacts')
+            .select('email')
+            .eq('id', user_id)
+            .single();
+          
+          if (contactError || !contact) {
+            console.error('Contact not found for user_id:', user_id, contactError);
+            results.push({ user_id, success: false, error: 'Contact not found' });
+            continue;
+          }
+          
+          console.log(`Found email ${contact.email} for contact ID: ${user_id}`);
+          
+          // Use the handle_unsubscribe function with the email
           const { error: handleError } = await supabase.rpc('handle_unsubscribe', {
-            p_email: null, // Not using email anymore
-            p_user_id: user_id,
+            p_email: contact.email,
+            p_user_id: '550e8400-e29b-41d4-a716-446655440000',
             p_reason: reason
           });
 
