@@ -235,6 +235,9 @@ export const UnsubscribeManager = () => {
       });
       
       toast.success(`${user.email} has been restored to active subscribers`);
+      
+      // Also trigger a reload of contacts in the parent if possible
+      window.dispatchEvent(new CustomEvent('contactsUpdated'));
     } catch (error: any) {
       toast.error("Failed to restore user: " + error.message);
       console.error('Error restoring user:', error);

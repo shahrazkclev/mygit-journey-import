@@ -97,6 +97,17 @@ export const SimpleContactManager = () => {
     loadAllTags();
   }, []);
 
+  // Listen for contact updates from other components
+  useEffect(() => {
+    const handleContactsUpdated = () => {
+      console.log('🔄 Reloading contacts due to external update...');
+      loadContacts();
+    };
+
+    window.addEventListener('contactsUpdated', handleContactsUpdated);
+    return () => window.removeEventListener('contactsUpdated', handleContactsUpdated);
+  }, []);
+
   useEffect(() => {
     filterContacts();
   }, [contacts, searchTerm, tagFilter]);
@@ -113,12 +124,15 @@ export const SimpleContactManager = () => {
 
   const loadContacts = async () => {
     try {
+      console.log('🔄 Loading contacts from database...');
       const { data, error } = await supabase
         .from('contacts')
         .select('id, user_id, created_at, updated_at, email, first_name, last_name, status, tags')
         .eq('user_id', DEMO_USER_ID)
         .neq('status', 'unsubscribed') // Filter out unsubscribed contacts
         .order('created_at', { ascending: false });
+
+      console.log('📊 Contacts query result:', { data, error, count: data?.length });
 
       if (error) {
         console.error('Error loading contacts:', error);
@@ -146,6 +160,7 @@ export const SimpleContactManager = () => {
       });
 
       setContacts(uiContacts);
+      console.log(`✅ Loaded ${uiContacts.length} contacts successfully`);
       
       // Extract all unique tags from DB rows
       const tags = new Set<string>();
