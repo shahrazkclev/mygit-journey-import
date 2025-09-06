@@ -138,7 +138,7 @@ serve(async (req) => {
       // First try resolve from unsubscribed_contacts by original_contact_id
       const { data: unsubFound, error: unsubErr } = await supabase
         .from('unsubscribed_contacts')
-        .select('email, user_id, original_contact_id')
+        .select('email, user_id')
         .eq('original_contact_id', normalizedContactId)
         .maybeSingle();
 
@@ -156,7 +156,7 @@ serve(async (req) => {
       if (unsubFound) {
         finalEmail = unsubFound.email;
         finalUserId = unsubFound.user_id;
-        console.log(`Resolved unsubscribed contact_id ${normalizedContactId} to email: ${finalEmail}`);
+        console.log(`Found in unsubscribed_contacts: contact_id ${normalizedContactId} -> email: ${finalEmail}`);
       } else {
         // Fallback: Try resolve from contacts by id
         const { data: found, error: findErr } = await supabase
@@ -176,8 +176,12 @@ serve(async (req) => {
           });
         }
 
-        if (!found) {
-          console.error('Contact not found for contact_id in contacts or unsubscribed_contacts:', normalizedContactId);
+        if (found) {
+          finalEmail = found.email;
+          finalUserId = found.user_id;
+          console.log(`Found in contacts: contact_id ${normalizedContactId} -> email: ${finalEmail}`);
+        } else {
+          console.error('Contact not found in either contacts or unsubscribed_contacts for contact_id:', normalizedContactId);
           return new Response(JSON.stringify({ 
             error: 'Contact not found for the provided contact_id', 
             contact_id: normalizedContactId 
@@ -186,10 +190,6 @@ serve(async (req) => {
             headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
           });
         }
-
-        finalEmail = found.email;
-        finalUserId = found.user_id;
-        console.log(`Successfully resolved contact_id ${normalizedContactId} to email: ${finalEmail}`);
       }
     }
 
