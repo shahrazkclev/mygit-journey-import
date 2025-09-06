@@ -29,21 +29,21 @@ export const TagRulesManager = () => {
   const [isCreating, setIsCreating] = useState(false);
   const [editingRule, setEditingRule] = useState<string | null>(null);
   const [allTags, setAllTags] = useState<string[]>([]);
-  const [newRule, setNewRule] = useState({
+    const [newRule, setNewRule] = useState({
     name: "",
     description: "",
-    trigger_tags: "",
+    trigger_tags: [] as string[],
     trigger_match_type: "any" as 'any' | 'all',
-    add_tags: "",
-    remove_tags: ""
+    add_tags: [] as string[],
+    remove_tags: [] as string[]
   });
   const [editRule, setEditRule] = useState({
     name: "",
     description: "",
-    trigger_tags: "",
+    trigger_tags: [] as string[],
     trigger_match_type: "any" as 'any' | 'all',
-    add_tags: "",
-    remove_tags: ""
+    add_tags: [] as string[],
+    remove_tags: [] as string[]
   });
 
   useEffect(() => {
@@ -115,34 +115,30 @@ export const TagRulesManager = () => {
   };
 
   const handleCreateRule = async () => {
-    if (!newRule.name || !newRule.trigger_tags) {
+    if (!newRule.name || newRule.trigger_tags.length === 0) {
       toast.error('Please fill in the rule name and trigger tags');
       return;
     }
 
     try {
-      const triggerTagsArray = newRule.trigger_tags.split(',').map(t => t.trim()).filter(t => t);
-      const addTagsArray = newRule.add_tags ? newRule.add_tags.split(',').map(t => t.trim()).filter(t => t) : [];
-      const removeTagsArray = newRule.remove_tags ? newRule.remove_tags.split(',').map(t => t.trim()).filter(t => t) : [];
-      
       const { error } = await supabase
         .from('tag_rules')
         .insert({
           user_id: '550e8400-e29b-41d4-a716-446655440000',
           name: newRule.name,
           description: newRule.description,
-          trigger_tag: triggerTagsArray[0] || '', // Legacy field
-          trigger_tags: triggerTagsArray,
+          trigger_tag: newRule.trigger_tags[0] || '', // Legacy field
+          trigger_tags: newRule.trigger_tags,
           trigger_match_type: newRule.trigger_match_type,
-          add_tags: addTagsArray,
-          remove_tags: removeTagsArray,
+          add_tags: newRule.add_tags,
+          remove_tags: newRule.remove_tags,
           enabled: true
         });
 
       if (error) throw error;
 
       toast.success('Tag rule created successfully');
-      setNewRule({ name: "", description: "", trigger_tags: "", trigger_match_type: "any", add_tags: "", remove_tags: "" });
+      setNewRule({ name: "", description: "", trigger_tags: [], trigger_match_type: "any", add_tags: [], remove_tags: [] });
       setIsCreating(false);
       loadRules();
     } catch (error) {
@@ -152,26 +148,22 @@ export const TagRulesManager = () => {
   };
 
   const handleUpdateRule = async (ruleId: string) => {
-    if (!editRule.name || !editRule.trigger_tags) {
+    if (!editRule.name || editRule.trigger_tags.length === 0) {
       toast.error('Please fill in the rule name and trigger tags');
       return;
     }
 
     try {
-      const triggerTagsArray = editRule.trigger_tags.split(',').map(t => t.trim()).filter(t => t);
-      const addTagsArray = editRule.add_tags ? editRule.add_tags.split(',').map(t => t.trim()).filter(t => t) : [];
-      const removeTagsArray = editRule.remove_tags ? editRule.remove_tags.split(',').map(t => t.trim()).filter(t => t) : [];
-      
       const { error } = await supabase
         .from('tag_rules')
         .update({
           name: editRule.name,
           description: editRule.description,
-          trigger_tag: triggerTagsArray[0] || '', // Legacy field
-          trigger_tags: triggerTagsArray,
+          trigger_tag: editRule.trigger_tags[0] || '', // Legacy field
+          trigger_tags: editRule.trigger_tags,
           trigger_match_type: editRule.trigger_match_type,
-          add_tags: addTagsArray,
-          remove_tags: removeTagsArray
+          add_tags: editRule.add_tags,
+          remove_tags: editRule.remove_tags
         })
         .eq('id', ruleId);
 
@@ -191,10 +183,10 @@ export const TagRulesManager = () => {
     setEditRule({
       name: rule.name,
       description: rule.description || "",
-      trigger_tags: (rule.trigger_tags || [rule.trigger_tag]).filter(Boolean).join(', '),
+      trigger_tags: rule.trigger_tags || [rule.trigger_tag].filter(Boolean),
       trigger_match_type: (rule.trigger_match_type as 'any' | 'all') || 'any',
-      add_tags: rule.add_tags.join(', '),
-      remove_tags: rule.remove_tags.join(', ')
+      add_tags: rule.add_tags || [],
+      remove_tags: rule.remove_tags || []
     });
   };
 
@@ -211,7 +203,7 @@ export const TagRulesManager = () => {
         rule.id === ruleId ? { ...rule, enabled } : rule
       ));
       
-      toast.success(`Rule ${enabled ? 'enabled' : 'disabled'}`);
+      toast.success(`Rule ${enabled ? 'enabled' : 'disabled'}. Tag rules will be reapplied to all contacts automatically.`);
     } catch (error) {
       console.error('Error updating rule:', error);
       toast.error('Failed to update rule');
@@ -282,8 +274,8 @@ export const TagRulesManager = () => {
             <div>
               <Label htmlFor="trigger-tags">Trigger Tags</Label>
               <TagInput
-                value={newRule.trigger_tags}
-                onChange={(value) => setNewRule({ ...newRule, trigger_tags: value })}
+                value={newRule.trigger_tags.join(', ')}
+                onChange={(value) => setNewRule({ ...newRule, trigger_tags: value.split(',').map(t => t.trim()).filter(Boolean) })}
                 suggestions={allTags}
                 placeholder="e.g., bought-product-x, premium-customer"
               />
@@ -312,8 +304,8 @@ export const TagRulesManager = () => {
             <div>
               <Label htmlFor="add-tags">Tags to Add</Label>
               <TagInput
-                value={newRule.add_tags}
-                onChange={(value) => setNewRule({ ...newRule, add_tags: value })}
+                value={newRule.add_tags.join(', ')}
+                onChange={(value) => setNewRule({ ...newRule, add_tags: value.split(',').map(t => t.trim()).filter(Boolean) })}
                 suggestions={allTags}
                 placeholder="e.g., customer, premium"
               />
@@ -321,8 +313,8 @@ export const TagRulesManager = () => {
             <div>
               <Label htmlFor="remove-tags">Tags to Remove</Label>
               <TagInput
-                value={newRule.remove_tags}
-                onChange={(value) => setNewRule({ ...newRule, remove_tags: value })}
+                value={newRule.remove_tags.join(', ')}
+                onChange={(value) => setNewRule({ ...newRule, remove_tags: value.split(',').map(t => t.trim()).filter(Boolean) })}
                 suggestions={allTags}
                 placeholder="e.g., interested-in-discount, prospect"
               />
@@ -406,8 +398,8 @@ export const TagRulesManager = () => {
                     <div>
                       <Label htmlFor="edit-trigger-tags">Trigger Tags</Label>
                       <TagInput
-                        value={editRule.trigger_tags}
-                        onChange={(value) => setEditRule({ ...editRule, trigger_tags: value })}
+                        value={editRule.trigger_tags.join(', ')}
+                        onChange={(value) => setEditRule({ ...editRule, trigger_tags: value.split(',').map(t => t.trim()).filter(Boolean) })}
                         suggestions={allTags}
                         placeholder="e.g., bought-product-x, premium-customer"
                       />
@@ -430,8 +422,8 @@ export const TagRulesManager = () => {
                     <div>
                       <Label htmlFor="edit-add-tags">Tags to Add</Label>
                       <TagInput
-                        value={editRule.add_tags}
-                        onChange={(value) => setEditRule({ ...editRule, add_tags: value })}
+                        value={editRule.add_tags.join(', ')}
+                        onChange={(value) => setEditRule({ ...editRule, add_tags: value.split(',').map(t => t.trim()).filter(Boolean) })}
                         suggestions={allTags}
                         placeholder="e.g., customer, premium"
                       />
@@ -439,8 +431,8 @@ export const TagRulesManager = () => {
                     <div>
                       <Label htmlFor="edit-remove-tags">Tags to Remove</Label>
                       <TagInput
-                        value={editRule.remove_tags}
-                        onChange={(value) => setEditRule({ ...editRule, remove_tags: value })}
+                        value={editRule.remove_tags.join(', ')}
+                        onChange={(value) => setEditRule({ ...editRule, remove_tags: value.split(',').map(t => t.trim()).filter(Boolean) })}
                         suggestions={allTags}
                         placeholder="e.g., interested-in-discount, prospect"
                       />
