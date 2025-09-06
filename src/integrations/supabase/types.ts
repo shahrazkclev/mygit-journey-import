@@ -560,6 +560,10 @@ export type Database = {
         Args: { p_user_id: string }
         Returns: undefined
       }
+      reapply_tag_rules_to_unsubscribed_contacts: {
+        Args: { p_user_id: string }
+        Returns: undefined
+      }
     }
     Enums: {
       [_ in never]: never
