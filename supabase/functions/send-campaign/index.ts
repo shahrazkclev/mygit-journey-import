@@ -223,10 +223,11 @@ async function processSends(supabase: SupabaseClient, campaign: any, contacts: C
           sender_sequence_number: currentSenderSequence
         });
         
-        // Personalize HTML content by replacing {{name}} and {{email}} placeholders
+        // Personalize HTML content by replacing {{name}}, {{email}}, and {{contact_id}} placeholders
         const contactName = contact.first_name || contact.email.split('@')[0] || 'Friend';
         let personalizedHtml = campaign.html_content.replace(/\{\{name\}\}/g, contactName);
         personalizedHtml = personalizedHtml.replace(/\{\{email\}\}/g, contact.email);
+        personalizedHtml = personalizedHtml.replace(/\{\{contact_id\}\}/g, contact.id);
         
         // Send email with personalized content
         if (campaign.webhook_url) {
