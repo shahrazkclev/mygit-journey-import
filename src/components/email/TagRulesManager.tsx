@@ -122,6 +122,8 @@ export const TagRulesManager = () => {
 
     try {
       const triggerTagsArray = newRule.trigger_tags.split(',').map(t => t.trim()).filter(t => t);
+      const addTagsArray = newRule.add_tags ? newRule.add_tags.split(',').map(t => t.trim()).filter(t => t) : [];
+      const removeTagsArray = newRule.remove_tags ? newRule.remove_tags.split(',').map(t => t.trim()).filter(t => t) : [];
       
       const { error } = await supabase
         .from('tag_rules')
@@ -132,8 +134,8 @@ export const TagRulesManager = () => {
           trigger_tag: triggerTagsArray[0] || '', // Legacy field
           trigger_tags: triggerTagsArray,
           trigger_match_type: newRule.trigger_match_type,
-          add_tags: newRule.add_tags ? newRule.add_tags.split(',').map(t => t.trim()).filter(t => t) : [],
-          remove_tags: newRule.remove_tags ? newRule.remove_tags.split(',').map(t => t.trim()).filter(t => t) : [],
+          add_tags: addTagsArray,
+          remove_tags: removeTagsArray,
           enabled: true
         });
 
@@ -157,6 +159,8 @@ export const TagRulesManager = () => {
 
     try {
       const triggerTagsArray = editRule.trigger_tags.split(',').map(t => t.trim()).filter(t => t);
+      const addTagsArray = editRule.add_tags ? editRule.add_tags.split(',').map(t => t.trim()).filter(t => t) : [];
+      const removeTagsArray = editRule.remove_tags ? editRule.remove_tags.split(',').map(t => t.trim()).filter(t => t) : [];
       
       const { error } = await supabase
         .from('tag_rules')
@@ -166,8 +170,8 @@ export const TagRulesManager = () => {
           trigger_tag: triggerTagsArray[0] || '', // Legacy field
           trigger_tags: triggerTagsArray,
           trigger_match_type: editRule.trigger_match_type,
-          add_tags: editRule.add_tags ? editRule.add_tags.split(',').map(t => t.trim()).filter(t => t) : [],
-          remove_tags: editRule.remove_tags ? editRule.remove_tags.split(',').map(t => t.trim()).filter(t => t) : []
+          add_tags: addTagsArray,
+          remove_tags: removeTagsArray
         })
         .eq('id', ruleId);
 

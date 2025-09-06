@@ -99,17 +99,22 @@ export const UnsubscribeManager = () => {
           .in('email', emails)
           .eq('user_id', '550e8400-e29b-41d4-a716-446655440000');
 
+        console.log('Unsubscribed contacts data:', unsubscribedContacts);
+
         // Map unsubscribed contacts to unsubscribes
-        enrichedData = data.map(unsub => ({
-          ...unsub,
-          contact: unsubscribedContacts?.find(c => c.email === unsub.email) || { 
-            id: '', 
-            email: unsub.email, 
-            first_name: '', 
-            last_name: '', 
-            tags: [] 
-          }
-        }));
+        enrichedData = data.map(unsub => {
+          const contact = unsubscribedContacts?.find(c => c.email === unsub.email);
+          return {
+            ...unsub,
+            contact: contact || { 
+              id: '', 
+              email: unsub.email, 
+              first_name: '', 
+              last_name: '', 
+              tags: [] 
+            }
+          };
+        });
       }
 
       setUnsubscribedUsers(enrichedData);

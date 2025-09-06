@@ -537,6 +537,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      apply_tag_rules_pure: {
+        Args: { p_tags: string[]; p_user_id: string }
+        Returns: string[]
+      }
       generate_unsubscribe_token: {
         Args: { p_campaign_id?: string; p_email: string; p_user_id?: string }
         Returns: string
@@ -547,6 +551,10 @@ export type Database = {
       }
       handle_unsubscribe: {
         Args: { p_email: string; p_reason?: string; p_user_id?: string }
+        Returns: undefined
+      }
+      reapply_tag_rules_for_user: {
+        Args: { p_user_id: string }
         Returns: undefined
       }
     }
