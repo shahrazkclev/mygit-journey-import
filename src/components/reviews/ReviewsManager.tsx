@@ -241,9 +241,6 @@ export const ReviewsManager = () => {
     ));
   };
 
-export const ReviewsManager = () => {
-  const [activeTab, setActiveTab] = useState("pending");
-
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
@@ -271,6 +268,11 @@ export const ReviewsManager = () => {
               >
                 <Clock className="h-4 w-4" />
                 <span className="hidden sm:inline">Pending</span>
+                {stats.pending_count > 0 && (
+                  <Badge variant="secondary" className="ml-1 h-5 min-w-[20px] px-1 text-xs">
+                    {stats.pending_count}
+                  </Badge>
+                )}
               </TabsTrigger>
               
               <TabsTrigger 
@@ -279,6 +281,11 @@ export const ReviewsManager = () => {
               >
                 <Star className="h-4 w-4" />
                 <span className="hidden sm:inline">Published</span>
+                {stats.approved_count > 0 && (
+                  <Badge variant="secondary" className="ml-1 h-5 min-w-[20px] px-1 text-xs">
+                    {stats.approved_count}
+                  </Badge>
+                )}
               </TabsTrigger>
               
               <TabsTrigger 
@@ -302,49 +309,263 @@ export const ReviewsManager = () => {
           {/* Tab Contents */}
           <TabsContent value="pending" className="space-y-0">
             <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Clock className="h-5 w-5" />
-                  Pending Review Requests
-                </CardTitle>
-                <CardDescription>
-                  Review and manage incoming review submissions
-                </CardDescription>
+              <CardHeader className="flex flex-row items-center justify-between">
+                <div>
+                  <CardTitle className="flex items-center gap-2">
+                    <Clock className="h-5 w-5" />
+                    Pending Review Requests
+                  </CardTitle>
+                  <CardDescription>
+                    Review and manage incoming review submissions
+                  </CardDescription>
+                </div>
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={() => fetchReviews('pending')}
+                  disabled={loading}
+                >
+                  {loading ? <RefreshCw className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
+                  Refresh
+                </Button>
               </CardHeader>
               <CardContent>
-                <div className="text-center py-12">
-                  <FileText className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-                  <h3 className="text-lg font-semibold mb-2">No pending reviews</h3>
-                  <p className="text-muted-foreground mb-4">
-                    Review submissions will appear here for your approval
-                  </p>
-                  <Button variant="outline">
-                    Refresh
-                  </Button>
-                </div>
+                {loading ? (
+                  <div className="text-center py-12">
+                    <RefreshCw className="h-8 w-8 mx-auto animate-spin text-muted-foreground mb-4" />
+                    <p className="text-muted-foreground">Loading reviews...</p>
+                  </div>
+                ) : reviews.length === 0 ? (
+                  <div className="text-center py-12">
+                    <FileText className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+                    <h3 className="text-lg font-semibold mb-2">No pending reviews</h3>
+                    <p className="text-muted-foreground">
+                      Review submissions will appear here for your approval
+                    </p>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {reviews.map((review) => (
+                      <div key={review.id} className="border rounded-lg p-4 space-y-3">
+                        <div className="flex items-start justify-between">
+                          <div className="flex items-center gap-3">
+                            <img 
+                              src={review.user_avatar} 
+                              alt="User avatar"
+                              className="w-10 h-10 rounded-full object-cover"
+                            />
+                            <div>
+                              <div className="font-medium">{review.user_instagram_handle}</div>
+                              <div className="text-sm text-muted-foreground">{review.user_email}</div>
+                              <div className="text-xs text-muted-foreground">
+                                {formatDate(review.submitted_at)}
+                              </div>
+                            </div>
+                          </div>
+                          <Badge className={getStatusColor(review.status)}>
+                            {review.status}
+                          </Badge>
+                        </div>
+                        
+                        <div className="flex items-center gap-1">
+                          {renderStars(review.rating)}
+                          <span className="ml-2 text-sm font-medium">{review.rating}/5</span>
+                        </div>
+                        
+                        <p className="text-sm text-gray-700">{review.description}</p>
+                        
+                        {review.media_url && (
+                          <div className="mt-2">
+                            {review.media_type === 'video' ? (
+                              <video 
+                                src={review.media_url} 
+                                className="max-w-xs rounded-lg"
+                                controls
+                                muted
+                              />
+                            ) : (
+                              <img 
+                                src={review.media_url} 
+                                alt="Review media"
+                                className="max-w-xs rounded-lg"
+                              />
+                            )}
+                          </div>
+                        )}
+                        
+                        <div className="flex items-center gap-2 pt-2">
+                          <Button
+                            size="sm"
+                            onClick={() => updateReview(review.id, { status: 'approved', is_active: true })}
+                            className="bg-green-600 hover:bg-green-700"
+                          >
+                            <Check className="h-4 w-4 mr-1" />
+                            Approve
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => updateReview(review.id, { status: 'rejected' })}
+                            className="border-red-200 text-red-600 hover:bg-red-50"
+                          >
+                            <X className="h-4 w-4 mr-1" />
+                            Reject
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => {
+                              setSelectedReview(review);
+                              setAdminNotes(review.admin_notes || '');
+                              setEditDialogOpen(true);
+                            }}
+                          >
+                            <Edit className="h-4 w-4 mr-1" />
+                            Edit
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => deleteReview(review.id)}
+                            className="border-red-200 text-red-600 hover:bg-red-50"
+                          >
+                            <Trash2 className="h-4 w-4 mr-1" />
+                            Delete
+                          </Button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </CardContent>
             </Card>
           </TabsContent>
 
           <TabsContent value="published" className="space-y-0">
             <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Star className="h-5 w-5" />
-                  Published Reviews
-                </CardTitle>
-                <CardDescription>
-                  Manage your approved and published reviews
-                </CardDescription>
+              <CardHeader className="flex flex-row items-center justify-between">
+                <div>
+                  <CardTitle className="flex items-center gap-2">
+                    <Star className="h-5 w-5" />
+                    Published Reviews
+                  </CardTitle>
+                  <CardDescription>
+                    Manage your approved and published reviews
+                  </CardDescription>
+                </div>
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={() => fetchReviews('approved')}
+                  disabled={loading}
+                >
+                  {loading ? <RefreshCw className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
+                  Refresh
+                </Button>
               </CardHeader>
               <CardContent>
-                <div className="text-center py-12">
-                  <Star className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-                  <h3 className="text-lg font-semibold mb-2">No published reviews</h3>
-                  <p className="text-muted-foreground">
-                    Approved reviews will be displayed here
-                  </p>
-                </div>
+                {loading ? (
+                  <div className="text-center py-12">
+                    <RefreshCw className="h-8 w-8 mx-auto animate-spin text-muted-foreground mb-4" />
+                    <p className="text-muted-foreground">Loading reviews...</p>
+                  </div>
+                ) : reviews.length === 0 ? (
+                  <div className="text-center py-12">
+                    <Star className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+                    <h3 className="text-lg font-semibold mb-2">No published reviews</h3>
+                    <p className="text-muted-foreground">
+                      Approved reviews will be displayed here
+                    </p>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {reviews.map((review) => (
+                      <div key={review.id} className="border rounded-lg p-4 space-y-3">
+                        <div className="flex items-start justify-between">
+                          <div className="flex items-center gap-3">
+                            <img 
+                              src={review.user_avatar} 
+                              alt="User avatar"
+                              className="w-10 h-10 rounded-full object-cover"
+                            />
+                            <div>
+                              <div className="font-medium">{review.user_instagram_handle}</div>
+                              <div className="text-sm text-muted-foreground">{review.user_email}</div>
+                              <div className="text-xs text-muted-foreground">
+                                Published: {review.reviewed_at ? formatDate(review.reviewed_at) : 'N/A'}
+                              </div>
+                            </div>
+                          </div>
+                          <div className="text-right">
+                            <Badge className={getStatusColor(review.status)}>
+                              {review.status}
+                            </Badge>
+                            {review.is_active && (
+                              <div className="text-xs text-green-600 mt-1">Active</div>
+                            )}
+                          </div>
+                        </div>
+                        
+                        <div className="flex items-center gap-1">
+                          {renderStars(review.rating)}
+                          <span className="ml-2 text-sm font-medium">{review.rating}/5</span>
+                        </div>
+                        
+                        <p className="text-sm text-gray-700">{review.description}</p>
+                        
+                        {review.media_url && (
+                          <div className="mt-2">
+                            {review.media_type === 'video' ? (
+                              <video 
+                                src={review.media_url} 
+                                className="max-w-xs rounded-lg"
+                                controls
+                                muted
+                              />
+                            ) : (
+                              <img 
+                                src={review.media_url} 
+                                alt="Review media"
+                                className="max-w-xs rounded-lg"
+                              />
+                            )}
+                          </div>
+                        )}
+                        
+                        <div className="flex items-center gap-2 pt-2">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => updateReview(review.id, { is_active: !review.is_active })}
+                          >
+                            {review.is_active ? 'Deactivate' : 'Activate'}
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => {
+                              setSelectedReview(review);
+                              setAdminNotes(review.admin_notes || '');
+                              setEditDialogOpen(true);
+                            }}
+                          >
+                            <Edit className="h-4 w-4 mr-1" />
+                            Edit
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => deleteReview(review.id)}
+                            className="border-red-200 text-red-600 hover:bg-red-50"
+                          >
+                            <Trash2 className="h-4 w-4 mr-1" />
+                            Delete
+                          </Button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </CardContent>
             </Card>
           </TabsContent>
@@ -363,16 +584,34 @@ export const ReviewsManager = () => {
               <CardContent>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <div className="bg-muted/50 p-4 rounded-lg text-center">
-                    <div className="text-2xl font-bold">0</div>
+                    <div className="text-2xl font-bold">{stats.total_submissions}</div>
                     <div className="text-sm text-muted-foreground">Total Submissions</div>
                   </div>
                   <div className="bg-muted/50 p-4 rounded-lg text-center">
-                    <div className="text-2xl font-bold">0</div>
+                    <div className="text-2xl font-bold">{stats.total_published}</div>
                     <div className="text-sm text-muted-foreground">Published Reviews</div>
                   </div>
                   <div className="bg-muted/50 p-4 rounded-lg text-center">
-                    <div className="text-2xl font-bold">0.0</div>
+                    <div className="text-2xl font-bold">{stats.average_rating}</div>
                     <div className="text-sm text-muted-foreground">Average Rating</div>
+                  </div>
+                </div>
+                
+                <div className="mt-6">
+                  <h4 className="font-semibold mb-4">Status Breakdown</h4>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div className="bg-yellow-50 p-4 rounded-lg text-center">
+                      <div className="text-xl font-bold text-yellow-600">{stats.pending_count}</div>
+                      <div className="text-sm text-yellow-700">Pending</div>
+                    </div>
+                    <div className="bg-green-50 p-4 rounded-lg text-center">
+                      <div className="text-xl font-bold text-green-600">{stats.approved_count}</div>
+                      <div className="text-sm text-green-700">Approved</div>
+                    </div>
+                    <div className="bg-red-50 p-4 rounded-lg text-center">
+                      <div className="text-xl font-bold text-red-600">{stats.rejected_count}</div>
+                      <div className="text-sm text-red-700">Rejected</div>
+                    </div>
                   </div>
                 </div>
               </CardContent>
@@ -399,7 +638,7 @@ export const ReviewsManager = () => {
                       <code className="bg-background px-2 py-1 rounded text-sm flex-1">
                         {window.location.origin}/submitreview
                       </code>
-                      <Button variant="outline" size="sm">
+                      <Button variant="outline" size="sm" onClick={copySubmissionLink}>
                         Copy Link
                       </Button>
                     </div>
@@ -408,30 +647,71 @@ export const ReviewsManager = () => {
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <label className="text-sm font-medium">Link Expiry (hours)</label>
-                    <input 
+                    <Label htmlFor="link-expiry">Link Expiry (hours)</Label>
+                    <Input 
+                      id="link-expiry"
                       type="number" 
-                      className="w-full px-3 py-2 border rounded-md" 
-                      placeholder="24" 
+                      value={settings.link_expiry_hours}
+                      onChange={(e) => setSettings({...settings, link_expiry_hours: parseInt(e.target.value) || 24})}
                     />
                   </div>
                   <div className="space-y-2">
-                    <label className="text-sm font-medium">Max submissions per email</label>
-                    <input 
+                    <Label htmlFor="max-submissions">Max submissions per email</Label>
+                    <Input 
+                      id="max-submissions"
                       type="number" 
-                      className="w-full px-3 py-2 border rounded-md" 
-                      placeholder="1" 
+                      value={settings.max_submissions_per_email}
+                      onChange={(e) => setSettings({...settings, max_submissions_per_email: parseInt(e.target.value) || 1})}
                     />
                   </div>
                 </div>
 
                 <div className="pt-4">
-                  <Button>Save Settings</Button>
+                  <Button onClick={saveSettings}>Save Settings</Button>
                 </div>
               </CardContent>
             </Card>
           </TabsContent>
         </Tabs>
+
+        {/* Edit Review Dialog */}
+        <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <DialogTitle>Edit Review</DialogTitle>
+              <DialogDescription>
+                Update review details and add admin notes
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4">
+              <div>
+                <Label htmlFor="admin-notes">Admin Notes</Label>
+                <Textarea
+                  id="admin-notes"
+                  value={adminNotes}
+                  onChange={(e) => setAdminNotes(e.target.value)}
+                  placeholder="Add internal notes about this review..."
+                  className="mt-1"
+                />
+              </div>
+              <div className="flex gap-2">
+                <Button
+                  onClick={() => {
+                    if (selectedReview) {
+                      updateReview(selectedReview.id, { admin_notes: adminNotes });
+                    }
+                    setEditDialogOpen(false);
+                  }}
+                >
+                  Save Changes
+                </Button>
+                <Button variant="outline" onClick={() => setEditDialogOpen(false)}>
+                  Cancel
+                </Button>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
       </div>
     </div>
   );
