@@ -220,6 +220,182 @@ async def resume_campaign(campaign_id: str, background_tasks: BackgroundTasks):
     background_tasks.add_task(send_campaign_background, campaign_id)
     return {"message": "Campaign resumed"}
 
+# Review Management Endpoints
+@api_router.get("/reviews", response_model=List[Review])
+async def get_reviews(status: Optional[str] = None, limit: int = 100):
+    """Get all reviews with optional status filter"""
+    try:
+        query = {}
+        if status:
+            query["status"] = status
+        
+        reviews = await db.reviews.find(query).sort("submitted_at", -1).limit(limit).to_list(limit)
+        return [Review(**review) for review in reviews]
+    except Exception as e:
+        logging.error(f"Error fetching reviews: {e}")
+        raise HTTPException(status_code=500, detail="Failed to fetch reviews")
+
+@api_router.get("/reviews/{review_id}", response_model=Review)
+async def get_review(review_id: str):
+    """Get a specific review by ID"""
+    try:
+        review_doc = await db.reviews.find_one({"id": review_id})
+        if not review_doc:
+            raise HTTPException(status_code=404, detail="Review not found")
+        return Review(**review_doc)
+    except HTTPException:
+        raise
+    except Exception as e:
+        logging.error(f"Error fetching review {review_id}: {e}")
+        raise HTTPException(status_code=500, detail="Failed to fetch review")
+
+@api_router.put("/reviews/{review_id}", response_model=Review)
+async def update_review(review_id: str, update_data: ReviewUpdate):
+    """Update review status and other fields"""
+    try:
+        # Get existing review
+        existing_review = await db.reviews.find_one({"id": review_id})
+        if not existing_review:
+            raise HTTPException(status_code=404, detail="Review not found")
+        
+        # Prepare update data
+        update_dict = {k: v for k, v in update_data.dict().items() if v is not None}
+        
+        # Add review timestamp and reviewer info if status is being changed
+        if "status" in update_dict and update_dict["status"] != existing_review.get("status"):
+            update_dict["reviewed_at"] = datetime.utcnow()
+            update_dict["reviewed_by"] = "admin"  # In a real app, get this from JWT token
+        
+        # Update the review
+        await db.reviews.update_one(
+            {"id": review_id},
+            {"$set": update_dict}
+        )
+        
+        # Return updated review
+        updated_review = await db.reviews.find_one({"id": review_id})
+        return Review(**updated_review)
+    
+    except HTTPException:
+        raise
+    except Exception as e:
+        logging.error(f"Error updating review {review_id}: {e}")
+        raise HTTPException(status_code=500, detail="Failed to update review")
+
+@api_router.delete("/reviews/{review_id}")
+async def delete_review(review_id: str):
+    """Permanently delete a review"""
+    try:
+        result = await db.reviews.delete_one({"id": review_id})
+        if result.deleted_count == 0:
+            raise HTTPException(status_code=404, detail="Review not found")
+        return {"message": "Review deleted successfully"}
+    except HTTPException:
+        raise
+    except Exception as e:
+        logging.error(f"Error deleting review {review_id}: {e}")
+        raise HTTPException(status_code=500, detail="Failed to delete review")
+
+@api_router.get("/reviews/stats/overview")
+async def get_review_stats():
+    """Get review statistics for analytics"""
+    try:
+        # Count reviews by status
+        pipeline = [
+            {"$group": {
+                "_id": "$status", 
+                "count": {"$sum": 1}
+            }}
+        ]
+        status_counts = await db.reviews.aggregate(pipeline).to_list(None)
+        
+        # Calculate average rating
+        avg_pipeline = [
+            {"$match": {"status": "approved"}},
+            {"$group": {
+                "_id": None,
+                "average_rating": {"$avg": "$rating"},
+                "total_published": {"$sum": 1}
+            }}
+        ]
+        avg_result = await db.reviews.aggregate(avg_pipeline).to_list(None)
+        
+        # Format response
+        stats = {
+            "total_submissions": sum(item["count"] for item in status_counts),
+            "pending_count": next((item["count"] for item in status_counts if item["_id"] == "pending"), 0),
+            "approved_count": next((item["count"] for item in status_counts if item["_id"] == "approved"), 0),
+            "rejected_count": next((item["count"] for item in status_counts if item["_id"] == "rejected"), 0),
+            "average_rating": round(avg_result[0]["average_rating"], 1) if avg_result else 0.0,
+            "total_published": avg_result[0]["total_published"] if avg_result else 0
+        }
+        
+        return stats
+    except Exception as e:
+        logging.error(f"Error fetching review stats: {e}")
+        raise HTTPException(status_code=500, detail="Failed to fetch review statistics")
+
+@api_router.get("/reviews/settings", response_model=ReviewSettings)
+async def get_review_settings():
+    """Get review submission settings"""
+    try:
+        settings_doc = await db.review_settings.find_one({"_id": "default"})
+        if not settings_doc:
+            # Return default settings
+            default_settings = ReviewSettings()
+            await db.review_settings.insert_one({
+                "_id": "default",
+                **default_settings.dict()
+            })
+            return default_settings
+        
+        return ReviewSettings(**{k: v for k, v in settings_doc.items() if k != "_id"})
+    except Exception as e:
+        logging.error(f"Error fetching review settings: {e}")
+        raise HTTPException(status_code=500, detail="Failed to fetch review settings")
+
+@api_router.put("/reviews/settings", response_model=ReviewSettings)
+async def update_review_settings(settings: ReviewSettings):
+    """Update review submission settings"""
+    try:
+        await db.review_settings.update_one(
+            {"_id": "default"},
+            {"$set": settings.dict()},
+            upsert=True
+        )
+        return settings
+    except Exception as e:
+        logging.error(f"Error updating review settings: {e}")
+        raise HTTPException(status_code=500, detail="Failed to update review settings")
+
+@api_router.post("/reviews/check-submission")
+async def check_submission_eligibility(email: str):
+    """Check if an email can submit a review based on current settings"""
+    try:
+        # Get settings
+        settings = await get_review_settings()
+        
+        # Count existing submissions from this email
+        submission_count = await db.reviews.count_documents({"user_email": email})
+        
+        # Check if they've exceeded the limit
+        if submission_count >= settings.max_submissions_per_email:
+            return {
+                "eligible": False,
+                "reason": f"Maximum {settings.max_submissions_per_email} submission(s) per email address",
+                "submissions_used": submission_count,
+                "max_submissions": settings.max_submissions_per_email
+            }
+        
+        return {
+            "eligible": True,
+            "submissions_used": submission_count,
+            "max_submissions": settings.max_submissions_per_email
+        }
+    except Exception as e:
+        logging.error(f"Error checking submission eligibility: {e}")
+        raise HTTPException(status_code=500, detail="Failed to check submission eligibility")
+
 # Webhook endpoint for receiving contact data
 @api_router.post("/webhook/contacts")
 async def webhook_contacts(payload: WebhookPayload):
