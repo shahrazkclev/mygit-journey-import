@@ -1,8 +1,245 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Star, Settings, FileText, Clock, Users, Shield } from "lucide-react";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { useToast } from "@/hooks/use-toast";
+import { Star, Settings, FileText, Clock, Users, Shield, Eye, Check, X, Trash2, Edit, RefreshCw } from "lucide-react";
+
+interface Review {
+  id: string;
+  user_email: string;
+  media_url: string;
+  media_type: string;
+  rating: number;
+  description: string;
+  user_avatar: string;
+  user_instagram_handle: string;
+  status: string;
+  is_active: boolean;
+  submitted_at: string;
+  reviewed_at?: string;
+  admin_notes?: string;
+}
+
+interface ReviewStats {
+  total_submissions: number;
+  pending_count: number;
+  approved_count: number;
+  rejected_count: number;
+  average_rating: number;
+  total_published: number;
+}
+
+interface ReviewSettings {
+  link_expiry_hours: number;
+  max_submissions_per_email: number;
+  auto_approve: boolean;
+  require_media: boolean;
+  require_instagram: boolean;
+}
+
+export const ReviewsManager = () => {
+  const [activeTab, setActiveTab] = useState("pending");
+  const [reviews, setReviews] = useState<Review[]>([]);
+  const [stats, setStats] = useState<ReviewStats>({
+    total_submissions: 0,
+    pending_count: 0,
+    approved_count: 0,
+    rejected_count: 0,
+    average_rating: 0,
+    total_published: 0
+  });
+  const [settings, setSettings] = useState<ReviewSettings>({
+    link_expiry_hours: 24,
+    max_submissions_per_email: 1,
+    auto_approve: false,
+    require_media: true,
+    require_instagram: true
+  });
+  const [loading, setLoading] = useState(false);
+  const [selectedReview, setSelectedReview] = useState<Review | null>(null);
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [adminNotes, setAdminNotes] = useState("");
+  const { toast } = useToast();
+
+  const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8001/api';
+
+  // Fetch reviews based on active tab
+  const fetchReviews = async (status?: string) => {
+    setLoading(true);
+    try {
+      const statusParam = status ? `?status=${status}` : '';
+      const response = await fetch(`${API_BASE}/reviews${statusParam}`);
+      if (!response.ok) throw new Error('Failed to fetch reviews');
+      const data = await response.json();
+      setReviews(data);
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to fetch reviews",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Fetch review statistics
+  const fetchStats = async () => {
+    try {
+      const response = await fetch(`${API_BASE}/reviews/stats/overview`);
+      if (!response.ok) throw new Error('Failed to fetch stats');
+      const data = await response.json();
+      setStats(data);
+    } catch (error) {
+      console.error('Failed to fetch stats:', error);
+    }
+  };
+
+  // Fetch settings
+  const fetchSettings = async () => {
+    try {
+      const response = await fetch(`${API_BASE}/reviews/settings`);
+      if (!response.ok) throw new Error('Failed to fetch settings');
+      const data = await response.json();
+      setSettings(data);
+    } catch (error) {
+      console.error('Failed to fetch settings:', error);
+    }
+  };
+
+  // Update review status
+  const updateReview = async (reviewId: string, updates: Partial<Review>) => {
+    try {
+      const response = await fetch(`${API_BASE}/reviews/${reviewId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(updates)
+      });
+      if (!response.ok) throw new Error('Failed to update review');
+      
+      toast({
+        title: "Success",
+        description: "Review updated successfully",
+      });
+      
+      fetchReviews(activeTab === 'pending' ? 'pending' : activeTab === 'published' ? 'approved' : undefined);
+      fetchStats();
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to update review",
+        variant: "destructive",
+      });
+    }
+  };
+
+  // Delete review
+  const deleteReview = async (reviewId: string) => {
+    if (!confirm('Are you sure you want to permanently delete this review?')) return;
+    
+    try {
+      const response = await fetch(`${API_BASE}/reviews/${reviewId}`, {
+        method: 'DELETE'
+      });
+      if (!response.ok) throw new Error('Failed to delete review');
+      
+      toast({
+        title: "Success",
+        description: "Review deleted successfully",
+      });
+      
+      fetchReviews(activeTab === 'pending' ? 'pending' : activeTab === 'published' ? 'approved' : undefined);
+      fetchStats();
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to delete review",
+        variant: "destructive",
+      });
+    }
+  };
+
+  // Save settings
+  const saveSettings = async () => {
+    try {
+      const response = await fetch(`${API_BASE}/reviews/settings`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(settings)
+      });
+      if (!response.ok) throw new Error('Failed to save settings');
+      
+      toast({
+        title: "Success",
+        description: "Settings saved successfully",
+      });
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to save settings",
+        variant: "destructive",
+      });
+    }
+  };
+
+  // Copy submission link
+  const copySubmissionLink = () => {
+    const link = `${window.location.origin}/submitreview`;
+    navigator.clipboard.writeText(link);
+    toast({
+      title: "Copied!",
+      description: "Submission link copied to clipboard",
+    });
+  };
+
+  useEffect(() => {
+    fetchStats();
+    fetchSettings();
+  }, []);
+
+  useEffect(() => {
+    if (activeTab === 'pending') {
+      fetchReviews('pending');
+    } else if (activeTab === 'published') {
+      fetchReviews('approved');
+    } else if (activeTab === 'analytics') {
+      fetchStats();
+    }
+  }, [activeTab]);
+
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  };
+
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'pending': return 'bg-yellow-100 text-yellow-800';
+      case 'approved': return 'bg-green-100 text-green-800';
+      case 'rejected': return 'bg-red-100 text-red-800';
+      default: return 'bg-gray-100 text-gray-800';
+    }
+  };
+
+  const renderStars = (rating: number) => {
+    return Array.from({ length: 5 }, (_, i) => (
+      <Star
+        key={i}
+        className={`h-4 w-4 ${i < rating ? 'fill-yellow-400 text-yellow-400' : 'text-gray-300'}`}
+      />
+    ));
+  };
 
 export const ReviewsManager = () => {
   const [activeTab, setActiveTab] = useState("pending");
