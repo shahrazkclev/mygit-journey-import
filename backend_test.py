@@ -1745,10 +1745,23 @@ def run_all_tests():
 if __name__ == "__main__":
     import sys
     
-    # Check if we should run only campaign progress test
-    if len(sys.argv) > 1 and sys.argv[1] == "--campaign-progress":
-        success = run_campaign_progress_test()
+    # Check command line arguments for specific test suites
+    if len(sys.argv) > 1:
+        if sys.argv[1] == "--campaign-progress":
+            success = run_campaign_progress_test()
+        elif sys.argv[1] == "--review-management":
+            success = run_review_management_tests()
+        elif sys.argv[1] == "--all":
+            success = run_all_tests()
+        else:
+            print("Usage: python backend_test.py [--campaign-progress|--review-management|--all]")
+            print("  --campaign-progress: Run only campaign progress tracking tests")
+            print("  --review-management: Run only review management API tests")
+            print("  --all: Run all backend tests")
+            print("  (no args): Run review management tests by default")
+            sys.exit(1)
     else:
-        success = run_all_tests()
+        # Default to running review management tests as requested
+        success = run_review_management_tests()
     
     sys.exit(0 if success else 1)
