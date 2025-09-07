@@ -67,7 +67,7 @@ export const ReviewsManager = () => {
   const [adminNotes, setAdminNotes] = useState("");
   const { toast } = useToast();
 
-  const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8001/api';
+  const API_BASE = import.meta.env.VITE_API_URL || `${window.location.protocol}//${window.location.host}/api`;
 
   // Fetch reviews based on active tab
   const fetchReviews = async (status?: string) => {
