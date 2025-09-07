@@ -1132,17 +1132,9 @@ def test_get_reviews():
 
 def test_create_and_get_specific_review():
     """Test creating a review and getting it by ID"""
-    global jwt_token
     print("\n🔍 Testing Create Review and GET Specific Review...")
     try:
-        if not jwt_token:
-            print("❌ No JWT token available for testing")
-            return False, None
-        
-        headers = {
-            "Authorization": f"Bearer {jwt_token}",
-            "Content-Type": "application/json"
-        }
+        headers = get_headers()
         
         # First, we need to manually insert a review into the database for testing
         # Since there's no POST /api/reviews endpoint, we'll simulate this by directly inserting
@@ -1173,17 +1165,9 @@ def test_create_and_get_specific_review():
 
 def test_update_review():
     """Test PUT /api/reviews/{review_id} endpoint"""
-    global jwt_token
     print("\n🔍 Testing Update Review Endpoint...")
     try:
-        if not jwt_token:
-            print("❌ No JWT token available for testing")
-            return False
-        
-        headers = {
-            "Authorization": f"Bearer {jwt_token}",
-            "Content-Type": "application/json"
-        }
+        headers = get_headers()
         
         # Use a test review ID
         test_review_id = str(uuid.uuid4())
@@ -1220,17 +1204,9 @@ def test_update_review():
 
 def test_delete_review():
     """Test DELETE /api/reviews/{review_id} endpoint"""
-    global jwt_token
     print("\n🔍 Testing Delete Review Endpoint...")
     try:
-        if not jwt_token:
-            print("❌ No JWT token available for testing")
-            return False
-        
-        headers = {
-            "Authorization": f"Bearer {jwt_token}",
-            "Content-Type": "application/json"
-        }
+        headers = get_headers()
         
         # Use a test review ID
         test_review_id = str(uuid.uuid4())
@@ -1262,17 +1238,9 @@ def test_delete_review():
 
 def test_review_stats():
     """Test GET /api/reviews/stats/overview endpoint"""
-    global jwt_token
     print("\n🔍 Testing Review Statistics Endpoint...")
     try:
-        if not jwt_token:
-            print("❌ No JWT token available for testing")
-            return False
-        
-        headers = {
-            "Authorization": f"Bearer {jwt_token}",
-            "Content-Type": "application/json"
-        }
+        headers = get_headers()
         
         response = requests.get(f"{BACKEND_URL}/reviews/stats/overview", headers=headers)
         print(f"Status Code: {response.status_code}")
@@ -1315,17 +1283,9 @@ def test_review_stats():
 
 def test_review_settings():
     """Test GET and PUT /api/reviews/settings endpoints"""
-    global jwt_token
     print("\n🔍 Testing Review Settings Endpoints...")
     try:
-        if not jwt_token:
-            print("❌ No JWT token available for testing")
-            return False
-        
-        headers = {
-            "Authorization": f"Bearer {jwt_token}",
-            "Content-Type": "application/json"
-        }
+        headers = get_headers()
         
         # Test GET settings
         response = requests.get(f"{BACKEND_URL}/reviews/settings", headers=headers)
@@ -1390,17 +1350,9 @@ def test_review_settings():
 
 def test_check_submission_eligibility():
     """Test POST /api/reviews/check-submission endpoint"""
-    global jwt_token
     print("\n🔍 Testing Check Submission Eligibility Endpoint...")
     try:
-        if not jwt_token:
-            print("❌ No JWT token available for testing")
-            return False
-        
-        headers = {
-            "Authorization": f"Bearer {jwt_token}",
-            "Content-Type": "application/json"
-        }
+        headers = get_headers()
         
         # Test with a new email (should be eligible)
         test_email = f"newuser_{uuid.uuid4().hex[:8]}@example.com"
@@ -1459,17 +1411,9 @@ def test_check_submission_eligibility():
 
 def test_review_crud_operations():
     """Test complete CRUD operations for reviews"""
-    global jwt_token
     print("\n🔍 Testing Complete Review CRUD Operations...")
     try:
-        if not jwt_token:
-            print("❌ No JWT token available for testing")
-            return False
-        
-        headers = {
-            "Authorization": f"Bearer {jwt_token}",
-            "Content-Type": "application/json"
-        }
+        headers = get_headers()
         
         # Since we don't have a POST endpoint to create reviews, we'll test the existing endpoints
         # with proper error handling for non-existent data
@@ -1517,17 +1461,9 @@ def test_review_crud_operations():
 
 def test_review_data_validation():
     """Test data validation for review endpoints"""
-    global jwt_token
     print("\n🔍 Testing Review Data Validation...")
     try:
-        if not jwt_token:
-            print("❌ No JWT token available for testing")
-            return False
-        
-        headers = {
-            "Authorization": f"Bearer {jwt_token}",
-            "Content-Type": "application/json"
-        }
+        headers = get_headers()
         
         # Test invalid status filter
         response = requests.get(f"{BACKEND_URL}/reviews?status=invalid_status", headers=headers)
