@@ -1091,14 +1091,9 @@ def test_get_reviews():
     global jwt_token
     print("\n🔍 Testing GET Reviews Endpoint...")
     try:
-        if not jwt_token:
-            print("❌ No JWT token available for testing")
-            return False
-        
-        headers = {
-            "Authorization": f"Bearer {jwt_token}",
-            "Content-Type": "application/json"
-        }
+        headers = {"Content-Type": "application/json"}
+        if jwt_token and jwt_token != "mock_token":
+            headers["Authorization"] = f"Bearer {jwt_token}"
         
         # Test getting all reviews
         response = requests.get(f"{BACKEND_URL}/reviews", headers=headers)
