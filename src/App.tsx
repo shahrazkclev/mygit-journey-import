@@ -7,6 +7,7 @@ import { AuthProvider } from "./contexts/AuthContext";
 import { ProtectedRoute } from "./components/auth/ProtectedRoute";
 import Index from "./pages/Index";
 import OptIn from "./pages/OptIn";
+import SubmitReview from "./pages/SubmitReview";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
