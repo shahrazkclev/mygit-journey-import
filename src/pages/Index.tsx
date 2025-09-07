@@ -1,7 +1,7 @@
-import { EmailCampaignApp } from "@/components/EmailCampaignApp";
+import { MainLayout } from "@/components/MainLayout";
 
 const Index = () => {
-  return <EmailCampaignApp />;
+  return <MainLayout />;
 };
 
 export default Index;
