@@ -1071,6 +1071,14 @@ def test_campaign_progress_tracking_system():
         return False
 
 # Review Management Tests
+def get_headers():
+    """Get headers for API requests, with or without authentication"""
+    global jwt_token
+    headers = {"Content-Type": "application/json"}
+    if jwt_token and jwt_token != "mock_token":
+        headers["Authorization"] = f"Bearer {jwt_token}"
+    return headers
+
 def create_sample_review():
     """Create a sample review for testing"""
     return {
