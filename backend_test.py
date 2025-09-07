@@ -11,7 +11,7 @@ from datetime import datetime
 import uuid
 
 # Get backend URL from environment
-BACKEND_URL = "https://unsub-restore-tool.preview.emergentagent.com/api"
+BACKEND_URL = "https://review-portal-8.preview.emergentagent.com/api"
 
 def test_health_check():
     """Test the basic health check endpoint"""

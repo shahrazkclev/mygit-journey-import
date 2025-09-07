@@ -9,7 +9,7 @@ import json
 import time
 import sys
 
-BACKEND_URL = "https://unsub-restore-tool.preview.emergentagent.com/api"
+BACKEND_URL = "https://review-portal-8.preview.emergentagent.com/api"
 
 def test_campaign_with_slower_processing():
     """Test campaign with no webhook to get slower processing"""

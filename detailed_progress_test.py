@@ -9,7 +9,7 @@ import json
 import time
 import sys
 
-BACKEND_URL = "https://unsub-restore-tool.preview.emergentagent.com/api"
+BACKEND_URL = "https://review-portal-8.preview.emergentagent.com/api"
 
 def test_current_recipient_updates():
     """Test current_recipient field updates in detail"""
