@@ -235,67 +235,6 @@ async def get_reviews(status: Optional[str] = None, limit: int = 100):
         logging.error(f"Error fetching reviews: {e}")
         raise HTTPException(status_code=500, detail="Failed to fetch reviews")
 
-@api_router.get("/reviews/{review_id}", response_model=Review)
-async def get_review(review_id: str):
-    """Get a specific review by ID"""
-    try:
-        review_doc = await db.reviews.find_one({"id": review_id})
-        if not review_doc:
-            raise HTTPException(status_code=404, detail="Review not found")
-        return Review(**review_doc)
-    except HTTPException:
-        raise
-    except Exception as e:
-        logging.error(f"Error fetching review {review_id}: {e}")
-        raise HTTPException(status_code=500, detail="Failed to fetch review")
-
-@api_router.put("/reviews/{review_id}", response_model=Review)
-async def update_review(review_id: str, update_data: ReviewUpdate):
-    """Update review status and other fields"""
-    try:
-        # Get existing review
-        existing_review = await db.reviews.find_one({"id": review_id})
-        if not existing_review:
-            raise HTTPException(status_code=404, detail="Review not found")
-        
-        # Prepare update data
-        update_dict = {k: v for k, v in update_data.dict().items() if v is not None}
-        
-        # Add review timestamp and reviewer info if status is being changed
-        if "status" in update_dict and update_dict["status"] != existing_review.get("status"):
-            update_dict["reviewed_at"] = datetime.utcnow()
-            update_dict["reviewed_by"] = "admin"  # In a real app, get this from JWT token
-        
-        # Update the review
-        await db.reviews.update_one(
-            {"id": review_id},
-            {"$set": update_dict}
-        )
-        
-        # Return updated review
-        updated_review = await db.reviews.find_one({"id": review_id})
-        return Review(**updated_review)
-    
-    except HTTPException:
-        raise
-    except Exception as e:
-        logging.error(f"Error updating review {review_id}: {e}")
-        raise HTTPException(status_code=500, detail="Failed to update review")
-
-@api_router.delete("/reviews/{review_id}")
-async def delete_review(review_id: str):
-    """Permanently delete a review"""
-    try:
-        result = await db.reviews.delete_one({"id": review_id})
-        if result.deleted_count == 0:
-            raise HTTPException(status_code=404, detail="Review not found")
-        return {"message": "Review deleted successfully"}
-    except HTTPException:
-        raise
-    except Exception as e:
-        logging.error(f"Error deleting review {review_id}: {e}")
-        raise HTTPException(status_code=500, detail="Failed to delete review")
-
 @api_router.get("/reviews/stats/overview")
 async def get_review_stats():
     """Get review statistics for analytics"""
@@ -395,6 +334,67 @@ async def check_submission_eligibility(email: str):
     except Exception as e:
         logging.error(f"Error checking submission eligibility: {e}")
         raise HTTPException(status_code=500, detail="Failed to check submission eligibility")
+
+@api_router.get("/reviews/{review_id}", response_model=Review)
+async def get_review(review_id: str):
+    """Get a specific review by ID"""
+    try:
+        review_doc = await db.reviews.find_one({"id": review_id})
+        if not review_doc:
+            raise HTTPException(status_code=404, detail="Review not found")
+        return Review(**review_doc)
+    except HTTPException:
+        raise
+    except Exception as e:
+        logging.error(f"Error fetching review {review_id}: {e}")
+        raise HTTPException(status_code=500, detail="Failed to fetch review")
+
+@api_router.put("/reviews/{review_id}", response_model=Review)
+async def update_review(review_id: str, update_data: ReviewUpdate):
+    """Update review status and other fields"""
+    try:
+        # Get existing review
+        existing_review = await db.reviews.find_one({"id": review_id})
+        if not existing_review:
+            raise HTTPException(status_code=404, detail="Review not found")
+        
+        # Prepare update data
+        update_dict = {k: v for k, v in update_data.dict().items() if v is not None}
+        
+        # Add review timestamp and reviewer info if status is being changed
+        if "status" in update_dict and update_dict["status"] != existing_review.get("status"):
+            update_dict["reviewed_at"] = datetime.utcnow()
+            update_dict["reviewed_by"] = "admin"  # In a real app, get this from JWT token
+        
+        # Update the review
+        await db.reviews.update_one(
+            {"id": review_id},
+            {"$set": update_dict}
+        )
+        
+        # Return updated review
+        updated_review = await db.reviews.find_one({"id": review_id})
+        return Review(**updated_review)
+    
+    except HTTPException:
+        raise
+    except Exception as e:
+        logging.error(f"Error updating review {review_id}: {e}")
+        raise HTTPException(status_code=500, detail="Failed to update review")
+
+@api_router.delete("/reviews/{review_id}")
+async def delete_review(review_id: str):
+    """Permanently delete a review"""
+    try:
+        result = await db.reviews.delete_one({"id": review_id})
+        if result.deleted_count == 0:
+            raise HTTPException(status_code=404, detail="Review not found")
+        return {"message": "Review deleted successfully"}
+    except HTTPException:
+        raise
+    except Exception as e:
+        logging.error(f"Error deleting review {review_id}: {e}")
+        raise HTTPException(status_code=500, detail="Failed to delete review")
 
 # Webhook endpoint for receiving contact data
 @api_router.post("/webhook/contacts")
