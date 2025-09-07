@@ -102,6 +102,37 @@ class CampaignProgress(BaseModel):
     current_recipient: Optional[str] = None
     error_message: Optional[str] = None
 
+# Review Management Models
+class Review(BaseModel):
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    user_email: str
+    media_url: str
+    media_type: str  # 'image' or 'video'
+    rating: float
+    description: str
+    user_avatar: str
+    user_instagram_handle: str
+    status: str = "pending"  # pending, approved, rejected
+    is_active: bool = False
+    sort_order: int = 0
+    submitted_at: datetime = Field(default_factory=datetime.utcnow)
+    reviewed_at: Optional[datetime] = None
+    reviewed_by: Optional[str] = None
+    admin_notes: Optional[str] = None
+
+class ReviewUpdate(BaseModel):
+    status: Optional[str] = None
+    is_active: Optional[bool] = None
+    sort_order: Optional[int] = None
+    admin_notes: Optional[str] = None
+
+class ReviewSettings(BaseModel):
+    link_expiry_hours: int = 24
+    max_submissions_per_email: int = 1
+    auto_approve: bool = False
+    require_media: bool = True
+    require_instagram: bool = True
+
 # Add your routes to the router instead of directly to app
 @api_router.get("/")
 async def root():
