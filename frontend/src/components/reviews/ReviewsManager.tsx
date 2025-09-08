@@ -10,6 +10,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
+import { useGlobalTheme } from "@/hooks/useGlobalTheme";
 import { supabase } from "@/integrations/supabase/client";
 import { 
   Star, 
@@ -98,6 +99,7 @@ export const ReviewsManager = () => {
     tags: [] as string[]
   });
   const { toast } = useToast();
+  const { themeColors } = useGlobalTheme();
 
   // Demo user ID for contacts
   const DEMO_USER_ID = "550e8400-e29b-41d4-a716-446655440000";
@@ -429,14 +431,31 @@ export const ReviewsManager = () => {
         <div className="container mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-xl md:text-2xl lg:text-3xl font-bold text-foreground">
+              <h1 
+                className="text-xl md:text-2xl lg:text-3xl font-bold"
+                style={{ 
+                  color: `hsl(${themeColors.primary})`,
+                  background: `linear-gradient(135deg, hsl(${themeColors.primary}), hsl(${themeColors.accent}))`,
+                  WebkitBackgroundClip: 'text',
+                  WebkitTextFillColor: 'transparent',
+                  backgroundClip: 'text'
+                }}
+              >
                 Reviews Manager
               </h1>
               <p className="text-xs md:text-sm lg:text-base text-muted-foreground">
                 Manage customer reviews and submissions
               </p>
             </div>
-            <Button onClick={copySubmissionLink} variant="outline" size="sm">
+            <Button 
+              onClick={copySubmissionLink} 
+              variant="outline" 
+              size="sm"
+              style={{
+                borderColor: `hsl(${themeColors.primary})`,
+                color: `hsl(${themeColors.primary})`
+              }}
+            >
               <Link className="h-4 w-4 mr-2" />
               Copy Submission Link
             </Button>
@@ -449,7 +468,14 @@ export const ReviewsManager = () => {
           {/* Navigation Tabs */}
           <div className="bg-card rounded-lg border p-1 shadow-sm">
             <TabsList className="grid grid-cols-2 md:grid-cols-4 w-full bg-transparent gap-1 h-auto">
-              <TabsTrigger value="pending" className="flex items-center justify-center gap-1.5 text-xs md:text-sm px-2 md:px-3 py-2.5">
+              <TabsTrigger 
+                value="pending" 
+                className="flex items-center justify-center gap-1.5 text-xs md:text-sm px-2 md:px-3 py-2.5 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
+                style={{
+                  '--primary': `hsl(${themeColors.primary})`,
+                  '--primary-foreground': `hsl(${themeColors.primary}-foreground)`
+                } as React.CSSProperties}
+              >
                 <Clock className="h-4 w-4" />
                 <span className="hidden sm:inline">Pending</span>
                 {stats.pending_count > 0 && (
@@ -459,7 +485,14 @@ export const ReviewsManager = () => {
                 )}
               </TabsTrigger>
               
-              <TabsTrigger value="published" className="flex items-center justify-center gap-1.5 text-xs md:text-sm px-2 md:px-3 py-2.5">
+              <TabsTrigger 
+                value="published" 
+                className="flex items-center justify-center gap-1.5 text-xs md:text-sm px-2 md:px-3 py-2.5 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
+                style={{
+                  '--primary': `hsl(${themeColors.primary})`,
+                  '--primary-foreground': `hsl(${themeColors.primary}-foreground)`
+                } as React.CSSProperties}
+              >
                 <Star className="h-4 w-4" />
                 <span className="hidden sm:inline">Published</span>
                 {stats.approved_count > 0 && (
@@ -469,12 +502,26 @@ export const ReviewsManager = () => {
                 )}
               </TabsTrigger>
               
-              <TabsTrigger value="analytics" className="flex items-center justify-center gap-1.5 text-xs md:text-sm px-2 md:px-3 py-2.5">
+              <TabsTrigger 
+                value="analytics" 
+                className="flex items-center justify-center gap-1.5 text-xs md:text-sm px-2 md:px-3 py-2.5 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
+                style={{
+                  '--primary': `hsl(${themeColors.primary})`,
+                  '--primary-foreground': `hsl(${themeColors.primary}-foreground)`
+                } as React.CSSProperties}
+              >
                 <TrendingUp className="h-4 w-4" />
                 <span className="hidden sm:inline">Analytics</span>
               </TabsTrigger>
               
-              <TabsTrigger value="all" className="flex items-center justify-center gap-1.5 text-xs md:text-sm px-2 md:px-3 py-2.5">
+              <TabsTrigger 
+                value="all" 
+                className="flex items-center justify-center gap-1.5 text-xs md:text-sm px-2 md:px-3 py-2.5 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
+                style={{
+                  '--primary': `hsl(${themeColors.primary})`,
+                  '--primary-foreground': `hsl(${themeColors.primary}-foreground)`
+                } as React.CSSProperties}
+              >
                 <Users className="h-4 w-4" />
                 <span className="hidden sm:inline">All Reviews</span>
               </TabsTrigger>

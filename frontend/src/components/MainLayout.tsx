@@ -9,8 +9,8 @@ export const MainLayout = () => {
   const [activePanel, setActivePanel] = useState("customers");
   const [sidebarOpen, setSidebarOpen] = useState(false);
   
-  // Initialize global theme
-  useGlobalTheme();
+  // Initialize global theme and get theme colors
+  const { themeColors } = useGlobalTheme();
 
   const panels = [
     {
@@ -52,7 +52,16 @@ export const MainLayout = () => {
         <div className="flex flex-col h-full">
           {/* Sidebar Header */}
           <div className="p-6 border-b">
-            <h2 className="text-xl font-bold text-foreground">
+            <h2 
+              className="text-xl font-bold"
+              style={{ 
+                color: `hsl(${themeColors.primary})`,
+                background: `linear-gradient(135deg, hsl(${themeColors.primary}), hsl(${themeColors.accent}))`,
+                WebkitBackgroundClip: 'text',
+                WebkitTextFillColor: 'transparent',
+                backgroundClip: 'text'
+              }}
+            >
               Business Dashboard
             </h2>
             <p className="text-sm text-muted-foreground">
@@ -69,6 +78,10 @@ export const MainLayout = () => {
                   key={panel.id}
                   variant={activePanel === panel.id ? "default" : "ghost"}
                   className="w-full justify-start gap-3 h-12 text-left"
+                  style={activePanel === panel.id ? {
+                    backgroundColor: `hsl(${themeColors.primary})`,
+                    color: `hsl(${themeColors.primary}-foreground)`
+                  } : {}}
                   onClick={() => {
                     setActivePanel(panel.id);
                     setSidebarOpen(false);
