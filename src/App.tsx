@@ -8,8 +8,8 @@ import { ProtectedRoute } from "./components/auth/ProtectedRoute";
 import Index from "./pages/Index";
 import OptIn from "./pages/OptIn";
 import SubmitReview from "./pages/SubmitReview";
+import Reviews from "./pages/Reviews";
 import NotFound from "./pages/NotFound";
-import { ReviewsManager } from "./components/reviews/ReviewsManager";
 
 const queryClient = new QueryClient();
 
@@ -28,11 +28,7 @@ const App = () => (
             } />
             <Route path="/optin" element={<OptIn />} />
             <Route path="/submitreview" element={<SubmitReview />} />
-            <Route path="/reviews" element={
-              <ProtectedRoute>
-                <ReviewsManager />
-              </ProtectedRoute>
-            } />
+            <Route path="/reviews" element={<Reviews />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>
