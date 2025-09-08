@@ -419,35 +419,62 @@ export const ReviewsManager = () => {
   const handleCompressedVideo = async (compressedBlob: Blob, originalSize: number, compressedSize: number) => {
     if (!selectedVideoReview) return;
 
+    console.log('handleCompressedVideo called with:', {
+      blobSize: compressedBlob.size,
+      blobType: compressedBlob.type,
+      originalSize,
+      compressedSize,
+      selectedReview: selectedVideoReview.id
+    });
+
+    if (compressedBlob.size === 0) {
+      console.error('Compressed blob is empty!');
+      throw new Error('Compressed video is empty');
+    }
+
     try {
       setMinimizeing(true);
       setMinimizeionProgress(95);
       setMinimizeionStatus('Uploading compressed video...');
 
-      // Convert compressed blob to base64 and upload via Edge Function
+      // Upload compressed video directly to R2 via Cloudflare Worker
       console.log(`Uploading compressed video, size: ${compressedBlob.size} bytes`);
+      console.log('Compressed blob type:', compressedBlob.type);
+      console.log('Compressed blob:', compressedBlob);
       
-      const arrayBuffer = await compressedBlob.arrayBuffer();
-      const base64 = btoa(String.fromCharCode(...new Uint8Array(arrayBuffer)));
-      
-      // Use the Cloudflare Worker for direct upload to R2
       const formData = new FormData();
-      formData.append('file', compressedBlob);
+      formData.append('file', compressedBlob, 'compressed-video.webm');
       formData.append('isOptimized', 'true');
       
+      console.log('FormData entries:');
+      for (let [key, value] of formData.entries()) {
+        console.log(key, value);
+      }
+      
       const workerUrl = 'https://r2-upload-proxy.cleverpoly-store.workers.dev';
+      console.log('Uploading to Cloudflare Worker:', workerUrl);
       
       const response = await fetch(workerUrl, {
         method: 'POST',
         body: formData,
       });
 
+      console.log('Upload response status:', response.status);
+      
       if (!response.ok) {
-        const errorData = await response.json();
+        const errorText = await response.text();
+        console.error('Upload error response:', errorText);
+        let errorData;
+        try {
+          errorData = JSON.parse(errorText);
+        } catch {
+          errorData = { error: errorText };
+        }
         throw new Error(`R2 upload failed: ${response.status} ${errorData.error || 'Unknown error'}`);
       }
 
       const uploadData = await response.json();
+      console.log('Upload response data:', uploadData);
 
       console.log(`Upload successful: ${uploadData.url}`);
       
