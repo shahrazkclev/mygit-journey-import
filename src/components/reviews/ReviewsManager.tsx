@@ -122,31 +122,32 @@ export const ReviewsManager = () => {
   const fetchReviews = async (filterActive?: boolean) => {
     setLoading(true);
     try {
-      const SUPABASE_URL = "https://mixifcnokcmxarpzwfiy.supabase.co";
-      const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1peGlmY25va2NteGFycHp3Zml5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTM0NjYwNTEsImV4cCI6MjA2OTA0MjA1MX0.-4uIuzcHcDGS20-dtKbjVFOtpBSmwYhT9Bgt6KA-dXI";
+      console.log('Fetching reviews with filterActive:', filterActive);
       
-      let url = `${SUPABASE_URL}/rest/v1/reviews?select=*&order=sort_order.desc`;
+      let query = supabase
+        .from('reviews')
+        .select('*')
+        .order('sort_order', { ascending: false });
       
       if (filterActive !== undefined) {
-        url += `&is_active=eq.${filterActive}`;
+        query = query.eq('is_active', filterActive);
       }
       
-      const response = await fetch(url, {
-        headers: {
-          'apikey': SUPABASE_KEY,
-          'Authorization': `Bearer ${SUPABASE_KEY}`,
-          'Content-Type': 'application/json'
-        }
-      });
+      const { data, error } = await query;
       
-      if (!response.ok) throw new Error('Failed to fetch reviews');
-      const data = await response.json();
+      if (error) {
+        console.error('Supabase error:', error);
+        throw error;
+      }
+      
+      console.log('Fetched reviews:', data?.length || 0, 'reviews');
       
       // Cross-reference with customers
       const reviewsWithCustomers: ReviewWithCustomer[] = (data || []).map((review: Review) => {
         const customer = customers.find(c => c.email.toLowerCase() === review.user_email?.toLowerCase());
         return {
           ...review,
+          user_name: review.user_instagram_handle?.replace('@', '') || review.user_email?.split('@')[0] || 'Anonymous',
           customer,
           isExistingCustomer: !!customer
         };
@@ -168,21 +169,11 @@ export const ReviewsManager = () => {
   // Fetch review statistics
   const fetchStats = async () => {
     try {
-      const SUPABASE_URL = "https://mixifcnokcmxarpzwfiy.supabase.co";
-      const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1peGlmY25va2NteGFycHp3Zml5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTM0NjYwNTEsImV4cCI6MjA2OTA0MjA1MX0.-4uIuzcHcDGS20-dtKbjVFOtpBSmwYhT9Bgt6KA-dXI";
+      const { data: allReviews, error } = await supabase
+        .from('reviews')
+        .select('*');
       
-      const url = `${SUPABASE_URL}/rest/v1/reviews?select=*`;
-      
-      const response = await fetch(url, {
-        headers: {
-          'apikey': SUPABASE_KEY,
-          'Authorization': `Bearer ${SUPABASE_KEY}`,
-          'Content-Type': 'application/json'
-        }
-      });
-      
-      if (!response.ok) throw new Error('Failed to fetch reviews');
-      const allReviews = await response.json();
+      if (error) throw error;
       
       const total = allReviews?.length || 0;
       const pending = allReviews?.filter((r: any) => !r.is_active).length || 0;
@@ -206,23 +197,12 @@ export const ReviewsManager = () => {
   // Update review
   const updateReview = async (reviewId: string, updates: Partial<Review>) => {
     try {
-      const SUPABASE_URL = "https://mixifcnokcmxarpzwfiy.supabase.co";
-      const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1peGlmY25va2NteGFycHp3Zml5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTM0NjYwNTEsImV4cCI6MjA2OTA0MjA1MX0.-4uIuzcHcDGS20-dtKbjVFOtpBSmwYhT9Bgt6KA-dXI";
+      const { error } = await supabase
+        .from('reviews')
+        .update(updates)
+        .eq('id', reviewId);
       
-      const url = `${SUPABASE_URL}/rest/v1/reviews?id=eq.${reviewId}`;
-      
-      const response = await fetch(url, {
-        method: 'PATCH',
-        headers: {
-          'apikey': SUPABASE_KEY,
-          'Authorization': `Bearer ${SUPABASE_KEY}`,
-          'Content-Type': 'application/json',
-          'Prefer': 'return=minimal'
-        },
-        body: JSON.stringify(updates)
-      });
-      
-      if (!response.ok) throw new Error('Failed to update review');
+      if (error) throw error;
       
       toast({
         title: "Success",
@@ -247,25 +227,16 @@ export const ReviewsManager = () => {
     
     try {
       // First, get the review to find the media file
-      const SUPABASE_URL = "https://mixifcnokcmxarpzwfiy.supabase.co";
-      const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1peGlmY25va2NteGFycHp3Zml5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTM0NjYwNTEsImV4cCI6MjA2OTA0MjA1MX0.-4uIuzcHcDGS20-dtKbjVFOtpBSmwYhT9Bgt6KA-dXI";
-      
-      const getUrl = `${SUPABASE_URL}/rest/v1/reviews?select=media_url&id=eq.${reviewId}`;
-      
-      const getResponse = await fetch(getUrl, {
-        headers: {
-          'apikey': SUPABASE_KEY,
-          'Authorization': `Bearer ${SUPABASE_KEY}`,
-          'Content-Type': 'application/json'
-        }
-      });
-      
-      if (!getResponse.ok) throw new Error('Failed to fetch review');
-      const reviews = await getResponse.json();
-      const review = reviews[0];
+      const { data: review, error: fetchError } = await supabase
+        .from('reviews')
+        .select('media_url')
+        .eq('id', reviewId)
+        .single();
+
+      if (fetchError) throw fetchError;
 
       // Extract file path from URL for storage deletion
-      if (review?.media_url) {
+      if (review?.media_url && !review.media_url.includes('placeholder.svg')) {
         const urlParts = review.media_url.split('/');
         const fileName = urlParts[urlParts.length - 1];
         
@@ -278,18 +249,12 @@ export const ReviewsManager = () => {
       }
 
       // Delete the review record
-      const deleteUrl = `${SUPABASE_URL}/rest/v1/reviews?id=eq.${reviewId}`;
+      const { error: deleteError } = await supabase
+        .from('reviews')
+        .delete()
+        .eq('id', reviewId);
       
-      const deleteResponse = await fetch(deleteUrl, {
-        method: 'DELETE',
-        headers: {
-          'apikey': SUPABASE_KEY,
-          'Authorization': `Bearer ${SUPABASE_KEY}`,
-          'Content-Type': 'application/json'
-        }
-      });
-      
-      if (!deleteResponse.ok) throw new Error('Failed to delete review');
+      if (deleteError) throw deleteError;
       
       toast({
         title: "Success",

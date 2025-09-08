@@ -179,29 +179,29 @@ const SubmitReview: React.FC = () => {
     const fileArray = Array.from(files);
     
     fileArray.forEach(file => {
-    // Validate file size (50MB max)
-    if (file.size > 50 * 1024 * 1024) {
-      toast({
-        title: "File too large",
+      // Validate file size (50MB max)
+      if (file.size > 50 * 1024 * 1024) {
+        toast({
+          title: "File too large",
           description: `${file.name} is too large. Please select files smaller than 50MB`,
-        variant: "destructive"
-      });
-      return;
-    }
+          variant: "destructive"
+        });
+        return;
+      }
 
-    // Validate video duration (30 seconds max)
-    if (file.type.startsWith('video/')) {
-      const video = document.createElement('video');
-      video.preload = 'metadata';
-      video.onloadedmetadata = () => {
-        if (video.duration > 30) {
-          toast({
-            title: "Video too long",
+      // Validate video duration (30 seconds max)
+      if (file.type.startsWith('video/')) {
+        const video = document.createElement('video');
+        video.preload = 'metadata';
+        video.onloadedmetadata = () => {
+          if (video.duration > 30) {
+            toast({
+              title: "Video too long",
               description: `${file.name} is too long. Please select videos shorter than 30 seconds`,
-            variant: "destructive"
-          });
-          return;
-        }
+              variant: "destructive"
+            });
+            return;
+          }
           addMediaFile(file, 'video');
         };
         video.src = URL.createObjectURL(file);
@@ -233,16 +233,16 @@ const SubmitReview: React.FC = () => {
             mf.id === mediaFile.id ? { ...mf, url } : mf
           )
         }));
-          }).catch(error => {
-            console.warn('Upload failed:', error);
+      }).catch(error => {
+        console.warn('Upload failed:', error);
         toast({
           title: "Upload failed",
           description: `Failed to upload ${file.name}. Please try again.`,
           variant: "destructive"
         });
-          });
-        }, 100);
-      };
+      });
+    }, 100);
+  };
 
   const removeMediaFile = (id: string) => {
     setFormData(prev => ({
@@ -272,25 +272,25 @@ const SubmitReview: React.FC = () => {
       return;
     }
 
-      setFormData(prev => ({
-        ...prev,
+    setFormData(prev => ({
+      ...prev,
       profilePicture: file,
       profilePictureUrl: URL.createObjectURL(file)
-      }));
+    }));
 
     // Upload profile picture
-      setTimeout(() => {
-        uploadToR2(file).then(url => {
+    setTimeout(() => {
+      uploadToR2(file).then(url => {
         setFormData(prev => ({ ...prev, profilePictureUrl: url }));
-        }).catch(error => {
+      }).catch(error => {
         console.warn('Profile picture upload failed:', error);
         toast({
           title: "Upload failed",
           description: "Failed to upload profile picture. Please try again.",
           variant: "destructive"
         });
-        });
-      }, 100);
+      });
+    }, 100);
   };
 
   // Camera functionality
@@ -621,22 +621,22 @@ const SubmitReview: React.FC = () => {
                   {expandedSections.rating && (
                     <div className="px-4 pb-4 border-t border-slate-100">
                       <div className="pt-4">
-                <div className="flex justify-center gap-2">
-                  {[1, 2, 3, 4, 5].map((star) => (
-                    <button
-                      key={star}
-                      onClick={() => setFormData(prev => ({ ...prev, rating: star }))}
-                      className={`w-12 h-12 rounded-full transition-all duration-200 ${
-                        star <= formData.rating
-                          ? 'bg-gradient-to-r from-yellow-400 to-orange-500 text-white shadow-lg scale-110'
-                          : 'bg-slate-100 text-slate-400 hover:bg-slate-200'
-                      }`}
-                    >
-                      <Star className="h-6 w-6 mx-auto" fill={star <= formData.rating ? 'currentColor' : 'none'} />
-                    </button>
-                  ))}
-                </div>
-              </div>
+                        <div className="flex justify-center gap-2">
+                          {[1, 2, 3, 4, 5].map((star) => (
+                            <button
+                              key={star}
+                              onClick={() => setFormData(prev => ({ ...prev, rating: star }))}
+                              className={`w-12 h-12 rounded-full transition-all duration-200 ${
+                                star <= formData.rating
+                                  ? 'bg-gradient-to-r from-yellow-400 to-orange-500 text-white shadow-lg scale-110'
+                                  : 'bg-slate-100 text-slate-400 hover:bg-slate-200'
+                              }`}
+                            >
+                              <Star className="h-6 w-6 mx-auto" fill={star <= formData.rating ? 'currentColor' : 'none'} />
+                            </button>
+                          ))}
+                        </div>
+                      </div>
                     </div>
                   )}
                 </div>
@@ -698,9 +698,9 @@ const SubmitReview: React.FC = () => {
                             </p>
                           </div>
                         </div>
-              </div>
-            </div>
-          )}
+                      </div>
+                    </div>
+                  )}
                 </div>
 
                 {/* Media Upload Section */}
@@ -733,184 +733,187 @@ const SubmitReview: React.FC = () => {
                           Please upload a short 30-second video of yourself sharing your experience, or add an animation or render that illustrates your story better.
                         </p>
               
-              {/* Upload Progress */}
-              {uploadProgress > 0 && uploadProgress < 100 && (
-                    <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
-                  <div className="flex items-center gap-3 mb-2">
-                    <div className="w-5 h-5 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
-                    <span className="text-sm font-medium text-blue-700">Uploading media...</span>
-                  </div>
-                  <div className="w-full bg-blue-200 rounded-full h-2">
-                    <div 
-                      className="bg-blue-500 h-2 rounded-full transition-all duration-300"
-                      style={{ width: `${uploadProgress}%` }}
-                    />
-                  </div>
-                </div>
-              )}
-
-                  {/* Media Upload Options */}
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-                    {/* File Upload */}
-                    <div className="border-2 border-dashed border-slate-300 rounded-xl p-6 text-center hover:border-blue-400 transition-colors bg-white">
-                <input
-                  type="file"
-                  accept="image/*,video/*"
-                        multiple
-                  onChange={(e) => {
-                          const files = e.target.files;
-                          if (files) handleFileUpload(files);
-                  }}
-                  className="hidden"
-                  id="media-upload"
-                />
-                <label htmlFor="media-upload" className="cursor-pointer">
-                        <div className="space-y-3">
-                          <div className="w-12 h-12 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center mx-auto">
-                            <Upload className="h-6 w-6 text-white" />
-                    </div>
-                    <div>
-                            <p className="text-sm font-medium text-slate-900 mb-1">
-                              Upload Files
-                      </p>
-                            <p className="text-xs text-slate-500">
-                              Images or videos up to 50MB
-                      </p>
-                    </div>
-                  </div>
-                </label>
-              </div>
-
-                    {/* Camera Capture */}
-                    <div className="border-2 border-dashed border-slate-300 rounded-xl p-6 text-center hover:border-green-400 transition-colors bg-white">
-                      <button
-                        onClick={startCamera}
-                        className="w-full"
-                      >
-                        <div className="space-y-3">
-                          <div className="w-12 h-12 bg-gradient-to-r from-green-500 to-emerald-600 rounded-full flex items-center justify-center mx-auto">
-                            <Camera className="h-6 w-6 text-white" />
+                        {/* Upload Progress */}
+                        {uploadProgress > 0 && uploadProgress < 100 && (
+                          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
+                            <div className="flex items-center gap-3 mb-2">
+                              <div className="w-5 h-5 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
+                              <span className="text-sm font-medium text-blue-700">Uploading media...</span>
+                            </div>
+                            <div className="w-full bg-blue-200 rounded-full h-2">
+                              <div 
+                                className="bg-blue-500 h-2 rounded-full transition-all duration-300"
+                                style={{ width: `${uploadProgress}%` }}
+                              />
+                            </div>
                           </div>
-                          <div>
-                            <p className="text-sm font-medium text-slate-900 mb-1">
-                              Take Photo/Video
-                            </p>
-                            <p className="text-xs text-slate-500">
-                              Use your camera
-                            </p>
+                        )}
+
+                        {/* Media Upload Options */}
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                          {/* File Upload */}
+                          <div className="border-2 border-dashed border-slate-300 rounded-xl p-6 text-center hover:border-blue-400 transition-colors bg-white">
+                            <input
+                              type="file"
+                              accept="image/*,video/*"
+                              multiple
+                              onChange={(e) => {
+                                const files = e.target.files;
+                                if (files) handleFileUpload(files);
+                              }}
+                              className="hidden"
+                              id="media-upload"
+                            />
+                            <label htmlFor="media-upload" className="cursor-pointer">
+                              <div className="space-y-3">
+                                <div className="w-12 h-12 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center mx-auto">
+                                  <Upload className="h-6 w-6 text-white" />
+                                </div>
+                                <div>
+                                  <p className="text-sm font-medium text-slate-900 mb-1">
+                                    Upload Files
+                                  </p>
+                                  <p className="text-xs text-slate-500">
+                                    Images or videos up to 50MB
+                                  </p>
+                                </div>
+                              </div>
+                            </label>
+                          </div>
+
+                          {/* Camera Capture */}
+                          <div className="border-2 border-dashed border-slate-300 rounded-xl p-6 text-center hover:border-green-400 transition-colors bg-white">
+                            <button
+                              onClick={startCamera}
+                              className="w-full"
+                            >
+                              <div className="space-y-3">
+                                <div className="w-12 h-12 bg-gradient-to-r from-green-500 to-emerald-600 rounded-full flex items-center justify-center mx-auto">
+                                  <Camera className="h-6 w-6 text-white" />
+                                </div>
+                                <div>
+                                  <p className="text-sm font-medium text-slate-900 mb-1">
+                                    Take Photo/Video
+                                  </p>
+                                  <p className="text-xs text-slate-500">
+                                    Use your camera
+                                  </p>
+                                </div>
+                              </div>
+                            </button>
                           </div>
                         </div>
-                      </button>
-                    </div>
-                  </div>
 
-                  {/* Camera Interface */}
-                  {showCamera && (
-                    <div className="bg-black rounded-lg p-4 mb-4">
-                      <div className="relative">
-                        <video
-                          ref={videoRef}
-                          autoPlay
-                          playsInline
-                          className="w-full h-64 object-cover rounded-lg"
-                        />
-                        <canvas ref={canvasRef} className="hidden" />
-                        
-                        {/* Camera Controls */}
-                        <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 flex items-center gap-4">
-                          <Button
-                            onClick={stopCamera}
-                            variant="outline"
-                            size="sm"
-                            className="bg-white/20 border-white/30 text-white hover:bg-white/30"
-                          >
-                            <X className="h-4 w-4" />
-                          </Button>
-                          
-                          {cameraMode === 'photo' ? (
-                            <Button
-                              onClick={capturePhoto}
-                              className="w-12 h-12 rounded-full bg-white hover:bg-gray-100"
-                            >
-                              <Camera className="h-6 w-6 text-black" />
-                            </Button>
-                          ) : (
-                            <Button
-                              onClick={isRecording ? stopVideoRecording : startVideoRecording}
-                              className={`w-12 h-12 rounded-full ${
-                                isRecording ? 'bg-red-500 hover:bg-red-600' : 'bg-white hover:bg-gray-100'
-                              }`}
-                            >
-                              {isRecording ? (
-                                <div className="w-4 h-4 bg-white rounded-sm" />
-                              ) : (
-                                <Video className="h-6 w-6 text-black" />
+                        {/* Camera Interface */}
+                        {showCamera && (
+                          <div className="bg-black rounded-lg p-4 mb-4">
+                            <div className="relative">
+                              <video
+                                ref={videoRef}
+                                autoPlay
+                                playsInline
+                                className="w-full h-64 object-cover rounded-lg"
+                              />
+                              <canvas ref={canvasRef} className="hidden" />
+                              
+                              {/* Camera Controls */}
+                              <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 flex items-center gap-4">
+                                <Button
+                                  onClick={stopCamera}
+                                  variant="outline"
+                                  size="sm"
+                                  className="bg-white/20 border-white/30 text-white hover:bg-white/30"
+                                >
+                                  <X className="h-4 w-4" />
+                                </Button>
+                                
+                                {cameraMode === 'photo' ? (
+                                  <Button
+                                    onClick={capturePhoto}
+                                    className="w-12 h-12 rounded-full bg-white hover:bg-gray-100"
+                                  >
+                                    <Camera className="h-6 w-6 text-black" />
+                                  </Button>
+                                ) : (
+                                  <Button
+                                    onClick={isRecording ? stopVideoRecording : startVideoRecording}
+                                    className={`w-12 h-12 rounded-full ${
+                                      isRecording ? 'bg-red-500 hover:bg-red-600' : 'bg-white hover:bg-gray-100'
+                                    }`}
+                                  >
+                                    {isRecording ? (
+                                      <div className="w-4 h-4 bg-white rounded-sm" />
+                                    ) : (
+                                      <Video className="h-6 w-6 text-black" />
+                                    )}
+                                  </Button>
+                                )}
+                                
+                                <Button
+                                  onClick={() => setCameraMode(cameraMode === 'photo' ? 'video' : 'photo')}
+                                  variant="outline"
+                                  size="sm"
+                                  className="bg-white/20 border-white/30 text-white hover:bg-white/30"
+                                >
+                                  {cameraMode === 'photo' ? <Video className="h-4 w-4" /> : <Camera className="h-4 w-4" />}
+                                </Button>
+                              </div>
+                              
+                              {/* Recording Timer */}
+                              {isRecording && (
+                                <div className="absolute top-4 left-4 bg-red-500 text-white px-3 py-1 rounded-full text-sm font-medium">
+                                  {recordingTime}s
+                                </div>
                               )}
-                            </Button>
-                          )}
-                          
-                          <Button
-                            onClick={() => setCameraMode(cameraMode === 'photo' ? 'video' : 'photo')}
-                            variant="outline"
-                            size="sm"
-                            className="bg-white/20 border-white/30 text-white hover:bg-white/30"
-                          >
-                            {cameraMode === 'photo' ? <Video className="h-4 w-4" /> : <Camera className="h-4 w-4" />}
-                          </Button>
-                        </div>
-                        
-                        {/* Recording Timer */}
-                        {isRecording && (
-                          <div className="absolute top-4 left-4 bg-red-500 text-white px-3 py-1 rounded-full text-sm font-medium">
-                            {recordingTime}s
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Media Files List */}
+                        {formData.mediaFiles.length > 0 && (
+                          <div className="space-y-3">
+                            <h4 className="text-sm font-medium text-slate-700">Your Media Files ({formData.mediaFiles.length})</h4>
+                            {formData.mediaFiles.map((mediaFile) => (
+                              <div key={mediaFile.id} className="bg-white border border-slate-200 rounded-lg p-4">
+                                <div className="flex items-center gap-3">
+                                  {mediaFile.type === 'image' ? (
+                                    <ImageIcon className="h-8 w-8 text-green-500" />
+                                  ) : (
+                                    <Video className="h-8 w-8 text-blue-500" />
+                                  )}
+                                  <div className="flex-1">
+                                    <p className="font-medium text-slate-900">{mediaFile.file.name}</p>
+                                    <p className="text-sm text-slate-500">
+                                      {(mediaFile.file.size / 1024 / 1024).toFixed(2)} MB
+                                    </p>
+                                  </div>
+                                  <div className="flex items-center gap-2">
+                                    {mediaFile.url ? (
+                                      <div className="flex items-center gap-2 text-green-600">
+                                        <CheckCircle className="h-5 w-5" />
+                                        <span className="text-sm font-medium">Uploaded</span>
+                                      </div>
+                                    ) : (
+                                      <div className="flex items-center gap-2 text-blue-600">
+                                        <div className="w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
+                                        <span className="text-sm font-medium">Uploading...</span>
+                                      </div>
+                                    )}
+                                    <Button
+                                      onClick={() => removeMediaFile(mediaFile.id)}
+                                      variant="outline"
+                                      size="sm"
+                                      className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                                    >
+                                      <X className="h-4 w-4" />
+                                    </Button>
+                                  </div>
+                                </div>
+                              </div>
+                            ))}
                           </div>
                         )}
                       </div>
-                    </div>
-                  )}
-
-                  {/* Media Files List */}
-                  {formData.mediaFiles.length > 0 && (
-                    <div className="space-y-3">
-                      <h4 className="text-sm font-medium text-slate-700">Your Media Files ({formData.mediaFiles.length})</h4>
-                      {formData.mediaFiles.map((mediaFile) => (
-                        <div key={mediaFile.id} className="bg-white border border-slate-200 rounded-lg p-4">
-                  <div className="flex items-center gap-3">
-                            {mediaFile.type === 'image' ? (
-                      <ImageIcon className="h-8 w-8 text-green-500" />
-                    ) : (
-                      <Video className="h-8 w-8 text-blue-500" />
-                    )}
-                    <div className="flex-1">
-                              <p className="font-medium text-slate-900">{mediaFile.file.name}</p>
-                      <p className="text-sm text-slate-500">
-                                {(mediaFile.file.size / 1024 / 1024).toFixed(2)} MB
-                      </p>
-                    </div>
-                            <div className="flex items-center gap-2">
-                              {mediaFile.url ? (
-                      <div className="flex items-center gap-2 text-green-600">
-                        <CheckCircle className="h-5 w-5" />
-                        <span className="text-sm font-medium">Uploaded</span>
-                      </div>
-                              ) : (
-                                <div className="flex items-center gap-2 text-blue-600">
-                                  <div className="w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
-                                  <span className="text-sm font-medium">Uploading...</span>
-                                </div>
-                              )}
-                              <Button
-                                onClick={() => removeMediaFile(mediaFile.id)}
-                                variant="outline"
-                                size="sm"
-                                className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                              >
-                                <X className="h-4 w-4" />
-                              </Button>
-                            </div>
-                          </div>
-                        </div>
-                      ))}
                     </div>
                   )}
                 </div>
@@ -1209,86 +1212,87 @@ const SubmitReview: React.FC = () => {
 
                 {/* Right Column - Preview (Desktop Only) */}
                 <div className="hidden lg:block">
-                <div className="sticky top-8">
-                  <h3 className="text-lg font-semibold text-slate-900 mb-4">Preview</h3>
-                  <div className="flex justify-center">
-                    {/* Review Card Preview - Exact match to reviews-standalone.html */}
-                    <div className="video-card relative w-64 h-96 aspect-[2/3] flex-shrink-0 rounded-2xl overflow-hidden transition-transform duration-500 ease-in-out hover:scale-105 shadow-lg group">
-                      {/* Media Content */}
-                      {formData.mediaFiles.length > 0 ? (
-                        formData.mediaFiles[0].type === 'video' ? (
-                          <video 
-                            className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" 
-                            muted 
-                            loop 
-                            playsInline 
-                            src={formData.mediaFiles[0].url || URL.createObjectURL(formData.mediaFiles[0].file)}
-                          />
+                  <div className="sticky top-8">
+                    <h3 className="text-lg font-semibold text-slate-900 mb-4">Preview</h3>
+                    <div className="flex justify-center">
+                      {/* Review Card Preview - Exact match to reviews-standalone.html */}
+                      <div className="video-card relative w-64 h-96 aspect-[2/3] flex-shrink-0 rounded-2xl overflow-hidden transition-transform duration-500 ease-in-out hover:scale-105 shadow-lg group">
+                        {/* Media Content */}
+                        {formData.mediaFiles.length > 0 ? (
+                          formData.mediaFiles[0].type === 'video' ? (
+                            <video 
+                              className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" 
+                              muted 
+                              loop 
+                              playsInline 
+                              src={formData.mediaFiles[0].url || URL.createObjectURL(formData.mediaFiles[0].file)}
+                            />
+                          ) : (
+                            <img 
+                              className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" 
+                              src={formData.mediaFiles[0].url || URL.createObjectURL(formData.mediaFiles[0].file)} 
+                              alt="Review image" 
+                            />
+                          )
                         ) : (
-                          <img 
-                            className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" 
-                            src={formData.mediaFiles[0].url || URL.createObjectURL(formData.mediaFiles[0].file)} 
-                            alt="Review image" 
-                          />
-                        )
-                      ) : (
-                        <div className="absolute inset-0 w-full h-full bg-gradient-to-br from-slate-200 to-slate-300 flex items-center justify-center">
-                          <div className="text-center text-slate-500">
-                            <ImageIcon className="h-12 w-12 mx-auto mb-2" />
-                            <p className="text-sm">Media Preview</p>
+                          <div className="absolute inset-0 w-full h-full bg-gradient-to-br from-slate-200 to-slate-300 flex items-center justify-center">
+                            <div className="text-center text-slate-500">
+                              <ImageIcon className="h-12 w-12 mx-auto mb-2" />
+                              <p className="text-sm">Media Preview</p>
+                            </div>
                           </div>
-                        </div>
-                      )}
-                      
-                      {/* Gradient Overlay */}
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent"></div>
-                      
-                      {/* Content */}
-                      <div className="relative z-10 p-4 flex flex-col justify-end h-full text-white">
-                        <div className="space-y-3">
-                          {/* Stars */}
-                          <div className="flex items-center space-x-1">
-                            {[1, 2, 3, 4, 5].map((star) => (
-                              <Star
-                                key={star}
-                                className={`w-4 h-4 ${
-                                  star <= formData.rating ? 'text-yellow-400 fill-current' : 'text-gray-300'
-                                }`}
-                                fill={star <= formData.rating ? 'currentColor' : 'none'}
-                              />
-                            ))}
-                          </div>
-                          
-                          {/* Description */}
-                          <p className="text-sm text-white/90 line-clamp-2 select-none">
-                            "{formData.description || 'Your review description will appear here...'}"
-                          </p>
-                          
-                          {/* User Info */}
-                          <div className="flex items-center space-x-2 text-sm">
-                            {/* Avatar */}
-                            <div className="w-8 h-8 rounded-full overflow-hidden bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center font-bold text-white">
-                              {formData.profilePictureUrl ? (
-                                <img 
-                                  src={formData.profilePictureUrl} 
-                                  alt="Profile" 
-                                  className="w-full h-full object-cover"
+                        )}
+                        
+                        {/* Gradient Overlay */}
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent"></div>
+                        
+                        {/* Content */}
+                        <div className="relative z-10 p-4 flex flex-col justify-end h-full text-white">
+                          <div className="space-y-3">
+                            {/* Stars */}
+                            <div className="flex items-center space-x-1">
+                              {[1, 2, 3, 4, 5].map((star) => (
+                                <Star
+                                  key={star}
+                                  className={`w-4 h-4 ${
+                                    star <= formData.rating ? 'text-yellow-400 fill-current' : 'text-gray-300'
+                                  }`}
+                                  fill={star <= formData.rating ? 'currentColor' : 'none'}
                                 />
-                              ) : (
-                                <span>
-                                  {formData.instagram ? formData.instagram.charAt(1).toUpperCase() : 'U'}
-                                </span>
-                              )}
+                              ))}
                             </div>
                             
-                            {/* Instagram Handle */}
-                            <div className="flex items-center space-x-1.5 group">
-                              <svg className="w-4 h-4 text-white/80 group-hover:text-blue-300" fill="currentColor" viewBox="0 0 24 24">
-                                <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.85s-.011 3.585-.069 4.85c-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.85-.07-3.252-.148-4.771-1.691-4.919-4.919-.058-1.265-.069-1.645-.069-4.85s.011-3.585.069-4.85c.149-3.225 1.664 4.771 4.919-4.919 1.266-.057 1.644-.07 4.85-.07zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948s-.014-3.667-.072-4.947c-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.689-.073-4.948-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.162 6.162 6.162 6.162-2.759 6.162-6.162-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4s1.791-4 4-4 4 1.79 4 4-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44 1.441-.645 1.441-1.44-.645-1.44-1.441-1.44z"/>
-                              </svg>
-                              <span className="font-medium text-white group-hover:text-blue-300 transition-colors">
-                                {formData.instagram || '@yourusername'}
-                              </span>
+                            {/* Description */}
+                            <p className="text-sm text-white/90 line-clamp-2 select-none">
+                              "{formData.description || 'Your review description will appear here...'}"
+                            </p>
+                            
+                            {/* User Info */}
+                            <div className="flex items-center space-x-2 text-sm">
+                              {/* Avatar */}
+                              <div className="w-8 h-8 rounded-full overflow-hidden bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center font-bold text-white">
+                                {formData.profilePictureUrl ? (
+                                  <img 
+                                    src={formData.profilePictureUrl} 
+                                    alt="Profile" 
+                                    className="w-full h-full object-cover"
+                                  />
+                                ) : (
+                                  <span>
+                                    {formData.instagram ? formData.instagram.charAt(1).toUpperCase() : 'U'}
+                                  </span>
+                                )}
+                              </div>
+                              
+                              {/* Instagram Handle */}
+                              <div className="flex items-center space-x-1.5 group">
+                                <svg className="w-4 h-4 text-white/80 group-hover:text-blue-300" fill="currentColor" viewBox="0 0 24 24">
+                                  <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.85s-.011 3.585-.069 4.85c-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.85-.07-3.252-.148-4.771-1.691-4.919-4.919-.058-1.265-.069-1.645-.069-4.85s.011-3.585.069-4.85c.149-3.225 1.664 4.771 4.919-4.919 1.266-.057 1.644-.07 4.85-.07zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948s-.014-3.667-.072-4.947c-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.689-.073-4.948-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.162 6.162 6.162 6.162-2.759 6.162-6.162-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4s1.791-4 4-4 4 1.79 4 4-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44 1.441-.645 1.441-1.44-.645-1.44-1.441-1.44z"/>
+                                </svg>
+                                <span className="font-medium text-white group-hover:text-blue-300 transition-colors">
+                                  {formData.instagram || '@yourusername'}
+                                </span>
+                              </div>
                             </div>
                           </div>
                         </div>
