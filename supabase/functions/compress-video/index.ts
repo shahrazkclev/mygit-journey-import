@@ -6,6 +6,20 @@ interface CompressVideoRequest {
   targetResolution: string; // e.g., "1280x720", "1920x1080"
   maxFileSizeMB: number;
   quality: number; // 0.1 to 1.0
+  compressionPreset?: string; // e.g., "ultra", "aggressive", "balanced", "light"
+}
+
+interface DirectUploadRequest {
+  reviewId: string;
+  compressedBlob: string; // base64 encoded compressed video
+  originalSize: number;
+  compressedSize: number;
+  compressionSettings: {
+    targetResolution: string;
+    maxFileSizeMB: number;
+    quality: number;
+    compressionPreset: string;
+  };
 }
 
 interface VideoCompressionSettings {
@@ -38,11 +52,34 @@ function parseResolution(resolution: string): { width: number; height: number } 
   return { width, height };
 }
 
-function getFFmpegSettings(settings: VideoCompressionSettings): string[] {
+function getFFmpegSettings(settings: VideoCompressionSettings, preset: string = 'balanced'): string[] {
   const { width, height, quality } = settings;
   
-  // Calculate CRF value based on quality (0.1-1.0 maps to 28-18)
-  const crf = Math.round(28 - (quality * 10));
+  // Calculate CRF value based on quality and preset
+  let crf: number;
+  let ffmpegPreset: string;
+  
+  switch (preset) {
+    case 'ultra':
+      crf = Math.round(32 - (quality * 8)); // Higher compression
+      ffmpegPreset = 'slow';
+      break;
+    case 'aggressive':
+      crf = Math.round(30 - (quality * 8)); // High compression
+      ffmpegPreset = 'medium';
+      break;
+    case 'balanced':
+      crf = Math.round(28 - (quality * 10)); // Balanced
+      ffmpegPreset = 'medium';
+      break;
+    case 'light':
+      crf = Math.round(26 - (quality * 10)); // Light compression
+      ffmpegPreset = 'fast';
+      break;
+    default:
+      crf = Math.round(28 - (quality * 10));
+      ffmpegPreset = 'medium';
+  }
   
   return [
     '-i', 'input.mp4',
@@ -50,7 +87,7 @@ function getFFmpegSettings(settings: VideoCompressionSettings): string[] {
     '-c:a', 'aac',
     '-vf', `scale=${width}:${height}:force_original_aspect_ratio=decrease,pad=${width}:${height}:(ow-iw)/2:(oh-ih)/2:black`,
     '-crf', crf.toString(),
-    '-preset', 'medium',
+    '-preset', ffmpegPreset,
     '-movflags', '+faststart',
     '-y',
     'output.mp4'
@@ -65,7 +102,7 @@ async function downloadVideo(url: string): Promise<Uint8Array> {
   return new Uint8Array(await response.arrayBuffer());
 }
 
-async function compressVideo(videoData: Uint8Array, settings: VideoCompressionSettings): Promise<Uint8Array> {
+async function compressVideo(videoData: Uint8Array, settings: VideoCompressionSettings, preset: string = 'balanced'): Promise<Uint8Array> {
   // Check if FFmpeg is available
   try {
     const ffmpegCheck = new Deno.Command('ffmpeg', {
@@ -92,7 +129,7 @@ async function compressVideo(videoData: Uint8Array, settings: VideoCompressionSe
     await Deno.writeFile(inputPath, videoData);
     
     // Run FFmpeg compression
-    const ffmpegArgs = getFFmpegSettings(settings);
+    const ffmpegArgs = getFFmpegSettings(settings, preset);
     const command = new Deno.Command('ffmpeg', {
       args: ffmpegArgs,
       cwd: tempDir,
@@ -166,13 +203,75 @@ async function updateReviewWithOptimizedUrl(supabase: SupabaseClient, reviewId: 
   if (error) throw error;
 }
 
+async function handleDirectUpload(request: DirectUploadRequest): Promise<Response> {
+  try {
+    console.log('📤 Handling direct upload for review:', request.reviewId);
+    
+    const supabase = createSupabase();
+    
+    // Convert base64 to Uint8Array
+    const compressedData = Uint8Array.from(atob(request.compressedBlob), c => c.charCodeAt(0));
+    
+    // Extract filename from review
+    const { data: review, error: reviewError } = await supabase
+      .from('reviews')
+      .select('media_url')
+      .eq('id', request.reviewId)
+      .single();
+      
+    if (reviewError) throw reviewError;
+    
+    // Extract filename from original URL
+    const urlParts = review.media_url.split('/');
+    const originalFilename = urlParts[urlParts.length - 1];
+    
+    // Upload to R2
+    console.log('☁️ Uploading compressed video to R2...');
+    const optimizedUrl = await uploadToR2(compressedData, originalFilename);
+    console.log('✅ Uploaded to:', optimizedUrl);
+    
+    // Update review with optimized URL
+    await updateReviewWithOptimizedUrl(supabase, request.reviewId, optimizedUrl);
+    console.log('💾 Updated review with optimized URL');
+    
+    const compressionRatio = Math.round((1 - request.compressedSize / request.originalSize) * 100);
+    
+    return new Response(JSON.stringify({ 
+      success: true, 
+      optimizedUrl,
+      originalSize: request.originalSize,
+      compressedSize: request.compressedSize,
+      compressionRatio,
+      wasCompressed: true,
+      message: `Video compressed successfully! Reduced by ${compressionRatio}%`
+    }), {
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
+    
+  } catch (error: any) {
+    console.error('❌ Error in direct upload:', error);
+    return new Response(JSON.stringify({ error: error.message }), {
+      status: 500,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
+  }
+}
+
 async function handler(req: Request): Promise<Response> {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    const { reviewId, targetResolution, maxFileSizeMB, quality }: CompressVideoRequest = await req.json();
+    const requestData = await req.json();
+    
+    // Check if this is a direct upload request
+    if (requestData.compressedBlob && requestData.originalSize && requestData.compressedSize) {
+      return await handleDirectUpload(requestData as DirectUploadRequest);
+    }
+    
+    // Otherwise, handle as regular compression request
+    const { reviewId, targetResolution, maxFileSizeMB, quality, compressionPreset = 'balanced' }: CompressVideoRequest = requestData;
     
     console.log('🎬 Starting video compression for review:', reviewId);
     console.log('📐 Target resolution:', targetResolution);
@@ -210,8 +309,8 @@ async function handler(req: Request): Promise<Response> {
     console.log(`📥 Downloaded ${originalVideoData.length} bytes`);
     
     // Compress video
-    console.log('🎬 Compressing video...');
-    const compressedVideoData = await compressVideo(originalVideoData, settings);
+    console.log('🎬 Compressing video with preset:', compressionPreset);
+    const compressedVideoData = await compressVideo(originalVideoData, settings, compressionPreset);
     console.log(`📤 Compressed to ${compressedVideoData.length} bytes`);
     
     // Check if compression actually happened (FFmpeg available) or if we returned original data

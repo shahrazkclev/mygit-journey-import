@@ -1,22 +1,12 @@
-# Welcome to your Lovable project
+# Pixel Puff Mail - Email Campaign Management Platform
 
-## Project info
+## Project Overview
 
-**URL**: https://lovable.dev/projects/fa37dd44-8a71-4589-b7c2-4ce0b2a6a164
+Pixel Puff Mail is a comprehensive email campaign management platform built with modern web technologies.
 
-## How can I edit this code?
+## How to run this project locally
 
-There are several ways of editing your application.
-
-**Use Lovable**
-
-Simply visit the [Lovable Project](https://lovable.dev/projects/fa37dd44-8a71-4589-b7c2-4ce0b2a6a164) and start prompting.
-
-Changes made via Lovable will be committed automatically to this repo.
-
-**Use your preferred IDE**
-
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+**Prerequisites**
 
 The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
 
@@ -59,15 +49,12 @@ This project is built with:
 - React
 - shadcn-ui
 - Tailwind CSS
+- Supabase
 
-## How can I deploy this project?
+## Features
 
-Simply open [Lovable](https://lovable.dev/projects/fa37dd44-8a71-4589-b7c2-4ce0b2a6a164) and click on Share -> Publish.
-
-## Can I connect a custom domain to my Lovable project?
-
-Yes, you can!
-
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
-
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/tips-tricks/custom-domain#step-by-step-guide)
+- Email campaign management
+- Contact list management
+- Email template editor
+- Campaign analytics
+- Review management system

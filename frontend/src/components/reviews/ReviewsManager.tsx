@@ -12,6 +12,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useToast } from "@/hooks/use-toast";
 import { useGlobalTheme } from "@/hooks/useGlobalTheme";
 import { supabase } from "@/integrations/supabase/client";
+import { VideoCompressor } from './VideoCompressor';
+import { StyleGuide } from "@/components/email/StyleGuide";
 import { 
   Star, 
   Settings, 
@@ -35,7 +37,9 @@ import {
   Tag,
   Mail,
   Minimize,
-  Video
+  Video,
+  Palette,
+  RotateCcw
 } from "lucide-react";
 
 interface Review {
@@ -81,6 +85,7 @@ interface ReviewStats {
 
 export const ReviewsManager = () => {
   const [activeTab, setActiveTab] = useState("pending");
+  const [settingsSubTab, setSettingsSubTab] = useState("style");
   const [reviews, setReviews] = useState<ReviewWithCustomer[]>([]);
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [stats, setStats] = useState<ReviewStats>({
@@ -107,12 +112,14 @@ export const ReviewsManager = () => {
   const [selectedVideoReview, setSelectedVideoReview] = useState<ReviewWithCustomer | null>(null);
   const [compressionSettings, setMinimizeionSettings] = useState({
     targetResolution: '1280x720',
-    maxFileSizeMB: 10,
-    quality: 0.7
+    maxFileSizeMB: 1,
+    quality: 0.3,
+    compressionPreset: 'aggressive'
   });
   const [compressing, setMinimizeing] = useState(false);
   const [compressionProgress, setMinimizeionProgress] = useState(0);
   const [compressionStatus, setMinimizeionStatus] = useState('');
+  const [showVideoCompressor, setShowVideoCompressor] = useState(false);
 
   // Demo user ID for contacts
   const DEMO_USER_ID = "550e8400-e29b-41d4-a716-446655440000";
@@ -404,69 +411,81 @@ export const ReviewsManager = () => {
       return;
     }
 
-    setMinimizeing(true);
-    setMinimizeionProgress(0);
-    setMinimizeionStatus('Starting compression...');
-    
+    setSelectedVideoReview(review);
+    setShowVideoCompressor(true);
+  };
+
+  // Handle compressed video from client-side compression
+  const handleCompressedVideo = async (compressedBlob: Blob, originalSize: number, compressedSize: number) => {
+    if (!selectedVideoReview) return;
+
     try {
-      // Simulate progress updates
-      const progressInterval = setInterval(() => {
-        setMinimizeionProgress(prev => {
-          if (prev >= 90) return prev;
-          return prev + Math.random() * 10;
-        });
-      }, 1000);
+      setMinimizeing(true);
+      setMinimizeionProgress(95);
+      setMinimizeionStatus('Uploading compressed video...');
 
-      // Update status messages
-      const statusUpdates = [
-        { progress: 10, message: 'Downloading original video...' },
-        { progress: 30, message: 'Analyzing video properties...' },
-        { progress: 50, message: 'Minimizeing video with FFmpeg...' },
-        { progress: 80, message: 'Uploading optimized video...' },
-        { progress: 95, message: 'Updating database...' }
-      ];
-
-      let statusIndex = 0;
-      const statusInterval = setInterval(() => {
-        if (statusIndex < statusUpdates.length) {
-          setMinimizeionStatus(statusUpdates[statusIndex].message);
-          statusIndex++;
-        }
-      }, 2000);
-
-      const { data, error } = await supabase.functions.invoke('compress-video', {
-        body: {
-          reviewId: review.id,
-          targetResolution: compressionSettings.targetResolution,
-          maxFileSizeMB: compressionSettings.maxFileSizeMB,
-          quality: compressionSettings.quality
-        }
+      // Convert compressed blob to base64 and upload via Edge Function
+      console.log(`Uploading compressed video, size: ${compressedBlob.size} bytes`);
+      
+      const arrayBuffer = await compressedBlob.arrayBuffer();
+      const base64 = btoa(String.fromCharCode(...new Uint8Array(arrayBuffer)));
+      
+      // Use the Cloudflare Worker for direct upload to R2
+      const formData = new FormData();
+      formData.append('file', compressedBlob);
+      formData.append('isOptimized', 'true');
+      
+      const workerUrl = 'https://r2-upload-proxy.cleverpoly-store.workers.dev';
+      
+      const response = await fetch(workerUrl, {
+        method: 'POST',
+        body: formData,
       });
 
-      clearInterval(progressInterval);
-      clearInterval(statusInterval);
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(`R2 upload failed: ${response.status} ${errorData.error || 'Unknown error'}`);
+      }
+
+      const uploadData = await response.json();
+
+      console.log(`Upload successful: ${uploadData.url}`);
+      
+      const uploadResult = {
+        url: uploadData.url,
+        fileName: uploadData.fileName || `compressed-${Date.now()}.webm`,
+        isOptimized: true
+      };
+      
+      // Update review with optimized URL
+      const { error } = await supabase
+        .from('reviews')
+        .update({ 
+          media_url_optimized: uploadResult.url,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', selectedVideoReview.id);
 
       if (error) throw error;
 
       setMinimizeionProgress(100);
-      setMinimizeionStatus('Minimizeion completed!');
+      setMinimizeionStatus('Compression completed!');
+
+      const compressionRatio = Math.round((1 - compressedSize / originalSize) * 100);
 
       toast({
-        title: data.wasCompressed ? "Video compressed successfully!" : "Video uploaded successfully!",
-        description: data.message || (data.wasCompressed ? 
-          `Minimizeed from ${Math.round(data.originalSize / 1024 / 1024)}MB to ${Math.round(data.compressedSize / 1024 / 1024)}MB (${data.compressionRatio}% reduction)` : 
-          `Uploaded ${Math.round(data.originalSize / 1024 / 1024)}MB video to optimized storage`),
+        title: "Video compressed successfully!",
+        description: `Compressed from ${Math.round(originalSize / 1024 / 1024)}MB to ${Math.round(compressedSize / 1024 / 1024)}MB (${compressionRatio}% reduction)`,
       });
 
       // Refresh reviews to show updated data
       await fetchReviews(activeTab === 'published' ? true : activeTab === 'pending' ? false : undefined);
       
     } catch (error: any) {
-      console.error('Minimizeion error:', error);
-      setMinimizeionStatus('Minimizeion failed');
+      console.error('Upload error:', error);
       toast({
-        title: "Minimizeion failed",
-        description: error.message || "Failed to compress video. Please try again.",
+        title: "Upload failed",
+        description: "Failed to upload compressed video. Please try again.",
         variant: "destructive"
       });
     } finally {
@@ -475,7 +494,40 @@ export const ReviewsManager = () => {
         setMinimizeionProgress(0);
         setMinimizeionStatus('');
         setMinimizeionDialogOpen(false);
+        setShowVideoCompressor(false);
+        setSelectedVideoReview(null);
       }, 2000);
+    }
+  };
+
+  // Reload original video (remove optimized version)
+  const reloadOriginalVideo = async (review: ReviewWithCustomer) => {
+    try {
+      const { error } = await supabase
+        .from('reviews')
+        .update({ 
+          media_url_optimized: null,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', review.id);
+
+      if (error) throw error;
+
+      toast({
+        title: "Original video restored",
+        description: "The original video is now being used instead of the optimized version.",
+      });
+
+      // Refresh reviews to show updated data
+      await fetchReviews(activeTab === 'published' ? true : activeTab === 'pending' ? false : undefined);
+      
+    } catch (error: any) {
+      console.error('Error reloading original video:', error);
+      toast({
+        title: "Failed to restore original video",
+        description: "Please try again.",
+        variant: "destructive"
+      });
     }
   };
 
@@ -545,41 +597,66 @@ export const ReviewsManager = () => {
         </div>
       </div>
       
-      <div className="container mx-auto px-6 py-6">
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          {/* Navigation Tabs - matching customer tab style */}
-          <TabsList className="grid w-full grid-cols-4">
-            <TabsTrigger value="pending" className="flex items-center space-x-2">
-              <Clock className="h-4 w-4" />
-              <span>Pending</span>
-              {stats.pending_count > 0 && (
-                <Badge variant="secondary" className="ml-1 h-5 min-w-[20px] px-1 text-xs">
-                  {stats.pending_count}
-                </Badge>
-              )}
-            </TabsTrigger>
-            <TabsTrigger value="published" className="flex items-center space-x-2">
-              <Star className="h-4 w-4" />
-              <span>Published</span>
-              {stats.approved_count > 0 && (
-                <Badge variant="secondary" className="ml-1 h-5 min-w-[20px] px-1 text-xs">
-                  {stats.approved_count}
-                </Badge>
-              )}
-            </TabsTrigger>
-            <TabsTrigger value="analytics" className="flex items-center space-x-2">
-              <TrendingUp className="h-4 w-4" />
-              <span>Analytics</span>
-            </TabsTrigger>
-            <TabsTrigger value="all" className="flex items-center space-x-2">
-              <Users className="h-4 w-4" />
-              <span>All Reviews</span>
-            </TabsTrigger>
-          </TabsList>
+      <div className="container mx-auto p-4 md:p-6">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
+          {/* Navigation Tabs */}
+          <div className="bg-card rounded-lg border p-1 shadow-sm">
+            <TabsList className="grid grid-cols-5 w-full bg-transparent gap-1 h-auto">
+              <TabsTrigger
+                value="pending" 
+                className="flex items-center justify-center gap-1.5 text-xs md:text-sm px-2 md:px-3 py-2.5 rounded-md data-[state=active]:bg-primary data-[state=active]:text-primary-foreground transition-all"
+              >
+                <Clock className="h-4 w-4" />
+                <span className="hidden sm:inline">Pending</span>
+                {stats.pending_count > 0 && (
+                  <Badge variant="secondary" className="ml-1 h-5 min-w-[20px] px-1 text-xs flex items-center justify-center rounded-full">
+                    {stats.pending_count}
+                  </Badge>
+                )}
+              </TabsTrigger>
+              
+              <TabsTrigger 
+                value="published" 
+                className="flex items-center justify-center gap-1.5 text-xs md:text-sm px-2 md:px-3 py-2.5 rounded-md data-[state=active]:bg-primary data-[state=active]:text-primary-foreground transition-all"
+              >
+                <Star className="h-4 w-4" />
+                <span className="hidden sm:inline">Published</span>
+                {stats.approved_count > 0 && (
+                  <Badge variant="secondary" className="ml-1 h-5 min-w-[20px] px-1 text-xs flex items-center justify-center rounded-full">
+                    {stats.approved_count}
+                  </Badge>
+                )}
+              </TabsTrigger>
+              
+              <TabsTrigger 
+                value="analytics" 
+                className="flex items-center justify-center gap-1.5 text-xs md:text-sm px-2 md:px-3 py-2.5 rounded-md data-[state=active]:bg-primary data-[state=active]:text-primary-foreground transition-all"
+              >
+                <TrendingUp className="h-4 w-4" />
+                <span className="hidden sm:inline">Analytics</span>
+              </TabsTrigger>
+              
+              <TabsTrigger 
+                value="all" 
+                className="flex items-center justify-center gap-1.5 text-xs md:text-sm px-2 md:px-3 py-2.5 rounded-md data-[state=active]:bg-primary data-[state=active]:text-primary-foreground transition-all"
+              >
+                <Users className="h-4 w-4" />
+                <span className="hidden sm:inline">All Reviews</span>
+              </TabsTrigger>
+              
+              <TabsTrigger 
+                value="settings" 
+                className="flex items-center justify-center gap-1.5 text-xs md:text-sm px-2 md:px-3 py-2.5 rounded-md data-[state=active]:bg-primary data-[state=active]:text-primary-foreground transition-all"
+              >
+                <Settings className="h-4 w-4" />
+                <span className="hidden sm:inline">Settings</span>
+              </TabsTrigger>
+            </TabsList>
+          </div>
 
           {/* Pending Reviews Tab */}
           <TabsContent value="pending">
-            <div className="bg-white rounded-lg border border-gray-200 shadow-sm">
+            <div className="shadow-soft bg-gradient-to-br from-email-background to-background border-email-primary/20 rounded-lg border">
               <div className="px-6 py-4 border-b border-gray-200">
                 <div className="flex items-center justify-between">
                   <div>
@@ -705,9 +782,23 @@ export const ReviewsManager = () => {
                                   muted
                                 />
                                 {review.media_url_optimized && (
-                                  <div className="flex items-center gap-2 text-xs text-green-600">
-                                    <Check className="h-3 w-3" />
-                                    Optimized version active
+                                  <div className="space-y-2">
+                                    <div className="flex items-center gap-2 text-xs text-green-600">
+                                      <Check className="h-3 w-3" />
+                                      Optimized version active
+                                    </div>
+                                    <div className="text-xs text-muted-foreground">
+                                      Using compressed version for better performance
+                                    </div>
+                                    <Button
+                                      size="sm"
+                                      variant="outline"
+                                      onClick={() => reloadOriginalVideo(review)}
+                                      className="text-xs bg-orange-50 text-orange-700 border-orange-200 hover:bg-orange-100"
+                                    >
+                                      <RotateCcw className="h-3 w-3 mr-1" />
+                                      Reload Original
+                                    </Button>
                                   </div>
                                 )}
                                 {!review.media_url_optimized && (
@@ -776,7 +867,7 @@ export const ReviewsManager = () => {
 
           {/* Published Reviews Tab */}
           <TabsContent value="published">
-            <Card>
+            <Card className="shadow-soft bg-gradient-to-br from-email-background to-background border-email-primary/20">
               <CardHeader className="flex flex-row items-center justify-between">
                 <div>
                   <CardTitle className="flex items-center gap-2">
@@ -888,9 +979,23 @@ export const ReviewsManager = () => {
                                   muted
                                 />
                                 {review.media_url_optimized && (
-                                  <div className="flex items-center gap-2 text-xs text-green-600">
-                                    <Check className="h-3 w-3" />
-                                    Optimized version active
+                                  <div className="space-y-2">
+                                    <div className="flex items-center gap-2 text-xs text-green-600">
+                                      <Check className="h-3 w-3" />
+                                      Optimized version active
+                                    </div>
+                                    <div className="text-xs text-muted-foreground">
+                                      Using compressed version for better performance
+                                    </div>
+                                    <Button
+                                      size="sm"
+                                      variant="outline"
+                                      onClick={() => reloadOriginalVideo(review)}
+                                      className="text-xs bg-orange-50 text-orange-700 border-orange-200 hover:bg-orange-100"
+                                    >
+                                      <RotateCcw className="h-3 w-3 mr-1" />
+                                      Reload Original
+                                    </Button>
                                   </div>
                                 )}
                                 {!review.media_url_optimized && (
@@ -1004,7 +1109,7 @@ export const ReviewsManager = () => {
 
           {/* All Reviews Tab */}
           <TabsContent value="all">
-            <Card>
+            <Card className="shadow-soft bg-gradient-to-br from-email-background to-background border-email-primary/20">
               <CardHeader>
                 <CardTitle>All Reviews</CardTitle>
                 <CardDescription>Complete overview of all review submissions</CardDescription>
@@ -1101,9 +1206,23 @@ export const ReviewsManager = () => {
                                   muted
                                 />
                                 {review.media_url_optimized && (
-                                  <div className="flex items-center gap-2 text-xs text-green-600">
-                                    <Check className="h-3 w-3" />
-                                    Optimized version active
+                                  <div className="space-y-2">
+                                    <div className="flex items-center gap-2 text-xs text-green-600">
+                                      <Check className="h-3 w-3" />
+                                      Optimized version active
+                                    </div>
+                                    <div className="text-xs text-muted-foreground">
+                                      Using compressed version for better performance
+                                    </div>
+                                    <Button
+                                      size="sm"
+                                      variant="outline"
+                                      onClick={() => reloadOriginalVideo(review)}
+                                      className="text-xs bg-orange-50 text-orange-700 border-orange-200 hover:bg-orange-100"
+                                    >
+                                      <RotateCcw className="h-3 w-3 mr-1" />
+                                      Reload Original
+                                    </Button>
                                   </div>
                                 )}
                                 {!review.media_url_optimized && (
@@ -1177,6 +1296,35 @@ export const ReviewsManager = () => {
                 )}
               </CardContent>
             </Card>
+          </TabsContent>
+
+          {/* Settings Tab */}
+          <TabsContent value="settings" className="space-y-0">
+            <div className="shadow-soft bg-gradient-to-br from-email-background to-background border-email-primary/20 rounded-lg border">
+              {/* Settings Sub-Navigation */}
+              <div className="border-b px-6 py-4">
+                <div className="flex items-center gap-4">
+                  <Settings className="h-5 w-5" />
+                  <h2 className="text-lg font-semibold">Settings</h2>
+                </div>
+                <div className="flex gap-2 mt-4">
+                  <Button
+                    variant={settingsSubTab === "style" ? "default" : "outline"}
+                    onClick={() => setSettingsSubTab("style")}
+                    size="sm"
+                    className="flex items-center gap-2"
+                  >
+                    <Palette className="h-4 w-4" />
+                    Style & Branding
+                  </Button>
+                </div>
+              </div>
+              
+              {/* Settings Content */}
+              <div className="p-6">
+                {settingsSubTab === "style" && <StyleGuide />}
+              </div>
+            </div>
           </TabsContent>
         </Tabs>
 
@@ -1280,7 +1428,40 @@ export const ReviewsManager = () => {
               </DialogDescription>
             </DialogHeader>
             
-            <div className="space-y-4">
+            {showVideoCompressor && selectedVideoReview ? (
+              <VideoCompressor
+                videoUrl={selectedVideoReview.media_url}
+                onCompressed={handleCompressedVideo}
+                onCancel={() => {
+                  setShowVideoCompressor(false);
+                  setMinimizeionDialogOpen(false);
+                }}
+                targetResolution={compressionSettings.targetResolution}
+                maxFileSizeMB={compressionSettings.maxFileSizeMB}
+                quality={compressionSettings.quality}
+                compressionPreset={compressionSettings.compressionPreset}
+              />
+            ) : (
+              <>
+                <div className="space-y-4">
+              <div>
+                <Label htmlFor="compressionPreset">Compression Preset</Label>
+                <select 
+                  id="compressionPreset"
+                  value={compressionSettings.compressionPreset} 
+                  onChange={(e) => {
+                    console.log('Preset changed to:', e.target.value);
+                    setMinimizeionSettings(prev => ({ ...prev, compressionPreset: e.target.value }));
+                  }}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="ultra">Ultra (Max compression)</option>
+                  <option value="aggressive">Aggressive (High compression)</option>
+                  <option value="balanced">Balanced (Medium compression)</option>
+                  <option value="light">Light (Minimal compression)</option>
+                </select>
+              </div>
+              
               <div>
                 <Label htmlFor="targetResolution">Target Resolution</Label>
                 <Select 
@@ -1291,10 +1472,10 @@ export const ReviewsManager = () => {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
+                    <SelectItem value="640x360">360p (640x360)</SelectItem>
                     <SelectItem value="854x480">480p (854x480)</SelectItem>
                     <SelectItem value="1280x720">720p (1280x720)</SelectItem>
                     <SelectItem value="1920x1080">1080p (1920x1080)</SelectItem>
-                    <SelectItem value="2560x1440">1440p (2560x1440)</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -1331,11 +1512,27 @@ export const ReviewsManager = () => {
               </div>
               
               <div className="bg-blue-50 p-3 rounded-lg">
-                <h4 className="font-medium text-blue-900 mb-2">Minimizeion Preview</h4>
+                <h4 className="font-medium text-blue-900 mb-2">Compression Preview</h4>
                 <div className="text-sm text-blue-800 space-y-1">
+                  <div>Preset: <span className="font-semibold">{compressionSettings.compressionPreset}</span></div>
                   <div>Resolution: {compressionSettings.targetResolution}</div>
                   <div>Max size: {compressionSettings.maxFileSizeMB}MB</div>
                   <div>Quality: {Math.round(compressionSettings.quality * 100)}%</div>
+                </div>
+                <div className="text-xs text-blue-600 mt-2">
+                  Current preset value: "{compressionSettings.compressionPreset}"
+                </div>
+                <div className="mt-2">
+                  <Button 
+                    size="sm" 
+                    variant="outline" 
+                    onClick={() => {
+                      console.log('Current compression settings:', compressionSettings);
+                      setMinimizeionSettings(prev => ({ ...prev, compressionPreset: 'ultra' }));
+                    }}
+                  >
+                    Test: Set to Ultra
+                  </Button>
                 </div>
               </div>
 
@@ -1380,6 +1577,8 @@ export const ReviewsManager = () => {
                 )}
               </Button>
             </div>
+              </>
+            )}
           </DialogContent>
         </Dialog>
       </div>
