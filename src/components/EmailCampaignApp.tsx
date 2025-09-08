@@ -27,13 +27,15 @@ export const EmailCampaignApp = () => {
       {/* Header */}
       <div className="border-b bg-card/50 backdrop-blur-sm sticky top-0 z-50">
         <div className="container mx-auto px-4 py-4">
-          <div className="text-center space-y-1">
-            <h1 className="text-xl md:text-2xl lg:text-3xl font-bold text-foreground">
-              Email Campaign Manager
-            </h1>
-            <p className="text-xs md:text-sm lg:text-base text-muted-foreground">
-              Create, manage, and send email campaigns
-            </p>
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-xl md:text-2xl lg:text-3xl font-bold text-foreground">
+                Customer Management
+              </h1>
+              <p className="text-xs md:text-sm lg:text-base text-muted-foreground">
+                Create, manage, and act with customers
+              </p>
+            </div>
           </div>
         </div>
       </div>
