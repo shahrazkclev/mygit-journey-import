@@ -97,11 +97,21 @@
             const avatarGradient = generateAvatarGradient(review.user_name);
             const stars = renderStars(review.rating);
             
+            // Use optimized URL if available, otherwise fall back to original
+            const mediaUrl = review.media_url_optimized || review.media_url;
+            
+            // Debug logging
+            if (review.media_url_optimized) {
+                console.log(`Using optimized R2 URL for review ${review.id}:`, review.media_url_optimized);
+            } else {
+                console.log(`Using original URL for review ${review.id}:`, review.media_url);
+            }
+            
             const mediaContent = review.media_type === 'video' 
                 ? `<video class="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" 
-                           muted loop playsinline src="${review.media_url}"></video>`
+                           muted loop playsinline src="${mediaUrl}"></video>`
                 : `<img class="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" 
-                        src="${review.media_url}" alt="Review image">`;
+                        src="${mediaUrl}" alt="Review image">`;
 
             const muteButton = review.media_type === 'video' 
                 ? `<button class="mute-btn absolute left-1/2 -translate-x-1/2 -translate-y-1/2 z-20 bg-black/30 rounded-full backdrop-blur-sm transition-all duration-300 opacity-0 group-hover:opacity-100 hover:bg-black/50">
