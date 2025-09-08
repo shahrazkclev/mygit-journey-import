@@ -377,7 +377,7 @@ serve(async (req) => {
         // Check if contact matches the rule
         if (ruleConfig.requiredTags && Array.isArray(ruleConfig.requiredTags)) {
           shouldInclude = ruleConfig.requiredTags.some((tag: string) => 
-            mergedTags.includes(typeof tag === 'string' ? tag.trim() : tag)
+            finalTags.includes(typeof tag === 'string' ? tag.trim() : tag)
           );
         }
 
