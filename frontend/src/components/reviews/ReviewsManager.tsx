@@ -34,7 +34,7 @@ import {
   UserPlus,
   Tag,
   Mail,
-  Compress,
+  Minimize,
   Video
 } from "lucide-react";
 
@@ -103,16 +103,16 @@ export const ReviewsManager = () => {
   });
   const { toast } = useToast();
   const { themeColors } = useGlobalTheme();
-  const [compressionDialogOpen, setCompressionDialogOpen] = useState(false);
+  const [compressionDialogOpen, setMinimizeionDialogOpen] = useState(false);
   const [selectedVideoReview, setSelectedVideoReview] = useState<ReviewWithCustomer | null>(null);
-  const [compressionSettings, setCompressionSettings] = useState({
+  const [compressionSettings, setMinimizeionSettings] = useState({
     targetResolution: '1280x720',
     maxFileSizeMB: 10,
     quality: 0.7
   });
-  const [compressing, setCompressing] = useState(false);
-  const [compressionProgress, setCompressionProgress] = useState(0);
-  const [compressionStatus, setCompressionStatus] = useState('');
+  const [compressing, setMinimizeing] = useState(false);
+  const [compressionProgress, setMinimizeionProgress] = useState(0);
+  const [compressionStatus, setMinimizeionStatus] = useState('');
 
   // Demo user ID for contacts
   const DEMO_USER_ID = "550e8400-e29b-41d4-a716-446655440000";
@@ -393,7 +393,7 @@ export const ReviewsManager = () => {
     }
   };
 
-  // Compress video
+  // Minimize video
   const compressVideo = async (review: ReviewWithCustomer) => {
     if (!review.media_url || review.media_type !== 'video') {
       toast({
@@ -404,14 +404,14 @@ export const ReviewsManager = () => {
       return;
     }
 
-    setCompressing(true);
-    setCompressionProgress(0);
-    setCompressionStatus('Starting compression...');
+    setMinimizeing(true);
+    setMinimizeionProgress(0);
+    setMinimizeionStatus('Starting compression...');
     
     try {
       // Simulate progress updates
       const progressInterval = setInterval(() => {
-        setCompressionProgress(prev => {
+        setMinimizeionProgress(prev => {
           if (prev >= 90) return prev;
           return prev + Math.random() * 10;
         });
@@ -421,7 +421,7 @@ export const ReviewsManager = () => {
       const statusUpdates = [
         { progress: 10, message: 'Downloading original video...' },
         { progress: 30, message: 'Analyzing video properties...' },
-        { progress: 50, message: 'Compressing video with FFmpeg...' },
+        { progress: 50, message: 'Minimizeing video with FFmpeg...' },
         { progress: 80, message: 'Uploading optimized video...' },
         { progress: 95, message: 'Updating database...' }
       ];
@@ -429,7 +429,7 @@ export const ReviewsManager = () => {
       let statusIndex = 0;
       const statusInterval = setInterval(() => {
         if (statusIndex < statusUpdates.length) {
-          setCompressionStatus(statusUpdates[statusIndex].message);
+          setMinimizeionStatus(statusUpdates[statusIndex].message);
           statusIndex++;
         }
       }, 2000);
@@ -448,31 +448,31 @@ export const ReviewsManager = () => {
 
       if (error) throw error;
 
-      setCompressionProgress(100);
-      setCompressionStatus('Compression completed!');
+      setMinimizeionProgress(100);
+      setMinimizeionStatus('Minimizeion completed!');
 
       toast({
         title: "Video compressed successfully!",
-        description: `Compressed from ${Math.round(data.originalSize / 1024 / 1024)}MB to ${Math.round(data.compressedSize / 1024 / 1024)}MB (${data.compressionRatio}% reduction)`,
+        description: `Minimizeed from ${Math.round(data.originalSize / 1024 / 1024)}MB to ${Math.round(data.compressedSize / 1024 / 1024)}MB (${data.compressionRatio}% reduction)`,
       });
 
       // Refresh reviews to show updated data
       await fetchReviews(activeTab === 'published' ? true : activeTab === 'pending' ? false : undefined);
       
     } catch (error: any) {
-      console.error('Compression error:', error);
-      setCompressionStatus('Compression failed');
+      console.error('Minimizeion error:', error);
+      setMinimizeionStatus('Minimizeion failed');
       toast({
-        title: "Compression failed",
+        title: "Minimizeion failed",
         description: error.message || "Failed to compress video. Please try again.",
         variant: "destructive"
       });
     } finally {
       setTimeout(() => {
-        setCompressing(false);
-        setCompressionProgress(0);
-        setCompressionStatus('');
-        setCompressionDialogOpen(false);
+        setMinimizeing(false);
+        setMinimizeionProgress(0);
+        setMinimizeionStatus('');
+        setMinimizeionDialogOpen(false);
       }, 2000);
     }
   };
@@ -821,12 +821,12 @@ export const ReviewsManager = () => {
                                     variant="outline"
                                     onClick={() => {
                                       setSelectedVideoReview(review);
-                                      setCompressionDialogOpen(true);
+                                      setMinimizeionDialogOpen(true);
                                     }}
                                     className="text-xs bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100"
                                   >
-                                    <Compress className="h-3 w-3 mr-1" />
-                                    Compress Video
+                                    <Minimize className="h-3 w-3 mr-1" />
+                                    Minimize Video
                                   </Button>
                                 )}
                               </div>
@@ -1004,12 +1004,12 @@ export const ReviewsManager = () => {
                                     variant="outline"
                                     onClick={() => {
                                       setSelectedVideoReview(review);
-                                      setCompressionDialogOpen(true);
+                                      setMinimizeionDialogOpen(true);
                                     }}
                                     className="text-xs bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100"
                                   >
-                                    <Compress className="h-3 w-3 mr-1" />
-                                    Compress Video
+                                    <Minimize className="h-3 w-3 mr-1" />
+                                    Minimize Video
                                   </Button>
                                 )}
                               </div>
@@ -1217,12 +1217,12 @@ export const ReviewsManager = () => {
                                     variant="outline"
                                     onClick={() => {
                                       setSelectedVideoReview(review);
-                                      setCompressionDialogOpen(true);
+                                      setMinimizeionDialogOpen(true);
                                     }}
                                     className="text-xs bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100"
                                   >
-                                    <Compress className="h-3 w-3 mr-1" />
-                                    Compress Video
+                                    <Minimize className="h-3 w-3 mr-1" />
+                                    Minimize Video
                                   </Button>
                                 )}
                               </div>
@@ -1372,13 +1372,13 @@ export const ReviewsManager = () => {
           </DialogContent>
         </Dialog>
 
-        {/* Video Compression Dialog */}
-        <Dialog open={compressionDialogOpen} onOpenChange={setCompressionDialogOpen}>
+        {/* Video Minimizeion Dialog */}
+        <Dialog open={compressionDialogOpen} onOpenChange={setMinimizeionDialogOpen}>
           <DialogContent className="max-w-md">
             <DialogHeader>
               <DialogTitle className="flex items-center gap-2">
                 <Video className="h-5 w-5" />
-                Compress Video
+                Minimize Video
               </DialogTitle>
               <DialogDescription>
                 Optimize video for better performance and smaller file size
@@ -1390,7 +1390,7 @@ export const ReviewsManager = () => {
                 <Label htmlFor="targetResolution">Target Resolution</Label>
                 <Select 
                   value={compressionSettings.targetResolution} 
-                  onValueChange={(value) => setCompressionSettings(prev => ({ ...prev, targetResolution: value }))}
+                  onValueChange={(value) => setMinimizeionSettings(prev => ({ ...prev, targetResolution: value }))}
                 >
                   <SelectTrigger>
                     <SelectValue />
@@ -1412,7 +1412,7 @@ export const ReviewsManager = () => {
                   min="1"
                   max="50"
                   value={compressionSettings.maxFileSizeMB}
-                  onChange={(e) => setCompressionSettings(prev => ({ ...prev, maxFileSizeMB: parseInt(e.target.value) || 10 }))}
+                  onChange={(e) => setMinimizeionSettings(prev => ({ ...prev, maxFileSizeMB: parseInt(e.target.value) || 10 }))}
                 />
               </div>
               
@@ -1425,7 +1425,7 @@ export const ReviewsManager = () => {
                   max="1.0"
                   step="0.1"
                   value={compressionSettings.quality}
-                  onChange={(e) => setCompressionSettings(prev => ({ ...prev, quality: parseFloat(e.target.value) }))}
+                  onChange={(e) => setMinimizeionSettings(prev => ({ ...prev, quality: parseFloat(e.target.value) }))}
                   className="w-full"
                 />
                 <div className="flex justify-between text-xs text-muted-foreground mt-1">
@@ -1435,7 +1435,7 @@ export const ReviewsManager = () => {
               </div>
               
               <div className="bg-blue-50 p-3 rounded-lg">
-                <h4 className="font-medium text-blue-900 mb-2">Compression Preview</h4>
+                <h4 className="font-medium text-blue-900 mb-2">Minimizeion Preview</h4>
                 <div className="text-sm text-blue-800 space-y-1">
                   <div>Resolution: {compressionSettings.targetResolution}</div>
                   <div>Max size: {compressionSettings.maxFileSizeMB}MB</div>
@@ -1447,7 +1447,7 @@ export const ReviewsManager = () => {
               {compressing && (
                 <div className="space-y-3">
                   <div className="flex items-center justify-between text-sm">
-                    <span className="font-medium">Compressing Video...</span>
+                    <span className="font-medium">Minimizeing Video...</span>
                     <span className="text-muted-foreground">{Math.round(compressionProgress)}%</span>
                   </div>
                   <div className="w-full bg-gray-200 rounded-full h-2">
@@ -1464,7 +1464,7 @@ export const ReviewsManager = () => {
             </div>
             
             <div className="flex justify-end gap-2 mt-4">
-              <Button variant="outline" onClick={() => setCompressionDialogOpen(false)}>
+              <Button variant="outline" onClick={() => setMinimizeionDialogOpen(false)}>
                 Cancel
               </Button>
               <Button 
@@ -1474,12 +1474,12 @@ export const ReviewsManager = () => {
                 {compressing ? (
                   <>
                     <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
-                    Compressing...
+                    Minimizeing...
                   </>
                 ) : (
                   <>
-                    <Compress className="h-4 w-4 mr-2" />
-                    Compress Video
+                    <Minimize className="h-4 w-4 mr-2" />
+                    Minimize Video
                   </>
                 )}
               </Button>
