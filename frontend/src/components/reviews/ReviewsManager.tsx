@@ -427,12 +427,12 @@ export const ReviewsManager = () => {
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
-      <div className="border-b bg-card/50 backdrop-blur-sm sticky top-0 z-50">
-        <div className="container mx-auto px-4 py-4">
+      <div className="bg-white border-b sticky top-0 z-50 shadow-sm">
+        <div className="container mx-auto px-6 py-6">
           <div className="flex items-center justify-between">
             <div>
               <h1 
-                className="text-xl md:text-2xl lg:text-3xl font-bold"
+                className="text-2xl md:text-3xl font-bold text-gray-900"
                 style={{ 
                   color: `hsl(${themeColors.primary})`,
                   background: `linear-gradient(135deg, hsl(${themeColors.primary}), hsl(${themeColors.accent}))`,
@@ -443,17 +443,17 @@ export const ReviewsManager = () => {
               >
                 Reviews Manager
               </h1>
-              <p className="text-xs md:text-sm lg:text-base text-muted-foreground">
+              <p className="text-sm text-gray-600 mt-1">
                 Manage customer reviews and submissions
               </p>
             </div>
             <Button 
               onClick={copySubmissionLink} 
-              variant="outline" 
-              size="sm"
+              className="bg-white border border-gray-300 text-gray-700 hover:bg-gray-50 px-4 py-2 rounded-lg font-medium"
               style={{
                 borderColor: `hsl(${themeColors.primary})`,
-                color: `hsl(${themeColors.primary})`
+                color: `hsl(${themeColors.primary})`,
+                backgroundColor: 'white'
               }}
             >
               <Link className="h-4 w-4 mr-2" />
@@ -463,23 +463,33 @@ export const ReviewsManager = () => {
         </div>
       </div>
       
-      <div className="container mx-auto p-4 md:p-6">
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
+      <div className="container mx-auto px-6 py-6">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
           {/* Navigation Tabs */}
-          <div className="bg-card rounded-lg border p-1 shadow-sm">
-            <TabsList className="grid grid-cols-2 md:grid-cols-4 w-full bg-transparent gap-1 h-auto">
+          <div className="bg-white rounded-lg border border-gray-200 shadow-sm">
+            <TabsList className="grid grid-cols-2 md:grid-cols-4 w-full bg-transparent gap-0 h-auto p-1">
               <TabsTrigger 
                 value="pending" 
-                className="flex items-center justify-center gap-1.5 text-xs md:text-sm px-2 md:px-3 py-2.5 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
+                className={`flex items-center justify-center gap-2 text-sm px-4 py-3 rounded-md font-medium transition-all ${
+                  activeTab === 'pending' 
+                    ? 'bg-white shadow-sm border border-gray-200' 
+                    : 'hover:bg-gray-50'
+                }`}
                 style={{
-                  '--primary': `hsl(${themeColors.primary})`,
-                  '--primary-foreground': `hsl(${themeColors.primary}-foreground)`
-                } as React.CSSProperties}
+                  color: activeTab === 'pending' ? `hsl(${themeColors.primary})` : '#6B7280',
+                  backgroundColor: activeTab === 'pending' ? 'white' : 'transparent'
+                }}
               >
                 <Clock className="h-4 w-4" />
-                <span className="hidden sm:inline">Pending</span>
+                <span>Pending</span>
                 {stats.pending_count > 0 && (
-                  <Badge variant="secondary" className="ml-1 h-5 min-w-[20px] px-1 text-xs">
+                  <Badge 
+                    className="ml-1 h-5 min-w-[20px] px-1.5 text-xs"
+                    style={{
+                      backgroundColor: `hsl(${themeColors.primary} / 0.1)`,
+                      color: `hsl(${themeColors.primary})`
+                    }}
+                  >
                     {stats.pending_count}
                   </Badge>
                 )}
@@ -487,16 +497,26 @@ export const ReviewsManager = () => {
               
               <TabsTrigger 
                 value="published" 
-                className="flex items-center justify-center gap-1.5 text-xs md:text-sm px-2 md:px-3 py-2.5 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
+                className={`flex items-center justify-center gap-2 text-sm px-4 py-3 rounded-md font-medium transition-all ${
+                  activeTab === 'published' 
+                    ? 'bg-white shadow-sm border border-gray-200' 
+                    : 'hover:bg-gray-50'
+                }`}
                 style={{
-                  '--primary': `hsl(${themeColors.primary})`,
-                  '--primary-foreground': `hsl(${themeColors.primary}-foreground)`
-                } as React.CSSProperties}
+                  color: activeTab === 'published' ? `hsl(${themeColors.primary})` : '#6B7280',
+                  backgroundColor: activeTab === 'published' ? 'white' : 'transparent'
+                }}
               >
                 <Star className="h-4 w-4" />
-                <span className="hidden sm:inline">Published</span>
+                <span>Published</span>
                 {stats.approved_count > 0 && (
-                  <Badge variant="secondary" className="ml-1 h-5 min-w-[20px] px-1 text-xs">
+                  <Badge 
+                    className="ml-1 h-5 min-w-[20px] px-1.5 text-xs"
+                    style={{
+                      backgroundColor: `hsl(${themeColors.primary} / 0.1)`,
+                      color: `hsl(${themeColors.primary})`
+                    }}
+                  >
                     {stats.approved_count}
                   </Badge>
                 )}
@@ -504,59 +524,75 @@ export const ReviewsManager = () => {
               
               <TabsTrigger 
                 value="analytics" 
-                className="flex items-center justify-center gap-1.5 text-xs md:text-sm px-2 md:px-3 py-2.5 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
+                className={`flex items-center justify-center gap-2 text-sm px-4 py-3 rounded-md font-medium transition-all ${
+                  activeTab === 'analytics' 
+                    ? 'bg-white shadow-sm border border-gray-200' 
+                    : 'hover:bg-gray-50'
+                }`}
                 style={{
-                  '--primary': `hsl(${themeColors.primary})`,
-                  '--primary-foreground': `hsl(${themeColors.primary}-foreground)`
-                } as React.CSSProperties}
+                  color: activeTab === 'analytics' ? `hsl(${themeColors.primary})` : '#6B7280',
+                  backgroundColor: activeTab === 'analytics' ? 'white' : 'transparent'
+                }}
               >
                 <TrendingUp className="h-4 w-4" />
-                <span className="hidden sm:inline">Analytics</span>
+                <span>Analytics</span>
               </TabsTrigger>
               
               <TabsTrigger 
                 value="all" 
-                className="flex items-center justify-center gap-1.5 text-xs md:text-sm px-2 md:px-3 py-2.5 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
+                className={`flex items-center justify-center gap-2 text-sm px-4 py-3 rounded-md font-medium transition-all ${
+                  activeTab === 'all' 
+                    ? 'bg-white shadow-sm border border-gray-200' 
+                    : 'hover:bg-gray-50'
+                }`}
                 style={{
-                  '--primary': `hsl(${themeColors.primary})`,
-                  '--primary-foreground': `hsl(${themeColors.primary}-foreground)`
-                } as React.CSSProperties}
+                  color: activeTab === 'all' ? `hsl(${themeColors.primary})` : '#6B7280',
+                  backgroundColor: activeTab === 'all' ? 'white' : 'transparent'
+                }}
               >
                 <Users className="h-4 w-4" />
-                <span className="hidden sm:inline">All Reviews</span>
+                <span>All Reviews</span>
               </TabsTrigger>
             </TabsList>
           </div>
 
           {/* Pending Reviews Tab */}
           <TabsContent value="pending">
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between">
-                <div>
-                  <CardTitle className="flex items-center gap-2">
-                    <Clock className="h-5 w-5" />
-                    Pending Reviews
-                  </CardTitle>
-                  <CardDescription>
-                    Review and approve incoming submissions
-                  </CardDescription>
+            <div className="bg-white rounded-lg border border-gray-200 shadow-sm">
+              <div className="px-6 py-4 border-b border-gray-200">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h2 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+                      <Clock className="h-5 w-5" style={{ color: `hsl(${themeColors.primary})` }} />
+                      Pending Reviews
+                    </h2>
+                    <p className="text-sm text-gray-600 mt-1">
+                      Review and approve incoming submissions
+                    </p>
+                  </div>
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={() => fetchReviews(false)} 
+                    disabled={loading}
+                    className="bg-white border-gray-300 text-gray-700 hover:bg-gray-50"
+                  >
+                    {loading ? <RefreshCw className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
+                    Refresh
+                  </Button>
                 </div>
-                <Button variant="outline" size="sm" onClick={() => fetchReviews(false)} disabled={loading}>
-                  {loading ? <RefreshCw className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
-                  Refresh
-                </Button>
-              </CardHeader>
-              <CardContent>
+              </div>
+              <div className="p-6">
                 {loading ? (
                   <div className="text-center py-12">
-                    <RefreshCw className="h-8 w-8 mx-auto animate-spin text-muted-foreground mb-4" />
-                    <p className="text-muted-foreground">Loading reviews...</p>
+                    <RefreshCw className="h-8 w-8 mx-auto animate-spin text-gray-400 mb-4" />
+                    <p className="text-gray-600">Loading reviews...</p>
                   </div>
                 ) : reviews.length === 0 ? (
                   <div className="text-center py-12">
-                    <FileText className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-                    <h3 className="text-lg font-semibold mb-2">No pending reviews</h3>
-                    <p className="text-muted-foreground">New submissions will appear here for approval</p>
+                    <FileText className="h-12 w-12 mx-auto text-gray-400 mb-4" />
+                    <h3 className="text-lg font-semibold text-gray-900 mb-2">No pending reviews</h3>
+                    <p className="text-gray-600">New submissions will appear here for approval</p>
                   </div>
                 ) : (
                   <div className="space-y-4">
@@ -686,8 +722,8 @@ export const ReviewsManager = () => {
                     ))}
                   </div>
                 )}
-              </CardContent>
-            </Card>
+              </div>
+            </div>
           </TabsContent>
 
           {/* Published Reviews Tab */}
