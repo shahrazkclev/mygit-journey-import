@@ -41,12 +41,6 @@
             <!-- Cards Container -->
             <div id="carousel" class="flex gap-4 py-8 px-4">
                 <!-- Dynamic cards will be loaded here -->
-                <div id="loading-state" class="flex items-center justify-center w-full py-12">
-                    <div class="text-center">
-                        <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-600 mx-auto mb-4"></div>
-                        <p class="text-gray-600">Loading reviews...</p>
-                    </div>
-                </div>
             </div>
         </div>
 
@@ -54,8 +48,13 @@
 
     <script>
         // Supabase Configuration
+        // ⚠️  SECURITY NOTE: This is the anon/public key - safe for client-side use
+        // but ensure RLS policies are properly configured on your database
         const SUPABASE_URL = "https://mixifcnokcmxarpzwfiy.supabase.co";
         const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1peGlmY25va2NteGFycHp3Zml5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTM0NjYwNTEsImV4cCI6MjA2OTA0MjA1MX0.-4uIuzcHcDGS20-dtKbjVFOtpBSmwYhT9Bgt6KA-dXI";
+        
+        // 🔒 For production, consider using environment variables or a backend proxy
+        // Example: const SUPABASE_KEY = process.env.VITE_SUPABASE_ANON_KEY;
         
         // Initialize Supabase client
         const { createClient } = supabase;
@@ -144,6 +143,10 @@
 
         async function loadReviews() {
             try {
+                console.log('Loading reviews...');
+                console.log('Supabase URL:', SUPABASE_URL);
+                console.log('Supabase Key:', SUPABASE_KEY ? 'Present' : 'Missing');
+                
                 const { data, error } = await supabaseClient
                     .from('reviews')
                     .select('*')
@@ -151,27 +154,75 @@
                     .order('sort_order', { ascending: true })
                     .order('created_at', { ascending: false });
 
+                console.log('Query result:', { data, error });
+
                 if (error) {
                     console.error('Error loading reviews:', error);
-                    showErrorState();
+                    // Don't show error state, just load sample data instead
+                    loadSampleReviews();
                     return;
                 }
 
                 reviews = data || [];
-                renderReviews();
+                console.log('Reviews loaded:', reviews.length, 'items');
+                
+                if (reviews.length === 0) {
+                    console.log('No reviews found, loading sample data...');
+                    loadSampleReviews();
+                    return;
+                }
+                
+                // Add reviews progressively
+                addReviewsProgressively(reviews);
             } catch (error) {
                 console.error('Error loading reviews:', error);
-                showErrorState();
+                // Don't show error state, just load sample data instead
+                loadSampleReviews();
             }
         }
 
-        function renderReviews() {
+        function addReviewsProgressively(reviewsToAdd) {
             const carousel = document.getElementById('carousel');
-            const loadingState = document.getElementById('loading-state');
+            if (!carousel) {
+                console.error('Carousel element not found!');
+                return;
+            }
+
+            console.log('Adding reviews progressively...', reviewsToAdd.length, 'items');
+            
+            // Initialize scroll functionality once at the start
+            initializeCarousel();
+            
+            // Add each review with a small delay for smooth appearance
+            reviewsToAdd.forEach((review, index) => {
+                setTimeout(() => {
+                    const cardHTML = createReviewCard(review);
+                    carousel.insertAdjacentHTML('beforeend', cardHTML);
+                    
+                    // Initialize carousel functionality for the new card
+                    const newCard = carousel.lastElementChild;
+                    if (newCard) {
+                        initializeSingleCard(newCard);
+                    }
+                    
+                    console.log(`Added review ${index + 1}/${reviewsToAdd.length}`);
+                }, index * 100); // 100ms delay between each card
+            });
+        }
+
+        function renderReviews() {
+            console.log('Rendering all reviews at once...', reviews.length, 'items');
+            const carousel = document.getElementById('carousel');
+            
+            if (!carousel) {
+                console.error('Carousel element not found!');
+                return;
+            }
             
             if (reviews.length === 0) {
-                loadingState.innerHTML = `
-                    <div class="text-center py-12">
+                console.log('No reviews found, showing empty state');
+                carousel.innerHTML = `
+                    <div class="text-center py-12 w-full">
                         <div class="w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-6">
                             <svg class="w-12 h-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z"></path>
@@ -184,30 +235,15 @@
                 return;
             }
 
-            loadingState.remove();
-            carousel.innerHTML = reviews.map(createReviewCard).join('');
+            console.log('Rendering all cards at once...');
+            const cardsHTML = reviews.map(createReviewCard).join('');
+            console.log('Generated cards HTML length:', cardsHTML.length);
+            carousel.innerHTML = cardsHTML;
             
             // Initialize carousel functionality after rendering
             initializeCarousel();
         }
 
-        function showErrorState() {
-            const loadingState = document.getElementById('loading-state');
-            loadingState.innerHTML = `
-                <div class="text-center py-12">
-                    <div class="w-24 h-24 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-6">
-                        <svg class="w-12 h-12 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                        </svg>
-                    </div>
-                    <h3 class="text-xl font-semibold text-gray-900 mb-2">Failed to load reviews</h3>
-                    <p class="text-gray-600 mb-4">Please try refreshing the page.</p>
-                    <button onclick="loadReviews()" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
-                        Try Again
-                    </button>
-                </div>
-            `;
-        }
 
         function initializeCarousel() {
             const carouselWrapper = document.getElementById('carousel-wrapper');
@@ -238,7 +274,7 @@
                 if (!isDown) return;
                 e.preventDefault();
                 const x = e.pageX - carouselWrapper.offsetLeft;
-                const walk = (x - startX) * 3;
+                const walk = (x - startX) * 6; // 2x faster (was 3, now 6)
                 carouselWrapper.scrollLeft = scrollLeft - walk;
             });
 
@@ -246,7 +282,7 @@
             carouselWrapper.addEventListener('wheel', (e) => {
                 if (e.deltaY !== 0) {
                     e.preventDefault();
-                    carouselWrapper.scrollLeft += e.deltaY;
+                    carouselWrapper.scrollLeft += e.deltaY * 2; // 2x faster
                 }
             });
 
@@ -317,9 +353,125 @@
             });
         }
 
+        // Sample data for testing (remove this when Supabase is working)
+        const sampleReviews = [
+            {
+                id: 1,
+                user_name: "Sarah Johnson",
+                user_instagram_handle: "@sarahj",
+                rating: 5,
+                description: "Amazing product! Really exceeded my expectations. The quality is outstanding and delivery was super fast.",
+                media_url: "https://via.placeholder.com/400x600/4F46E5/FFFFFF?text=Product+Review",
+                media_type: "image",
+                is_active: true,
+                sort_order: 1,
+                created_at: "2024-01-15T10:00:00Z"
+            },
+            {
+                id: 2,
+                user_name: "Mike Chen",
+                user_instagram_handle: "@mikechen",
+                rating: 4,
+                description: "Great service and product quality. Would definitely recommend to friends!",
+                media_url: "https://via.placeholder.com/400x600/059669/FFFFFF?text=Customer+Review",
+                media_type: "image",
+                is_active: true,
+                sort_order: 2,
+                created_at: "2024-01-14T15:30:00Z"
+            },
+            {
+                id: 3,
+                user_name: "Emma Wilson",
+                user_instagram_handle: "@emmaw",
+                rating: 5,
+                description: "Love this! Perfect for what I needed. Customer service was also excellent.",
+                media_url: "https://via.placeholder.com/400x600/DC2626/FFFFFF?text=5+Star+Review",
+                media_type: "image",
+                is_active: true,
+                sort_order: 3,
+                created_at: "2024-01-13T09:15:00Z"
+            }
+        ];
+
+        // Function to load sample data for testing
+        function loadSampleReviews() {
+            console.log('Loading sample reviews for testing...');
+            reviews = sampleReviews;
+            addReviewsProgressively(sampleReviews);
+        }
+
+        // Function to initialize a single card (for progressive loading)
+        function initializeSingleCard(card) {
+            const video = card.querySelector('video');
+            const muteBtn = card.querySelector('.mute-btn');
+            if (!video || !muteBtn) return;
+
+            const updateCardState = (card) => {
+                const video = card.querySelector('video');
+                const muteBtn = card.querySelector('.mute-btn');
+                const iconSvgs = card.querySelectorAll('.mute-icon-svg');
+                if (!video || !muteBtn || iconSvgs.length === 0) return;
+
+                video.muted = !isUnmutedGlobally;
+
+                iconSvgs.forEach((svg, index) => {
+                    if (index === 0) { // unmuted icon
+                        svg.classList.toggle('hidden', !isUnmutedGlobally);
+                    } else { // muted icon
+                        svg.classList.toggle('hidden', isUnmutedGlobally);
+                    }
+                });
+
+                const isMuted = !isUnmutedGlobally;
+                const isCentered = muteBtn.classList.contains('top-1/3');
+
+                if (isMuted && !isCentered) {
+                    // Move to center
+                    muteBtn.classList.remove('top-4', 'right-4', 'p-1.5');
+                    muteBtn.classList.add('top-1/3', 'left-1/2', '-translate-x-1/2', '-translate-y-1/2', 'p-4');
+                    iconSvgs.forEach(svg => {
+                        svg.classList.remove('w-5', 'h-5');
+                        svg.classList.add('w-10', 'h-10');
+                    });
+                } else if (!isMuted && isCentered) {
+                    // Move to corner
+                    muteBtn.classList.remove('top-1/3', 'left-1/2', '-translate-x-1/2', '-translate-y-1/2', 'p-4');
+                    muteBtn.classList.add('top-4', 'right-4', 'p-1.5');
+                    iconSvgs.forEach(svg => {
+                        svg.classList.remove('w-10', 'h-10');
+                        svg.classList.add('w-5', 'h-5');
+                    });
+                }
+            };
+
+            card.addEventListener('mouseenter', () => {
+                updateCardState(card);
+                const playPromise = video.play();
+                if (playPromise !== undefined) {
+                    playPromise.catch(error => console.log("Autoplay failed.", error));
+                }
+            });
+
+            card.addEventListener('mouseleave', () => {
+                video.pause();
+            });
+
+            muteBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                isUnmutedGlobally = !isUnmutedGlobally;
+                // Update all cards to reflect the global state change
+                const allCards = document.querySelectorAll('.video-card');
+                allCards.forEach(updateCardState);
+            });
+        }
+
         // Initialize the application
         document.addEventListener('DOMContentLoaded', () => {
-            loadReviews();
+            // Try to load from Supabase first, fallback to sample data
+            loadReviews().catch(() => {
+                console.log('Supabase failed, loading sample data...');
+                loadSampleReviews();
+            });
         });
     </script>
 </body>

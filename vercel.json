@@ -1,0 +1,30 @@
+{
+  "version": 2,
+  "builds": [
+    {
+      "src": "backend/r2-upload-api.py",
+      "use": "@vercel/python"
+    }
+  ],
+  "routes": [
+    {
+      "src": "/api/upload-to-r2",
+      "dest": "backend/r2-upload-api.py"
+    },
+    {
+      "src": "/health",
+      "dest": "backend/r2-upload-api.py"
+    },
+    {
+      "src": "/",
+      "dest": "backend/r2-upload-api.py"
+    }
+  ],
+  "env": {
+    "R2_BUCKET_NAME": "reviewshigh",
+    "R2_ACCESS_KEY_ID": "dc9e26555bd3c237f3ee002056a9b373",
+    "R2_SECRET_ACCESS_KEY": "f8e3a0f1350359468829f01daa2a33d19bde01854403f7392068a17fbefd75c0",
+    "R2_ENDPOINT_URL": "https://b5f7bbc74ed9bf4c44b19d1f3b937e22.r2.cloudflarestorage.com",
+    "R2_PUBLIC_URL": "https://b5f7bbc74ed9bf4c44b19d1f3b937e22.r2.cloudflarestorage.com/reviewshigh"
+  }
+}

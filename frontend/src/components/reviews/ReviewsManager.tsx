@@ -33,7 +33,9 @@ import {
   TrendingUp,
   UserPlus,
   Tag,
-  Mail
+  Mail,
+  Compress,
+  Video
 } from "lucide-react";
 
 interface Review {
@@ -41,6 +43,7 @@ interface Review {
   user_email: string;
   user_name: string;
   media_url: string;
+  media_url_optimized?: string;
   media_type: string;
   rating: number;
   description: string;
@@ -100,6 +103,16 @@ export const ReviewsManager = () => {
   });
   const { toast } = useToast();
   const { themeColors } = useGlobalTheme();
+  const [compressionDialogOpen, setCompressionDialogOpen] = useState(false);
+  const [selectedVideoReview, setSelectedVideoReview] = useState<ReviewWithCustomer | null>(null);
+  const [compressionSettings, setCompressionSettings] = useState({
+    targetResolution: '1280x720',
+    maxFileSizeMB: 10,
+    quality: 0.7
+  });
+  const [compressing, setCompressing] = useState(false);
+  const [compressionProgress, setCompressionProgress] = useState(0);
+  const [compressionStatus, setCompressionStatus] = useState('');
 
   // Demo user ID for contacts
   const DEMO_USER_ID = "550e8400-e29b-41d4-a716-446655440000";
@@ -124,25 +137,25 @@ export const ReviewsManager = () => {
   const fetchReviews = async (filterActive?: boolean) => {
     setLoading(true);
     try {
-      const SUPABASE_URL = "https://mixifcnokcmxarpzwfiy.supabase.co";
-      const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1peGlmY25va2NteGFycHp3Zml5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTM0NjYwNTEsImV4cCI6MjA2OTA0MjA1MX0.-4uIuzcHcDGS20-dtKbjVFOtpBSmwYhT9Bgt6KA-dXI";
+      console.log('Fetching reviews with filterActive:', filterActive);
       
-      let url = `${SUPABASE_URL}/rest/v1/reviews?select=*&order=sort_order.desc`;
+      let query = supabase
+        .from('reviews')
+        .select('*')
+        .order('sort_order', { ascending: false });
       
       if (filterActive !== undefined) {
-        url += `&is_active=eq.${filterActive}`;
+        query = query.eq('is_active', filterActive);
       }
       
-      const response = await fetch(url, {
-        headers: {
-          'apikey': SUPABASE_KEY,
-          'Authorization': `Bearer ${SUPABASE_KEY}`,
-          'Content-Type': 'application/json'
-        }
-      });
+      const { data, error } = await query;
       
-      if (!response.ok) throw new Error('Failed to fetch reviews');
-      const data = await response.json();
+      if (error) {
+        console.error('Supabase fetch error:', error);
+        throw error;
+      }
+      
+      console.log('Fetched reviews data:', data);
       
       // Cross-reference with customers
       const reviewsWithCustomers: ReviewWithCustomer[] = (data || []).map((review: Review) => {
@@ -154,6 +167,7 @@ export const ReviewsManager = () => {
         };
       });
       
+      console.log('Reviews with customers:', reviewsWithCustomers);
       setReviews(reviewsWithCustomers);
     } catch (error) {
       console.error('Error fetching reviews:', error);
@@ -208,31 +222,35 @@ export const ReviewsManager = () => {
   // Update review
   const updateReview = async (reviewId: string, updates: Partial<Review>) => {
     try {
-      const SUPABASE_URL = "https://mixifcnokcmxarpzwfiy.supabase.co";
-      const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1peGlmY25va2NteGFycHp3Zml5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTM0NjYwNTEsImV4cCI6MjA2OTA0MjA1MX0.-4uIuzcHcDGS20-dtKbjVFOtpBSmwYhT9Bgt6KA-dXI";
+      console.log('Updating review:', reviewId, 'with updates:', updates);
       
-      const url = `${SUPABASE_URL}/rest/v1/reviews?id=eq.${reviewId}`;
+      const { error } = await supabase
+        .from('reviews')
+        .update(updates)
+        .eq('id', reviewId);
       
-      const response = await fetch(url, {
-        method: 'PATCH',
-        headers: {
-          'apikey': SUPABASE_KEY,
-          'Authorization': `Bearer ${SUPABASE_KEY}`,
-          'Content-Type': 'application/json',
-          'Prefer': 'return=minimal'
-        },
-        body: JSON.stringify(updates)
-      });
+      if (error) {
+        console.error('Supabase update error:', error);
+        throw error;
+      }
       
-      if (!response.ok) throw new Error('Failed to update review');
+      console.log('Review updated successfully');
       
       toast({
         title: "Success",
         description: "Review updated successfully",
       });
       
-      fetchReviews(activeTab === 'pending' ? false : activeTab === 'published' ? true : undefined);
-      fetchStats();
+      // Refresh the current view
+      if (activeTab === 'pending') {
+        await fetchReviews(false);
+      } else if (activeTab === 'published') {
+        await fetchReviews(true);
+      } else if (activeTab === 'all') {
+        await fetchReviews();
+      }
+      
+      await fetchStats();
     } catch (error) {
       console.error('Error updating review:', error);
       toast({
@@ -375,6 +393,90 @@ export const ReviewsManager = () => {
     }
   };
 
+  // Compress video
+  const compressVideo = async (review: ReviewWithCustomer) => {
+    if (!review.media_url || review.media_type !== 'video') {
+      toast({
+        title: "No video to compress",
+        description: "This review doesn't have a video to compress.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    setCompressing(true);
+    setCompressionProgress(0);
+    setCompressionStatus('Starting compression...');
+    
+    try {
+      // Simulate progress updates
+      const progressInterval = setInterval(() => {
+        setCompressionProgress(prev => {
+          if (prev >= 90) return prev;
+          return prev + Math.random() * 10;
+        });
+      }, 1000);
+
+      // Update status messages
+      const statusUpdates = [
+        { progress: 10, message: 'Downloading original video...' },
+        { progress: 30, message: 'Analyzing video properties...' },
+        { progress: 50, message: 'Compressing video with FFmpeg...' },
+        { progress: 80, message: 'Uploading optimized video...' },
+        { progress: 95, message: 'Updating database...' }
+      ];
+
+      let statusIndex = 0;
+      const statusInterval = setInterval(() => {
+        if (statusIndex < statusUpdates.length) {
+          setCompressionStatus(statusUpdates[statusIndex].message);
+          statusIndex++;
+        }
+      }, 2000);
+
+      const { data, error } = await supabase.functions.invoke('compress-video', {
+        body: {
+          reviewId: review.id,
+          targetResolution: compressionSettings.targetResolution,
+          maxFileSizeMB: compressionSettings.maxFileSizeMB,
+          quality: compressionSettings.quality
+        }
+      });
+
+      clearInterval(progressInterval);
+      clearInterval(statusInterval);
+
+      if (error) throw error;
+
+      setCompressionProgress(100);
+      setCompressionStatus('Compression completed!');
+
+      toast({
+        title: "Video compressed successfully!",
+        description: `Compressed from ${Math.round(data.originalSize / 1024 / 1024)}MB to ${Math.round(data.compressedSize / 1024 / 1024)}MB (${data.compressionRatio}% reduction)`,
+      });
+
+      // Refresh reviews to show updated data
+      await fetchReviews(activeTab === 'published' ? true : activeTab === 'pending' ? false : undefined);
+      
+    } catch (error: any) {
+      console.error('Compression error:', error);
+      setCompressionStatus('Compression failed');
+      toast({
+        title: "Compression failed",
+        description: error.message || "Failed to compress video. Please try again.",
+        variant: "destructive"
+      });
+    } finally {
+      setTimeout(() => {
+        setCompressing(false);
+        setCompressionProgress(0);
+        setCompressionStatus('');
+        setCompressionDialogOpen(false);
+      }, 2000);
+    }
+  };
+
   useEffect(() => {
     fetchCustomers();
     fetchStats();
@@ -390,20 +492,7 @@ export const ReviewsManager = () => {
     } else if (activeTab === 'all') {
       fetchReviews();
     }
-  }, [activeTab]);
-
-  // Re-fetch reviews when customers change
-  useEffect(() => {
-    if (customers.length > 0) {
-      if (activeTab === 'pending') {
-        fetchReviews(false);
-      } else if (activeTab === 'published') {
-        fetchReviews(true);
-      } else if (activeTab === 'all') {
-        fetchReviews();
-      }
-    }
-  }, [customers]);
+  }, [activeTab, customers]); // Add customers as dependency
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('en-US', {
@@ -414,6 +503,18 @@ export const ReviewsManager = () => {
       minute: '2-digit'
     });
   };
+
+  // Debug function to test pending reviews
+  const testPendingReviews = async () => {
+    console.log('Testing pending reviews...');
+    console.log('Current activeTab:', activeTab);
+    console.log('Current customers:', customers);
+    await fetchReviews(false);
+    console.log('Current reviews after fetch:', reviews);
+  };
+
+  // Make test function available globally for debugging
+  (window as any).testPendingReviews = testPendingReviews;
 
   const renderStars = (rating: number) => {
     return Array.from({ length: 5 }, (_, i) => (
@@ -449,11 +550,12 @@ export const ReviewsManager = () => {
             </div>
             <Button 
               onClick={copySubmissionLink} 
-              className="bg-white border border-gray-300 text-gray-700 hover:bg-gray-50 px-4 py-2 rounded-lg font-medium"
+              className="bg-white hover:bg-gray-50 px-4 py-2 rounded-lg font-medium"
               style={{
                 borderColor: `hsl(${themeColors.primary})`,
                 color: `hsl(${themeColors.primary})`,
-                backgroundColor: 'white'
+                backgroundColor: 'white',
+                border: '1px solid'
               }}
             >
               <Link className="h-4 w-4 mr-2" />
@@ -466,93 +568,117 @@ export const ReviewsManager = () => {
       <div className="container mx-auto px-6 py-6">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
           {/* Navigation Tabs */}
-          <div className="bg-white rounded-lg border border-gray-200 shadow-sm">
-            <TabsList className="grid grid-cols-2 md:grid-cols-4 w-full bg-transparent gap-0 h-auto p-1">
-              <TabsTrigger 
-                value="pending" 
-                className={`flex items-center justify-center gap-2 text-sm px-4 py-3 rounded-md font-medium transition-all ${
-                  activeTab === 'pending' 
-                    ? 'bg-white shadow-sm border border-gray-200' 
-                    : 'hover:bg-gray-50'
-                }`}
+          <div className="bg-card rounded-lg border p-1 shadow-sm">
+            <TabsList className="grid grid-cols-2 md:grid-cols-4 w-full bg-transparent gap-1 h-auto">
+              <div 
+                className="rounded-md transition-all"
                 style={{
-                  color: activeTab === 'pending' ? `hsl(${themeColors.primary})` : '#6B7280',
-                  backgroundColor: activeTab === 'pending' ? 'white' : 'transparent'
+                  border: activeTab === 'pending' ? '2px solid hsl(var(--primary))' : '2px solid #e5e7eb',
+                  backgroundColor: activeTab === 'pending' ? 'hsl(var(--primary))' : 'transparent'
                 }}
               >
+                <TabsTrigger 
+                  value="pending" 
+                  className="flex items-center justify-center gap-1.5 text-xs md:text-sm px-2 md:px-3 py-2.5 rounded-md transition-all w-full h-full"
+                  style={activeTab === 'pending' ? {
+                    backgroundColor: 'transparent !important',
+                    color: 'hsl(var(--primary-foreground)) !important'
+                  } : {
+                    backgroundColor: 'transparent !important'
+                  }}
+                >
                 <Clock className="h-4 w-4" />
-                <span>Pending</span>
+                <span className="hidden sm:inline">Pending</span>
                 {stats.pending_count > 0 && (
                   <Badge 
-                    className="ml-1 h-5 min-w-[20px] px-1.5 text-xs"
+                    className="ml-1 h-5 min-w-[20px] px-1 text-xs"
                     style={{
-                      backgroundColor: `hsl(${themeColors.primary} / 0.1)`,
-                      color: `hsl(${themeColors.primary})`
+                      backgroundColor: activeTab === 'pending' ? 'rgba(255, 255, 255, 0.2)' : 'hsl(var(--primary))',
+                      color: 'white'
                     }}
                   >
                     {stats.pending_count}
                   </Badge>
                 )}
-              </TabsTrigger>
+                </TabsTrigger>
+              </div>
               
-              <TabsTrigger 
-                value="published" 
-                className={`flex items-center justify-center gap-2 text-sm px-4 py-3 rounded-md font-medium transition-all ${
-                  activeTab === 'published' 
-                    ? 'bg-white shadow-sm border border-gray-200' 
-                    : 'hover:bg-gray-50'
-                }`}
+              <div 
+                className="rounded-md transition-all"
                 style={{
-                  color: activeTab === 'published' ? `hsl(${themeColors.primary})` : '#6B7280',
-                  backgroundColor: activeTab === 'published' ? 'white' : 'transparent'
+                  border: activeTab === 'published' ? '2px solid hsl(var(--primary))' : '2px solid #e5e7eb',
+                  backgroundColor: activeTab === 'published' ? 'hsl(var(--primary))' : 'transparent'
                 }}
               >
+                <TabsTrigger 
+                  value="published" 
+                  className="flex items-center justify-center gap-1.5 text-xs md:text-sm px-2 md:px-3 py-2.5 rounded-md transition-all w-full h-full"
+                  style={activeTab === 'published' ? {
+                    backgroundColor: 'transparent !important',
+                    color: 'hsl(var(--primary-foreground)) !important'
+                  } : {
+                    backgroundColor: 'transparent !important'
+                  }}
+                >
                 <Star className="h-4 w-4" />
-                <span>Published</span>
+                <span className="hidden sm:inline">Published</span>
                 {stats.approved_count > 0 && (
                   <Badge 
-                    className="ml-1 h-5 min-w-[20px] px-1.5 text-xs"
+                    className="ml-1 h-5 min-w-[20px] px-1 text-xs"
                     style={{
-                      backgroundColor: `hsl(${themeColors.primary} / 0.1)`,
-                      color: `hsl(${themeColors.primary})`
+                      backgroundColor: activeTab === 'published' ? 'rgba(255, 255, 255, 0.2)' : 'hsl(var(--primary))',
+                      color: 'white'
                     }}
                   >
                     {stats.approved_count}
                   </Badge>
                 )}
-              </TabsTrigger>
+                </TabsTrigger>
+              </div>
               
-              <TabsTrigger 
-                value="analytics" 
-                className={`flex items-center justify-center gap-2 text-sm px-4 py-3 rounded-md font-medium transition-all ${
-                  activeTab === 'analytics' 
-                    ? 'bg-white shadow-sm border border-gray-200' 
-                    : 'hover:bg-gray-50'
-                }`}
+              <div 
+                className="rounded-md transition-all"
                 style={{
-                  color: activeTab === 'analytics' ? `hsl(${themeColors.primary})` : '#6B7280',
-                  backgroundColor: activeTab === 'analytics' ? 'white' : 'transparent'
+                  border: activeTab === 'analytics' ? '2px solid hsl(var(--primary))' : '2px solid #e5e7eb',
+                  backgroundColor: activeTab === 'analytics' ? 'hsl(var(--primary))' : 'transparent'
                 }}
               >
+                <TabsTrigger 
+                  value="analytics" 
+                  className="flex items-center justify-center gap-1.5 text-xs md:text-sm px-2 md:px-3 py-2.5 rounded-md transition-all w-full h-full"
+                  style={activeTab === 'analytics' ? {
+                    backgroundColor: 'transparent !important',
+                    color: 'hsl(var(--primary-foreground)) !important'
+                  } : {
+                    backgroundColor: 'transparent !important'
+                  }}
+                >
                 <TrendingUp className="h-4 w-4" />
-                <span>Analytics</span>
+                <span className="hidden sm:inline">Analytics</span>
               </TabsTrigger>
+              </div>
               
-              <TabsTrigger 
-                value="all" 
-                className={`flex items-center justify-center gap-2 text-sm px-4 py-3 rounded-md font-medium transition-all ${
-                  activeTab === 'all' 
-                    ? 'bg-white shadow-sm border border-gray-200' 
-                    : 'hover:bg-gray-50'
-                }`}
+              <div 
+                className="rounded-md transition-all"
                 style={{
-                  color: activeTab === 'all' ? `hsl(${themeColors.primary})` : '#6B7280',
-                  backgroundColor: activeTab === 'all' ? 'white' : 'transparent'
+                  border: activeTab === 'all' ? '2px solid hsl(var(--primary))' : '2px solid #e5e7eb',
+                  backgroundColor: activeTab === 'all' ? 'hsl(var(--primary))' : 'transparent'
                 }}
               >
+                <TabsTrigger 
+                  value="all" 
+                  className="flex items-center justify-center gap-1.5 text-xs md:text-sm px-2 md:px-3 py-2.5 rounded-md transition-all w-full h-full"
+                  style={activeTab === 'all' ? {
+                    backgroundColor: 'transparent !important',
+                    color: 'hsl(var(--primary-foreground)) !important'
+                  } : {
+                    backgroundColor: 'transparent !important'
+                  }}
+                >
                 <Users className="h-4 w-4" />
-                <span>All Reviews</span>
-              </TabsTrigger>
+                <span className="hidden sm:inline">All Reviews</span>
+                </TabsTrigger>
+              </div>
             </TabsList>
           </div>
 
@@ -575,7 +701,12 @@ export const ReviewsManager = () => {
                     size="sm" 
                     onClick={() => fetchReviews(false)} 
                     disabled={loading}
-                    className="bg-white border-gray-300 text-gray-700 hover:bg-gray-50"
+                    style={{
+                      backgroundColor: 'white',
+                      borderColor: `hsl(${themeColors.primary})`,
+                      color: `hsl(${themeColors.primary})`
+                    }}
+                    className="hover:bg-gray-50"
                   >
                     {loading ? <RefreshCw className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
                     Refresh
@@ -671,12 +802,34 @@ export const ReviewsManager = () => {
                         {review.media_url && (
                           <div className="mt-2">
                             {review.media_type === 'video' ? (
-                              <video 
-                                src={review.media_url} 
-                                className="max-w-xs rounded-lg"
-                                controls
-                                muted
-                              />
+                              <div className="space-y-2">
+                                <video 
+                                  src={review.media_url_optimized || review.media_url} 
+                                  className="max-w-xs rounded-lg"
+                                  controls
+                                  muted
+                                />
+                                {review.media_url_optimized && (
+                                  <div className="flex items-center gap-2 text-xs text-green-600">
+                                    <Check className="h-3 w-3" />
+                                    Optimized version active
+                                  </div>
+                                )}
+                                {!review.media_url_optimized && (
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    onClick={() => {
+                                      setSelectedVideoReview(review);
+                                      setCompressionDialogOpen(true);
+                                    }}
+                                    className="text-xs bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100"
+                                  >
+                                    <Compress className="h-3 w-3 mr-1" />
+                                    Compress Video
+                                  </Button>
+                                )}
+                              </div>
                             ) : (
                               <img 
                                 src={review.media_url} 
@@ -832,12 +985,34 @@ export const ReviewsManager = () => {
                         {review.media_url && (
                           <div className="mt-2">
                             {review.media_type === 'video' ? (
-                              <video 
-                                src={review.media_url} 
-                                className="max-w-xs rounded-lg"
-                                controls
-                                muted
-                              />
+                              <div className="space-y-2">
+                                <video 
+                                  src={review.media_url_optimized || review.media_url} 
+                                  className="max-w-xs rounded-lg"
+                                  controls
+                                  muted
+                                />
+                                {review.media_url_optimized && (
+                                  <div className="flex items-center gap-2 text-xs text-green-600">
+                                    <Check className="h-3 w-3" />
+                                    Optimized version active
+                                  </div>
+                                )}
+                                {!review.media_url_optimized && (
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    onClick={() => {
+                                      setSelectedVideoReview(review);
+                                      setCompressionDialogOpen(true);
+                                    }}
+                                    className="text-xs bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100"
+                                  >
+                                    <Compress className="h-3 w-3 mr-1" />
+                                    Compress Video
+                                  </Button>
+                                )}
+                              </div>
                             ) : (
                               <img 
                                 src={review.media_url} 
@@ -1023,12 +1198,34 @@ export const ReviewsManager = () => {
                         {review.media_url && (
                           <div className="mt-2">
                             {review.media_type === 'video' ? (
-                              <video 
-                                src={review.media_url} 
-                                className="max-w-xs rounded-lg"
-                                controls
-                                muted
-                              />
+                              <div className="space-y-2">
+                                <video 
+                                  src={review.media_url_optimized || review.media_url} 
+                                  className="max-w-xs rounded-lg"
+                                  controls
+                                  muted
+                                />
+                                {review.media_url_optimized && (
+                                  <div className="flex items-center gap-2 text-xs text-green-600">
+                                    <Check className="h-3 w-3" />
+                                    Optimized version active
+                                  </div>
+                                )}
+                                {!review.media_url_optimized && (
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    onClick={() => {
+                                      setSelectedVideoReview(review);
+                                      setCompressionDialogOpen(true);
+                                    }}
+                                    className="text-xs bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100"
+                                  >
+                                    <Compress className="h-3 w-3 mr-1" />
+                                    Compress Video
+                                  </Button>
+                                )}
+                              </div>
                             ) : (
                               <img 
                                 src={review.media_url} 
@@ -1170,6 +1367,121 @@ export const ReviewsManager = () => {
               </Button>
               <Button onClick={handleEditSave}>
                 Save Changes
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
+
+        {/* Video Compression Dialog */}
+        <Dialog open={compressionDialogOpen} onOpenChange={setCompressionDialogOpen}>
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <Video className="h-5 w-5" />
+                Compress Video
+              </DialogTitle>
+              <DialogDescription>
+                Optimize video for better performance and smaller file size
+              </DialogDescription>
+            </DialogHeader>
+            
+            <div className="space-y-4">
+              <div>
+                <Label htmlFor="targetResolution">Target Resolution</Label>
+                <Select 
+                  value={compressionSettings.targetResolution} 
+                  onValueChange={(value) => setCompressionSettings(prev => ({ ...prev, targetResolution: value }))}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="854x480">480p (854x480)</SelectItem>
+                    <SelectItem value="1280x720">720p (1280x720)</SelectItem>
+                    <SelectItem value="1920x1080">1080p (1920x1080)</SelectItem>
+                    <SelectItem value="2560x1440">1440p (2560x1440)</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              
+              <div>
+                <Label htmlFor="maxFileSize">Max File Size (MB)</Label>
+                <Input
+                  id="maxFileSize"
+                  type="number"
+                  min="1"
+                  max="50"
+                  value={compressionSettings.maxFileSizeMB}
+                  onChange={(e) => setCompressionSettings(prev => ({ ...prev, maxFileSizeMB: parseInt(e.target.value) || 10 }))}
+                />
+              </div>
+              
+              <div>
+                <Label htmlFor="quality">Quality: {Math.round(compressionSettings.quality * 100)}%</Label>
+                <input
+                  id="quality"
+                  type="range"
+                  min="0.1"
+                  max="1.0"
+                  step="0.1"
+                  value={compressionSettings.quality}
+                  onChange={(e) => setCompressionSettings(prev => ({ ...prev, quality: parseFloat(e.target.value) }))}
+                  className="w-full"
+                />
+                <div className="flex justify-between text-xs text-muted-foreground mt-1">
+                  <span>Smaller file</span>
+                  <span>Better quality</span>
+                </div>
+              </div>
+              
+              <div className="bg-blue-50 p-3 rounded-lg">
+                <h4 className="font-medium text-blue-900 mb-2">Compression Preview</h4>
+                <div className="text-sm text-blue-800 space-y-1">
+                  <div>Resolution: {compressionSettings.targetResolution}</div>
+                  <div>Max size: {compressionSettings.maxFileSizeMB}MB</div>
+                  <div>Quality: {Math.round(compressionSettings.quality * 100)}%</div>
+                </div>
+              </div>
+
+              {/* Progress Bar */}
+              {compressing && (
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="font-medium">Compressing Video...</span>
+                    <span className="text-muted-foreground">{Math.round(compressionProgress)}%</span>
+                  </div>
+                  <div className="w-full bg-gray-200 rounded-full h-2">
+                    <div 
+                      className="bg-blue-600 h-2 rounded-full transition-all duration-300 ease-out"
+                      style={{ width: `${compressionProgress}%` }}
+                    ></div>
+                  </div>
+                  <div className="text-sm text-muted-foreground text-center">
+                    {compressionStatus}
+                  </div>
+                </div>
+              )}
+            </div>
+            
+            <div className="flex justify-end gap-2 mt-4">
+              <Button variant="outline" onClick={() => setCompressionDialogOpen(false)}>
+                Cancel
+              </Button>
+              <Button 
+                onClick={() => selectedVideoReview && compressVideo(selectedVideoReview)}
+                disabled={compressing}
+              >
+                {compressing ? (
+                  <>
+                    <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                    Compressing...
+                  </>
+                ) : (
+                  <>
+                    <Compress className="h-4 w-4 mr-2" />
+                    Compress Video
+                  </>
+                )}
               </Button>
             </div>
           </DialogContent>
