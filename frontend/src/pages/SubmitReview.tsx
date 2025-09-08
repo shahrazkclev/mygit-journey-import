@@ -1,13 +1,10 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
 import { 
+  Mail, 
   Star, 
   Camera, 
-  Video, 
   Upload, 
   CheckCircle, 
   ArrowRight, 
@@ -16,257 +13,476 @@ import {
   Heart,
   MessageCircle,
   Image as ImageIcon,
-  Play,
-  Pause,
-  Square
+  Video,
+  Mic,
+  X,
+  ChevronDown,
+  ChevronUp,
+  User,
+  Eye
 } from 'lucide-react';
+import { Card, CardContent } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Textarea } from '@/components/ui/textarea';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+
+interface MediaFile {
+  file: File;
+  type: string;
+  url: string;
+  id: string;
+}
 
 interface FormData {
-  name: string;
   email: string;
   instagram: string;
   rating: number;
   description: string;
-  media: File | null;
-  mediaType: string;
-  avatar: File | null;
+  mediaFiles: MediaFile[];
+  profilePicture: File | null;
+  profilePictureUrl: string;
 }
 
-const SubmitReview = () => {
+interface BrandTheme {
+  brand_name: string;
+  page_theme_primary: string;
+  page_theme_secondary: string;
+  page_theme_accent: string;
+  font_family: string;
+}
+
+const SubmitReview: React.FC = () => {
   const [currentStep, setCurrentStep] = useState(1);
   const [formData, setFormData] = useState<FormData>({
-    name: '',
     email: '',
     instagram: '',
-    rating: 5,
+    rating: 0,
     description: '',
-    media: null,
-    mediaType: '',
-    avatar: null
+    mediaFiles: [],
+    profilePicture: null,
+    profilePictureUrl: ''
   });
   const [uploading, setUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const [brandTheme, setBrandTheme] = useState<BrandTheme | null>(null);
   const [isRecording, setIsRecording] = useState(false);
   const [recordingTime, setRecordingTime] = useState(0);
   const [mediaRecorder, setMediaRecorder] = useState<MediaRecorder | null>(null);
-  const [recordedChunks, setRecordedChunks] = useState<Blob[]>([]);
-  const [isExistingCustomer, setIsExistingCustomer] = useState<boolean | null>(null);
-  const [customerTags, setCustomerTags] = useState<string[]>([]);
-  
-  const fileInputRef = useRef<HTMLInputElement>(null);
-  const avatarInputRef = useRef<HTMLInputElement>(null);
+  const [showCamera, setShowCamera] = useState(false);
+  const [cameraMode, setCameraMode] = useState<'photo' | 'video'>('photo');
+  const [expandedSections, setExpandedSections] = useState<{[key: string]: boolean}>({
+    rating: true,
+    profile: false,
+    media: false,
+    description: false,
+    preview: false
+  });
   const videoRef = useRef<HTMLVideoElement>(null);
+  const streamRef = useRef<MediaStream | null>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
   const { toast } = useToast();
 
-  const totalSteps = 5;
-  const progressPercentage = (currentStep / totalSteps) * 100;
+  const totalSteps = 2;
 
-  // Check if email exists in customer database
-  const checkCustomerStatus = async (email: string) => {
-    if (!email.includes('@')) return;
+  // Load brand theme
+  useEffect(() => {
+    const loadBrandTheme = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('style_guides')
+          .select('brand_name, page_theme_primary, page_theme_secondary, page_theme_accent, font_family')
+          .single();
+
+        if (error) {
+          console.error('Error loading brand theme:', error);
+          return;
+        }
+
+        setBrandTheme(data);
+      } catch (error) {
+        console.error('Error loading brand theme:', error);
+      }
+    };
+
+    loadBrandTheme();
+  }, []);
+
+  // Upload to Cloudflare R2 via Worker proxy
+  const uploadToR2 = async (file: File): Promise<string> => {
+    console.log('Uploading media to R2...');
     
     try {
-      const DEMO_USER_ID = "550e8400-e29b-41d4-a716-446655440000";
-      const { data, error } = await supabase
-        .from('contacts')
-        .select('id, email, tags')
-        .eq('user_id', DEMO_USER_ID)
-        .eq('email', email.toLowerCase())
-        .eq('status', 'subscribed')
-        .single();
-
-      if (data) {
-        setIsExistingCustomer(true);
-        setCustomerTags(data.tags || []);
-      } else {
-        setIsExistingCustomer(false);
-        setCustomerTags([]);
-      }
-    } catch (error) {
-      setIsExistingCustomer(false);
-      setCustomerTags([]);
-    }
-  };
-
-  // Debounced email check
-  useEffect(() => {
-    const timeoutId = setTimeout(() => {
-      if (formData.email) {
-        checkCustomerStatus(formData.email);
-      }
-    }, 500);
-    return () => clearTimeout(timeoutId);
-  }, [formData.email]);
-
-  const handleFileUpload = (file: File, type: 'media' | 'avatar') => {
-    if (type === 'media') {
-      setFormData(prev => ({
-        ...prev,
-        media: file,
-        mediaType: file.type.startsWith('video/') ? 'video' : 'image'
-      }));
-    } else {
-      setFormData(prev => ({ ...prev, avatar: file }));
-    }
-  };
-
-  const startVideoRecording = async () => {
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({ 
-        video: { width: 1280, height: 720 }, 
-        audio: true 
+      // Generate unique filename
+      const fileExt = file.name.split('.').pop();
+      const fileName = `media-${Date.now()}-${Math.random().toString(36).substring(2)}.${fileExt}`;
+      
+      // Use Cloudflare Worker proxy to upload to R2
+      const formData = new FormData();
+      formData.append('file', file);
+      
+      // Use your deployed Cloudflare Worker
+      const workerUrl = 'https://r2-upload-proxy.cleverpoly-store.workers.dev';
+      
+      // Show upload progress
+      setUploadProgress(10);
+      
+      const response = await fetch(workerUrl, {
+        method: 'POST',
+        body: formData,
       });
       
-      if (videoRef.current) {
-        videoRef.current.srcObject = stream;
-        videoRef.current.play();
+      setUploadProgress(50);
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(`R2 upload failed: ${response.status} ${errorData.error || 'Unknown error'}`);
+      }
+      
+      setUploadProgress(90);
+      
+      const result = await response.json();
+      setUploadProgress(100);
+      console.log('Media uploaded to R2 successfully');
+      return result.url;
+    } catch (error) {
+      console.log('R2 upload failed, using Supabase storage as fallback:', error);
+      
+      // Fallback to Supabase storage
+      const bucket = 'reviews';
+      const fileExt = file.name.split('.').pop();
+      const fileName = `media-${Date.now()}-${Math.random().toString(36).substring(2)}.${fileExt}`;
+      
+      console.log('Using Supabase storage as fallback...');
+      const { data, error: uploadError } = await supabase.storage
+        .from(bucket)
+        .upload(fileName, file, {
+          cacheControl: '3600',
+          upsert: false
+        });
+
+      if (uploadError) {
+        console.error('Supabase upload error:', uploadError);
+        throw new Error(`Upload failed: ${uploadError.message}`);
       }
 
-      const recorder = new MediaRecorder(stream, {
-        mimeType: 'video/webm;codecs=vp8,opus'
-      });
+      const { data: urlData } = supabase.storage
+        .from(bucket)
+        .getPublicUrl(fileName);
 
-      recorder.ondataavailable = (event) => {
-        if (event.data.size > 0) {
-          setRecordedChunks(prev => [...prev, event.data]);
-        }
-      };
+      console.log('Media uploaded to Supabase successfully');
+      return urlData.publicUrl;
+    }
+  };
 
-      recorder.onstop = () => {
-        const blob = new Blob(recordedChunks, { type: 'video/webm' });
-        const file = new File([blob], `review-video-${Date.now()}.webm`, { type: 'video/webm' });
-        handleFileUpload(file, 'media');
-        
-        stream.getTracks().forEach(track => track.stop());
-        if (videoRef.current) {
-          videoRef.current.srcObject = null;
-        }
-      };
-
-      setMediaRecorder(recorder);
-      setIsRecording(true);
-      recorder.start(1000);
-
-      const timer = setInterval(() => {
-        setRecordingTime(prev => {
-          if (prev >= 60) {
-            stopRecording();
-            return prev;
-          }
-          return prev + 1;
+  const handleFileUpload = (files: FileList | File[]) => {
+    const fileArray = Array.from(files);
+    
+    fileArray.forEach(file => {
+      // Validate file size (50MB max)
+      if (file.size > 50 * 1024 * 1024) {
+        toast({
+          title: "File too large",
+          description: `${file.name} is too large. Please select files smaller than 50MB`,
+          variant: "destructive"
         });
-      }, 1000);
+        return;
+      }
 
-      setTimeout(() => {
-        if (recorder.state === 'recording') {
-          stopRecording();
-        }
-        clearInterval(timer);
-      }, 60000);
+      // Validate video duration (30 seconds max)
+      if (file.type.startsWith('video/')) {
+        const video = document.createElement('video');
+        video.preload = 'metadata';
+        video.onloadedmetadata = () => {
+          if (video.duration > 30) {
+            toast({
+              title: "Video too long",
+              description: `${file.name} is too long. Please select videos shorter than 30 seconds`,
+              variant: "destructive"
+            });
+            return;
+          }
+          addMediaFile(file, 'video');
+        };
+        video.src = URL.createObjectURL(file);
+      } else {
+        addMediaFile(file, 'image');
+      }
+    });
+  };
 
-    } catch (error) {
-      console.error('Error starting recording:', error);
+  const addMediaFile = (file: File, type: string) => {
+    const mediaFile: MediaFile = {
+      file,
+      type,
+      url: '',
+      id: `${Date.now()}-${Math.random().toString(36).substring(2)}`
+    };
+
+    setFormData(prev => ({
+      ...prev,
+      mediaFiles: [...prev.mediaFiles, mediaFile]
+    }));
+
+    // Start upload immediately
+    setTimeout(() => {
+      uploadToR2(file).then(url => {
+        setFormData(prev => ({
+          ...prev,
+          mediaFiles: prev.mediaFiles.map(mf => 
+            mf.id === mediaFile.id ? { ...mf, url } : mf
+          )
+        }));
+      }).catch(error => {
+        console.warn('Upload failed:', error);
+        toast({
+          title: "Upload failed",
+          description: `Failed to upload ${file.name}. Please try again.`,
+          variant: "destructive"
+        });
+      });
+    }, 100);
+  };
+
+  const removeMediaFile = (id: string) => {
+    setFormData(prev => ({
+      ...prev,
+      mediaFiles: prev.mediaFiles.filter(mf => mf.id !== id)
+    }));
+  };
+
+  const handleProfilePictureUpload = (file: File) => {
+    // Validate file size (5MB max for profile pictures)
+    if (file.size > 5 * 1024 * 1024) {
       toast({
-        title: "Error",
-        description: "Could not access camera/microphone",
+        title: "File too large",
+        description: "Profile picture must be smaller than 5MB",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    // Validate file type (images only)
+    if (!file.type.startsWith('image/')) {
+      toast({
+        title: "Invalid file type",
+        description: "Profile picture must be an image file",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    setFormData(prev => ({
+      ...prev,
+      profilePicture: file,
+      profilePictureUrl: URL.createObjectURL(file)
+    }));
+
+    // Upload profile picture
+    setTimeout(() => {
+      uploadToR2(file).then(url => {
+        setFormData(prev => ({ ...prev, profilePictureUrl: url }));
+      }).catch(error => {
+        console.warn('Profile picture upload failed:', error);
+        toast({
+          title: "Upload failed",
+          description: "Failed to upload profile picture. Please try again.",
+          variant: "destructive"
+        });
+      });
+    }, 100);
+  };
+
+  // Camera functionality
+  const startCamera = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ 
+        video: { 
+          facingMode: 'user',
+          width: { ideal: 1280 },
+          height: { ideal: 720 }
+        }, 
+        audio: cameraMode === 'video' 
+      });
+      
+      streamRef.current = stream;
+      if (videoRef.current) {
+        videoRef.current.srcObject = stream;
+        setShowCamera(true);
+      }
+    } catch (error) {
+      console.error('Error accessing camera:', error);
+      toast({
+        title: "Camera access denied",
+        description: "Please allow camera access to take photos or videos.",
         variant: "destructive"
       });
     }
   };
 
-  const stopRecording = () => {
-    if (mediaRecorder && mediaRecorder.state === 'recording') {
-      mediaRecorder.stop();
-      setIsRecording(false);
-      setRecordingTime(0);
+  const stopCamera = () => {
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach(track => track.stop());
+      streamRef.current = null;
+    }
+    setShowCamera(false);
+    setIsRecording(false);
+  };
+
+  const capturePhoto = () => {
+    if (videoRef.current && canvasRef.current) {
+      const canvas = canvasRef.current;
+      const video = videoRef.current;
+      const context = canvas.getContext('2d');
+      
+      if (context) {
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
+        context.drawImage(video, 0, 0);
+        
+        canvas.toBlob((blob) => {
+          if (blob) {
+            const file = new File([blob], `photo-${Date.now()}.jpg`, { type: 'image/jpeg' });
+            addMediaFile(file, 'image');
+            stopCamera();
+          }
+        }, 'image/jpeg', 0.8);
+      }
     }
   };
 
-  // Upload to Cloudflare R2 (simulated - you'll need to implement actual R2 upload)
-  const uploadToR2 = async (file: File, type: 'media' | 'avatar'): Promise<string> => {
-    // For now, we'll use Supabase storage but you can replace this with actual R2 upload
-    const bucket = 'reviews';
-    const fileName = `${type}-${Date.now()}-${file.name}`;
-    
-    const { data, error } = await supabase.storage
-      .from(bucket)
-      .upload(fileName, file, {
-        cacheControl: '3600',
-        upsert: false
-      });
+  const startVideoRecording = () => {
+    if (streamRef.current) {
+      const mediaRecorder = new MediaRecorder(streamRef.current);
+      const chunks: Blob[] = [];
+      
+      mediaRecorder.ondataavailable = (event) => {
+        chunks.push(event.data);
+      };
+      
+      mediaRecorder.onstop = () => {
+        const blob = new Blob(chunks, { type: 'video/webm' });
+        const file = new File([blob], `video-${Date.now()}.webm`, { type: 'video/webm' });
+        addMediaFile(file, 'video');
+        stopCamera();
+      };
+      
+      setMediaRecorder(mediaRecorder);
+      mediaRecorder.start();
+      setIsRecording(true);
+      setRecordingTime(0);
+      
+      const timer = setInterval(() => {
+        setRecordingTime(prev => {
+          if (prev >= 30) {
+            stopVideoRecording();
+            clearInterval(timer);
+            return 30;
+          }
+          return prev + 1;
+        });
+      }, 1000);
+    }
+  };
 
-    if (error) throw error;
+  const stopVideoRecording = () => {
+    if (mediaRecorder && isRecording) {
+      mediaRecorder.stop();
+      setIsRecording(false);
+    }
+  };
 
-    const { data: urlData } = supabase.storage
-      .from(bucket)
-      .getPublicUrl(fileName);
+  const toggleSection = (section: string) => {
+    setExpandedSections(prev => ({
+      ...prev,
+      [section]: !prev[section]
+    }));
+  };
 
-    return urlData.publicUrl;
+  const getSectionStatus = (section: string) => {
+    switch (section) {
+      case 'rating':
+        return formData.rating > 0 ? 'completed' : 'pending';
+      case 'profile':
+        return formData.profilePictureUrl ? 'completed' : 'optional';
+      case 'media':
+        return formData.mediaFiles.length > 0 ? 'completed' : 'required';
+      case 'description':
+        return formData.description.trim().length > 10 ? 'completed' : 'required';
+      default:
+        return 'pending';
+    }
   };
 
   const submitReview = async () => {
     setUploading(true);
+    setUploadProgress(0);
+    
     try {
-      let mediaUrl = '';
-      let avatarUrl = '';
-
-      // Upload media if present
-      if (formData.media) {
-        mediaUrl = await uploadToR2(formData.media, 'media');
+      console.log('Starting review submission...');
+      console.log('Form data:', formData);
+      console.log('Media files:', formData.mediaFiles);
+      
+      // Media is required - ensure we have at least one media file
+      if (formData.mediaFiles.length === 0) {
+        console.error('No media files found');
+        throw new Error('At least one media file is required. Please upload a video or image before submitting.');
       }
 
-      // Upload avatar if present
-      if (formData.avatar) {
-        avatarUrl = await uploadToR2(formData.avatar, 'avatar');
+      // Ensure all media files are uploaded
+      const uploadedMediaFiles = formData.mediaFiles.filter(mf => mf.url);
+      console.log('Uploaded media files:', uploadedMediaFiles);
+      
+      if (uploadedMediaFiles.length === 0) {
+        console.error('No uploaded media files found');
+        throw new Error('Please wait for your media files to finish uploading before submitting.');
       }
+
+      // Use the first media file as the primary media for the review
+      const primaryMedia = uploadedMediaFiles[0];
 
       // Insert review into database
-      const SUPABASE_URL = "https://mixifcnokcmxarpzwfiy.supabase.co";
-      const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1peGlmY25va2NteGFycHp3Zml5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTM0NjYwNTEsImV4cCI6MjA2OTA0MjA1MX0.-4uIuzcHcDGS20-dtKbjVFOtpBSmwYhT9Bgt6KA-dXI";
-      
-      const insertUrl = `${SUPABASE_URL}/rest/v1/reviews`;
-      
-      const insertResponse = await fetch(insertUrl, {
-        method: 'POST',
-        headers: {
-          'apikey': SUPABASE_KEY,
-          'Authorization': `Bearer ${SUPABASE_KEY}`,
-          'Content-Type': 'application/json',
-          'Prefer': 'return=minimal'
-        },
-        body: JSON.stringify({
-          user_name: formData.name,
-          user_email: formData.email,
-          user_instagram_handle: formData.instagram,
-          rating: formData.rating,
-          description: formData.description,
-          media_url: mediaUrl,
-          media_type: formData.mediaType,
-          user_avatar: avatarUrl || '/placeholder.svg',
-          is_active: false,
-          sort_order: 0
-        })
-      });
+      console.log('Submitting review to database...');
+      const reviewData: any = {
+        user_email: formData.email,
+        user_instagram_handle: formData.instagram,
+        rating: formData.rating,
+        description: formData.description,
+        user_avatar: formData.profilePictureUrl || '/placeholder.svg',
+        is_active: false,
+        sort_order: 0,
+        media_url: primaryMedia.url,
+        media_type: primaryMedia.type
+      };
 
-      if (!insertResponse.ok) {
-        const errorData = await insertResponse.text();
-        throw new Error(`Failed to insert review: ${errorData}`);
+      const { data, error } = await supabase
+        .from('reviews')
+        .insert(reviewData)
+        .select();
+
+      if (error) {
+        console.error('Database error:', error);
+        throw error;
       }
+
+      console.log('Review submitted successfully');
 
       toast({
         title: "Success!",
         description: "Your review has been submitted for approval.",
       });
 
-      setCurrentStep(6); // Success step
+      setCurrentStep(3); // Success step
     } catch (error) {
       console.error('Error submitting review:', error);
       toast({
         title: "Error",
-        description: "Failed to submit review. Please try again.",
+        description: `Failed to submit review: ${error.message || 'Unknown error'}`,
         variant: "destructive"
       });
     } finally {
       setUploading(false);
+      setUploadProgress(0);
     }
   };
 
@@ -286,393 +502,857 @@ const SubmitReview = () => {
 
   const canProceed = () => {
     switch (currentStep) {
-      case 1: return formData.name.trim().length > 0;
-      case 2: return formData.email.includes('@');
-      case 3: return formData.rating > 0;
-      case 4: return formData.description.trim().length > 10;
-      case 5: return true; // Media is optional
+      case 1: {
+        const emailValid = formData.email.includes('@');
+        const instagramValid = formData.instagram.trim().length > 0;
+        console.log('Step 1 validation:', { emailValid, instagramValid, email: formData.email, instagram: formData.instagram });
+        return emailValid && instagramValid;
+      }
+      case 2: {
+        const ratingValid = formData.rating > 0;
+        const descriptionValid = formData.description.trim().length > 10;
+        const mediaValid = formData.mediaFiles.length > 0;
+        console.log('Step 2 validation:', { ratingValid, descriptionValid, mediaValid, rating: formData.rating, descriptionLength: formData.description.trim().length, mediaCount: formData.mediaFiles.length });
+        return ratingValid && descriptionValid && mediaValid;
+      }
       default: return false;
     }
   };
 
-  const formatTime = (seconds: number) => {
-    const mins = Math.floor(seconds / 60);
-    const secs = seconds % 60;
-    return `${mins}:${secs.toString().padStart(2, '0')}`;
-  };
-
   const steps = [
-    { id: 1, title: "Your Name", icon: <Heart className="h-5 w-5" /> },
-    { id: 2, title: "Email", icon: <MessageCircle className="h-5 w-5" /> },
-    { id: 3, title: "Rating", icon: <Star className="h-5 w-5" /> },
-    { id: 4, title: "Review", icon: <MessageCircle className="h-5 w-5" /> },
-    { id: 5, title: "Media", icon: <Camera className="h-5 w-5" /> }
+    { id: 1, title: "Contact Info", icon: <Mail className="h-5 w-5" /> },
+    { id: 2, title: "Review & Media", icon: <Star className="h-5 w-5" /> }
   ];
 
-  return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50">
-      <div className="container mx-auto px-4 py-8">
-        {/* Header */}
-        <div className="text-center mb-12">
-          <div className="inline-flex items-center gap-2 bg-white/80 backdrop-blur-sm rounded-full px-6 py-3 mb-6 shadow-lg">
-            <Sparkles className="h-5 w-5 text-purple-600" />
-            <span className="font-semibold text-gray-700">Share Your Experience</span>
-          </div>
-          <h1 className="text-4xl md:text-6xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent mb-4">
-            We'd Love Your Review!
-          </h1>
-          <p className="text-lg text-gray-600 max-w-2xl mx-auto">
-            Help others discover our amazing products by sharing your honest experience
-          </p>
-        </div>
+  // Success screen
+  if (currentStep === 3) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 flex items-center justify-center p-4">
+        <Card className="w-full max-w-md shadow-2xl border-0 bg-white">
+          <CardContent className="p-8 text-center">
+            <div className="w-16 h-16 bg-green-500 rounded-full flex items-center justify-center mx-auto mb-6">
+              <CheckCircle className="h-8 w-8 text-white" />
+            </div>
+            <h2 className="text-2xl font-bold text-slate-900 mb-3">Review Submitted!</h2>
+            <p className="text-slate-600 mb-6">
+              Thank you for sharing your experience. Your review is now pending approval.
+            </p>
+            <Button 
+              onClick={() => window.location.href = '/'}
+              className="w-full bg-green-600 hover:bg-green-700"
+            >
+              Return Home
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
-        {/* Progress Steps */}
-        <div className="max-w-4xl mx-auto mb-12">
-          <div className="flex items-center justify-between relative">
-            <div className="absolute top-1/2 left-0 right-0 h-0.5 bg-gray-200 -translate-y-1/2 z-0">
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 flex items-center justify-center p-4">
+      <Card className="w-full max-w-2xl shadow-2xl border-0 bg-white">
+        <CardContent className="p-8">
+          {/* Simple Header */}
+          <div className="text-center mb-8">
+            <h1 className="text-3xl font-bold text-slate-900 mb-2">
+              Share Your Review
+            </h1>
+            <p className="text-slate-600">
+              Help others by sharing your experience
+            </p>
+          </div>
+
+          {/* Simple Progress */}
+          <div className="mb-8">
+            <div className="w-full bg-slate-200 rounded-full h-1">
               <div 
-                className="h-full bg-gradient-to-r from-purple-500 to-pink-500 transition-all duration-500 ease-out"
-                style={{ width: `${((currentStep - 1) / (totalSteps - 1)) * 100}%` }}
+                className="h-1 bg-blue-600 rounded-full transition-all duration-300"
+                style={{ width: `${(currentStep / totalSteps) * 100}%` }}
               />
             </div>
-            {steps.map((step, index) => (
-              <div key={step.id} className="relative z-10 flex flex-col items-center">
-                <div className={`w-12 h-12 rounded-full flex items-center justify-center transition-all duration-300 ${
-                  currentStep >= step.id 
-                    ? 'bg-gradient-to-r from-purple-500 to-pink-500 text-white shadow-lg' 
-                    : 'bg-white text-gray-400 border-2 border-gray-200'
-                }`}>
-                  {currentStep > step.id ? (
-                    <CheckCircle className="h-6 w-6" />
-                  ) : (
-                    step.icon
-                  )}
-                </div>
-                <span className={`text-sm font-medium mt-2 transition-colors ${
-                  currentStep >= step.id ? 'text-gray-900' : 'text-gray-400'
-                }`}>
-                  {step.title}
-                </span>
-              </div>
-            ))}
           </div>
-        </div>
 
-        {/* Form Card */}
-        <Card className="max-w-2xl mx-auto shadow-2xl border-0 bg-white/80 backdrop-blur-sm">
-          <CardContent className="p-8">
-            {/* Step 1: Name */}
-            {currentStep === 1 && (
-              <div className="space-y-8">
-                <div className="text-center">
-                  <div className="w-20 h-20 bg-gradient-to-r from-purple-500 to-pink-500 rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-lg">
-                    <Heart className="h-10 w-10 text-white" />
-                  </div>
-                  <h2 className="text-3xl font-bold mb-3 text-gray-900">What's your name?</h2>
-                  <p className="text-gray-600">This will be displayed with your review</p>
-                </div>
-                
-                <div>
-                  <input
-                    type="text"
-                    value={formData.name}
-                    onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
-                    className="w-full p-6 border-2 border-gray-200 rounded-2xl text-xl focus:ring-4 focus:ring-purple-100 focus:border-purple-500 transition-all duration-200"
-                    placeholder="Enter your full name"
-                    autoFocus
-                  />
-                </div>
+          {/* Step 1: Contact Info */}
+          {currentStep === 1 && (
+            <div className="space-y-6">
+              <h2 className="text-xl font-semibold text-slate-900 mb-4">Contact Information</h2>
+              <div>
+                <Label htmlFor="email" className="text-sm font-medium text-slate-700 mb-2 block">
+                  Email Address
+                </Label>
+                <Input
+                  id="email"
+                  type="email"
+                  value={formData.email}
+                  onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
+                  placeholder="your@email.com"
+                  className="h-12 text-lg border-slate-200 focus:border-blue-500 focus:ring-blue-500"
+                />
               </div>
-            )}
+              
+              <div>
+                <Label htmlFor="instagram" className="text-sm font-medium text-slate-700 mb-2 block">
+                  Instagram Handle
+                </Label>
+                <Input
+                  id="instagram"
+                  type="text"
+                  value={formData.instagram}
+                  onChange={(e) => setFormData(prev => ({ ...prev, instagram: e.target.value }))}
+                  placeholder="@yourusername"
+                  className="h-12 text-lg border-slate-200 focus:border-blue-500 focus:ring-blue-500"
+                />
+              </div>
+            </div>
+          )}
 
-            {/* Step 2: Email */}
-            {currentStep === 2 && (
-              <div className="space-y-8">
-                <div className="text-center">
-                  <div className="w-20 h-20 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-lg">
-                    <MessageCircle className="h-10 w-10 text-white" />
-                  </div>
-                  <h2 className="text-3xl font-bold mb-3 text-gray-900">Your email address</h2>
-                  <p className="text-gray-600">We'll only use this to contact you if needed</p>
-                </div>
+          {/* Step 2: Review & Media */}
+          {currentStep === 2 && (
+            <div className="space-y-6">
+              <h2 className="text-xl font-semibold text-slate-900 mb-4">Share Your Experience</h2>
+              
+              {/* Mobile: Collapsible Sections */}
+              <div className="lg:hidden space-y-4">
                 
-                <div>
-                  <input
-                    type="email"
-                    value={formData.email}
-                    onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
-                    className="w-full p-6 border-2 border-gray-200 rounded-2xl text-xl focus:ring-4 focus:ring-blue-100 focus:border-blue-500 transition-all duration-200"
-                    placeholder="your@email.com"
-                    autoFocus
-                  />
-                  
-                  {/* Customer Status Indicator */}
-                  {isExistingCustomer !== null && (
-                    <div className="mt-4 flex items-center justify-center">
-                      <div className={`flex items-center gap-2 px-4 py-2 rounded-full ${
-                        isExistingCustomer 
-                          ? 'bg-green-100 text-green-800' 
-                          : 'bg-yellow-100 text-yellow-800'
+                {/* Rating Section */}
+                <div className="bg-white border border-slate-200 rounded-lg overflow-hidden">
+                  <button
+                    onClick={() => toggleSection('rating')}
+                    className="w-full p-4 flex items-center justify-between hover:bg-slate-50 transition-colors"
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
+                        getSectionStatus('rating') === 'completed' ? 'bg-green-100 text-green-600' : 'bg-slate-100 text-slate-600'
                       }`}>
-                        <div className={`w-3 h-3 rounded-full ${
-                          isExistingCustomer ? 'bg-green-500' : 'bg-yellow-500'
-                        }`} />
-                        <span className="font-medium">
-                          {isExistingCustomer ? 'Existing Customer' : 'New Customer'}
-                        </span>
+                        <Star className="h-4 w-4" />
+                      </div>
+                      <div className="text-left">
+                        <p className="font-medium text-slate-900">Rate Your Experience</p>
+                        <p className="text-sm text-slate-500">
+                          {formData.rating > 0 ? `${formData.rating} star${formData.rating > 1 ? 's' : ''} selected` : 'Tap to rate'}
+                        </p>
+                      </div>
+                    </div>
+                    {expandedSections.rating ? <ChevronUp className="h-5 w-5 text-slate-400" /> : <ChevronDown className="h-5 w-5 text-slate-400" />}
+                  </button>
+                  
+                  {expandedSections.rating && (
+                    <div className="px-4 pb-4 border-t border-slate-100">
+                      <div className="pt-4">
+                        <div className="flex justify-center gap-2">
+                          {[1, 2, 3, 4, 5].map((star) => (
+                            <button
+                              key={star}
+                              onClick={() => setFormData(prev => ({ ...prev, rating: star }))}
+                              className={`w-12 h-12 rounded-full transition-all duration-200 ${
+                                star <= formData.rating
+                                  ? 'bg-gradient-to-r from-yellow-400 to-orange-500 text-white shadow-lg scale-110'
+                                  : 'bg-slate-100 text-slate-400 hover:bg-slate-200'
+                              }`}
+                            >
+                              <Star className="h-6 w-6 mx-auto" fill={star <= formData.rating ? 'currentColor' : 'none'} />
+                            </button>
+                          ))}
+                        </div>
                       </div>
                     </div>
                   )}
+                </div>
+
+                {/* Profile Picture Section */}
+                <div className="bg-white border border-slate-200 rounded-lg overflow-hidden">
+                  <button
+                    onClick={() => toggleSection('profile')}
+                    className="w-full p-4 flex items-center justify-between hover:bg-slate-50 transition-colors"
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
+                        getSectionStatus('profile') === 'completed' ? 'bg-green-100 text-green-600' : 'bg-slate-100 text-slate-600'
+                      }`}>
+                        <User className="h-4 w-4" />
+                      </div>
+                      <div className="text-left">
+                        <p className="font-medium text-slate-900">Profile Picture</p>
+                        <p className="text-sm text-slate-500">Optional</p>
+                      </div>
+                    </div>
+                    {expandedSections.profile ? <ChevronUp className="h-5 w-5 text-slate-400" /> : <ChevronDown className="h-5 w-5 text-slate-400" />}
+                  </button>
                   
-                  {/* Customer Tags */}
-                  {customerTags.length > 0 && (
-                    <div className="mt-4 flex flex-wrap gap-2 justify-center">
-                      {customerTags.map((tag, index) => (
-                        <Badge key={index} variant="secondary" className="bg-purple-100 text-purple-800">
-                          {tag}
-                        </Badge>
-                      ))}
+                  {expandedSections.profile && (
+                    <div className="px-4 pb-4 border-t border-slate-100">
+                      <div className="pt-4">
+                        <div className="flex items-center gap-4">
+                          <div className="w-16 h-16 rounded-full overflow-hidden bg-slate-200 flex items-center justify-center">
+                            {formData.profilePictureUrl ? (
+                              <img 
+                                src={formData.profilePictureUrl} 
+                                alt="Profile" 
+                                className="w-full h-full object-cover"
+                              />
+                            ) : (
+                              <div className="w-8 h-8 bg-slate-400 rounded-full" />
+                            )}
+                          </div>
+                          <div className="flex-1">
+                            <input
+                              type="file"
+                              accept="image/*"
+                              onChange={(e) => {
+                                const file = e.target.files?.[0];
+                                if (file) handleProfilePictureUpload(file);
+                              }}
+                              className="hidden"
+                              id="profile-upload-mobile"
+                            />
+                            <label htmlFor="profile-upload-mobile" className="cursor-pointer">
+                              <Button variant="outline" size="sm">
+                                <Upload className="h-4 w-4 mr-2" />
+                                Upload Photo
+                              </Button>
+                            </label>
+                            <p className="text-xs text-slate-500 mt-1">
+                              Max 5MB, JPG/PNG recommended
+                            </p>
+                          </div>
+                        </div>
+                      </div>
                     </div>
                   )}
                 </div>
-              </div>
-            )}
 
-            {/* Step 3: Rating */}
-            {currentStep === 3 && (
-              <div className="space-y-8">
-                <div className="text-center">
-                  <div className="w-20 h-20 bg-gradient-to-r from-yellow-500 to-orange-500 rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-lg">
-                    <Star className="h-10 w-10 text-white" />
-                  </div>
-                  <h2 className="text-3xl font-bold mb-3 text-gray-900">Rate your experience</h2>
-                  <p className="text-gray-600">How many stars would you give us?</p>
+                {/* Media Upload Section */}
+                <div className="bg-white border border-slate-200 rounded-lg overflow-hidden">
+                  <button
+                    onClick={() => toggleSection('media')}
+                    className="w-full p-4 flex items-center justify-between hover:bg-slate-50 transition-colors"
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
+                        getSectionStatus('media') === 'completed' ? 'bg-green-100 text-green-600' : 
+                        getSectionStatus('media') === 'required' ? 'bg-red-100 text-red-600' : 'bg-slate-100 text-slate-600'
+                      }`}>
+                        <Camera className="h-4 w-4" />
+                      </div>
+                      <div className="text-left">
+                        <p className="font-medium text-slate-900">Add Your Media</p>
+                        <p className="text-sm text-slate-500">
+                          {formData.mediaFiles.length > 0 ? `${formData.mediaFiles.length} file${formData.mediaFiles.length > 1 ? 's' : ''} uploaded` : 'Required'}
+                        </p>
+                      </div>
+                    </div>
+                    {expandedSections.media ? <ChevronUp className="h-5 w-5 text-slate-400" /> : <ChevronDown className="h-5 w-5 text-slate-400" />}
+                  </button>
+                  
+                  {expandedSections.media && (
+                    <div className="px-4 pb-4 border-t border-slate-100">
+                      <div className="pt-4 space-y-4">
+                        <p className="text-sm text-slate-600">
+                          Please upload a short 30-second video of yourself sharing your experience, or add an animation or render that illustrates your story better.
+                        </p>
+              
+                        {/* Upload Progress */}
+                        {uploadProgress > 0 && uploadProgress < 100 && (
+                          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
+                            <div className="flex items-center gap-3 mb-2">
+                              <div className="w-5 h-5 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
+                              <span className="text-sm font-medium text-blue-700">Uploading media...</span>
+                            </div>
+                            <div className="w-full bg-blue-200 rounded-full h-2">
+                              <div 
+                                className="bg-blue-500 h-2 rounded-full transition-all duration-300"
+                                style={{ width: `${uploadProgress}%` }}
+                              />
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Media Upload Options */}
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                          {/* File Upload */}
+                          <div className="border-2 border-dashed border-slate-300 rounded-xl p-6 text-center hover:border-blue-400 transition-colors bg-white">
+                            <input
+                              type="file"
+                              accept="image/*,video/*"
+                              multiple
+                              onChange={(e) => {
+                                const files = e.target.files;
+                                if (files) handleFileUpload(files);
+                              }}
+                              className="hidden"
+                              id="media-upload"
+                            />
+                            <label htmlFor="media-upload" className="cursor-pointer">
+                              <div className="space-y-3">
+                                <div className="w-12 h-12 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center mx-auto">
+                                  <Upload className="h-6 w-6 text-white" />
+                                </div>
+                                <div>
+                                  <p className="text-sm font-medium text-slate-900 mb-1">
+                                    Upload Files
+                                  </p>
+                                  <p className="text-xs text-slate-500">
+                                    Images or videos up to 50MB
+                                  </p>
+                                </div>
+                              </div>
+                            </label>
+                          </div>
+
+                          {/* Camera Capture */}
+                          <div className="border-2 border-dashed border-slate-300 rounded-xl p-6 text-center hover:border-green-400 transition-colors bg-white">
+                            <button
+                              onClick={startCamera}
+                              className="w-full"
+                            >
+                              <div className="space-y-3">
+                                <div className="w-12 h-12 bg-gradient-to-r from-green-500 to-emerald-600 rounded-full flex items-center justify-center mx-auto">
+                                  <Camera className="h-6 w-6 text-white" />
+                                </div>
+                                <div>
+                                  <p className="text-sm font-medium text-slate-900 mb-1">
+                                    Take Photo/Video
+                                  </p>
+                                  <p className="text-xs text-slate-500">
+                                    Use your camera
+                                  </p>
+                                </div>
+                              </div>
+                            </button>
+                          </div>
+                        </div>
+
+                        {/* Camera Interface */}
+                        {showCamera && (
+                          <div className="bg-black rounded-lg p-4 mb-4">
+                            <div className="relative">
+                              <video
+                                ref={videoRef}
+                                autoPlay
+                                playsInline
+                                className="w-full h-64 object-cover rounded-lg"
+                              />
+                              <canvas ref={canvasRef} className="hidden" />
+                              
+                              {/* Camera Controls */}
+                              <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 flex items-center gap-4">
+                                <Button
+                                  onClick={stopCamera}
+                                  variant="outline"
+                                  size="sm"
+                                  className="bg-white/20 border-white/30 text-white hover:bg-white/30"
+                                >
+                                  <X className="h-4 w-4" />
+                                </Button>
+                                
+                                {cameraMode === 'photo' ? (
+                                  <Button
+                                    onClick={capturePhoto}
+                                    className="w-12 h-12 rounded-full bg-white hover:bg-gray-100"
+                                  >
+                                    <Camera className="h-6 w-6 text-black" />
+                                  </Button>
+                                ) : (
+                                  <Button
+                                    onClick={isRecording ? stopVideoRecording : startVideoRecording}
+                                    className={`w-12 h-12 rounded-full ${
+                                      isRecording ? 'bg-red-500 hover:bg-red-600' : 'bg-white hover:bg-gray-100'
+                                    }`}
+                                  >
+                                    {isRecording ? (
+                                      <div className="w-4 h-4 bg-white rounded-sm" />
+                                    ) : (
+                                      <Video className="h-6 w-6 text-black" />
+                                    )}
+                                  </Button>
+                                )}
+                                
+                                <Button
+                                  onClick={() => setCameraMode(cameraMode === 'photo' ? 'video' : 'photo')}
+                                  variant="outline"
+                                  size="sm"
+                                  className="bg-white/20 border-white/30 text-white hover:bg-white/30"
+                                >
+                                  {cameraMode === 'photo' ? <Video className="h-4 w-4" /> : <Camera className="h-4 w-4" />}
+                                </Button>
+                              </div>
+                              
+                              {/* Recording Timer */}
+                              {isRecording && (
+                                <div className="absolute top-4 left-4 bg-red-500 text-white px-3 py-1 rounded-full text-sm font-medium">
+                                  {recordingTime}s
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Media Files List */}
+                        {formData.mediaFiles.length > 0 && (
+                          <div className="space-y-3">
+                            <h4 className="text-sm font-medium text-slate-700">Your Media Files ({formData.mediaFiles.length})</h4>
+                            {formData.mediaFiles.map((mediaFile) => (
+                              <div key={mediaFile.id} className="bg-white border border-slate-200 rounded-lg p-4">
+                                <div className="flex items-center gap-3">
+                                  {mediaFile.type === 'image' ? (
+                                    <ImageIcon className="h-8 w-8 text-green-500" />
+                                  ) : (
+                                    <Video className="h-8 w-8 text-blue-500" />
+                                  )}
+                                  <div className="flex-1">
+                                    <p className="font-medium text-slate-900">{mediaFile.file.name}</p>
+                                    <p className="text-sm text-slate-500">
+                                      {(mediaFile.file.size / 1024 / 1024).toFixed(2)} MB
+                                    </p>
+                                  </div>
+                                  <div className="flex items-center gap-2">
+                                    {mediaFile.url ? (
+                                      <div className="flex items-center gap-2 text-green-600">
+                                        <CheckCircle className="h-5 w-5" />
+                                        <span className="text-sm font-medium">Uploaded</span>
+                                      </div>
+                                    ) : (
+                                      <div className="flex items-center gap-2 text-blue-600">
+                                        <div className="w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
+                                        <span className="text-sm font-medium">Uploading...</span>
+                                      </div>
+                                    )}
+                                    <Button
+                                      onClick={() => removeMediaFile(mediaFile.id)}
+                                      variant="outline"
+                                      size="sm"
+                                      className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                                    >
+                                      <X className="h-4 w-4" />
+                                    </Button>
+                                  </div>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
                 </div>
                 
-                <div className="text-center">
-                  <div className="flex justify-center gap-3 mb-6">
-                    {[1, 2, 3, 4, 5].map((star) => (
-                      <button
-                        key={star}
-                        onClick={() => setFormData(prev => ({ ...prev, rating: star }))}
-                        className={`w-16 h-16 rounded-2xl transition-all duration-200 transform hover:scale-110 ${
-                          star <= formData.rating 
-                            ? 'text-yellow-400 bg-yellow-50 shadow-lg' 
-                            : 'text-gray-300 hover:text-yellow-400 hover:bg-yellow-50'
-                        }`}
-                      >
-                        <Star className="w-10 h-10 mx-auto fill-current" />
-                      </button>
-                    ))}
-                  </div>
-                  <p className="text-2xl font-bold text-gray-900">
-                    {formData.rating} out of 5 stars
-                  </p>
-                </div>
-              </div>
-            )}
-
-            {/* Step 4: Description */}
-            {currentStep === 4 && (
-              <div className="space-y-8">
-                <div className="text-center">
-                  <div className="w-20 h-20 bg-gradient-to-r from-green-500 to-emerald-500 rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-lg">
-                    <MessageCircle className="h-10 w-10 text-white" />
-                  </div>
-                  <h2 className="text-3xl font-bold mb-3 text-gray-900">Tell us more</h2>
-                  <p className="text-gray-600">Share your detailed experience with us</p>
-                </div>
-                
-                <div>
-                  <textarea
+                {/* Review Description */}
+                <div className="bg-slate-50 rounded-lg p-6">
+                  <Label htmlFor="description" className="text-sm font-medium text-slate-700 mb-2 block">
+                    Tell us more about your experience
+                  </Label>
+                  <Textarea
+                    id="description"
                     value={formData.description}
                     onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
-                    className="w-full p-6 border-2 border-gray-200 rounded-2xl text-lg focus:ring-4 focus:ring-green-100 focus:border-green-500 transition-all duration-200 resize-none"
-                    rows={5}
-                    placeholder="Describe your experience..."
-                    autoFocus
+                    placeholder="Share your thoughts about the product, service, or overall experience..."
+                    className="min-h-32 text-lg border-slate-200 focus:border-blue-500 focus:ring-blue-500 resize-none bg-white"
                   />
-                  <p className="text-sm text-gray-500 mt-2 text-center">
+                  <p className="text-sm text-slate-500 mt-2">
                     {formData.description.length}/500 characters
                   </p>
                 </div>
               </div>
-            )}
 
-            {/* Step 5: Media Upload */}
-            {currentStep === 5 && (
-              <div className="space-y-8">
-                <div className="text-center">
-                  <div className="w-20 h-20 bg-gradient-to-r from-pink-500 to-rose-500 rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-lg">
-                    <Camera className="h-10 w-10 text-white" />
-                  </div>
-                  <h2 className="text-3xl font-bold mb-3 text-gray-900">Add a photo or video</h2>
-                  <p className="text-gray-600">Optional: Show others your experience (max 30MB)</p>
-                </div>
-
-                {/* Media Preview */}
-                {formData.media && (
-                  <div className="text-center mb-6">
-                    {formData.mediaType === 'video' ? (
-                      <video 
-                        src={URL.createObjectURL(formData.media)} 
-                        className="max-w-full h-64 rounded-2xl mx-auto shadow-lg"
-                        controls
-                      />
-                    ) : (
-                      <img 
-                        src={URL.createObjectURL(formData.media)} 
-                        alt="Preview"
-                        className="max-w-full h-64 rounded-2xl mx-auto object-cover shadow-lg"
-                      />
-                    )}
-                    <button
-                      onClick={() => setFormData(prev => ({ ...prev, media: null, mediaType: '' }))}
-                      className="mt-4 text-sm text-red-600 hover:underline font-medium"
-                    >
-                      Remove
-                    </button>
-                  </div>
-                )}
-
-                {/* Upload Options */}
-                {!formData.media && (
-                  <div className="space-y-6">
-                    {/* File Upload */}
-                    <div 
-                      className="border-2 border-dashed border-gray-300 rounded-2xl p-8 text-center cursor-pointer hover:border-purple-400 hover:bg-purple-50 transition-all duration-200"
-                      onClick={() => fileInputRef.current?.click()}
-                    >
-                      <Upload className="w-12 h-12 mx-auto mb-4 text-gray-400" />
-                      <p className="text-lg font-medium text-gray-700 mb-2">Click to upload a file</p>
-                      <p className="text-sm text-gray-500">JPG, PNG, MP4, MOV up to 30MB</p>
+              {/* Desktop: Side-by-side Layout */}
+              <div className="hidden lg:grid lg:grid-cols-2 gap-8">
+                {/* Left Column - Form */}
+                <div className="space-y-8">
+                  {/* Rating Section */}
+                  <div className="bg-slate-50 rounded-lg p-6">
+                    <Label className="text-sm font-medium text-slate-700 mb-3 block">
+                      How would you rate your experience?
+                    </Label>
+                    <div className="flex justify-center gap-2">
+                      {[1, 2, 3, 4, 5].map((star) => (
+                        <button
+                          key={star}
+                          onClick={() => setFormData(prev => ({ ...prev, rating: star }))}
+                          className={`w-12 h-12 rounded-full transition-all duration-200 ${
+                            star <= formData.rating
+                              ? 'bg-gradient-to-r from-yellow-400 to-orange-500 text-white shadow-lg scale-110'
+                              : 'bg-white text-slate-400 hover:bg-slate-100'
+                          }`}
+                        >
+                          <Star className="h-6 w-6 mx-auto" fill={star <= formData.rating ? 'currentColor' : 'none'} />
+                        </button>
+                      ))}
                     </div>
+                  </div>
 
-                    {/* Camera/Video Recording */}
-                    <div className="grid grid-cols-2 gap-4">
-                      <button
-                        onClick={() => fileInputRef.current?.click()}
-                        className="p-6 border-2 border-gray-200 rounded-2xl hover:border-blue-400 hover:bg-blue-50 transition-all duration-200 group"
-                      >
-                        <ImageIcon className="w-8 h-8 mx-auto mb-2 text-gray-400 group-hover:text-blue-500" />
-                        <span className="font-medium text-gray-700">Photo</span>
-                      </button>
-                      
-                      <button
-                        onClick={isRecording ? stopRecording : startVideoRecording}
-                        className={`p-6 border-2 rounded-2xl transition-all duration-200 group ${
-                          isRecording 
-                            ? 'border-red-400 bg-red-50' 
-                            : 'border-gray-200 hover:border-red-400 hover:bg-red-50'
-                        }`}
-                      >
-                        {isRecording ? (
-                          <Square className="w-8 h-8 mx-auto mb-2 text-red-500" />
+                  {/* Profile Picture Section */}
+                  <div className="bg-slate-50 rounded-lg p-6">
+                    <Label className="text-sm font-medium text-slate-700 mb-3 block">
+                      Profile Picture (Optional)
+                    </Label>
+                    <div className="flex items-center gap-4">
+                      <div className="w-16 h-16 rounded-full overflow-hidden bg-slate-200 flex items-center justify-center">
+                        {formData.profilePictureUrl ? (
+                          <img 
+                            src={formData.profilePictureUrl} 
+                            alt="Profile" 
+                            className="w-full h-full object-cover"
+                          />
                         ) : (
-                          <Video className="w-8 h-8 mx-auto mb-2 text-gray-400 group-hover:text-red-500" />
+                          <div className="w-8 h-8 bg-slate-400 rounded-full" />
                         )}
-                        <span className="font-medium text-gray-700">{isRecording ? 'Stop' : 'Video'}</span>
-                      </button>
-                    </div>
-
-                    {/* Recording UI */}
-                    {isRecording && (
-                      <div className="text-center space-y-4">
-                        <video 
-                          ref={videoRef}
-                          className="w-full max-w-md rounded-2xl mx-auto shadow-lg"
-                          muted
-                          playsInline
+                      </div>
+                      <div className="flex-1">
+                        <input
+                          type="file"
+                          accept="image/*"
+                          onChange={(e) => {
+                            const file = e.target.files?.[0];
+                            if (file) handleProfilePictureUpload(file);
+                          }}
+                          className="hidden"
+                          id="profile-upload"
                         />
-                        <div className="text-red-600 font-bold text-lg">
-                          Recording: {formatTime(recordingTime)} / 1:00
+                        <label htmlFor="profile-upload" className="cursor-pointer">
+                          <Button variant="outline" size="sm">
+                            <Upload className="h-4 w-4 mr-2" />
+                            Upload Photo
+                          </Button>
+                        </label>
+                        <p className="text-xs text-slate-500 mt-1">
+                          Max 5MB, JPG/PNG recommended
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Media Upload Section */}
+                  <div className="bg-slate-50 rounded-lg p-6">
+                    <h3 className="text-lg font-semibold text-slate-900 mb-2">Add Your Media</h3>
+                    <p className="text-sm text-slate-600 mb-6">
+                      Please upload a short 30-second video of yourself sharing your experience, or add an animation or render that illustrates your story better.
+                    </p>
+                    
+                    {/* Upload Progress */}
+                    {uploadProgress > 0 && uploadProgress < 100 && (
+                      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
+                        <div className="flex items-center gap-3 mb-2">
+                          <div className="w-5 h-5 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
+                          <span className="text-sm font-medium text-blue-700">Uploading media...</span>
+                        </div>
+                        <div className="w-full bg-blue-200 rounded-full h-2">
+                          <div 
+                            className="bg-blue-500 h-2 rounded-full transition-all duration-300"
+                            style={{ width: `${uploadProgress}%` }}
+                          />
                         </div>
                       </div>
                     )}
+
+                    {/* Media Upload Options */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                      {/* File Upload */}
+                      <div className="border-2 border-dashed border-slate-300 rounded-xl p-6 text-center hover:border-blue-400 transition-colors bg-white">
+                        <input
+                          type="file"
+                          accept="image/*,video/*"
+                          multiple
+                          onChange={(e) => {
+                            const files = e.target.files;
+                            if (files) handleFileUpload(files);
+                          }}
+                          className="hidden"
+                          id="media-upload"
+                        />
+                        <label htmlFor="media-upload" className="cursor-pointer">
+                          <div className="space-y-3">
+                            <div className="w-12 h-12 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center mx-auto">
+                              <Upload className="h-6 w-6 text-white" />
+                            </div>
+                            <div>
+                              <p className="text-sm font-medium text-slate-900 mb-1">
+                                Upload Files
+                              </p>
+                              <p className="text-xs text-slate-500">
+                                Images or videos up to 50MB
+                              </p>
+                            </div>
+                          </div>
+                        </label>
+                      </div>
+
+                      {/* Camera Capture */}
+                      <div className="border-2 border-dashed border-slate-300 rounded-xl p-6 text-center hover:border-green-400 transition-colors bg-white">
+                        <button
+                          onClick={startCamera}
+                          className="w-full"
+                        >
+                          <div className="space-y-3">
+                            <div className="w-12 h-12 bg-gradient-to-r from-green-500 to-emerald-600 rounded-full flex items-center justify-center mx-auto">
+                              <Camera className="h-6 w-6 text-white" />
+                            </div>
+                            <div>
+                              <p className="text-sm font-medium text-slate-900 mb-1">
+                                Take Photo/Video
+                              </p>
+                              <p className="text-xs text-slate-500">
+                                Use your camera
+                              </p>
+                            </div>
+                          </div>
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Camera Interface */}
+                    {showCamera && (
+                      <div className="bg-black rounded-lg p-4 mb-4">
+                        <div className="relative">
+                          <video
+                            ref={videoRef}
+                            autoPlay
+                            playsInline
+                            className="w-full h-64 object-cover rounded-lg"
+                          />
+                          <canvas ref={canvasRef} className="hidden" />
+                          
+                          {/* Camera Controls */}
+                          <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 flex items-center gap-4">
+                            <Button
+                              onClick={stopCamera}
+                              variant="outline"
+                              size="sm"
+                              className="bg-white/20 border-white/30 text-white hover:bg-white/30"
+                            >
+                              <X className="h-4 w-4" />
+                            </Button>
+                            
+                            {cameraMode === 'photo' ? (
+                              <Button
+                                onClick={capturePhoto}
+                                className="w-12 h-12 rounded-full bg-white hover:bg-gray-100"
+                              >
+                                <Camera className="h-6 w-6 text-black" />
+                              </Button>
+                            ) : (
+                              <Button
+                                onClick={isRecording ? stopVideoRecording : startVideoRecording}
+                                className={`w-12 h-12 rounded-full ${
+                                  isRecording ? 'bg-red-500 hover:bg-red-600' : 'bg-white hover:bg-gray-100'
+                                }`}
+                              >
+                                {isRecording ? (
+                                  <div className="w-4 h-4 bg-white rounded-sm" />
+                                ) : (
+                                  <Video className="h-6 w-6 text-black" />
+                                )}
+                              </Button>
+                            )}
+                            
+                            <Button
+                              onClick={() => setCameraMode(cameraMode === 'photo' ? 'video' : 'photo')}
+                              variant="outline"
+                              size="sm"
+                              className="bg-white/20 border-white/30 text-white hover:bg-white/30"
+                            >
+                              {cameraMode === 'photo' ? <Video className="h-4 w-4" /> : <Camera className="h-4 w-4" />}
+                            </Button>
+                          </div>
+                          
+                          {/* Recording Timer */}
+                          {isRecording && (
+                            <div className="absolute top-4 left-4 bg-red-500 text-white px-3 py-1 rounded-full text-sm font-medium">
+                              {recordingTime}s
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Media Files List */}
+                    {formData.mediaFiles.length > 0 && (
+                      <div className="space-y-3">
+                        <h4 className="text-sm font-medium text-slate-700">Your Media Files ({formData.mediaFiles.length})</h4>
+                        {formData.mediaFiles.map((mediaFile) => (
+                          <div key={mediaFile.id} className="bg-white border border-slate-200 rounded-lg p-4">
+                            <div className="flex items-center gap-3">
+                              {mediaFile.type === 'image' ? (
+                                <ImageIcon className="h-8 w-8 text-green-500" />
+                              ) : (
+                                <Video className="h-8 w-8 text-blue-500" />
+                              )}
+                              <div className="flex-1">
+                                <p className="font-medium text-slate-900">{mediaFile.file.name}</p>
+                                <p className="text-sm text-slate-500">
+                                  {(mediaFile.file.size / 1024 / 1024).toFixed(2)} MB
+                                </p>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                {mediaFile.url ? (
+                                  <div className="flex items-center gap-2 text-green-600">
+                                    <CheckCircle className="h-5 w-5" />
+                                    <span className="text-sm font-medium">Uploaded</span>
+                                  </div>
+                                ) : (
+                                  <div className="flex items-center gap-2 text-blue-600">
+                                    <div className="w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
+                                    <span className="text-sm font-medium">Uploading...</span>
+                                  </div>
+                                )}
+                                <Button
+                                  onClick={() => removeMediaFile(mediaFile.id)}
+                                  variant="outline"
+                                  size="sm"
+                                  className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                                >
+                                  <X className="h-4 w-4" />
+                                </Button>
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
                   </div>
-                )}
-
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  accept="image/*,video/*"
-                  onChange={(e) => {
-                    const file = e.target.files?.[0];
-                    if (file && file.size <= 30 * 1024 * 1024) {
-                      handleFileUpload(file, 'media');
-                    } else if (file) {
-                      toast({
-                        title: "File too large",
-                        description: "Please select a file smaller than 30MB",
-                        variant: "destructive"
-                      });
-                    }
-                  }}
-                  className="hidden"
-                />
-              </div>
-            )}
-
-            {/* Success Step */}
-            {currentStep === 6 && (
-              <div className="text-center space-y-8">
-                <div className="w-24 h-24 bg-gradient-to-r from-green-500 to-emerald-500 rounded-full flex items-center justify-center mx-auto shadow-2xl">
-                  <CheckCircle className="h-12 w-12 text-white" />
+                  
+                  {/* Review Description */}
+                  <div className="bg-slate-50 rounded-lg p-6">
+                    <Label htmlFor="description" className="text-sm font-medium text-slate-700 mb-2 block">
+                      Tell us more about your experience
+                    </Label>
+                    <Textarea
+                      id="description"
+                      value={formData.description}
+                      onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
+                      placeholder="Share your thoughts about the product, service, or overall experience..."
+                      className="min-h-32 text-lg border-slate-200 focus:border-blue-500 focus:ring-blue-500 resize-none bg-white"
+                    />
+                    <p className="text-sm text-slate-500 mt-2">
+                      {formData.description.length}/500 characters
+                    </p>
+                  </div>
                 </div>
-                <div>
-                  <h2 className="text-4xl font-bold mb-4 text-gray-900">Thank you!</h2>
-                  <p className="text-lg text-gray-600 mb-8">
-                    Your review has been submitted and is pending approval. 
-                    We'll review it shortly and get back to you.
-                  </p>
-                  <Button
-                    onClick={() => window.location.reload()}
-                    className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white px-8 py-4 rounded-2xl text-lg font-semibold shadow-lg"
-                  >
-                    Submit Another Review
-                  </Button>
+
+                {/* Right Column - Preview (Desktop Only) */}
+                <div className="hidden lg:block">
+                  <div className="sticky top-8">
+                    <h3 className="text-lg font-semibold text-slate-900 mb-4">Preview</h3>
+                    <div className="flex justify-center">
+                      {/* Review Card Preview - Exact match to reviews-standalone.html */}
+                      <div className="video-card relative w-64 h-96 aspect-[2/3] flex-shrink-0 rounded-2xl overflow-hidden transition-transform duration-500 ease-in-out hover:scale-105 shadow-lg group">
+                        {/* Media Content */}
+                        {formData.mediaFiles.length > 0 ? (
+                          formData.mediaFiles[0].type === 'video' ? (
+                            <video 
+                              className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" 
+                              muted 
+                              loop 
+                              playsInline 
+                              src={formData.mediaFiles[0].url || URL.createObjectURL(formData.mediaFiles[0].file)}
+                            />
+                          ) : (
+                            <img 
+                              className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" 
+                              src={formData.mediaFiles[0].url || URL.createObjectURL(formData.mediaFiles[0].file)} 
+                              alt="Review image" 
+                            />
+                          )
+                        ) : (
+                          <div className="absolute inset-0 w-full h-full bg-gradient-to-br from-slate-200 to-slate-300 flex items-center justify-center">
+                            <div className="text-center text-slate-500">
+                              <ImageIcon className="h-12 w-12 mx-auto mb-2" />
+                              <p className="text-sm">Media Preview</p>
+                            </div>
+                          </div>
+                        )}
+                        
+                        {/* Gradient Overlay */}
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent"></div>
+                        
+                        {/* Content */}
+                        <div className="relative z-10 p-4 flex flex-col justify-end h-full text-white">
+                          <div className="space-y-3">
+                            {/* Stars */}
+                            <div className="flex items-center space-x-1">
+                              {[1, 2, 3, 4, 5].map((star) => (
+                                <Star
+                                  key={star}
+                                  className={`w-4 h-4 ${
+                                    star <= formData.rating ? 'text-yellow-400 fill-current' : 'text-gray-300'
+                                  }`}
+                                  fill={star <= formData.rating ? 'currentColor' : 'none'}
+                                />
+                              ))}
+                            </div>
+                            
+                            {/* Description */}
+                            <p className="text-sm text-white/90 line-clamp-2 select-none">
+                              "{formData.description || 'Your review description will appear here...'}"
+                            </p>
+                            
+                            {/* User Info */}
+                            <div className="flex items-center space-x-2 text-sm">
+                              {/* Avatar */}
+                              <div className="w-8 h-8 rounded-full overflow-hidden bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center font-bold text-white">
+                                {formData.profilePictureUrl ? (
+                                  <img 
+                                    src={formData.profilePictureUrl} 
+                                    alt="Profile" 
+                                    className="w-full h-full object-cover"
+                                  />
+                                ) : (
+                                  <span>
+                                    {formData.instagram ? formData.instagram.charAt(1).toUpperCase() : 'U'}
+                                  </span>
+                                )}
+                              </div>
+                              
+                              {/* Instagram Handle */}
+                              <div className="flex items-center space-x-1.5 group">
+                                <svg className="w-4 h-4 text-white/80 group-hover:text-blue-300" fill="currentColor" viewBox="0 0 24 24">
+                                  <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.85s-.011 3.585-.069 4.85c-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.85-.07-3.252-.148-4.771-1.691-4.919-4.919-.058-1.265-.069-1.645-.069-4.85s.011-3.585.069-4.85c.149-3.225 1.664 4.771 4.919-4.919 1.266-.057 1.644-.07 4.85-.07zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948s-.014-3.667-.072-4.947c-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.689-.073-4.948-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.162 6.162 6.162 6.162-2.759 6.162-6.162-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4s1.791-4 4-4 4 1.79 4 4-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44 1.441-.645 1.441-1.44-.645-1.44-1.441-1.44z"/>
+                                </svg>
+                                <span className="font-medium text-white group-hover:text-blue-300 transition-colors">
+                                  {formData.instagram || '@yourusername'}
+                                </span>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </div>
-            )}
+            </div>
+          )}
 
-            {/* Navigation Buttons */}
-            {currentStep < 6 && (
-              <div className="flex gap-4 mt-12">
-                {currentStep > 1 && (
-                  <Button
-                    onClick={prevStep}
-                    variant="outline"
-                    className="flex-1 py-4 px-6 rounded-2xl text-lg font-semibold border-2 hover:bg-gray-50"
-                  >
-                    <ArrowLeft className="h-5 w-5 mr-2" />
-                    Back
-                  </Button>
-                )}
-                
-                <Button
-                  onClick={nextStep}
-                  disabled={!canProceed() || uploading}
-                  className="flex-1 py-4 px-6 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white rounded-2xl text-lg font-semibold shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  {uploading ? (
-                    'Submitting...'
-                  ) : currentStep === totalSteps ? (
-                    <>
-                      Submit Review
-                      <ArrowRight className="h-5 w-5 ml-2" />
-                    </>
-                  ) : (
-                    <>
-                      Continue
-                      <ArrowRight className="h-5 w-5 ml-2" />
-                    </>
-                  )}
-                </Button>
-              </div>
-            )}
-          </CardContent>
-        </Card>
-      </div>
+          {/* Navigation */}
+          <div className="flex justify-between items-center mt-8 pt-6 border-t border-slate-200">
+            <Button
+              variant="outline"
+              onClick={prevStep}
+              disabled={currentStep === 1}
+              className="px-6"
+            >
+              Previous
+            </Button>
+            
+            <Button
+              onClick={nextStep}
+              disabled={!canProceed() || uploading}
+              className="px-6 bg-blue-600 hover:bg-blue-700"
+            >
+              {uploading ? (
+                <>
+                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
+                  Submitting...
+                </>
+              ) : currentStep === totalSteps ? (
+                'Submit Review'
+              ) : (
+                'Next'
+              )}
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 };
