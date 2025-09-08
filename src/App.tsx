@@ -27,7 +27,7 @@ const App = () => (
               </ProtectedRoute>
             } />
             <Route path="/optin" element={<OptIn />} />
-            <Route path="/submitreview" element={<SubmitReview />} />
+            <Route path="/submit-review" element={<SubmitReview />} />
             <Route path="/reviews" element={<Reviews />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
