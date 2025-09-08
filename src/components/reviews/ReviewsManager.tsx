@@ -29,7 +29,10 @@ import {
   Copy,
   Link,
   Calendar,
-  TrendingUp
+  TrendingUp,
+  UserPlus,
+  Tag,
+  Mail
 } from "lucide-react";
 
 interface Review {
@@ -48,6 +51,22 @@ interface Review {
   updated_at: string;
 }
 
+interface Customer {
+  id: string;
+  email: string;
+  first_name: string | null;
+  last_name: string | null;
+  status: string;
+  tags: string[] | null;
+  created_at: string;
+  updated_at: string;
+}
+
+interface ReviewWithCustomer extends Review {
+  customer?: Customer;
+  isExistingCustomer: boolean;
+}
+
 interface ReviewStats {
   total_submissions: number;
   pending_count: number;
@@ -58,7 +77,8 @@ interface ReviewStats {
 
 export const ReviewsManager = () => {
   const [activeTab, setActiveTab] = useState("pending");
-  const [reviews, setReviews] = useState<Review[]>([]);
+  const [reviews, setReviews] = useState<ReviewWithCustomer[]>([]);
+  const [customers, setCustomers] = useState<Customer[]>([]);
   const [stats, setStats] = useState<ReviewStats>({
     total_submissions: 0,
     pending_count: 0,
@@ -67,12 +87,38 @@ export const ReviewsManager = () => {
     total_published: 0
   });
   const [loading, setLoading] = useState(false);
-  const [selectedReview, setSelectedReview] = useState<Review | null>(null);
+  const [selectedReview, setSelectedReview] = useState<ReviewWithCustomer | null>(null);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [editingReview, setEditingReview] = useState<Partial<Review>>({});
+  const [addCustomerDialogOpen, setAddCustomerDialogOpen] = useState(false);
+  const [newCustomerData, setNewCustomerData] = useState({
+    email: '',
+    first_name: '',
+    last_name: '',
+    tags: [] as string[]
+  });
   const { toast } = useToast();
 
-  // Fetch reviews using direct query approach to bypass types
+  // Demo user ID for contacts
+  const DEMO_USER_ID = "550e8400-e29b-41d4-a716-446655440000";
+
+  // Fetch customers for cross-reference
+  const fetchCustomers = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('contacts')
+        .select('id, email, first_name, last_name, status, tags, created_at, updated_at')
+        .eq('user_id', DEMO_USER_ID)
+        .eq('status', 'subscribed');
+
+      if (error) throw error;
+      setCustomers(data || []);
+    } catch (error) {
+      console.error('Error fetching customers:', error);
+    }
+  };
+
+  // Fetch reviews with customer lookup
   const fetchReviews = async (filterActive?: boolean) => {
     setLoading(true);
     try {
@@ -95,7 +141,18 @@ export const ReviewsManager = () => {
       
       if (!response.ok) throw new Error('Failed to fetch reviews');
       const data = await response.json();
-      setReviews(data || []);
+      
+      // Cross-reference with customers
+      const reviewsWithCustomers: ReviewWithCustomer[] = (data || []).map((review: Review) => {
+        const customer = customers.find(c => c.email.toLowerCase() === review.user_email?.toLowerCase());
+        return {
+          ...review,
+          customer,
+          isExistingCustomer: !!customer
+        };
+      });
+      
+      setReviews(reviewsWithCustomers);
     } catch (error) {
       console.error('Error fetching reviews:', error);
       toast({
@@ -280,7 +337,44 @@ export const ReviewsManager = () => {
     setEditingReview({});
   };
 
+  // Add new customer from review
+  const addCustomerFromReview = async (review: ReviewWithCustomer) => {
+    try {
+      const { data, error } = await supabase
+        .from('contacts')
+        .insert({
+          user_id: DEMO_USER_ID,
+          email: review.user_email,
+          first_name: review.user_name?.split(' ')[0] || null,
+          last_name: review.user_name?.split(' ').slice(1).join(' ') || null,
+          status: 'subscribed',
+          tags: ['review-submitter']
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      // Update customers list and refresh reviews
+      setCustomers(prev => [...prev, data]);
+      await fetchReviews(activeTab === 'published' ? true : activeTab === 'pending' ? false : undefined);
+      
+      toast({
+        title: "Success",
+        description: "Customer added successfully",
+      });
+    } catch (error) {
+      console.error('Error adding customer:', error);
+      toast({
+        title: "Error",
+        description: "Failed to add customer",
+        variant: "destructive",
+      });
+    }
+  };
+
   useEffect(() => {
+    fetchCustomers();
     fetchStats();
   }, []);
 
@@ -295,6 +389,19 @@ export const ReviewsManager = () => {
       fetchReviews();
     }
   }, [activeTab]);
+
+  // Re-fetch reviews when customers change
+  useEffect(() => {
+    if (customers.length > 0) {
+      if (activeTab === 'pending') {
+        fetchReviews(false);
+      } else if (activeTab === 'published') {
+        fetchReviews(true);
+      } else if (activeTab === 'all') {
+        fetchReviews();
+      }
+    }
+  }, [customers]);
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('en-US', {
@@ -410,23 +517,65 @@ export const ReviewsManager = () => {
                       <div key={review.id} className="border rounded-lg p-4 space-y-3">
                         <div className="flex items-start justify-between">
                           <div className="flex items-center gap-3">
-                            <img 
-                              src={review.user_avatar} 
-                              alt="User avatar"
-                              className="w-10 h-10 rounded-full object-cover"
-                            />
+                            <div className="relative">
+                              <img 
+                                src={review.user_avatar} 
+                                alt="User avatar"
+                                className="w-10 h-10 rounded-full object-cover"
+                              />
+                              {/* Customer Status Indicator */}
+                              <div className={`absolute -bottom-1 -right-1 w-4 h-4 rounded-full border-2 border-white ${
+                                review.isExistingCustomer ? 'bg-green-500' : 'bg-yellow-500'
+                              }`} title={review.isExistingCustomer ? 'Existing Customer' : 'New Customer'} />
+                            </div>
                             <div>
-                              <div className="font-medium">{review.user_name}</div>
+                              <div className="flex items-center gap-2">
+                                <span className="font-medium">{review.user_name}</span>
+                                {review.isExistingCustomer && (
+                                  <Badge variant="outline" className="text-xs bg-green-50 text-green-700 border-green-200">
+                                    <UserPlus className="h-3 w-3 mr-1" />
+                                    Customer
+                                  </Badge>
+                                )}
+                              </div>
                               <div className="text-sm text-muted-foreground">@{review.user_instagram_handle}</div>
                               <div className="text-xs text-muted-foreground">{review.user_email}</div>
+                              {review.customer?.tags && review.customer.tags.length > 0 && (
+                                <div className="flex flex-wrap gap-1 mt-1">
+                                  {review.customer.tags.slice(0, 3).map((tag, index) => (
+                                    <Badge key={index} variant="secondary" className="text-xs">
+                                      <Tag className="h-2 w-2 mr-1" />
+                                      {tag}
+                                    </Badge>
+                                  ))}
+                                  {review.customer.tags.length > 3 && (
+                                    <Badge variant="secondary" className="text-xs">
+                                      +{review.customer.tags.length - 3}
+                                    </Badge>
+                                  )}
+                                </div>
+                              )}
                               <div className="text-xs text-muted-foreground">
                                 {formatDate(review.created_at)}
                               </div>
                             </div>
                           </div>
-                          <Badge variant={review.is_active ? "default" : "secondary"}>
-                            {review.is_active ? "Published" : "Pending"}
-                          </Badge>
+                          <div className="flex flex-col items-end gap-2">
+                            <Badge variant={review.is_active ? "default" : "secondary"}>
+                              {review.is_active ? "Published" : "Pending"}
+                            </Badge>
+                            {!review.isExistingCustomer && (
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => addCustomerFromReview(review)}
+                                className="text-xs bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100"
+                              >
+                                <UserPlus className="h-3 w-3 mr-1" />
+                                Add Customer
+                              </Button>
+                            )}
+                          </div>
                         </div>
                         
                         <div className="flex items-center gap-1">
@@ -530,14 +679,43 @@ export const ReviewsManager = () => {
                       <div key={review.id} className="border rounded-lg p-4 space-y-3">
                         <div className="flex items-start justify-between">
                           <div className="flex items-center gap-3">
-                            <img 
-                              src={review.user_avatar} 
-                              alt="User avatar"
-                              className="w-10 h-10 rounded-full object-cover"
-                            />
+                            <div className="relative">
+                              <img 
+                                src={review.user_avatar} 
+                                alt="User avatar"
+                                className="w-10 h-10 rounded-full object-cover"
+                              />
+                              {/* Customer Status Indicator */}
+                              <div className={`absolute -bottom-1 -right-1 w-4 h-4 rounded-full border-2 border-white ${
+                                review.isExistingCustomer ? 'bg-green-500' : 'bg-yellow-500'
+                              }`} title={review.isExistingCustomer ? 'Existing Customer' : 'New Customer'} />
+                            </div>
                             <div>
-                              <div className="font-medium">{review.user_name}</div>
+                              <div className="flex items-center gap-2">
+                                <span className="font-medium">{review.user_name}</span>
+                                {review.isExistingCustomer && (
+                                  <Badge variant="outline" className="text-xs bg-green-50 text-green-700 border-green-200">
+                                    <UserPlus className="h-3 w-3 mr-1" />
+                                    Customer
+                                  </Badge>
+                                )}
+                              </div>
                               <div className="text-sm text-muted-foreground">@{review.user_instagram_handle}</div>
+                              {review.customer?.tags && review.customer.tags.length > 0 && (
+                                <div className="flex flex-wrap gap-1 mt-1">
+                                  {review.customer.tags.slice(0, 3).map((tag, index) => (
+                                    <Badge key={index} variant="secondary" className="text-xs">
+                                      <Tag className="h-2 w-2 mr-1" />
+                                      {tag}
+                                    </Badge>
+                                  ))}
+                                  {review.customer.tags.length > 3 && (
+                                    <Badge variant="secondary" className="text-xs">
+                                      +{review.customer.tags.length - 3}
+                                    </Badge>
+                                  )}
+                                </div>
+                              )}
                               <div className="text-xs text-muted-foreground">
                                 Sort Order: {review.sort_order}
                               </div>
@@ -691,23 +869,65 @@ export const ReviewsManager = () => {
                       <div key={review.id} className="border rounded-lg p-4 space-y-3">
                         <div className="flex items-start justify-between">
                           <div className="flex items-center gap-3">
-                            <img 
-                              src={review.user_avatar} 
-                              alt="User avatar"
-                              className="w-10 h-10 rounded-full object-cover"
-                            />
+                            <div className="relative">
+                              <img 
+                                src={review.user_avatar} 
+                                alt="User avatar"
+                                className="w-10 h-10 rounded-full object-cover"
+                              />
+                              {/* Customer Status Indicator */}
+                              <div className={`absolute -bottom-1 -right-1 w-4 h-4 rounded-full border-2 border-white ${
+                                review.isExistingCustomer ? 'bg-green-500' : 'bg-yellow-500'
+                              }`} title={review.isExistingCustomer ? 'Existing Customer' : 'New Customer'} />
+                            </div>
                             <div>
-                              <div className="font-medium">{review.user_name}</div>
+                              <div className="flex items-center gap-2">
+                                <span className="font-medium">{review.user_name}</span>
+                                {review.isExistingCustomer && (
+                                  <Badge variant="outline" className="text-xs bg-green-50 text-green-700 border-green-200">
+                                    <UserPlus className="h-3 w-3 mr-1" />
+                                    Customer
+                                  </Badge>
+                                )}
+                              </div>
                               <div className="text-sm text-muted-foreground">@{review.user_instagram_handle}</div>
                               <div className="text-xs text-muted-foreground">{review.user_email}</div>
+                              {review.customer?.tags && review.customer.tags.length > 0 && (
+                                <div className="flex flex-wrap gap-1 mt-1">
+                                  {review.customer.tags.slice(0, 3).map((tag, index) => (
+                                    <Badge key={index} variant="secondary" className="text-xs">
+                                      <Tag className="h-2 w-2 mr-1" />
+                                      {tag}
+                                    </Badge>
+                                  ))}
+                                  {review.customer.tags.length > 3 && (
+                                    <Badge variant="secondary" className="text-xs">
+                                      +{review.customer.tags.length - 3}
+                                    </Badge>
+                                  )}
+                                </div>
+                              )}
                               <div className="text-xs text-muted-foreground">
                                 {formatDate(review.created_at)}
                               </div>
                             </div>
                           </div>
-                          <Badge variant={review.is_active ? "default" : "secondary"}>
-                            {review.is_active ? "Published" : "Pending"}
-                          </Badge>
+                          <div className="flex flex-col items-end gap-2">
+                            <Badge variant={review.is_active ? "default" : "secondary"}>
+                              {review.is_active ? "Published" : "Pending"}
+                            </Badge>
+                            {!review.isExistingCustomer && (
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => addCustomerFromReview(review)}
+                                className="text-xs bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100"
+                              >
+                                <UserPlus className="h-3 w-3 mr-1" />
+                                Add Customer
+                              </Button>
+                            )}
+                          </div>
                         </div>
                         
                         <div className="flex items-center gap-1">
