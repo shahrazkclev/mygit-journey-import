@@ -396,89 +396,6 @@ export const ReviewsManager = () => {
     console.log('Current reviews after fetch:', reviews);
   };
 
-  // Function to create sample reviews for testing
-  const createSampleReviews = async () => {
-    console.log('Creating sample reviews...');
-    
-    const sampleReviews = [
-      {
-        user_email: 'test1@example.com',
-        user_name: 'John Doe',
-        user_instagram_handle: '@johndoe',
-        rating: 5,
-        description: 'Amazing product! The quality exceeded my expectations. Fast delivery and great customer service.',
-        user_avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=100&h=100&fit=crop&crop=face',
-        media_url: 'https://images.unsplash.com/photo-1560472354-b33ff0c44a43?w=400&h=300&fit=crop',
-        media_type: 'image',
-        is_active: false, // Pending
-        sort_order: 0
-      },
-      {
-        user_email: 'test2@example.com',
-        user_name: 'Jane Smith',
-        user_instagram_handle: '@janesmith',
-        rating: 4,
-        description: 'Great product overall. Good quality and fast shipping. Would recommend to others.',
-        user_avatar: 'https://images.unsplash.com/photo-1494790108755-2616b612b786?w=100&h=100&fit=crop&crop=face',
-        media_url: 'https://images.unsplash.com/photo-1556742049-0cfed4f6a45d?w=400&h=300&fit=crop',
-        media_type: 'image',
-        is_active: false, // Pending
-        sort_order: 0
-      },
-      {
-        user_email: 'test3@example.com',
-        user_name: 'Mike Johnson',
-        user_instagram_handle: '@mikejohnson',
-        rating: 3,
-        description: 'Decent product but could be better. Delivery was slow but quality is okay.',
-        user_avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&h=100&fit=crop&crop=face',
-        media_url: 'https://images.unsplash.com/photo-1556742111-a301076d9d18?w=400&h=300&fit=crop',
-        media_type: 'image',
-        is_active: true, // Published
-        sort_order: 1
-      }
-    ];
-    
-    try {
-      const { data, error } = await supabase
-        .from('reviews')
-        .insert(sampleReviews)
-        .select();
-      
-      if (error) {
-        console.error('Error creating sample reviews:', error);
-        toast({
-          title: "Error",
-          description: "Failed to create sample reviews",
-          variant: "destructive",
-        });
-        return;
-      }
-      
-      console.log('Successfully created sample reviews:', data);
-      toast({
-        title: "Success",
-        description: "Sample reviews created successfully",
-      });
-      
-      // Refresh the current view
-      if (activeTab === 'pending') {
-        fetchReviews(false);
-      } else if (activeTab === 'published') {
-        fetchReviews(true);
-      } else if (activeTab === 'all') {
-        fetchReviews();
-      }
-      fetchStats();
-    } catch (error) {
-      console.error('Error creating sample reviews:', error);
-      toast({
-        title: "Error",
-        description: "Failed to create sample reviews",
-        variant: "destructive",
-      });
-    }
-  };
 
   // Function to check database schema and table existence
   const checkDatabaseSchema = async () => {
@@ -542,7 +459,6 @@ export const ReviewsManager = () => {
 
   // Make functions available globally for debugging
   (window as any).testPendingReviews = testPendingReviews;
-  (window as any).createSampleReviews = createSampleReviews;
   (window as any).checkDatabaseSchema = checkDatabaseSchema;
 
   const formatDate = (dateString: string) => {
@@ -578,16 +494,10 @@ export const ReviewsManager = () => {
                 Manage customer reviews and submissions
               </p>
             </div>
-            <div className="flex gap-2">
-              <Button onClick={copySubmissionLink} variant="outline" size="sm">
-                <Link className="h-4 w-4 mr-2" />
-                Copy Submission Link
-              </Button>
-              <Button onClick={createSampleReviews} variant="outline" size="sm" className="bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100">
-                <RefreshCw className="h-4 w-4 mr-2" />
-                Create Sample Reviews
-              </Button>
-            </div>
+            <Button onClick={copySubmissionLink} variant="outline" size="sm">
+              <Link className="h-4 w-4 mr-2" />
+              Copy Submission Link
+            </Button>
           </div>
         </div>
       </div>

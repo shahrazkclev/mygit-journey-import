@@ -419,14 +419,22 @@ const SubmitReview: React.FC = () => {
     setUploadProgress(0);
     
     try {
+      console.log('Starting review submission...');
+      console.log('Form data:', formData);
+      console.log('Media files:', formData.mediaFiles);
+      
       // Media is required - ensure we have at least one media file
       if (formData.mediaFiles.length === 0) {
+        console.error('No media files found');
         throw new Error('At least one media file is required. Please upload a video or image before submitting.');
       }
 
       // Ensure all media files are uploaded
       const uploadedMediaFiles = formData.mediaFiles.filter(mf => mf.url);
+      console.log('Uploaded media files:', uploadedMediaFiles);
+      
       if (uploadedMediaFiles.length === 0) {
+        console.error('No uploaded media files found');
         throw new Error('Please wait for your media files to finish uploading before submitting.');
       }
 
@@ -494,8 +502,19 @@ const SubmitReview: React.FC = () => {
 
   const canProceed = () => {
     switch (currentStep) {
-      case 1: return formData.email.includes('@') && formData.instagram.trim().length > 0;
-      case 2: return formData.rating > 0 && formData.description.trim().length > 10 && formData.mediaFiles.length > 0;
+      case 1: {
+        const emailValid = formData.email.includes('@');
+        const instagramValid = formData.instagram.trim().length > 0;
+        console.log('Step 1 validation:', { emailValid, instagramValid, email: formData.email, instagram: formData.instagram });
+        return emailValid && instagramValid;
+      }
+      case 2: {
+        const ratingValid = formData.rating > 0;
+        const descriptionValid = formData.description.trim().length > 10;
+        const mediaValid = formData.mediaFiles.length > 0;
+        console.log('Step 2 validation:', { ratingValid, descriptionValid, mediaValid, rating: formData.rating, descriptionLength: formData.description.trim().length, mediaCount: formData.mediaFiles.length });
+        return ratingValid && descriptionValid && mediaValid;
+      }
       default: return false;
     }
   };
