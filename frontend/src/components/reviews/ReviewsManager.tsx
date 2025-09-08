@@ -452,8 +452,10 @@ export const ReviewsManager = () => {
       setMinimizeionStatus('Minimizeion completed!');
 
       toast({
-        title: "Video compressed successfully!",
-        description: `Minimizeed from ${Math.round(data.originalSize / 1024 / 1024)}MB to ${Math.round(data.compressedSize / 1024 / 1024)}MB (${data.compressionRatio}% reduction)`,
+        title: data.wasCompressed ? "Video compressed successfully!" : "Video uploaded successfully!",
+        description: data.message || (data.wasCompressed ? 
+          `Minimizeed from ${Math.round(data.originalSize / 1024 / 1024)}MB to ${Math.round(data.compressedSize / 1024 / 1024)}MB (${data.compressionRatio}% reduction)` : 
+          `Uploaded ${Math.round(data.originalSize / 1024 / 1024)}MB video to optimized storage`),
       });
 
       // Refresh reviews to show updated data

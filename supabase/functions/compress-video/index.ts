@@ -66,6 +66,22 @@ async function downloadVideo(url: string): Promise<Uint8Array> {
 }
 
 async function compressVideo(videoData: Uint8Array, settings: VideoCompressionSettings): Promise<Uint8Array> {
+  // Check if FFmpeg is available
+  try {
+    const ffmpegCheck = new Deno.Command('ffmpeg', {
+      args: ['-version'],
+    });
+    
+    const { code } = await ffmpegCheck.output();
+    if (code !== 0) {
+      throw new Error('FFmpeg not available');
+    }
+  } catch (error) {
+    console.warn('FFmpeg not available in Edge Runtime, returning original video data');
+    // Return original video data if FFmpeg is not available
+    return videoData;
+  }
+
   // Create temporary files
   const tempDir = await Deno.makeTempDir();
   const inputPath = `${tempDir}/input.mp4`;
@@ -198,6 +214,11 @@ async function handler(req: Request): Promise<Response> {
     const compressedVideoData = await compressVideo(originalVideoData, settings);
     console.log(`📤 Compressed to ${compressedVideoData.length} bytes`);
     
+    // Check if compression actually happened (FFmpeg available) or if we returned original data
+    const wasCompressed = compressedVideoData.length < originalVideoData.length;
+    const compressionRatio = wasCompressed ? 
+      Math.round((1 - compressedVideoData.length / originalVideoData.length) * 100) : 0;
+    
     // Extract filename from original URL
     const urlParts = review.media_url.split('/');
     const originalFilename = urlParts[urlParts.length - 1];
@@ -216,7 +237,11 @@ async function handler(req: Request): Promise<Response> {
       optimizedUrl,
       originalSize: originalVideoData.length,
       compressedSize: compressedVideoData.length,
-      compressionRatio: Math.round((1 - compressedVideoData.length / originalVideoData.length) * 100)
+      compressionRatio,
+      wasCompressed,
+      message: wasCompressed ? 
+        `Video compressed successfully! Reduced by ${compressionRatio}%` : 
+        'Video uploaded successfully (compression not available in this environment)'
     }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
