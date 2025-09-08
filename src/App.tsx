@@ -9,6 +9,7 @@ import Index from "./pages/Index";
 import OptIn from "./pages/OptIn";
 import SubmitReview from "./pages/SubmitReview";
 import NotFound from "./pages/NotFound";
+import { ReviewsManager } from "./components/reviews/ReviewsManager";
 
 const queryClient = new QueryClient();
 
@@ -27,6 +28,11 @@ const App = () => (
             } />
             <Route path="/optin" element={<OptIn />} />
             <Route path="/submitreview" element={<SubmitReview />} />
+            <Route path="/reviews" element={
+              <ProtectedRoute>
+                <ReviewsManager />
+              </ProtectedRoute>
+            } />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>
