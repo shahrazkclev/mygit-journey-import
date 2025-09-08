@@ -368,6 +368,183 @@ export const ReviewsManager = () => {
     }
   }, [customers]);
 
+  // Debug function to test pending reviews
+  const testPendingReviews = async () => {
+    console.log('Testing pending reviews...');
+    console.log('Current activeTab:', activeTab);
+    console.log('Current customers:', customers);
+    
+    // Test direct database query
+    try {
+      console.log('Testing direct database query...');
+      const { data: allReviews, error } = await supabase
+        .from('reviews')
+        .select('*');
+      
+      if (error) {
+        console.error('Database error:', error);
+      } else {
+        console.log('All reviews in database:', allReviews);
+        console.log('Pending reviews (is_active = false):', allReviews?.filter(r => !r.is_active));
+        console.log('Published reviews (is_active = true):', allReviews?.filter(r => r.is_active));
+      }
+    } catch (error) {
+      console.error('Error testing database:', error);
+    }
+    
+    await fetchReviews(false);
+    console.log('Current reviews after fetch:', reviews);
+  };
+
+  // Function to create sample reviews for testing
+  const createSampleReviews = async () => {
+    console.log('Creating sample reviews...');
+    
+    const sampleReviews = [
+      {
+        user_email: 'test1@example.com',
+        user_name: 'John Doe',
+        user_instagram_handle: '@johndoe',
+        rating: 5,
+        description: 'Amazing product! The quality exceeded my expectations. Fast delivery and great customer service.',
+        user_avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=100&h=100&fit=crop&crop=face',
+        media_url: 'https://images.unsplash.com/photo-1560472354-b33ff0c44a43?w=400&h=300&fit=crop',
+        media_type: 'image',
+        is_active: false, // Pending
+        sort_order: 0
+      },
+      {
+        user_email: 'test2@example.com',
+        user_name: 'Jane Smith',
+        user_instagram_handle: '@janesmith',
+        rating: 4,
+        description: 'Great product overall. Good quality and fast shipping. Would recommend to others.',
+        user_avatar: 'https://images.unsplash.com/photo-1494790108755-2616b612b786?w=100&h=100&fit=crop&crop=face',
+        media_url: 'https://images.unsplash.com/photo-1556742049-0cfed4f6a45d?w=400&h=300&fit=crop',
+        media_type: 'image',
+        is_active: false, // Pending
+        sort_order: 0
+      },
+      {
+        user_email: 'test3@example.com',
+        user_name: 'Mike Johnson',
+        user_instagram_handle: '@mikejohnson',
+        rating: 3,
+        description: 'Decent product but could be better. Delivery was slow but quality is okay.',
+        user_avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&h=100&fit=crop&crop=face',
+        media_url: 'https://images.unsplash.com/photo-1556742111-a301076d9d18?w=400&h=300&fit=crop',
+        media_type: 'image',
+        is_active: true, // Published
+        sort_order: 1
+      }
+    ];
+    
+    try {
+      const { data, error } = await supabase
+        .from('reviews')
+        .insert(sampleReviews)
+        .select();
+      
+      if (error) {
+        console.error('Error creating sample reviews:', error);
+        toast({
+          title: "Error",
+          description: "Failed to create sample reviews",
+          variant: "destructive",
+        });
+        return;
+      }
+      
+      console.log('Successfully created sample reviews:', data);
+      toast({
+        title: "Success",
+        description: "Sample reviews created successfully",
+      });
+      
+      // Refresh the current view
+      if (activeTab === 'pending') {
+        fetchReviews(false);
+      } else if (activeTab === 'published') {
+        fetchReviews(true);
+      } else if (activeTab === 'all') {
+        fetchReviews();
+      }
+      fetchStats();
+    } catch (error) {
+      console.error('Error creating sample reviews:', error);
+      toast({
+        title: "Error",
+        description: "Failed to create sample reviews",
+        variant: "destructive",
+      });
+    }
+  };
+
+  // Function to check database schema and table existence
+  const checkDatabaseSchema = async () => {
+    console.log('Checking database schema...');
+    
+    try {
+      // Test if reviews table exists by trying to select from it
+      const { data, error } = await supabase
+        .from('reviews')
+        .select('*')
+        .limit(1);
+      
+      if (error) {
+        console.error('Reviews table error:', error);
+        if (error.code === 'PGRST116') {
+          console.error('Reviews table does not exist!');
+        }
+      } else {
+        console.log('Reviews table exists and is accessible');
+        console.log('Sample data:', data);
+      }
+      
+      // Check table structure by trying to insert a test record (then delete it)
+      const testReview = {
+        user_email: 'test@example.com',
+        user_name: 'Test User',
+        user_instagram_handle: '@testuser',
+        rating: 5,
+        description: 'Test review for schema validation',
+        user_avatar: 'https://example.com/avatar.jpg',
+        media_url: 'https://example.com/image.jpg',
+        media_type: 'image',
+        is_active: false,
+        sort_order: 0
+      };
+      
+      const { data: insertData, error: insertError } = await supabase
+        .from('reviews')
+        .insert(testReview)
+        .select();
+      
+      if (insertError) {
+        console.error('Insert test failed:', insertError);
+      } else {
+        console.log('Insert test successful:', insertData);
+        
+        // Clean up test record
+        if (insertData && insertData[0]) {
+          await supabase
+            .from('reviews')
+            .delete()
+            .eq('id', insertData[0].id);
+          console.log('Test record cleaned up');
+        }
+      }
+      
+    } catch (error) {
+      console.error('Schema check error:', error);
+    }
+  };
+
+  // Make functions available globally for debugging
+  (window as any).testPendingReviews = testPendingReviews;
+  (window as any).createSampleReviews = createSampleReviews;
+  (window as any).checkDatabaseSchema = checkDatabaseSchema;
+
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('en-US', {
       year: 'numeric',
@@ -401,10 +578,16 @@ export const ReviewsManager = () => {
                 Manage customer reviews and submissions
               </p>
             </div>
-            <Button onClick={copySubmissionLink} variant="outline" size="sm">
-              <Link className="h-4 w-4 mr-2" />
-              Copy Submission Link
-            </Button>
+            <div className="flex gap-2">
+              <Button onClick={copySubmissionLink} variant="outline" size="sm">
+                <Link className="h-4 w-4 mr-2" />
+                Copy Submission Link
+              </Button>
+              <Button onClick={createSampleReviews} variant="outline" size="sm" className="bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100">
+                <RefreshCw className="h-4 w-4 mr-2" />
+                Create Sample Reviews
+              </Button>
+            </div>
           </div>
         </div>
       </div>
@@ -475,6 +658,31 @@ export const ReviewsManager = () => {
                     <FileText className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
                     <h3 className="text-lg font-semibold mb-2">No pending reviews</h3>
                     <p className="text-muted-foreground">New submissions will appear here for approval</p>
+                    <div className="mt-4 p-4 bg-gray-50 rounded-lg text-left max-w-md mx-auto">
+                      <p className="text-sm text-gray-600 mb-2">Debug Info:</p>
+                      <p className="text-xs text-gray-500">Active Tab: {activeTab}</p>
+                      <p className="text-xs text-gray-500">Loading: {loading ? 'Yes' : 'No'}</p>
+                      <p className="text-xs text-gray-500">Reviews Count: {reviews.length}</p>
+                      <p className="text-xs text-gray-500">Customers Count: {customers.length}</p>
+                      <div className="flex gap-2 mt-2">
+                        <Button 
+                          onClick={testPendingReviews} 
+                          variant="outline" 
+                          size="sm" 
+                          className="text-xs"
+                        >
+                          Debug Fetch
+                        </Button>
+                        <Button 
+                          onClick={checkDatabaseSchema} 
+                          variant="outline" 
+                          size="sm" 
+                          className="text-xs"
+                        >
+                          Check Schema
+                        </Button>
+                      </div>
+                    </div>
                   </div>
                 ) : (
                   <div className="space-y-4">
