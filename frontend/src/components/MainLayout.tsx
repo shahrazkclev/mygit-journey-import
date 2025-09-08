@@ -52,16 +52,7 @@ export const MainLayout = () => {
         <div className="flex flex-col h-full">
           {/* Sidebar Header */}
           <div className="p-6 border-b">
-            <h2 
-              className="text-xl font-bold"
-              style={{ 
-                color: `hsl(${themeColors.primary})`,
-                background: `linear-gradient(135deg, hsl(${themeColors.primary}), hsl(${themeColors.accent}))`,
-                WebkitBackgroundClip: 'text',
-                WebkitTextFillColor: 'transparent',
-                backgroundClip: 'text'
-              }}
-            >
+            <h2 className="text-xl font-bold text-foreground">
               Business Dashboard
             </h2>
             <p className="text-sm text-muted-foreground">
