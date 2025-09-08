@@ -283,6 +283,54 @@ export type Database = {
         }
         Relationships: []
       }
+      reviews: {
+        Row: {
+          created_at: string | null
+          description: string
+          id: string
+          is_active: boolean | null
+          media_type: string
+          media_url: string
+          rating: number
+          sort_order: number | null
+          updated_at: string | null
+          user_avatar: string
+          user_email: string | null
+          user_instagram_handle: string
+          user_name: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          description: string
+          id?: string
+          is_active?: boolean | null
+          media_type: string
+          media_url: string
+          rating: number
+          sort_order?: number | null
+          updated_at?: string | null
+          user_avatar: string
+          user_email?: string | null
+          user_instagram_handle: string
+          user_name?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          description?: string
+          id?: string
+          is_active?: boolean | null
+          media_type?: string
+          media_url?: string
+          rating?: number
+          sort_order?: number | null
+          updated_at?: string | null
+          user_avatar?: string
+          user_email?: string | null
+          user_instagram_handle?: string
+          user_name?: string | null
+        }
+        Relationships: []
+      }
       style_guides: {
         Row: {
           accent_color: string
