@@ -251,7 +251,9 @@ const SubmitReview: React.FC = () => {
     }));
   };
 
-  const handleProfilePictureUpload = (file: File) => {
+  const handleProfilePictureUpload = async (file: File) => {
+    console.log('Profile picture upload started:', file.name, file.size, file.type);
+    
     // Validate file size (5MB max for profile pictures)
     if (file.size > 5 * 1024 * 1024) {
       toast({
@@ -266,31 +268,54 @@ const SubmitReview: React.FC = () => {
     if (!file.type.startsWith('image/')) {
       toast({
         title: "Invalid file type",
-        description: "Profile picture must be an image file",
+        description: "Profile picture must be an image file (JPG, PNG, etc.)",
         variant: "destructive"
       });
       return;
     }
 
+    // Show immediate preview
+    const previewUrl = URL.createObjectURL(file);
     setFormData(prev => ({
       ...prev,
       profilePicture: file,
-      profilePictureUrl: URL.createObjectURL(file)
+      profilePictureUrl: previewUrl
     }));
 
-    // Upload profile picture
-    setTimeout(() => {
-      uploadToR2(file).then(url => {
-        setFormData(prev => ({ ...prev, profilePictureUrl: url }));
-      }).catch(error => {
-        console.warn('Profile picture upload failed:', error);
-        toast({
-          title: "Upload failed",
-          description: "Failed to upload profile picture. Please try again.",
-          variant: "destructive"
-        });
+    // Show upload progress
+    toast({
+      title: "Uploading profile picture...",
+      description: "Please wait while we upload your photo",
+    });
+
+    try {
+      // Upload profile picture
+      const uploadedUrl = await uploadToR2(file);
+      console.log('Profile picture uploaded successfully:', uploadedUrl);
+      
+      setFormData(prev => ({ 
+        ...prev, 
+        profilePictureUrl: uploadedUrl 
+      }));
+      
+      toast({
+        title: "Success!",
+        description: "Profile picture uploaded successfully",
       });
-    }, 100);
+    } catch (error) {
+      console.error('Profile picture upload failed:', error);
+      toast({
+        title: "Upload failed",
+        description: `Failed to upload profile picture: ${error.message || 'Unknown error'}`,
+        variant: "destructive"
+      });
+      
+      // Keep the preview URL as fallback
+      setFormData(prev => ({ 
+        ...prev, 
+        profilePictureUrl: previewUrl 
+      }));
+    }
   };
 
   // Camera functionality
@@ -550,85 +575,129 @@ const SubmitReview: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 flex items-center justify-center p-4">
-      <Card className="w-full max-w-2xl shadow-2xl border-0 bg-white">
-        <CardContent className="p-8">
-          {/* Simple Header */}
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 flex items-center justify-center p-4 md:p-6 lg:p-8">
+      <Card className="w-full max-w-4xl shadow-2xl border-0 bg-white">
+        <CardContent className="p-6 md:p-8 lg:p-10">
+          {/* Enhanced Header */}
           <div className="text-center mb-8">
-            <h1 className="text-3xl font-bold text-slate-900 mb-2">
+            <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full mb-4">
+              <Sparkles className="h-8 w-8 text-white" />
+            </div>
+            <h1 className="text-2xl md:text-3xl lg:text-4xl font-bold text-slate-900 mb-2">
               Share Your Review
             </h1>
-            <p className="text-slate-600">
-              Help others by sharing your experience
+            <p className="text-sm md:text-base text-slate-600 max-w-md mx-auto">
+              Help others by sharing your experience with our community
             </p>
           </div>
 
-          {/* Simple Progress */}
+          {/* Enhanced Progress Indicator */}
           <div className="mb-8">
-            <div className="w-full bg-slate-200 rounded-full h-1">
+            <div className="flex items-center justify-between mb-4">
+              {steps.map((step, index) => (
+                <div key={step.id} className="flex flex-col items-center">
+                  <div className={`w-10 h-10 rounded-full flex items-center justify-center border-2 transition-all duration-300 ${
+                    currentStep >= step.id
+                      ? 'bg-blue-600 border-blue-600 text-white'
+                      : 'bg-white border-slate-300 text-slate-400'
+                  }`}>
+                    {currentStep > step.id ? (
+                      <CheckCircle className="h-5 w-5" />
+                    ) : (
+                      step.icon
+                    )}
+                  </div>
+                  <span className={`text-xs mt-2 font-medium transition-colors ${
+                    currentStep >= step.id ? 'text-blue-600' : 'text-slate-400'
+                  }`}>
+                    {step.title}
+                  </span>
+                </div>
+              ))}
+            </div>
+            <div className="w-full bg-slate-200 rounded-full h-2">
               <div 
-                className="h-1 bg-blue-600 rounded-full transition-all duration-300"
+                className="h-2 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full transition-all duration-500 ease-out"
                 style={{ width: `${(currentStep / totalSteps) * 100}%` }}
               />
+            </div>
+            <div className="flex justify-between text-xs text-slate-500 mt-2">
+              <span>Step {currentStep} of {totalSteps}</span>
+              <span>{Math.round((currentStep / totalSteps) * 100)}% Complete</span>
             </div>
           </div>
 
           {/* Step 1: Contact Info */}
           {currentStep === 1 && (
-            <div className="space-y-6">
-              <h2 className="text-xl font-semibold text-slate-900 mb-4">Contact Information</h2>
-              <div>
-                <Label htmlFor="email" className="text-sm font-medium text-slate-700 mb-2 block">
-                  Email Address
-                </Label>
-                <Input
-                  id="email"
-                  type="email"
-                  value={formData.email}
-                  onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
-                  placeholder="your@email.com"
-                  className="h-12 text-lg border-slate-200 focus:border-blue-500 focus:ring-blue-500"
-                />
+            <div className="max-w-2xl mx-auto">
+              <div className="text-center mb-8">
+                <h2 className="text-2xl md:text-3xl font-bold text-slate-900 mb-3">Contact Information</h2>
+                <p className="text-slate-600">We'll use this to verify your review and potentially feature you</p>
               </div>
               
-              <div>
-                <Label htmlFor="instagram" className="text-sm font-medium text-slate-700 mb-2 block">
-                  Instagram Handle
-                </Label>
-                <Input
-                  id="instagram"
-                  type="text"
-                  value={formData.instagram}
-                  onChange={(e) => setFormData(prev => ({ ...prev, instagram: e.target.value }))}
-                  placeholder="@yourusername"
-                  className="h-12 text-lg border-slate-200 focus:border-blue-500 focus:ring-blue-500"
-                />
+              <div className="space-y-8">
+                <div className="bg-slate-50 rounded-xl p-6 md:p-8">
+                  <div className="space-y-6">
+                    <div>
+                      <Label htmlFor="email" className="text-sm font-medium text-slate-700 mb-3 block">
+                        Email Address *
+                      </Label>
+                      <Input
+                        id="email"
+                        type="email"
+                        value={formData.email}
+                        onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
+                        placeholder="your@email.com"
+                        className="h-14 text-lg border-slate-200 focus:border-blue-500 focus:ring-blue-500 rounded-xl"
+                      />
+                      <p className="text-xs text-slate-500 mt-2">We'll never share your email with anyone</p>
+                    </div>
+                    
+                    <div>
+                      <Label htmlFor="instagram" className="text-sm font-medium text-slate-700 mb-3 block">
+                        Instagram Handle *
+                      </Label>
+                      <Input
+                        id="instagram"
+                        type="text"
+                        value={formData.instagram}
+                        onChange={(e) => setFormData(prev => ({ ...prev, instagram: e.target.value }))}
+                        placeholder="@yourusername"
+                        className="h-14 text-lg border-slate-200 focus:border-blue-500 focus:ring-blue-500 rounded-xl"
+                      />
+                      <p className="text-xs text-slate-500 mt-2">Your Instagram will be displayed with your review</p>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
           )}
 
           {/* Step 2: Review & Media */}
           {currentStep === 2 && (
-            <div className="space-y-6">
-              <h2 className="text-xl font-semibold text-slate-900 mb-4">Share Your Experience</h2>
+            <div className="max-w-6xl mx-auto">
+              <div className="text-center mb-8">
+                <h2 className="text-2xl md:text-3xl font-bold text-slate-900 mb-3">Share Your Experience</h2>
+                <p className="text-slate-600">Tell us about your experience and add some media to make it shine</p>
+              </div>
               
               {/* Mobile: Collapsible Sections */}
-              <div className="lg:hidden space-y-4">
+              <div className="lg:hidden space-y-6">
                 
                 {/* Rating Section */}
-                <div className="bg-white border border-slate-200 rounded-lg overflow-hidden">
+                <div className="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm">
                   <button
                     onClick={() => toggleSection('rating')}
-                    className="w-full p-4 flex items-center justify-between hover:bg-slate-50 transition-colors"
+                    className="w-full p-6 flex items-center justify-between hover:bg-slate-50 transition-colors"
                   >
-                    <div className="flex items-center gap-3">
-                      <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
+                    <div className="flex items-center gap-4">
+                      <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
                         getSectionStatus('rating') === 'completed' ? 'bg-green-100 text-green-600' : 'bg-slate-100 text-slate-600'
                       }`}>
-                        <Star className="h-4 w-4" />
+                        <Star className="h-5 w-5" />
                       </div>
                       <div className="text-left">
-                        <p className="font-medium text-slate-900">Rate Your Experience</p>
+                        <p className="font-semibold text-slate-900">Rate Your Experience</p>
                         <p className="text-sm text-slate-500">
                           {formData.rating > 0 ? `${formData.rating} star${formData.rating > 1 ? 's' : ''} selected` : 'Tap to rate'}
                         </p>
@@ -638,61 +707,71 @@ const SubmitReview: React.FC = () => {
                   </button>
                   
                   {expandedSections.rating && (
-                    <div className="px-4 pb-4 border-t border-slate-100">
-                      <div className="pt-4">
-                        <div className="flex justify-center gap-2">
+                    <div className="px-6 pb-6 border-t border-slate-100">
+                      <div className="pt-6">
+                        <div className="flex justify-center gap-3">
                           {[1, 2, 3, 4, 5].map((star) => (
                             <button
                               key={star}
                               onClick={() => setFormData(prev => ({ ...prev, rating: star }))}
-                              className={`w-12 h-12 rounded-full transition-all duration-200 ${
+                              className={`w-14 h-14 rounded-full transition-all duration-200 ${
                                 star <= formData.rating
                                   ? 'bg-gradient-to-r from-yellow-400 to-orange-500 text-white shadow-lg scale-110'
                                   : 'bg-slate-100 text-slate-400 hover:bg-slate-200'
                               }`}
                             >
-                              <Star className="h-6 w-6 mx-auto" fill={star <= formData.rating ? 'currentColor' : 'none'} />
+                              <Star className="h-7 w-7 mx-auto" fill={star <= formData.rating ? 'currentColor' : 'none'} />
                             </button>
                           ))}
                         </div>
+                        <p className="text-center text-sm text-slate-500 mt-4">
+                          {formData.rating > 0 ? `You rated this ${formData.rating} star${formData.rating > 1 ? 's' : ''}` : 'Select a rating above'}
+                        </p>
                       </div>
                     </div>
                   )}
                 </div>
 
                 {/* Profile Picture Section */}
-                <div className="bg-white border border-slate-200 rounded-lg overflow-hidden">
+                <div className="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm">
                   <button
                     onClick={() => toggleSection('profile')}
-                    className="w-full p-4 flex items-center justify-between hover:bg-slate-50 transition-colors"
+                    className="w-full p-6 flex items-center justify-between hover:bg-slate-50 transition-colors"
                   >
-                    <div className="flex items-center gap-3">
-                      <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
+                    <div className="flex items-center gap-4">
+                      <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
                         getSectionStatus('profile') === 'completed' ? 'bg-green-100 text-green-600' : 'bg-slate-100 text-slate-600'
                       }`}>
-                        <User className="h-4 w-4" />
+                        <User className="h-5 w-5" />
                       </div>
                       <div className="text-left">
-                        <p className="font-medium text-slate-900">Profile Picture</p>
-                        <p className="text-sm text-slate-500">Optional</p>
+                        <p className="font-semibold text-slate-900">Profile Picture</p>
+                        <p className="text-sm text-slate-500">Optional - Add a photo of yourself</p>
                       </div>
                     </div>
                     {expandedSections.profile ? <ChevronUp className="h-5 w-5 text-slate-400" /> : <ChevronDown className="h-5 w-5 text-slate-400" />}
                   </button>
                   
                   {expandedSections.profile && (
-                    <div className="px-4 pb-4 border-t border-slate-100">
-                      <div className="pt-4">
-                        <div className="flex items-center gap-4">
-                          <div className="w-16 h-16 rounded-full overflow-hidden bg-slate-200 flex items-center justify-center">
-                            {formData.profilePictureUrl ? (
-                              <img 
-                                src={formData.profilePictureUrl} 
-                                alt="Profile" 
-                                className="w-full h-full object-cover"
-                              />
-                            ) : (
-                              <div className="w-8 h-8 bg-slate-400 rounded-full" />
+                    <div className="px-6 pb-6 border-t border-slate-100">
+                      <div className="pt-6">
+                        <div className="flex items-center gap-6">
+                          <div className="relative">
+                            <div className="w-20 h-20 rounded-full overflow-hidden bg-slate-200 flex items-center justify-center border-2 border-slate-300">
+                              {formData.profilePictureUrl ? (
+                                <img 
+                                  src={formData.profilePictureUrl} 
+                                  alt="Profile" 
+                                  className="w-full h-full object-cover"
+                                />
+                              ) : (
+                                <User className="w-10 h-10 text-slate-400" />
+                              )}
+                            </div>
+                            {formData.profilePictureUrl && (
+                              <div className="absolute -top-1 -right-1 w-6 h-6 bg-green-500 rounded-full flex items-center justify-center">
+                                <CheckCircle className="w-4 h-4 text-white" />
+                              </div>
                             )}
                           </div>
                           <div className="flex-1">
@@ -701,18 +780,27 @@ const SubmitReview: React.FC = () => {
                               accept="image/*"
                               onChange={(e) => {
                                 const file = e.target.files?.[0];
-                                if (file) handleProfilePictureUpload(file);
+                                if (file) {
+                                  console.log('File selected:', file);
+                                  handleProfilePictureUpload(file);
+                                }
+                                // Reset the input so the same file can be selected again
+                                e.target.value = '';
                               }}
                               className="hidden"
                               id="profile-upload-mobile"
                             />
                             <label htmlFor="profile-upload-mobile" className="cursor-pointer">
-                              <Button variant="outline" size="sm">
+                              <Button 
+                                variant="outline" 
+                                size="sm"
+                                className="hover:bg-blue-50 hover:border-blue-300 transition-colors"
+                              >
                                 <Upload className="h-4 w-4 mr-2" />
-                                Upload Photo
+                                {formData.profilePictureUrl ? 'Change Photo' : 'Upload Photo'}
                               </Button>
                             </label>
-                            <p className="text-xs text-slate-500 mt-1">
+                            <p className="text-xs text-slate-500 mt-2">
                               Max 5MB, JPG/PNG recommended
                             </p>
                           </div>
@@ -723,22 +811,22 @@ const SubmitReview: React.FC = () => {
                 </div>
 
                 {/* Media Upload Section */}
-                <div className="bg-white border border-slate-200 rounded-lg overflow-hidden">
+                <div className="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm">
                   <button
                     onClick={() => toggleSection('media')}
-                    className="w-full p-4 flex items-center justify-between hover:bg-slate-50 transition-colors"
+                    className="w-full p-6 flex items-center justify-between hover:bg-slate-50 transition-colors"
                   >
-                    <div className="flex items-center gap-3">
-                      <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
+                    <div className="flex items-center gap-4">
+                      <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
                         getSectionStatus('media') === 'completed' ? 'bg-green-100 text-green-600' : 
                         getSectionStatus('media') === 'required' ? 'bg-red-100 text-red-600' : 'bg-slate-100 text-slate-600'
                       }`}>
-                        <Camera className="h-4 w-4" />
+                        <Camera className="h-5 w-5" />
                       </div>
                       <div className="text-left">
-                        <p className="font-medium text-slate-900">Add Your Media</p>
+                        <p className="font-semibold text-slate-900">Add Your Media</p>
                         <p className="text-sm text-slate-500">
-                          {formData.mediaFiles.length > 0 ? `${formData.mediaFiles.length} file${formData.mediaFiles.length > 1 ? 's' : ''} uploaded` : 'Required'}
+                          {formData.mediaFiles.length > 0 ? `${formData.mediaFiles.length} file${formData.mediaFiles.length > 1 ? 's' : ''} uploaded` : 'Required - Upload a video or image'}
                         </p>
                       </div>
                     </div>
@@ -746,9 +834,9 @@ const SubmitReview: React.FC = () => {
                   </button>
                   
                   {expandedSections.media && (
-                    <div className="px-4 pb-4 border-t border-slate-100">
-                      <div className="pt-4 space-y-4">
-                        <p className="text-sm text-slate-600">
+                    <div className="px-6 pb-6 border-t border-slate-100">
+                      <div className="pt-6 space-y-6">
+                        <p className="text-sm text-slate-600 leading-relaxed">
                           Please upload a short 30-second video of yourself sharing your experience, or add an animation or render that illustrates your story better.
                         </p>
               
@@ -769,9 +857,9 @@ const SubmitReview: React.FC = () => {
                         )}
 
                         {/* Media Upload Options */}
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                           {/* File Upload */}
-                          <div className="border-2 border-dashed border-slate-300 rounded-xl p-6 text-center hover:border-blue-400 transition-colors bg-white">
+                          <div className="border-2 border-dashed border-slate-300 rounded-xl p-8 text-center hover:border-blue-400 transition-colors bg-white hover:bg-blue-50/30">
                             <input
                               type="file"
                               accept="image/*,video/*"
@@ -784,15 +872,15 @@ const SubmitReview: React.FC = () => {
                               id="media-upload"
                             />
                             <label htmlFor="media-upload" className="cursor-pointer">
-                              <div className="space-y-3">
-                                <div className="w-12 h-12 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center mx-auto">
-                                  <Upload className="h-6 w-6 text-white" />
+                              <div className="space-y-4">
+                                <div className="w-16 h-16 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center mx-auto">
+                                  <Upload className="h-8 w-8 text-white" />
                                 </div>
                                 <div>
-                                  <p className="text-sm font-medium text-slate-900 mb-1">
+                                  <p className="text-base font-semibold text-slate-900 mb-2">
                                     Upload Files
                                   </p>
-                                  <p className="text-xs text-slate-500">
+                                  <p className="text-sm text-slate-500">
                                     Images or videos up to 50MB
                                   </p>
                                 </div>
@@ -801,20 +889,20 @@ const SubmitReview: React.FC = () => {
                           </div>
 
                           {/* Camera Capture */}
-                          <div className="border-2 border-dashed border-slate-300 rounded-xl p-6 text-center hover:border-green-400 transition-colors bg-white">
+                          <div className="border-2 border-dashed border-slate-300 rounded-xl p-8 text-center hover:border-green-400 transition-colors bg-white hover:bg-green-50/30">
                             <button
                               onClick={startCamera}
                               className="w-full"
                             >
-                              <div className="space-y-3">
-                                <div className="w-12 h-12 bg-gradient-to-r from-green-500 to-emerald-600 rounded-full flex items-center justify-center mx-auto">
-                                  <Camera className="h-6 w-6 text-white" />
+                              <div className="space-y-4">
+                                <div className="w-16 h-16 bg-gradient-to-r from-green-500 to-emerald-600 rounded-full flex items-center justify-center mx-auto">
+                                  <Camera className="h-8 w-8 text-white" />
                                 </div>
                                 <div>
-                                  <p className="text-sm font-medium text-slate-900 mb-1">
+                                  <p className="text-base font-semibold text-slate-900 mb-2">
                                     Take Photo/Video
                                   </p>
-                                  <p className="text-xs text-slate-500">
+                                  <p className="text-sm text-slate-500">
                                     Use your camera
                                   </p>
                                 </div>
@@ -956,46 +1044,58 @@ const SubmitReview: React.FC = () => {
               </div>
 
               {/* Desktop: Side-by-side Layout */}
-              <div className="hidden lg:grid lg:grid-cols-2 gap-8">
+              <div className="hidden lg:grid lg:grid-cols-2 gap-12">
                 {/* Left Column - Form */}
                 <div className="space-y-8">
                   {/* Rating Section */}
-                  <div className="bg-slate-50 rounded-lg p-6">
-                    <Label className="text-sm font-medium text-slate-700 mb-3 block">
+                  <div className="bg-slate-50 rounded-xl p-8">
+                    <Label className="text-base font-semibold text-slate-700 mb-6 block">
                       How would you rate your experience?
                     </Label>
-                    <div className="flex justify-center gap-2">
+                    <div className="flex justify-center gap-3">
                       {[1, 2, 3, 4, 5].map((star) => (
                         <button
                           key={star}
                           onClick={() => setFormData(prev => ({ ...prev, rating: star }))}
-                          className={`w-12 h-12 rounded-full transition-all duration-200 ${
+                          className={`w-16 h-16 rounded-full transition-all duration-200 ${
                             star <= formData.rating
                               ? 'bg-gradient-to-r from-yellow-400 to-orange-500 text-white shadow-lg scale-110'
                               : 'bg-white text-slate-400 hover:bg-slate-100'
                           }`}
                         >
-                          <Star className="h-6 w-6 mx-auto" fill={star <= formData.rating ? 'currentColor' : 'none'} />
+                          <Star className="h-8 w-8 mx-auto" fill={star <= formData.rating ? 'currentColor' : 'none'} />
                         </button>
                       ))}
                     </div>
+                    {formData.rating > 0 && (
+                      <p className="text-center text-sm text-slate-600 mt-4">
+                        You rated this {formData.rating} star{formData.rating > 1 ? 's' : ''}
+                      </p>
+                    )}
                   </div>
 
                   {/* Profile Picture Section */}
-                  <div className="bg-slate-50 rounded-lg p-6">
-                    <Label className="text-sm font-medium text-slate-700 mb-3 block">
+                  <div className="bg-slate-50 rounded-xl p-8">
+                    <Label className="text-base font-semibold text-slate-700 mb-6 block">
                       Profile Picture (Optional)
                     </Label>
-                    <div className="flex items-center gap-4">
-                      <div className="w-16 h-16 rounded-full overflow-hidden bg-slate-200 flex items-center justify-center">
-                        {formData.profilePictureUrl ? (
-                          <img 
-                            src={formData.profilePictureUrl} 
-                            alt="Profile" 
-                            className="w-full h-full object-cover"
-                          />
-                        ) : (
-                          <div className="w-8 h-8 bg-slate-400 rounded-full" />
+                    <div className="flex items-center gap-6">
+                      <div className="relative">
+                        <div className="w-20 h-20 rounded-full overflow-hidden bg-slate-200 flex items-center justify-center border-2 border-slate-300">
+                          {formData.profilePictureUrl ? (
+                            <img 
+                              src={formData.profilePictureUrl} 
+                              alt="Profile" 
+                              className="w-full h-full object-cover"
+                            />
+                          ) : (
+                            <User className="w-10 h-10 text-slate-400" />
+                          )}
+                        </div>
+                        {formData.profilePictureUrl && (
+                          <div className="absolute -top-1 -right-1 w-6 h-6 bg-green-500 rounded-full flex items-center justify-center">
+                            <CheckCircle className="w-4 h-4 text-white" />
+                          </div>
                         )}
                       </div>
                       <div className="flex-1">
@@ -1004,18 +1104,27 @@ const SubmitReview: React.FC = () => {
                           accept="image/*"
                           onChange={(e) => {
                             const file = e.target.files?.[0];
-                            if (file) handleProfilePictureUpload(file);
+                            if (file) {
+                              console.log('File selected:', file);
+                              handleProfilePictureUpload(file);
+                            }
+                            // Reset the input so the same file can be selected again
+                            e.target.value = '';
                           }}
                           className="hidden"
                           id="profile-upload"
                         />
                         <label htmlFor="profile-upload" className="cursor-pointer">
-                          <Button variant="outline" size="sm">
+                          <Button 
+                            variant="outline" 
+                            size="sm"
+                            className="hover:bg-blue-50 hover:border-blue-300 transition-colors"
+                          >
                             <Upload className="h-4 w-4 mr-2" />
-                            Upload Photo
+                            {formData.profilePictureUrl ? 'Change Photo' : 'Upload Photo'}
                           </Button>
                         </label>
-                        <p className="text-xs text-slate-500 mt-1">
+                        <p className="text-sm text-slate-500 mt-2">
                           Max 5MB, JPG/PNG recommended
                         </p>
                       </div>
@@ -1023,9 +1132,9 @@ const SubmitReview: React.FC = () => {
                   </div>
 
                   {/* Media Upload Section */}
-                  <div className="bg-slate-50 rounded-lg p-6">
-                    <h3 className="text-lg font-semibold text-slate-900 mb-2">Add Your Media</h3>
-                    <p className="text-sm text-slate-600 mb-6">
+                  <div className="bg-slate-50 rounded-xl p-8">
+                    <h3 className="text-xl font-bold text-slate-900 mb-3">Add Your Media</h3>
+                    <p className="text-sm text-slate-600 mb-8 leading-relaxed">
                       Please upload a short 30-second video of yourself sharing your experience, or add an animation or render that illustrates your story better.
                     </p>
                     
@@ -1046,9 +1155,9 @@ const SubmitReview: React.FC = () => {
                     )}
 
                     {/* Media Upload Options */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
                       {/* File Upload */}
-                      <div className="border-2 border-dashed border-slate-300 rounded-xl p-6 text-center hover:border-blue-400 transition-colors bg-white">
+                      <div className="border-2 border-dashed border-slate-300 rounded-xl p-8 text-center hover:border-blue-400 transition-colors bg-white hover:bg-blue-50/30">
                         <input
                           type="file"
                           accept="image/*,video/*"
@@ -1061,15 +1170,15 @@ const SubmitReview: React.FC = () => {
                           id="media-upload"
                         />
                         <label htmlFor="media-upload" className="cursor-pointer">
-                          <div className="space-y-3">
-                            <div className="w-12 h-12 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center mx-auto">
-                              <Upload className="h-6 w-6 text-white" />
+                          <div className="space-y-4">
+                            <div className="w-16 h-16 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center mx-auto">
+                              <Upload className="h-8 w-8 text-white" />
                             </div>
                             <div>
-                              <p className="text-sm font-medium text-slate-900 mb-1">
+                              <p className="text-base font-semibold text-slate-900 mb-2">
                                 Upload Files
                               </p>
-                              <p className="text-xs text-slate-500">
+                              <p className="text-sm text-slate-500">
                                 Images or videos up to 50MB
                               </p>
                             </div>
@@ -1078,20 +1187,20 @@ const SubmitReview: React.FC = () => {
                       </div>
 
                       {/* Camera Capture */}
-                      <div className="border-2 border-dashed border-slate-300 rounded-xl p-6 text-center hover:border-green-400 transition-colors bg-white">
+                      <div className="border-2 border-dashed border-slate-300 rounded-xl p-8 text-center hover:border-green-400 transition-colors bg-white hover:bg-green-50/30">
                         <button
                           onClick={startCamera}
                           className="w-full"
                         >
-                          <div className="space-y-3">
-                            <div className="w-12 h-12 bg-gradient-to-r from-green-500 to-emerald-600 rounded-full flex items-center justify-center mx-auto">
-                              <Camera className="h-6 w-6 text-white" />
+                          <div className="space-y-4">
+                            <div className="w-16 h-16 bg-gradient-to-r from-green-500 to-emerald-600 rounded-full flex items-center justify-center mx-auto">
+                              <Camera className="h-8 w-8 text-white" />
                             </div>
                             <div>
-                              <p className="text-sm font-medium text-slate-900 mb-1">
+                              <p className="text-base font-semibold text-slate-900 mb-2">
                                 Take Photo/Video
                               </p>
-                              <p className="text-xs text-slate-500">
+                              <p className="text-sm text-slate-500">
                                 Use your camera
                               </p>
                             </div>
@@ -1212,8 +1321,8 @@ const SubmitReview: React.FC = () => {
                   </div>
                   
                   {/* Review Description */}
-                  <div className="bg-slate-50 rounded-lg p-6">
-                    <Label htmlFor="description" className="text-sm font-medium text-slate-700 mb-2 block">
+                  <div className="bg-slate-50 rounded-xl p-8">
+                    <Label htmlFor="description" className="text-base font-semibold text-slate-700 mb-4 block">
                       Tell us more about your experience
                     </Label>
                     <Textarea
@@ -1221,9 +1330,9 @@ const SubmitReview: React.FC = () => {
                       value={formData.description}
                       onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
                       placeholder="Share your thoughts about the product, service, or overall experience..."
-                      className="min-h-32 text-lg border-slate-200 focus:border-blue-500 focus:ring-blue-500 resize-none bg-white"
+                      className="min-h-40 text-lg border-slate-200 focus:border-blue-500 focus:ring-blue-500 resize-none bg-white rounded-xl"
                     />
-                    <p className="text-sm text-slate-500 mt-2">
+                    <p className="text-sm text-slate-500 mt-3">
                       {formData.description.length}/500 characters
                     </p>
                   </div>
@@ -1324,20 +1433,21 @@ const SubmitReview: React.FC = () => {
           )}
 
           {/* Navigation */}
-          <div className="flex justify-between items-center mt-8 pt-6 border-t border-slate-200">
+          <div className="flex justify-between items-center mt-12 pt-8 border-t border-slate-200">
             <Button
               variant="outline"
               onClick={prevStep}
               disabled={currentStep === 1}
-              className="px-6"
+              className="px-8 py-3 h-12 text-base"
             >
+              <ArrowLeft className="h-4 w-4 mr-2" />
               Previous
             </Button>
             
             <Button
               onClick={nextStep}
               disabled={!canProceed() || uploading}
-              className="px-6 bg-blue-600 hover:bg-blue-700"
+              className="px-8 py-3 h-12 text-base bg-blue-600 hover:bg-blue-700"
             >
               {uploading ? (
                 <>
@@ -1345,9 +1455,15 @@ const SubmitReview: React.FC = () => {
                   Submitting...
                 </>
               ) : currentStep === totalSteps ? (
-                'Submit Review'
+                <>
+                  Submit Review
+                  <ArrowRight className="h-4 w-4 ml-2" />
+                </>
               ) : (
-                'Next'
+                <>
+                  Next
+                  <ArrowRight className="h-4 w-4 ml-2" />
+                </>
               )}
             </Button>
           </div>
