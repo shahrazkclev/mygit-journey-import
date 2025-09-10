@@ -24,6 +24,13 @@ export const LoginForm: React.FC = () => {
     setSuccess('');
     setIsLoading(true);
 
+    // Only allow cgdora4@gmail.com to login
+    if (email.toLowerCase() !== 'cgdora4@gmail.com') {
+      setError('Access restricted. Only authorized users can login.');
+      setIsLoading(false);
+      return;
+    }
+
     try {
       const success = await login(email, password);
       if (!success) {
@@ -40,6 +47,12 @@ export const LoginForm: React.FC = () => {
     e.preventDefault();
     setError('');
     setSuccess('');
+
+    // Only allow cgdora4@gmail.com to create account
+    if (email.toLowerCase() !== 'cgdora4@gmail.com') {
+      setError('Access restricted. Only authorized users can create accounts.');
+      return;
+    }
 
     if (password !== confirmPassword) {
       setError('Passwords do not match.');
