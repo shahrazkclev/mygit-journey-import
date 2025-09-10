@@ -4,7 +4,6 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent } from '@/components/ui/card';
 import { Star, Camera, Upload, Paperclip, Video } from 'lucide-react';
-import { uploadToR2 } from '@/lib/r2-upload';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { Progress } from '@/components/ui/progress';
@@ -121,6 +120,23 @@ const SubmitReview = () => {
       setIsProfileUploading(false);
       setProfileUploadProgress(0);
     }
+  };
+
+  const uploadToR2 = async (file: File): Promise<string> => {
+    const formDataToSend = new FormData();
+    formDataToSend.append('file', file);
+    
+    const response = await fetch('https://r2-upload-proxy.cleverpoly-store.workers.dev', {
+      method: 'POST',
+      body: formDataToSend,
+    });
+    
+    if (!response.ok) {
+      throw new Error(`Upload failed: ${response.status}`);
+    }
+    
+    const result = await response.json();
+    return result.url;
   };
 
   const handleSubmit = async () => {
