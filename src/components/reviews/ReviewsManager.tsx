@@ -483,14 +483,14 @@ export const ReviewsManager = () => {
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
-      <div className="border-b bg-card/50 backdrop-blur-sm sticky top-0 z-50">
-        <div className="container mx-auto px-4 py-4">
+      <div className="border-b bg-card/50 backdrop-blur-sm">
+        <div className="px-6 py-4">
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-xl md:text-2xl lg:text-3xl font-bold text-foreground">
+              <h1 className="text-2xl font-bold text-foreground">
                 Reviews Manager
               </h1>
-              <p className="text-xs md:text-sm lg:text-base text-muted-foreground">
+              <p className="text-sm text-muted-foreground">
                 Manage customer reviews and submissions
               </p>
             </div>

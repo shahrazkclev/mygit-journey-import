@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { 
@@ -6,32 +6,22 @@ import {
   Star, 
   Camera, 
   Upload, 
-  CheckCircle, 
   ArrowRight, 
   ArrowLeft,
   Sparkles,
-  Heart,
-  MessageCircle,
   Image as ImageIcon,
   Video,
-  Mic,
   X,
-  ChevronDown,
-  ChevronUp,
   User,
-  Eye,
-  Users,
-  Building
+  Instagram,
+  Eye
 } from 'lucide-react';
-import { Card, CardContent } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Progress } from '@/components/ui/progress';
-import { Checkbox } from '@/components/ui/checkbox';
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 interface MediaFile {
   file: File;
@@ -49,18 +39,16 @@ interface FormData {
   mediaFiles: MediaFile[];
   profilePicture: File | null;
   profilePictureUrl: string;
-  name: string;
-  phone: string;
-  certification: File | null;
-  certificationUrl: string;
 }
 
-interface BrandTheme {
-  brand_name: string;
-  page_theme_primary: string;
-  page_theme_secondary: string;
-  page_theme_accent: string;
-  font_family: string;
+interface PreviewReview {
+  user_name: string;
+  user_instagram_handle: string;
+  rating: number;
+  description: string;
+  user_avatar: string;
+  media_url: string;
+  media_type: string;
 }
 
 const SubmitReview: React.FC = () => {
@@ -72,133 +60,44 @@ const SubmitReview: React.FC = () => {
     description: '',
     mediaFiles: [],
     profilePicture: null,
-    profilePictureUrl: '',
-    name: '',
-    phone: '',
-    certification: null,
-    certificationUrl: ''
+    profilePictureUrl: ''
   });
   const [uploading, setUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
-  const [brandTheme, setBrandTheme] = useState<BrandTheme | null>(null);
-  const [isRecording, setIsRecording] = useState(false);
-  const [recordingTime, setRecordingTime] = useState(0);
-  const [mediaRecorder, setMediaRecorder] = useState<MediaRecorder | null>(null);
-  const [showCamera, setShowCamera] = useState(false);
-  const [cameraMode, setCameraMode] = useState<'photo' | 'video'>('photo');
-  const [expandedSections, setExpandedSections] = useState<{[key: string]: boolean}>({
-    rating: true,
-    profile: false,
-    media: false,
-    description: false,
-    preview: false
-  });
-  const videoRef = useRef<HTMLVideoElement>(null);
-  const streamRef = useRef<MediaStream | null>(null);
-  const canvasRef = useRef<HTMLCanvasElement>(null);
   const { toast } = useToast();
 
-  const totalSteps = 3;
+  const totalSteps = 2;
 
-  // Load brand theme
-  useEffect(() => {
-    const loadBrandTheme = async () => {
-      try {
-        const { data, error } = await supabase
-          .from('style_guides')
-          .select('brand_name, page_theme_primary, page_theme_secondary, page_theme_accent, font_family')
-          .single();
-
-        if (error) {
-          console.error('Error loading brand theme:', error);
-          return;
-        }
-
-        setBrandTheme(data);
-      } catch (error) {
-        console.error('Error loading brand theme:', error);
-      }
-    };
-
-    loadBrandTheme();
-  }, []);
-
-  // Cleanup local URLs on component unmount
-  useEffect(() => {
-    return () => {
-      formData.mediaFiles.forEach(mediaFile => {
-        URL.revokeObjectURL(mediaFile.localUrl);
-      });
-      if (formData.profilePictureUrl && formData.profilePictureUrl.startsWith('blob:')) {
-        URL.revokeObjectURL(formData.profilePictureUrl);
-      }
-    };
-  }, []);
-
-  // Upload to Cloudflare R2 via Worker proxy
+  // Upload to Cloudflare R2 via Worker
   const uploadToR2 = async (file: File): Promise<string> => {
-    console.log('Uploading media to R2...');
-    
     try {
-      // Generate unique filename
-      const fileExt = file.name.split('.').pop();
-      const fileName = `media-${Date.now()}-${Math.random().toString(36).substring(2)}.${fileExt}`;
-      
-      // Use Cloudflare Worker proxy to upload to R2
       const formData = new FormData();
       formData.append('file', file);
       
-      // Use your deployed Cloudflare Worker
+      // Your Cloudflare Worker endpoint
       const workerUrl = 'https://r2-upload-proxy.cleverpoly-store.workers.dev';
       
-      // Show upload progress
-      setUploadProgress(10);
+      setUploadProgress(25);
       
       const response = await fetch(workerUrl, {
         method: 'POST',
         body: formData,
       });
       
-      setUploadProgress(50);
+      setUploadProgress(75);
       
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(`R2 upload failed: ${response.status} ${errorData.error || 'Unknown error'}`);
+        throw new Error(`Upload failed: ${errorData.error || 'Unknown error'}`);
       }
-      
-      setUploadProgress(90);
       
       const result = await response.json();
       setUploadProgress(100);
-      console.log('Media uploaded to R2 successfully');
+      
       return result.url;
     } catch (error) {
-      console.log('R2 upload failed, using Supabase storage as fallback:', error);
-      
-      // Fallback to Supabase storage
-      const bucket = 'reviews';
-      const fileExt = file.name.split('.').pop();
-      const fileName = `media-${Date.now()}-${Math.random().toString(36).substring(2)}.${fileExt}`;
-      
-      console.log('Using Supabase storage as fallback...');
-      const { data, error: uploadError } = await supabase.storage
-        .from(bucket)
-        .upload(fileName, file, {
-          cacheControl: '3600',
-          upsert: false
-        });
-
-      if (uploadError) {
-        console.error('Supabase upload error:', uploadError);
-        throw new Error(`Upload failed: ${uploadError.message}`);
-      }
-
-      const { data: urlData } = supabase.storage
-        .from(bucket)
-        .getPublicUrl(fileName);
-
-      console.log('Media uploaded to Supabase successfully');
-      return urlData.publicUrl;
+      console.error('R2 upload failed:', error);
+      throw error;
     }
   };
 
@@ -206,7 +105,6 @@ const SubmitReview: React.FC = () => {
     const fileArray = Array.from(files);
     
     fileArray.forEach(file => {
-      // Validate file size (50MB max)
       if (file.size > 50 * 1024 * 1024) {
         toast({
           title: "File too large",
@@ -216,7 +114,8 @@ const SubmitReview: React.FC = () => {
         return;
       }
 
-      // Validate video duration (30 seconds max)
+      const mediaType = file.type.startsWith('video/') ? 'video' : 'image';
+
       if (file.type.startsWith('video/')) {
         const video = document.createElement('video');
         video.preload = 'metadata';
@@ -229,11 +128,11 @@ const SubmitReview: React.FC = () => {
             });
             return;
           }
-          addMediaFile(file, 'video');
+          addMediaFile(file, mediaType);
         };
         video.src = URL.createObjectURL(file);
       } else {
-        addMediaFile(file, 'image');
+        addMediaFile(file, mediaType);
       }
     });
   };
@@ -252,31 +151,27 @@ const SubmitReview: React.FC = () => {
       mediaFiles: [...prev.mediaFiles, mediaFile]
     }));
 
-    // Start upload immediately
-    setTimeout(() => {
-      uploadToR2(file).then(url => {
-        setFormData(prev => ({
-          ...prev,
-          mediaFiles: prev.mediaFiles.map(mf => 
-            mf.id === mediaFile.id ? { ...mf, url } : mf
-          )
-        }));
-      }).catch(error => {
-        console.warn('Upload failed:', error);
-        toast({
-          title: "Upload failed",
-          description: `Failed to upload ${file.name}. Please try again.`,
-          variant: "destructive"
-        });
+    // Upload immediately
+    uploadToR2(file).then(url => {
+      setFormData(prev => ({
+        ...prev,
+        mediaFiles: prev.mediaFiles.map(mf => 
+          mf.id === mediaFile.id ? { ...mf, url } : mf
+        )
+      }));
+    }).catch(error => {
+      toast({
+        title: "Upload failed",
+        description: `Failed to upload ${file.name}. Please try again.`,
+        variant: "destructive"
       });
-    }, 100);
+    });
   };
 
   const removeMediaFile = (id: string) => {
     setFormData(prev => {
       const mediaFileToRemove = prev.mediaFiles.find(mf => mf.id === id);
       if (mediaFileToRemove) {
-        // Clean up the local URL to prevent memory leaks
         URL.revokeObjectURL(mediaFileToRemove.localUrl);
       }
       return {
@@ -287,9 +182,6 @@ const SubmitReview: React.FC = () => {
   };
 
   const handleProfilePictureUpload = async (file: File) => {
-    console.log('Profile picture upload started:', file.name, file.size, file.type);
-    
-    // Validate file size (5MB max for profile pictures)
     if (file.size > 5 * 1024 * 1024) {
       toast({
         title: "File too large",
@@ -299,17 +191,15 @@ const SubmitReview: React.FC = () => {
       return;
     }
 
-    // Validate file type (images only)
     if (!file.type.startsWith('image/')) {
       toast({
         title: "Invalid file type",
-        description: "Profile picture must be an image file (JPG, PNG, etc.)",
+        description: "Profile picture must be an image file",
         variant: "destructive"
       });
       return;
     }
 
-    // Show immediate preview
     const previewUrl = URL.createObjectURL(file);
     setFormData(prev => ({
       ...prev,
@@ -317,39 +207,15 @@ const SubmitReview: React.FC = () => {
       profilePictureUrl: previewUrl
     }));
 
-    // Show upload progress
-    toast({
-      title: "Uploading profile picture...",
-      description: "Please wait while we upload your photo",
-    });
-
     try {
-      // Upload profile picture
       const uploadedUrl = await uploadToR2(file);
-      console.log('Profile picture uploaded successfully:', uploadedUrl);
-      
       setFormData(prev => ({ 
         ...prev, 
         profilePictureUrl: uploadedUrl 
       }));
-      
-      toast({
-        title: "Success!",
-        description: "Profile picture uploaded successfully",
-      });
     } catch (error) {
       console.error('Profile picture upload failed:', error);
-      toast({
-        title: "Upload failed",
-        description: `Failed to upload profile picture: ${error.message || 'Unknown error'}`,
-        variant: "destructive"
-      });
-      
-      // Keep the preview URL as fallback
-      setFormData(prev => ({ 
-        ...prev, 
-        profilePictureUrl: previewUrl 
-      }));
+      // Keep local preview
     }
   };
 
@@ -359,7 +225,7 @@ const SubmitReview: React.FC = () => {
     try {
       const reviewData = {
         user_email: formData.email || '',
-        user_name: formData.name || '',
+        user_name: formData.instagram.replace('@', ''),
         user_instagram_handle: formData.instagram,
         media_url: formData.mediaFiles[0]?.url || '',
         media_type: formData.mediaFiles[0]?.type || 'image',
@@ -379,8 +245,8 @@ const SubmitReview: React.FC = () => {
       }
 
       toast({
-        title: "Success!",
-        description: "Your review has been submitted successfully and is pending approval.",
+        title: "Thank you!",
+        description: "Your review has been submitted successfully.",
       });
 
       // Reset form
@@ -391,11 +257,7 @@ const SubmitReview: React.FC = () => {
         description: '',
         mediaFiles: [],
         profilePicture: null,
-        profilePictureUrl: '',
-        name: '',
-        phone: '',
-        certification: null,
-        certificationUrl: ''
+        profilePictureUrl: ''
       });
       setCurrentStep(1);
 
@@ -403,7 +265,7 @@ const SubmitReview: React.FC = () => {
       console.error('Error submitting review:', error);
       toast({
         title: "Error",
-        description: `Failed to submit review: ${error.message}`,
+        description: "Failed to submit review. Please try again.",
         variant: "destructive"
       });
     } finally {
@@ -423,19 +285,207 @@ const SubmitReview: React.FC = () => {
     }
   };
 
+  const canProceedToStep2 = () => {
+    return formData.instagram.trim() !== '' && formData.profilePictureUrl !== '';
+  };
+
+  const canSubmit = () => {
+    return formData.rating > 0 && formData.description.trim() !== '' && formData.mediaFiles.length > 0;
+  };
+
+  // Generate preview review data
+  const getPreviewReview = (): PreviewReview => ({
+    user_name: formData.instagram.replace('@', '') || 'Anonymous',
+    user_instagram_handle: formData.instagram || '@username',
+    rating: formData.rating,
+    description: formData.description || 'Your review text will appear here...',
+    user_avatar: formData.profilePictureUrl || '/placeholder.svg',
+    media_url: formData.mediaFiles[0]?.localUrl || '',
+    media_type: formData.mediaFiles[0]?.type || 'image'
+  });
+
+  const renderStars = (rating: number) => {
+    return Array.from({ length: 5 }, (_, i) => (
+      <Star
+        key={i}
+        className={`h-4 w-4 ${i < rating ? 'fill-yellow-400 text-yellow-400' : 'text-gray-300'}`}
+      />
+    ));
+  };
+
+  const ReviewPreview = ({ review }: { review: PreviewReview }) => (
+    <div className="relative w-full max-w-sm mx-auto h-96 rounded-2xl overflow-hidden shadow-lg bg-gray-900">
+      {review.media_url && (
+        <div className="absolute inset-0">
+          {review.media_type === 'video' ? (
+            <video
+              className="w-full h-full object-cover"
+              src={review.media_url}
+              muted
+              loop
+              autoPlay
+              playsInline
+            />
+          ) : (
+            <img
+              className="w-full h-full object-cover"
+              src={review.media_url}
+              alt="Review media"
+            />
+          )}
+        </div>
+      )}
+      <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent"></div>
+      
+      <div className="relative z-10 p-4 flex flex-col justify-end h-full text-white">
+        <div className="space-y-3">
+          <div className="flex items-center space-x-1">
+            {renderStars(review.rating)}
+          </div>
+          <p className="text-sm text-white/90 line-clamp-2">
+            "{review.description}"
+          </p>
+          <div className="flex items-center space-x-2 text-sm">
+            <div className="w-8 h-8 rounded-full overflow-hidden bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center">
+              {review.user_avatar && review.user_avatar !== '/placeholder.svg' ? (
+                <img 
+                  src={review.user_avatar} 
+                  alt="Profile" 
+                  className="w-full h-full object-cover" 
+                />
+              ) : (
+                <span className="font-bold text-white">
+                  {review.user_name.charAt(0).toUpperCase()}
+                </span>
+              )}
+            </div>
+            <div className="flex items-center space-x-1.5">
+              <Instagram className="w-4 h-4 text-white/80" />
+              <span className="font-medium text-white">
+                {review.user_instagram_handle}
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+
   const renderStepContent = () => {
-    switch (currentStep) {
-      case 1:
-        return (
+    if (currentStep === 1) {
+      return (
+        <div className="grid md:grid-cols-2 gap-8">
+          {/* Step 1 Form */}
           <div className="space-y-6">
             <div className="text-center space-y-4">
               <div className="w-16 h-16 mx-auto bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center">
-                <Star className="w-8 h-8 text-white" />
+                <User className="w-8 h-8 text-white" />
               </div>
-              <h2 className="text-2xl font-bold text-gray-900">Rate Your Experience</h2>
-              <p className="text-gray-600">How would you rate your overall experience?</p>
+              <h2 className="text-2xl font-bold text-foreground">Tell us about yourself</h2>
+              <p className="text-muted-foreground">We need your Instagram handle and profile picture to get started</p>
             </div>
 
+            <div className="space-y-4">
+              <div>
+                <Label htmlFor="email" className="text-base font-medium">Email Address (Optional)</Label>
+                <Input
+                  id="email"
+                  type="email"
+                  value={formData.email}
+                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                  placeholder="your.email@example.com"
+                  className="mt-2"
+                />
+              </div>
+
+              <div>
+                <Label htmlFor="instagram" className="text-base font-medium">Instagram Handle *</Label>
+                <Input
+                  id="instagram"
+                  type="text"
+                  value={formData.instagram}
+                  onChange={(e) => setFormData({ ...formData, instagram: e.target.value })}
+                  placeholder="@yourhandle"
+                  className="mt-2"
+                  required
+                />
+              </div>
+
+              <div>
+                <Label className="text-base font-medium">Profile Picture *</Label>
+                <div className="mt-2 flex items-center space-x-4">
+                  {formData.profilePictureUrl ? (
+                    <div className="relative">
+                      <img
+                        src={formData.profilePictureUrl}
+                        alt="Profile"
+                        className="w-16 h-16 rounded-full object-cover"
+                      />
+                      <button
+                        onClick={() => setFormData({ ...formData, profilePicture: null, profilePictureUrl: '' })}
+                        className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 hover:bg-red-600"
+                      >
+                        <X className="w-3 h-3" />
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center">
+                      <User className="w-8 h-8 text-muted-foreground" />
+                    </div>
+                  )}
+                  <label className="cursor-pointer">
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (file) handleProfilePictureUpload(file);
+                      }}
+                      className="hidden"
+                    />
+                    <Button type="button" variant="outline" size="sm">
+                      <Camera className="w-4 h-4 mr-2" />
+                      {formData.profilePictureUrl ? 'Change' : 'Upload'}
+                    </Button>
+                  </label>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Preview Card */}
+          <div className="hidden md:block">
+            <div className="sticky top-8">
+              <div className="text-center mb-4">
+                <h3 className="text-lg font-semibold text-foreground flex items-center justify-center gap-2">
+                  <Eye className="w-5 h-5" />
+                  Preview
+                </h3>
+                <p className="text-sm text-muted-foreground">How your review will look</p>
+              </div>
+              <ReviewPreview review={getPreviewReview()} />
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    // Step 2
+    return (
+      <div className="grid md:grid-cols-2 gap-8">
+        {/* Step 2 Form */}
+        <div className="space-y-6">
+          <div className="text-center space-y-4">
+            <div className="w-16 h-16 mx-auto bg-gradient-to-br from-yellow-500 to-orange-600 rounded-full flex items-center justify-center">
+              <Star className="w-8 h-8 text-white" />
+            </div>
+            <h2 className="text-2xl font-bold text-foreground">Share your experience</h2>
+            <p className="text-muted-foreground">Rate your experience and share your story</p>
+          </div>
+
+          {/* Rating */}
+          <div className="text-center space-y-4">
+            <Label className="text-base font-medium">How would you rate your experience? *</Label>
             <div className="flex justify-center space-x-2">
               {[1, 2, 3, 4, 5].map((star) => (
                 <button
@@ -451,302 +501,179 @@ const SubmitReview: React.FC = () => {
                 </button>
               ))}
             </div>
-
-            <div className="space-y-4">
-              <div>
-                <Label htmlFor="name" className="text-base font-medium">Your Name</Label>
-                <Input
-                  id="name"
-                  type="text"
-                  value={formData.name}
-                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  placeholder="Enter your full name"
-                  className="mt-2"
-                />
-              </div>
-
-              <div>
-                <Label htmlFor="email" className="text-base font-medium">Email Address (Optional)</Label>
-                <Input
-                  id="email"
-                  type="email"
-                  value={formData.email}
-                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                  placeholder="your.email@example.com"
-                  className="mt-2"
-                />
-              </div>
-
-              <div>
-                <Label htmlFor="instagram" className="text-base font-medium">Instagram Handle</Label>
-                <Input
-                  id="instagram"
-                  type="text"
-                  value={formData.instagram}
-                  onChange={(e) => setFormData({ ...formData, instagram: e.target.value })}
-                  placeholder="@yourhandle"
-                  className="mt-2"
-                />
-              </div>
-
-              <div>
-                <Label htmlFor="phone" className="text-base font-medium">Phone Number (Optional)</Label>
-                <Input
-                  id="phone"
-                  type="tel"
-                  value={formData.phone}
-                  onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                  placeholder="(555) 123-4567"
-                  className="mt-2"
-                />
-              </div>
-            </div>
           </div>
-        );
 
-      case 2:
-        return (
-          <div className="space-y-6">
-            <div className="text-center space-y-4">
-              <div className="w-16 h-16 mx-auto bg-gradient-to-br from-green-500 to-blue-600 rounded-full flex items-center justify-center">
-                <Camera className="w-8 h-8 text-white" />
+          {/* Media Upload */}
+          <div>
+            <Label className="text-base font-medium">Upload Media *</Label>
+            <div className="mt-2 space-y-4">
+              <div className="border-2 border-dashed border-muted-foreground/25 rounded-lg p-6 text-center">
+                <label className="cursor-pointer">
+                  <input
+                    type="file"
+                    accept="image/*,video/*"
+                    multiple
+                    onChange={(e) => {
+                      const files = e.target.files;
+                      if (files) handleFileUpload(files);
+                    }}
+                    className="hidden"
+                  />
+                  <div className="space-y-2">
+                    <Upload className="w-8 h-8 mx-auto text-muted-foreground" />
+                    <p className="text-sm text-muted-foreground">
+                      Click to upload images or videos
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      Max 50MB, videos under 30 seconds
+                    </p>
+                  </div>
+                </label>
               </div>
-              <h2 className="text-2xl font-bold text-gray-900">Share Your Media</h2>
-              <p className="text-gray-600">Upload photos or videos of your experience</p>
-            </div>
 
-            <div className="space-y-4">
-              <div>
-                <Label className="text-base font-medium">Profile Picture</Label>
-                <div className="mt-2 flex items-center space-x-4">
-                  {formData.profilePictureUrl ? (
-                    <img
-                      src={formData.profilePictureUrl}
-                      alt="Profile"
-                      className="w-20 h-20 rounded-full object-cover border-4 border-white shadow-lg"
-                    />
-                  ) : (
-                    <div className="w-20 h-20 rounded-full bg-gray-200 flex items-center justify-center">
-                      <User className="w-8 h-8 text-gray-400" />
+              {/* Media Preview */}
+              {formData.mediaFiles.length > 0 && (
+                <div className="grid grid-cols-2 gap-4">
+                  {formData.mediaFiles.map((media) => (
+                    <div key={media.id} className="relative group">
+                      {media.type === 'video' ? (
+                        <video
+                          src={media.localUrl}
+                          className="w-full h-24 object-cover rounded-lg"
+                          controls
+                        />
+                      ) : (
+                        <img
+                          src={media.localUrl}
+                          alt="Media preview"
+                          className="w-full h-24 object-cover rounded-lg"
+                        />
+                      )}
+                      <button
+                        onClick={() => removeMediaFile(media.id)}
+                        className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 hover:bg-red-600 opacity-0 group-hover:opacity-100 transition-opacity"
+                      >
+                        <X className="w-3 h-3" />
+                      </button>
                     </div>
-                  )}
-                  <div>
-                    <input
-                      type="file"
-                      accept="image/*"
-                      onChange={(e) => {
-                        const file = e.target.files?.[0];
-                        if (file) handleProfilePictureUpload(file);
-                      }}
-                      className="hidden"
-                      id="profile-upload"
-                    />
-                    <label
-                      htmlFor="profile-upload"
-                      className="cursor-pointer inline-flex items-center px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 transition-colors"
-                    >
-                      <Upload className="w-4 h-4 mr-2" />
-                      Upload Photo
-                    </label>
-                  </div>
+                  ))}
                 </div>
-              </div>
-
-              <div>
-                <Label className="text-base font-medium">Media Files (Photos/Videos)</Label>
-                <div className="mt-2 space-y-4">
-                  <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center hover:border-gray-400 transition-colors">
-                    <input
-                      type="file"
-                      multiple
-                      accept="image/*,video/*"
-                      onChange={(e) => {
-                        if (e.target.files) handleFileUpload(e.target.files);
-                      }}
-                      className="hidden"
-                      id="media-upload"
-                    />
-                    <label htmlFor="media-upload" className="cursor-pointer">
-                      <Upload className="w-12 h-12 mx-auto text-gray-400 mb-4" />
-                      <p className="text-gray-600">Drop files here or click to browse</p>
-                      <p className="text-sm text-gray-500 mt-1">Images and videos up to 50MB</p>
-                    </label>
-                  </div>
-
-                  {formData.mediaFiles.length > 0 && (
-                    <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                      {formData.mediaFiles.map((media) => (
-                        <div key={media.id} className="relative group">
-                          {media.type === 'video' ? (
-                            <video
-                              src={media.localUrl}
-                              className="w-full h-32 object-cover rounded-lg"
-                              controls
-                            />
-                          ) : (
-                            <img
-                              src={media.localUrl}
-                              alt="Upload"
-                              className="w-full h-32 object-cover rounded-lg"
-                            />
-                          )}
-                          <button
-                            onClick={() => removeMediaFile(media.id)}
-                            className="absolute top-2 right-2 w-6 h-6 bg-red-500 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
-                          >
-                            <X className="w-4 h-4" />
-                          </button>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              </div>
+              )}
             </div>
           </div>
-        );
 
-      case 3:
-        return (
-          <div className="space-y-6">
-            <div className="text-center space-y-4">
-              <div className="w-16 h-16 mx-auto bg-gradient-to-br from-purple-500 to-pink-600 rounded-full flex items-center justify-center">
-                <MessageCircle className="w-8 h-8 text-white" />
-              </div>
-              <h2 className="text-2xl font-bold text-gray-900">Tell Us More</h2>
-              <p className="text-gray-600">Share details about your experience</p>
-            </div>
-
-            <div>
-              <Label htmlFor="description" className="text-base font-medium">Your Review</Label>
-              <Textarea
-                id="description"
-                value={formData.description}
-                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                placeholder="Tell us about your experience..."
-                className="mt-2 min-h-[120px]"
-              />
-            </div>
-
-            <div className="bg-gray-50 rounded-lg p-6">
-              <h3 className="text-lg font-medium mb-4">Review Summary</h3>
-              <div className="space-y-3">
-                <div className="flex justify-between">
-                  <span className="text-gray-600">Rating:</span>
-                  <div className="flex">
-                    {[1, 2, 3, 4, 5].map((star) => (
-                      <Star
-                        key={star}
-                        className={`w-4 h-4 ${
-                          formData.rating >= star ? 'text-yellow-400 fill-current' : 'text-gray-300'
-                        }`}
-                      />
-                    ))}
-                  </div>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-600">Name:</span>
-                  <span className="font-medium">{formData.name || 'Not provided'}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-600">Instagram:</span>
-                  <span className="font-medium">{formData.instagram || 'Not provided'}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-600">Media files:</span>
-                  <span className="font-medium">{formData.mediaFiles.length} file(s)</span>
-                </div>
-              </div>
-            </div>
+          {/* Description */}
+          <div>
+            <Label htmlFor="description" className="text-base font-medium">Tell us about your experience *</Label>
+            <Textarea
+              id="description"
+              value={formData.description}
+              onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+              placeholder="Share your thoughts, what you loved, what could be improved..."
+              className="mt-2 min-h-[120px]"
+              required
+            />
           </div>
-        );
+        </div>
 
-      default:
-        return null;
-    }
-  };
-
-  const canProceedToNextStep = () => {
-    switch (currentStep) {
-      case 1:
-        return formData.rating > 0 && formData.instagram.trim() !== '' && formData.name.trim() !== '';
-      case 2:
-        return formData.mediaFiles.length > 0 && formData.profilePictureUrl !== '';
-      case 3:
-        return formData.description.trim() !== '';
-      default:
-        return false;
-    }
+        {/* Preview Card */}
+        <div className="hidden md:block">
+          <div className="sticky top-8">
+            <div className="text-center mb-4">
+              <h3 className="text-lg font-semibold text-foreground flex items-center justify-center gap-2">
+                <Eye className="w-5 h-5" />
+                Live Preview
+              </h3>
+              <p className="text-sm text-muted-foreground">Real-time preview of your review</p>
+            </div>
+            <ReviewPreview review={getPreviewReview()} />
+          </div>
+        </div>
+      </div>
+    );
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 py-8 px-4">
-      <div className="max-w-2xl mx-auto">
-        <Card className="shadow-xl border-0 bg-white/80 backdrop-blur-sm">
-          <CardContent className="p-8">
-            {/* Progress indicator */}
-            <div className="mb-8">
-              <div className="flex justify-between items-center mb-4">
-                <span className="text-sm font-medium text-gray-600">
-                  Step {currentStep} of {totalSteps}
-                </span>
-                <span className="text-sm font-medium text-gray-600">
-                  {Math.round((currentStep / totalSteps) * 100)}% Complete
-                </span>
+    <div className="min-h-screen bg-background">
+      <div className="container mx-auto px-4 py-8 max-w-6xl">
+        {/* Header */}
+        <div className="text-center mb-8">
+          <h1 className="text-3xl font-bold text-foreground mb-2">Share Your Review</h1>
+          <p className="text-muted-foreground">Help others discover great experiences</p>
+        </div>
+
+        {/* Progress */}
+        <div className="mb-8">
+          <div className="flex items-center justify-center space-x-4 mb-4">
+            {Array.from({ length: totalSteps }, (_, i) => (
+              <div key={i} className="flex items-center">
+                <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium transition-colors ${
+                  i + 1 <= currentStep
+                    ? 'bg-primary text-primary-foreground'
+                    : 'bg-muted text-muted-foreground'
+                }`}>
+                  {i + 1}
+                </div>
+                {i < totalSteps - 1 && (
+                  <div className={`w-12 h-1 ml-4 transition-colors ${
+                    i + 1 < currentStep ? 'bg-primary' : 'bg-muted'
+                  }`} />
+                )}
               </div>
-              <Progress value={(currentStep / totalSteps) * 100} className="h-2" />
-            </div>
+            ))}
+          </div>
+          <Progress value={(currentStep / totalSteps) * 100} className="max-w-md mx-auto" />
+        </div>
 
-            {/* Step content */}
+        {/* Step Content */}
+        <Card className="max-w-6xl mx-auto">
+          <CardContent className="p-8">
             {renderStepContent()}
-
-            {/* Navigation buttons */}
-            <div className="flex justify-between mt-8">
-              <Button
-                onClick={prevStep}
-                disabled={currentStep === 1}
-                variant="outline"
-                className="flex items-center"
-              >
-                <ArrowLeft className="w-4 h-4 mr-2" />
-                Previous
-              </Button>
-
-              {currentStep === totalSteps ? (
-                <Button
-                  onClick={handleSubmit}
-                  disabled={!canProceedToNextStep() || uploading}
-                  className="flex items-center bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700"
-                >
-                  {uploading ? (
-                    <>
-                      <div className="w-4 h-4 mr-2 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                      Submitting...
-                    </>
-                  ) : (
-                    <>
-                      Submit Review
-                      <CheckCircle className="w-4 h-4 ml-2" />
-                    </>
-                  )}
-                </Button>
-              ) : (
-                <Button
-                  onClick={nextStep}
-                  disabled={!canProceedToNextStep()}
-                  className="flex items-center bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700"
-                >
-                  Next
-                  <ArrowRight className="w-4 h-4 ml-2" />
-                </Button>
-              )}
-            </div>
           </CardContent>
         </Card>
-      </div>
 
-      {/* Hidden canvas for photo capture */}
-      <canvas ref={canvasRef} style={{ display: 'none' }} />
+        {/* Navigation */}
+        <div className="flex justify-between items-center mt-8 max-w-6xl mx-auto">
+          <Button
+            onClick={prevStep}
+            variant="outline"
+            disabled={currentStep === 1}
+            className="flex items-center gap-2"
+          >
+            <ArrowLeft className="w-4 h-4" />
+            Previous
+          </Button>
+
+          {currentStep < totalSteps ? (
+            <Button
+              onClick={nextStep}
+              disabled={!canProceedToStep2()}
+              className="flex items-center gap-2"
+            >
+              Next
+              <ArrowRight className="w-4 h-4" />
+            </Button>
+          ) : (
+            <Button
+              onClick={handleSubmit}
+              disabled={!canSubmit() || uploading}
+              className="flex items-center gap-2"
+            >
+              {uploading ? (
+                <>
+                  <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                  Submitting...
+                </>
+              ) : (
+                <>
+                  <Sparkles className="w-4 h-4" />
+                  Submit Review
+                </>
+              )}
+            </Button>
+          )}
+        </div>
+      </div>
     </div>
   );
 };
