@@ -709,7 +709,14 @@ const SubmitReview: React.FC = () => {
                         id="instagram"
                         type="text"
                         value={formData.instagram}
-                        onChange={(e) => setFormData(prev => ({ ...prev, instagram: e.target.value }))}
+                        onChange={(e) => {
+                          let value = e.target.value;
+                          // Automatically add @ if not present
+                          if (value && !value.startsWith('@')) {
+                            value = '@' + value;
+                          }
+                          setFormData(prev => ({ ...prev, instagram: value }));
+                        }}
                         placeholder="@yourusername"
                         className="h-16 text-lg border-slate-200 focus:border-purple-500 focus:ring-purple-500 rounded-xl"
                       />

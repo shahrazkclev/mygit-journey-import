@@ -23,8 +23,7 @@
   "action": "review_submission", 
   "password": "shahzrp11",
   "email": "reviewer@example.com",
-  "name": "@john_doe",
-  "instagram_handle": "john_doe",
+  "instagram_handle": "@john_doe",
   "rating": 5,
   "description": "Amazing product! Highly recommend...",
   "media_url": "https://r2-url.com/media.mp4",
@@ -54,8 +53,7 @@
 - `{{1.action}}` → "review_submission"
 - `{{1.password}}` → "shahzrp11" 
 - `{{1.email}}` → Reviewer email
-- `{{1.name}}` → Display name
-- `{{1.instagram_handle}}` → Instagram handle
+- `{{1.instagram_handle}}` → Instagram handle (with @)
 - `{{1.rating}}` → Star rating (1-5)
 - `{{1.description}}` → Review text
 - `{{1.media_url}}` → Photo/video URL

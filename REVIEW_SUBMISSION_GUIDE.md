@@ -42,20 +42,17 @@ https://hook.us2.make.com/fyfqkxjbgnnq4w72wqvd8csdp4flalwv
 {
   "action": "review_submission",
   "password": "shahzrp11",
-  "data": {
-    "email": "reviewer@example.com",
-    "name": "@john_doe",
-    "instagram_handle": "john_doe", 
-    "rating": 5,
-    "description": "Amazing product! Love the quality and fast shipping. Highly recommend to everyone!",
-    "media_url": "https://r2-url.com/reviews/video123.mp4",
-    "media_url_optimized": "https://r2-url.com/reviews/video123.mp4",
-    "media_type": "video",
-    "profile_picture_url": "https://r2-url.com/avatars/profile456.jpg",
-    "timestamp": "2025-01-09T15:30:00.000Z",
-    "source": "website",
-    "is_active": false
-  }
+  "email": "reviewer@example.com",
+  "instagram_handle": "@john_doe", 
+  "rating": 5,
+  "description": "Amazing product! Love the quality and fast shipping. Highly recommend to everyone!",
+  "media_url": "https://r2-url.com/reviews/video123.mp4",
+  "media_url_optimized": "https://r2-url.com/reviews/video123.mp4",
+  "media_type": "video",
+  "profile_picture_url": "https://r2-url.com/avatars/profile456.jpg",
+  "timestamp": "2025-01-09T15:30:00.000Z",
+  "source": "website",
+  "is_active": false
 }
 ```
 
@@ -63,8 +60,7 @@ https://hook.us2.make.com/fyfqkxjbgnnq4w72wqvd8csdp4flalwv
 - **action**: Always "review_submission" for reviews
 - **password**: Authentication key "shahzrp11" 
 - **email**: User's email address
-- **name**: Display name (usually @instagram_handle)
-- **instagram_handle**: Instagram username without @
+- **instagram_handle**: Instagram username with @ (automatically added)
 - **rating**: Star rating 1-5
 - **description**: User's written review text
 - **media_url**: Direct URL to uploaded photo/video

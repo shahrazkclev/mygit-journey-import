@@ -170,7 +170,6 @@ const SubmitReview = () => {
         action: "review_submission",
         password: "shahzrp11",
         email: formData.email,
-        name: formData.instagramHandle ? `@${formData.instagramHandle}` : 'Anonymous',
         instagram_handle: formData.instagramHandle || '',
         rating: formData.rating,
         description: formData.description,
@@ -334,7 +333,14 @@ const SubmitReview = () => {
                 <Input
                   type="text"
                   value={formData.instagramHandle}
-                  onChange={(e) => setFormData({ ...formData, instagramHandle: e.target.value })}
+                  onChange={(e) => {
+                    let value = e.target.value;
+                    // Automatically add @ if not present
+                    if (value && !value.startsWith('@')) {
+                      value = '@' + value;
+                    }
+                    setFormData({ ...formData, instagramHandle: value });
+                  }}
                   placeholder="@yourusername"
                   className="h-12"
                 />
