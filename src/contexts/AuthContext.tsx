@@ -64,7 +64,20 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
               // If this is cgdora4@gmail.com and we have existing demo data, migrate it
               if (session.user.email === 'cgdora4@gmail.com' && event === 'SIGNED_IN') {
-                console.log('Admin user signed in, data migration may be needed');
+                console.log('Admin user signed in, migrating demo data...');
+                try {
+                  const { error: migrationError } = await supabase.rpc('migrate_demo_data_to_admin', {
+                    admin_user_id: session.user.id
+                  });
+                  
+                  if (migrationError) {
+                    console.error('Migration error:', migrationError);
+                  } else {
+                    console.log('✅ Demo data migrated successfully to admin user');
+                  }
+                } catch (error) {
+                  console.error('Migration failed:', error);
+                }
               }
             } catch (error) {
               console.error('Error fetching user profile:', error);
