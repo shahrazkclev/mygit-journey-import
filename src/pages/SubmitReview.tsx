@@ -555,7 +555,7 @@ const SubmitReview = () => {
                             onClick={nextStep}
                             className="w-full h-11 text-base font-medium"
                           >
-                            Continue to Rating →
+                            Next
                           </Button>
                         </div>
                       )}
@@ -604,14 +604,14 @@ const SubmitReview = () => {
                               onClick={prevStep}
                               className="h-11"
                             >
-                              ← Back
+                              Back
                             </Button>
                             <Button 
                               type="button"
                               onClick={nextStep}
                               className="h-11"
                             >
-                              Continue →
+                              Next
                             </Button>
                           </div>
                         </div>
@@ -724,7 +724,7 @@ const SubmitReview = () => {
                             onClick={prevStep}
                             className="h-11"
                           >
-                            ← Back
+                            Back
                           </Button>
                           <Button 
                             type="button"
@@ -732,7 +732,7 @@ const SubmitReview = () => {
                             className="h-11"
                             disabled={!formData.mediaUrl}
                           >
-                            Continue →
+                            Next
                           </Button>
                         </div>
                       </div>
@@ -771,14 +771,14 @@ const SubmitReview = () => {
                             onClick={prevStep}
                             className="h-11"
                           >
-                            ← Back
+                            Back
                           </Button>
                           <Button 
                             type="submit" 
                             className="h-11" 
                             disabled={isSubmitting || !formData.description}
                           >
-                            {isSubmitting ? 'Submitting...' : 'Submit Review ✓'}
+                            {isSubmitting ? 'Submitting...' : 'Submit'}
                           </Button>
                         </div>
                       </div>
