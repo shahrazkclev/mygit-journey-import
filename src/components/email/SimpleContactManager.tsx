@@ -302,6 +302,7 @@ export const SimpleContactManager = () => {
       return;
     }
 
+    setIsLoading(true);
     try {
       const newTags = newContact.tags
         .split(',')
@@ -393,6 +394,8 @@ export const SimpleContactManager = () => {
     } catch (error) {
       console.error('Error handling contact:', error);
       toast.error("Failed to process contact");
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -986,8 +989,12 @@ export const SimpleContactManager = () => {
                       />
                     </div>
                     <div className="flex space-x-2">
-                      <Button onClick={handleAddContact} className="flex-1 bg-email-primary hover:bg-email-primary/90">
-                        Add Contact
+                      <Button 
+                        onClick={handleAddContact} 
+                        disabled={isLoading}
+                        className="flex-1 bg-email-primary hover:bg-email-primary/90"
+                      >
+                        {isLoading ? "Adding..." : "Add Contact"}
                       </Button>
                       <Button 
                         variant="outline" 
