@@ -4,6 +4,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent } from '@/components/ui/card';
 import { Star, Camera, Upload, Paperclip, Video } from 'lucide-react';
+import { uploadToR2 } from '@/lib/r2-upload';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { Progress } from '@/components/ui/progress';
@@ -43,7 +44,7 @@ const SubmitReview = () => {
         progress = 90; // Stop at 90% until real upload completes
         clearInterval(interval);
       }
-      setUploadProgress(Math.min(progress, 90));
+      setUploadProgress(Math.min(Math.round(progress), 90));
     }, 300);
     return interval;
   }, []);
@@ -120,24 +121,6 @@ const SubmitReview = () => {
       setIsProfileUploading(false);
       setProfileUploadProgress(0);
     }
-  };
-
-  const uploadToR2 = async (file: File): Promise<string> => {
-    const formDataToSend = new FormData();
-    formDataToSend.append('file', file);
-    
-    const response = await fetch('https://r2-upload-proxy.cleverpoly-store.workers.dev', {
-      method: 'POST',
-      body: formDataToSend,
-    });
-    
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      throw new Error(`Upload failed: ${response.status} - ${errorData.error || 'Unknown error'}`);
-    }
-    
-    const result = await response.json();
-    return result.url;
   };
 
   const handleSubmit = async () => {
@@ -389,7 +372,7 @@ const SubmitReview = () => {
                   <div className="space-y-2">
                     <div className="flex justify-between text-sm">
                       <span>Uploading...</span>
-                      <span>{uploadProgress}%</span>
+                      <span>{Math.round(uploadProgress)}%</span>
                     </div>
                     <Progress value={uploadProgress} className="w-full h-2" />
                   </div>
