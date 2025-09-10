@@ -205,9 +205,25 @@ export const ReviewsManager = () => {
     try {
       console.log('Updating review:', reviewId, updates);
       
+      // Filter out fields that don't exist in the database table
+      const validDbFields = [
+        'rating', 'is_active', 'sort_order', 'media_url', 'media_type', 
+        'user_email', 'description', 'user_avatar', 'user_instagram_handle', 
+        'user_name', 'media_url_optimized'
+      ];
+      
+      const filteredUpdates = Object.keys(updates)
+        .filter(key => validDbFields.includes(key))
+        .reduce((obj, key) => {
+          obj[key] = updates[key as keyof Review];
+          return obj;
+        }, {} as Partial<Review>);
+      
+      console.log('Filtered updates for database:', filteredUpdates);
+      
       const { error } = await supabase
         .from('reviews')
-        .update(updates)
+        .update(filteredUpdates)
         .eq('id', reviewId);
       
       if (error) {
