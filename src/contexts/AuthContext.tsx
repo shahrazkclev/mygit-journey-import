@@ -40,45 +40,42 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   useEffect(() => {
     // Set up auth state listener FIRST
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
+      (event, session) => {
         console.log('Auth state changed:', event, session);
         setSession(session);
         
         if (session?.user) {
-          // Fetch user profile for role information
-          try {
-            const { data: profile } = await supabase
-              .from('profiles')
-              .select('role')
-              .eq('id', session.user.id)
-              .single();
-            
-            setUser({
-              id: session.user.id,
-              email: session.user.email || '',
-              authenticated: true,
-              role: profile?.role || 'user'
-            });
+          // Defer Supabase calls with setTimeout to avoid deadlocks
+          setTimeout(async () => {
+            try {
+              // Fetch user profile for role information
+              const { data: profile } = await supabase
+                .from('profiles')
+                .select('role')
+                .eq('id', session.user.id)
+                .single();
+              
+              setUser({
+                id: session.user.id,
+                email: session.user.email || '',
+                authenticated: true,
+                role: profile?.role || 'user'
+              });
 
-            // If this is cgdora4@gmail.com and we have existing demo data, migrate it
-            if (session.user.email === 'cgdora4@gmail.com' && event === 'SIGNED_IN') {
-              try {
-                // Note: Migration function exists but may not be accessible yet
-                // This will be handled gracefully if the function doesn't exist
+              // If this is cgdora4@gmail.com and we have existing demo data, migrate it
+              if (session.user.email === 'cgdora4@gmail.com' && event === 'SIGNED_IN') {
                 console.log('Admin user signed in, data migration may be needed');
-              } catch (error) {
-                console.error('Note: Migration function not available yet:', error);
               }
+            } catch (error) {
+              console.error('Error fetching user profile:', error);
+              setUser({
+                id: session.user.id,
+                email: session.user.email || '',
+                authenticated: true,
+                role: 'user'
+              });
             }
-          } catch (error) {
-            console.error('Error fetching user profile:', error);
-            setUser({
-              id: session.user.id,
-              email: session.user.email || '',
-              authenticated: true,
-              role: 'user'
-            });
-          }
+          }, 0);
         } else {
           setUser(null);
         }
@@ -89,10 +86,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     // THEN check for existing session
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (session) {
-        // Trigger the auth state change manually for existing session
-        setSession(session);
-        // Set loading to false since we have the session data
-        setIsLoading(false);
+        // Session will be handled by the auth state change listener
+        console.log('Found existing session');
       } else {
         setIsLoading(false);
       }
