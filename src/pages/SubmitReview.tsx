@@ -70,6 +70,7 @@ const SubmitReview: React.FC = () => {
 
   // Upload to Cloudflare R2 via Worker
   const uploadToR2 = async (file: File, isOptimized: boolean = false): Promise<string> => {
+    console.log('uploadToR2 called with file:', file.name, 'isOptimized:', isOptimized);
     try {
       const formData = new FormData();
       formData.append('file', file);
@@ -77,6 +78,7 @@ const SubmitReview: React.FC = () => {
       
       // Your Cloudflare Worker endpoint
       const workerUrl = 'https://r2-upload-proxy.cleverpoly-store.workers.dev';
+      console.log('Uploading to:', workerUrl);
       
       setUploadProgress(25);
       
@@ -85,14 +87,17 @@ const SubmitReview: React.FC = () => {
         body: formData,
       });
       
+      console.log('Upload response status:', response.status, response.statusText);
       setUploadProgress(75);
       
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(`Upload failed: ${errorData.error || 'Unknown error'}`);
+        const errorData = await response.text();
+        console.log('Upload failed with response:', errorData);
+        throw new Error(`Upload failed: ${response.status} ${response.statusText}`);
       }
       
       const result = await response.json();
+      console.log('Upload successful, result:', result);
       setUploadProgress(100);
       
       return result.url;
@@ -445,12 +450,32 @@ const SubmitReview: React.FC = () => {
                       type="file"
                       accept="image/*"
                       onChange={(e) => {
+                        console.log('File input onChange triggered', e.target.files);
                         const file = e.target.files?.[0];
-                        if (file) handleProfilePictureUpload(file);
+                        if (file) {
+                          console.log('File selected, calling handleProfilePictureUpload');
+                          handleProfilePictureUpload(file);
+                        } else {
+                          console.log('No file selected');
+                        }
                       }}
                       className="hidden"
                     />
-                    <Button type="button" variant="outline" size="sm">
+                    <Button 
+                      type="button" 
+                      variant="outline" 
+                      size="sm"
+                      onClick={() => {
+                        console.log('Upload button clicked');
+                        const input = document.querySelector('input[type="file"]') as HTMLInputElement;
+                        if (input) {
+                          console.log('Triggering file input click');
+                          input.click();
+                        } else {
+                          console.log('File input not found');
+                        }
+                      }}
+                    >
                       <Camera className="w-4 h-4 mr-2" />
                       {formData.profilePictureUrl ? 'Change' : 'Upload'}
                     </Button>
