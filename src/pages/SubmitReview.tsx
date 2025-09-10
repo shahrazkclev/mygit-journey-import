@@ -169,7 +169,10 @@ const SubmitReview: React.FC = () => {
   };
 
   const handleProfilePictureUpload = async (file: File) => {
+    console.log('Profile picture upload started:', file.name, file.size, file.type);
+    
     if (file.size > 5 * 1024 * 1024) {
+      console.log('File too large:', file.size);
       toast({
         title: "File too large",
         description: "Profile picture must be smaller than 5MB",
@@ -179,6 +182,7 @@ const SubmitReview: React.FC = () => {
     }
 
     if (!file.type.startsWith('image/')) {
+      console.log('Invalid file type:', file.type);
       toast({
         title: "Invalid file type",
         description: "Profile picture must be an image file",
@@ -187,6 +191,7 @@ const SubmitReview: React.FC = () => {
       return;
     }
 
+    console.log('Creating local preview URL');
     const previewUrl = URL.createObjectURL(file);
     setFormData(prev => ({
       ...prev,
@@ -195,11 +200,13 @@ const SubmitReview: React.FC = () => {
     }));
 
     // Show upload progress
+    console.log('Starting upload to R2');
     setIsUploading(true);
     setUploadProgress(0);
 
     try {
       const uploadedUrl = await uploadToR2(file, false);
+      console.log('Upload successful, URL:', uploadedUrl);
       setFormData(prev => ({ 
         ...prev, 
         profilePictureUrl: uploadedUrl 
