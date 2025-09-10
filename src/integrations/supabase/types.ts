@@ -283,6 +283,30 @@ export type Database = {
         }
         Relationships: []
       }
+      profiles: {
+        Row: {
+          created_at: string
+          email: string
+          id: string
+          role: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          email: string
+          id: string
+          role?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          email?: string
+          id?: string
+          role?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       reviews: {
         Row: {
           created_at: string | null
@@ -611,6 +635,10 @@ export type Database = {
       }
       handle_unsubscribe: {
         Args: { p_email?: string; p_reason?: string; p_user_id?: string }
+        Returns: undefined
+      }
+      migrate_demo_data_to_admin: {
+        Args: { admin_user_id: string }
         Returns: undefined
       }
       reapply_tag_rules_for_user: {
