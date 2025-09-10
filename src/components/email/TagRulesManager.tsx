@@ -64,7 +64,7 @@ export const TagRulesManager = () => {
       const { data, error } = await supabase
         .from('tag_rules')
         .select('*')
-        .eq('user_id', 'user?.id')
+        .eq('user_id', user?.id)
         .eq('protected', false)
         .order('created_at', { ascending: false });
 
@@ -262,13 +262,13 @@ export const TagRulesManager = () => {
     try {
       // Reapply tag rules for both regular and unsubscribed contacts
       const { error: contactsError } = await supabase.rpc('reapply_tag_rules_for_user', {
-        p_user_id: 'user?.id'
+        p_user_id: user?.id
       });
 
       if (contactsError) throw contactsError;
 
       const { error: unsubscribedError } = await supabase.rpc('reapply_tag_rules_to_unsubscribed_contacts', {
-        p_user_id: 'user?.id'
+        p_user_id: user?.id
       });
 
       if (unsubscribedError) throw unsubscribedError;

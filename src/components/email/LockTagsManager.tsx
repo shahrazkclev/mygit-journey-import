@@ -44,7 +44,7 @@ export const LockTagsManager = () => {
       const { data, error } = await supabase
         .from('tag_rules')
         .select('id, add_tags, password')
-        .eq('user_id', 'user?.id')
+        .eq('user_id', user?.id)
         .eq('protected', true)
         .not('add_tags', 'is', null);
 

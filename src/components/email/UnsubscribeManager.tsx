@@ -78,7 +78,7 @@ export const UnsubscribeManager = () => {
       const { data, error } = await supabase
         .from('contacts')
         .select('id, email, first_name, last_name, tags, created_at, updated_at, status')
-        .eq('user_id', 'user?.id')
+        .eq('user_id', user?.id)
         .contains('tags', ['unsub']);
 
       if (error) throw error;
