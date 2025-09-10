@@ -490,14 +490,33 @@ export const ReviewsManager = () => {
   };
 
   // Media management functions
-  const downloadMedia = (mediaUrl: string, fileName?: string) => {
-    const link = document.createElement('a');
-    link.href = mediaUrl;
-    link.download = fileName || `review-media-${Date.now()}`;
-    link.target = '_blank';
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+  const downloadMedia = async (mediaUrl: string, fileName?: string) => {
+    try {
+      // Fetch the file as a blob to ensure proper download
+      const response = await fetch(mediaUrl);
+      if (!response.ok) throw new Error('Failed to fetch media file');
+      
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      
+      // Create download link with blob URL
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = fileName || `review-media-${Date.now()}`;
+      document.body.appendChild(link);
+      link.click();
+      
+      // Cleanup
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error('Error downloading media:', error);
+      toast({
+        title: "Download Failed",
+        description: "Could not download the media file",
+        variant: "destructive",
+      });
+    }
   };
 
   const uploadToR2 = async (file: File, onProgress?: (progress: number) => void): Promise<string> => {
