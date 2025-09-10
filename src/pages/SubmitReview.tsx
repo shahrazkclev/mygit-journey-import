@@ -185,14 +185,13 @@ const SubmitReview = () => {
 
       console.log('Sending review webhook:', webhookPayload);
       
-      // Fire-and-forget webhook call with timeout
+      // Fire-and-forget webhook call (don't wait for it)
       fetch('https://hook.us2.make.com/fyfqkxjbgnnq4w72wqvd8csdp4flalwv', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(webhookPayload),
-        signal: AbortSignal.timeout(5000) // 5 second timeout
+        body: JSON.stringify(webhookPayload)
       }).then(() => {
         console.log('Review webhook sent successfully');
       }).catch((webhookError) => {
