@@ -24,11 +24,42 @@ export const TagInput = React.forwardRef<HTMLInputElement, TagInputProps>(
 
     useEffect(() => {
       if (inputValue && suggestions.length > 0) {
-        const filtered = suggestions.filter(
-          suggestion => 
-            suggestion.toLowerCase().includes(inputValue.toLowerCase()) &&
+        const inputLower = inputValue.toLowerCase();
+        
+        // Filter and rank suggestions
+        const filtered = suggestions
+          .filter(suggestion => 
+            suggestion.toLowerCase().includes(inputLower) &&
             !tags.includes(suggestion)
-        );
+          )
+          .sort((a, b) => {
+            const aLower = a.toLowerCase();
+            const bLower = b.toLowerCase();
+            
+            // Prioritize exact matches (starts with input)
+            const aStartsWith = aLower.startsWith(inputLower);
+            const bStartsWith = bLower.startsWith(inputLower);
+            
+            if (aStartsWith && !bStartsWith) return -1;
+            if (!aStartsWith && bStartsWith) return 1;
+            
+            // Then prioritize shorter matches (more specific)
+            if (aStartsWith && bStartsWith) {
+              return a.length - b.length;
+            }
+            
+            // For partial matches, prioritize by position of match
+            const aIndex = aLower.indexOf(inputLower);
+            const bIndex = bLower.indexOf(inputLower);
+            
+            if (aIndex !== bIndex) {
+              return aIndex - bIndex;
+            }
+            
+            // Finally, sort alphabetically
+            return a.localeCompare(b);
+          });
+        
         setFilteredSuggestions(filtered);
         setShowSuggestions(filtered.length > 0);
       } else {

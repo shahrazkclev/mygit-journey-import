@@ -297,15 +297,24 @@ export const SimpleContactManager = () => {
     let filtered = contacts;
 
     if (searchTerm) {
-      filtered = filtered.filter(contact =>
-        contact.first_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        contact.last_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        contact.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        contact.phone?.includes(searchTerm) ||
-        contact.tags?.some(tag => 
-          tag.toLowerCase().includes(searchTerm.toLowerCase())
-        )
-      );
+      const searchLower = searchTerm.toLowerCase();
+      filtered = filtered.filter(contact => {
+        // Check name fields
+        const firstNameMatch = contact.first_name?.toLowerCase().includes(searchLower);
+        const lastNameMatch = contact.last_name?.toLowerCase().includes(searchLower);
+        const emailMatch = contact.email?.toLowerCase().includes(searchLower);
+        const phoneMatch = contact.phone?.includes(searchTerm);
+        
+        // Check tags with better matching
+        const tagMatch = contact.tags?.some(tag => {
+          const tagLower = tag.toLowerCase();
+          return tagLower.includes(searchLower) || 
+                 tagLower.split(' ').some(word => word.startsWith(searchLower)) ||
+                 tagLower.split(':').some(part => part.trim().startsWith(searchLower));
+        });
+        
+        return firstNameMatch || lastNameMatch || emailMatch || phoneMatch || tagMatch;
+      });
     }
 
     if (tagFilter) {

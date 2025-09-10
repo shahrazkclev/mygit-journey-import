@@ -579,13 +579,17 @@ export const EmailListManager = () => {
 
   // Filter contacts based on search, tag filters, and advanced filters
   const filteredContacts = contacts.filter(contact => {
+    const searchLower = searchQuery.toLowerCase();
     const matchesSearch = !searchQuery || 
-      contact.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      contact.first_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      contact.last_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      contact.tags?.some(tag => 
-        tag.toLowerCase().includes(searchQuery.toLowerCase())
-      );
+      contact.email.toLowerCase().includes(searchLower) ||
+      contact.first_name?.toLowerCase().includes(searchLower) ||
+      contact.last_name?.toLowerCase().includes(searchLower) ||
+      contact.tags?.some(tag => {
+        const tagLower = tag.toLowerCase();
+        return tagLower.includes(searchLower) || 
+               tagLower.split(' ').some(word => word.startsWith(searchLower)) ||
+               tagLower.split(':').some(part => part.trim().startsWith(searchLower));
+      });
     
     const matchesTag = filterTag === "all" || 
       (contact.tags && contact.tags.includes(filterTag));

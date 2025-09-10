@@ -131,15 +131,14 @@ export const EditContactDialog: React.FC<EditContactDialogProps> = ({
       const { data: contacts, error: contactsError } = await supabase
         .from('contacts')
         .select('tags')
-        .eq('user_id', 'user?.id');
-
+        .eq('user_id', user?.id);
       if (contactsError) throw contactsError;
 
       // Get tags from existing tag rules
       const { data: tagRules, error: rulesError } = await supabase
         .from('tag_rules')
         .select('trigger_tags, add_tags, remove_tags')
-        .eq('user_id', 'user?.id');
+        .eq('user_id', user?.id);
 
       if (rulesError) throw rulesError;
 

@@ -420,14 +420,18 @@ export const ContactManager: React.FC = () => {
 
   // Filter contacts based on search query, product, list, and purchase status
   const filteredContacts = contacts.filter(contact => {
-    // Search filter
+    // Search filter with improved tag matching
+    const searchLower = searchQuery.toLowerCase();
     const matchesSearch = searchQuery === '' || 
-      contact.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      (contact.first_name && contact.first_name.toLowerCase().includes(searchQuery.toLowerCase())) ||
-      (contact.last_name && contact.last_name.toLowerCase().includes(searchQuery.toLowerCase())) ||
-      contact.tags?.some(tag => 
-        tag.toLowerCase().includes(searchQuery.toLowerCase())
-      );
+      contact.email.toLowerCase().includes(searchLower) ||
+      (contact.first_name && contact.first_name.toLowerCase().includes(searchLower)) ||
+      (contact.last_name && contact.last_name.toLowerCase().includes(searchLower)) ||
+      contact.tags?.some(tag => {
+        const tagLower = tag.toLowerCase();
+        return tagLower.includes(searchLower) || 
+               tagLower.split(' ').some(word => word.startsWith(searchLower)) ||
+               tagLower.split(':').some(part => part.trim().startsWith(searchLower));
+      });
 
     // Product filter
     const hasSpecificProduct = allContactProducts.some(cp => cp.contact_id === contact.id && cp.product_id === filterByProduct);
