@@ -91,6 +91,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       if (session) {
         // Trigger the auth state change manually for existing session
         setSession(session);
+        // Set loading to false since we have the session data
+        setIsLoading(false);
       } else {
         setIsLoading(false);
       }
