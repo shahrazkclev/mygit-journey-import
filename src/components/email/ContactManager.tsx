@@ -96,6 +96,8 @@ export const ContactManager: React.FC = () => {
 
   const loadContacts = async () => {
     try {
+      console.log('Loading contacts for user:', user.id);
+      console.log('User object:', user);
 
       const { data, error } = await supabase
         .from('contacts')
@@ -104,8 +106,11 @@ export const ContactManager: React.FC = () => {
         .eq('status', 'subscribed') // Only load subscribed contacts
         .order('created_at', { ascending: false });
 
+      console.log('Contacts query result:', { data, error });
+
       if (error) throw error;
       const cleaned = (data || []).filter((c: any) => !((c.tags || []).some((t: string) => (t || '').trim().toLowerCase() === 'unsub')));
+      console.log('Cleaned contacts:', cleaned);
       setContacts(cleaned);
     } catch (error) {
       console.error('Error loading contacts:', error);
