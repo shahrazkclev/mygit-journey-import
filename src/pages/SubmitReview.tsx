@@ -176,10 +176,10 @@ const SubmitReview = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!formData.email || !formData.instagramHandle || !formData.rating || !formData.description) {
+    if (!formData.email || !formData.instagramHandle || !formData.profilePictureUrl || !formData.rating || !formData.mediaUrl || !formData.description) {
       toast({
         title: 'Validation Error',
-        description: 'Please fill in all required fields.',
+        description: 'Please fill in all required fields including media upload.',
         variant: 'destructive'
       });
       return;
@@ -195,8 +195,8 @@ const SubmitReview = () => {
           user_email: formData.email,
           rating: formData.rating,
           description: formData.description,
-          user_avatar: formData.profilePictureUrl || '',
-          media_url: formData.mediaUrl || '',
+          user_avatar: formData.profilePictureUrl,
+          media_url: formData.mediaUrl,
           media_type: formData.mediaType,
           is_active: false,
           sort_order: 0
@@ -255,7 +255,7 @@ const SubmitReview = () => {
         review: false
       });
       setCurrentStep(2);
-    } else if (currentStep === 2) {
+    } else if (currentStep === 2 && formData.mediaUrl) {
       setExpandedSections({
         basic: false,
         rating: false,
@@ -330,13 +330,17 @@ const SubmitReview = () => {
   };
 
   // Enhanced Review Card Component matching standalone HTML
-  const ReviewCard = () => {
+  const ReviewCard = ({ isMobile = false }) => {
     const userName = formData.instagramHandle.replace('@', '') || 'Username';
     const avatarInitial = generateAvatarInitial(userName);
     const avatarGradient = generateAvatarGradient(userName);
     
+    const cardSize = isMobile 
+      ? "w-48 h-72" // Smaller for mobile
+      : "w-80 h-[480px]"; // Larger for desktop
+    
     return (
-      <div className="relative w-64 h-96 aspect-[2/3] flex-shrink-0 rounded-2xl overflow-hidden transition-transform duration-500 ease-in-out hover:scale-105 shadow-lg group bg-gray-900">
+      <div className={`relative ${cardSize} aspect-[2/3] flex-shrink-0 rounded-2xl overflow-hidden transition-transform duration-500 ease-in-out hover:scale-105 shadow-xl group bg-gray-900`}>
         {formData.mediaUrl ? (
           <>
             {formData.mediaType === 'video' ? (
@@ -358,26 +362,26 @@ const SubmitReview = () => {
           </>
         ) : (
           <div className="absolute inset-0 bg-gradient-to-br from-slate-100 to-slate-200 flex items-center justify-center">
-            <Camera className="w-16 h-16 text-gray-400" />
+            <Camera className={`${isMobile ? 'w-12 h-12' : 'w-20 h-20'} text-gray-400`} />
           </div>
         )}
         
         <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent"></div>
         
-        <div className="relative z-10 p-4 flex flex-col justify-end h-full text-white">
-          <div className="space-y-3">
+        <div className={`relative z-10 ${isMobile ? 'p-3' : 'p-6'} flex flex-col justify-end h-full text-white`}>
+          <div className={`space-y-${isMobile ? '2' : '3'}`}>
             <div className="flex items-center space-x-1">
               {Array.from({ length: 5 }, (_, i) => (
-                <svg key={i} className={`w-4 h-4 ${i < formData.rating ? 'text-yellow-400' : 'text-gray-300'}`} fill="currentColor" viewBox="0 0 20 20">
+                <svg key={i} className={`${isMobile ? 'w-3 h-3' : 'w-5 h-5'} ${i < formData.rating ? 'text-yellow-400' : 'text-gray-300'}`} fill="currentColor" viewBox="0 0 20 20">
                   <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.286 3.957a1 1 0 00.95.69h4.162c.969 0 1.371 1.24.588 1.81l-3.367 2.445a1 1 0 00-.364 1.118l1.287 3.957c.3.921-.755 1.688-1.54 1.118l-3.367-2.445a1 1 0 00-1.175 0l-3.367 2.445c-.784.57-1.838-.197-1.54-1.118l1.287-3.957a1 1 0 00-.364-1.118L2.05 9.384c-.783-.57-.38-1.81.588-1.81h4.162a1 1 0 00.95-.69L9.049 2.927z"></path>
                 </svg>
               ))}
             </div>
-            <p className="text-sm text-white/90 line-clamp-2 select-none">
+            <p className={`${isMobile ? 'text-xs' : 'text-sm'} text-white/90 line-clamp-2 select-none`}>
               "{formData.description || 'Your review will appear here...'}"
             </p>
-            <div className="flex items-center space-x-2 text-sm">
-              <div className={`w-8 h-8 rounded-full overflow-hidden bg-gradient-to-br ${avatarGradient} flex items-center justify-center font-bold text-white`}>
+            <div className={`flex items-center space-x-2 ${isMobile ? 'text-xs' : 'text-sm'}`}>
+              <div className={`${isMobile ? 'w-6 h-6' : 'w-10 h-10'} rounded-full overflow-hidden bg-gradient-to-br ${avatarGradient} flex items-center justify-center font-bold text-white`}>
                 {formData.profilePictureUrl ? (
                   <img 
                     src={formData.profilePictureUrl} 
@@ -389,7 +393,7 @@ const SubmitReview = () => {
                 )}
               </div>
               <div className="flex items-center space-x-1.5 group">
-                <svg className="w-4 h-4 text-white/80 group-hover:text-blue-300" fill="currentColor" viewBox="0 0 24 24">
+                <svg className={`${isMobile ? 'w-3 h-3' : 'w-4 h-4'} text-white/80 group-hover:text-blue-300`} fill="currentColor" viewBox="0 0 24 24">
                   <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.85s-.011 3.585-.069 4.85c-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.85-.07-3.252-.148-4.771-1.691-4.919-4.919-.058-1.265-.069-1.645-.069-4.85s.011-3.585.069-4.85c.149-3.225 1.664-4.771 4.919-4.919 1.266-.057 1.644-.07 4.85-.07zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948s-.014-3.667-.072-4.947c-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.689-.073-4.948-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.162 6.162 6.162 6.162-2.759 6.162-6.162-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4s1.791-4 4-4 4 1.79 4 4-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44 1.441-.645 1.441-1.44-.645-1.44-1.441-1.44z"/>
                 </svg>
                 <span className="font-medium text-white group-hover:text-blue-300 transition-colors">
@@ -409,13 +413,18 @@ const SubmitReview = () => {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-8">
           {/* Form Section */}
           <div className="space-y-4">
-            {/* Mobile Preview - Only on Mobile */}
-            <div className="lg:hidden">
-              <Card>
-                <CardContent className="p-4">
-                  <h3 className="text-lg font-semibold mb-3">Preview</h3>
+            {/* Mobile Preview - Enhanced */}
+            <div className="lg:hidden mb-6">
+              <Card className="bg-gradient-to-br from-slate-50 to-white border-2">
+                <CardContent className="p-6">
+                  <div className="text-center mb-4">
+                    <h3 className="text-xl font-bold bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">
+                      Live Preview
+                    </h3>
+                    <p className="text-sm text-muted-foreground">See how your review will look</p>
+                  </div>
                   <div className="flex justify-center">
-                    <ReviewCard />
+                    <ReviewCard isMobile={true} />
                   </div>
                 </CardContent>
               </Card>
@@ -540,13 +549,15 @@ const SubmitReview = () => {
                       </div>
                       
                       {formData.email && formData.instagramHandle && formData.profilePictureUrl && (
-                        <Button 
-                          type="button"
-                          onClick={nextStep}
-                          className="w-full mt-4"
-                        >
-                          Next: Rate Your Experience
-                        </Button>
+                        <div className="pt-4 border-t">
+                          <Button 
+                            type="button"
+                            onClick={nextStep}
+                            className="w-full h-11 text-base font-medium"
+                          >
+                            Continue to Rating →
+                          </Button>
+                        </div>
                       )}
                     </CollapsibleContent>
                   </Collapsible>
@@ -585,22 +596,24 @@ const SubmitReview = () => {
                       </div>
                       
                       {formData.rating > 0 && (
-                        <div className="flex gap-2">
-                          <Button 
-                            type="button"
-                            variant="outline"
-                            onClick={prevStep}
-                            className="flex-1"
-                          >
-                            Back
-                          </Button>
-                          <Button 
-                            type="button"
-                            onClick={nextStep}
-                            className="flex-1"
-                          >
-                            Next: Add Media
-                          </Button>
+                        <div className="pt-4 border-t">
+                          <div className="grid grid-cols-2 gap-3">
+                            <Button 
+                              type="button"
+                              variant="outline"
+                              onClick={prevStep}
+                              className="h-11"
+                            >
+                              ← Back
+                            </Button>
+                            <Button 
+                              type="button"
+                              onClick={nextStep}
+                              className="h-11"
+                            >
+                              Continue →
+                            </Button>
+                          </div>
                         </div>
                       )}
                     </CollapsibleContent>
@@ -610,7 +623,7 @@ const SubmitReview = () => {
                   <Collapsible open={expandedSections.media} onOpenChange={() => toggleSection('media')}>
                     <CollapsibleTrigger asChild>
                       <Button variant="ghost" className="w-full justify-between p-0 h-auto text-base md:text-lg font-semibold hover:bg-transparent">
-                        <span>Add Media (Optional)</span>
+                        <span>Add Media *</span>
                         <ChevronDown className={`w-4 h-4 transition-transform ${expandedSections.media ? 'rotate-180' : ''}`} />
                       </Button>
                     </CollapsibleTrigger>
@@ -703,22 +716,25 @@ const SubmitReview = () => {
                         </Button>
                       </div>
                       
-                      <div className="flex gap-2">
-                        <Button 
-                          type="button"
-                          variant="outline"
-                          onClick={prevStep}
-                          className="flex-1"
-                        >
-                          Back
-                        </Button>
-                        <Button 
-                          type="button"
-                          onClick={nextStep}
-                          className="flex-1"
-                        >
-                          Next: Write Review
-                        </Button>
+                      <div className="pt-4 border-t">
+                        <div className="grid grid-cols-2 gap-3">
+                          <Button 
+                            type="button"
+                            variant="outline"
+                            onClick={prevStep}
+                            className="h-11"
+                          >
+                            ← Back
+                          </Button>
+                          <Button 
+                            type="button"
+                            onClick={nextStep}
+                            className="h-11"
+                            disabled={!formData.mediaUrl}
+                          >
+                            Continue →
+                          </Button>
+                        </div>
                       </div>
                     </CollapsibleContent>
                   </Collapsible>
@@ -747,22 +763,24 @@ const SubmitReview = () => {
                         />
                       </div>
                       
-                      <div className="flex gap-2">
-                        <Button 
-                          type="button"
-                          variant="outline"
-                          onClick={prevStep}
-                          className="flex-1"
-                        >
-                          Back
-                        </Button>
-                        <Button 
-                          type="submit" 
-                          className="flex-1" 
-                          disabled={isSubmitting || !formData.description}
-                        >
-                          {isSubmitting ? 'Submitting...' : 'Submit Review'}
-                        </Button>
+                      <div className="pt-4 border-t">
+                        <div className="grid grid-cols-2 gap-3">
+                          <Button 
+                            type="button"
+                            variant="outline"
+                            onClick={prevStep}
+                            className="h-11"
+                          >
+                            ← Back
+                          </Button>
+                          <Button 
+                            type="submit" 
+                            className="h-11" 
+                            disabled={isSubmitting || !formData.description}
+                          >
+                            {isSubmitting ? 'Submitting...' : 'Submit Review ✓'}
+                          </Button>
+                        </div>
                       </div>
                     </CollapsibleContent>
                   </Collapsible>
@@ -771,14 +789,19 @@ const SubmitReview = () => {
             </Card>
           </div>
 
-          {/* Desktop Preview - Only on Desktop */}
+          {/* Desktop Preview - Enhanced */}
           <div className="hidden lg:block">
             <div className="sticky top-8">
-              <Card>
-                <CardContent className="p-6">
-                  <h3 className="text-xl font-semibold mb-4 text-center">Live Preview</h3>
+              <Card className="bg-gradient-to-br from-slate-50 to-white border-2 shadow-lg">
+                <CardContent className="p-8">
+                  <div className="text-center mb-6">
+                    <h3 className="text-2xl font-bold bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent mb-2">
+                      Live Preview
+                    </h3>
+                    <p className="text-muted-foreground">See how your review will look to others</p>
+                  </div>
                   <div className="flex justify-center">
-                    <ReviewCard />
+                    <ReviewCard isMobile={false} />
                   </div>
                 </CardContent>
               </Card>
