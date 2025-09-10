@@ -85,14 +85,17 @@ export const ContactManager: React.FC = () => {
     return <div className="p-6">Please log in to view contacts.</div>;
   }
 
+  // Load initial data when user is authenticated
   useEffect(() => {
-    loadContacts();
-    loadProducts();
-    loadEmailLists();
-    loadAllContactProducts();
-    loadAllContactLists();
-    loadAllTags();
-  }, []);
+    if (user?.id) {
+      loadContacts();
+      loadProducts();
+      loadEmailLists();
+      loadAllContactProducts();
+      loadAllContactLists();
+      loadAllTags();
+    }
+  }, [user?.id]); // Re-run when user.id changes
 
   const loadContacts = async () => {
     try {
