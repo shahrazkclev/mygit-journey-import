@@ -47,6 +47,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           // Defer Supabase calls with setTimeout to avoid deadlocks
           setTimeout(async () => {
             try {
+              console.log('🔍 Fetching profile for user:', session.user.id);
               // Fetch user profile for role information
               const { data: profile } = await supabase
                 .from('profiles')
@@ -54,12 +55,17 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
                 .eq('id', session.user.id)
                 .single();
               
-              setUser({
+              console.log('👤 Profile data:', profile);
+              
+              const authUser = {
                 id: session.user.id,
                 email: session.user.email || '',
                 authenticated: true,
                 role: profile?.role || 'user'
-              });
+              };
+              
+              console.log('✅ Setting auth user:', authUser);
+              setUser(authUser);
 
               // If this is cgdora4@gmail.com and we have existing demo data, migrate it
               if (session.user.email === 'cgdora4@gmail.com' && event === 'SIGNED_IN') {

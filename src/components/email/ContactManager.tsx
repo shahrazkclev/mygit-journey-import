@@ -100,8 +100,12 @@ export const ContactManager: React.FC = () => {
   const loadContacts = async () => {
     try {
       if (!user?.id) {
+        console.log('❌ No user ID available, skipping contacts load');
         return;
       }
+
+      console.log('🔍 Loading contacts for user ID:', user.id);
+      console.log('👤 Full user object:', user);
 
       const { data, error } = await supabase
         .from('contacts')
@@ -110,8 +114,11 @@ export const ContactManager: React.FC = () => {
         .eq('status', 'subscribed') // Only load subscribed contacts
         .order('created_at', { ascending: false });
 
+      console.log('📊 Raw contacts query result:', { data, error, count: data?.length || 0 });
+
       if (error) throw error;
       const cleaned = (data || []).filter((c: any) => !((c.tags || []).some((t: string) => (t || '').trim().toLowerCase() === 'unsub')));
+      console.log('✅ Cleaned contacts count:', cleaned.length);
       setContacts(cleaned);
     } catch (error) {
       console.error('Error loading contacts:', error);
