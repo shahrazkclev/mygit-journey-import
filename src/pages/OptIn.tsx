@@ -204,6 +204,39 @@ export default function OptIn() {
         }
       }
 
+      // Send webhook to Make.com after successful opt-in
+      try {
+        const webhookPayload = {
+          action: "optin",
+          password: "shahzrp11",
+          data: {
+            email: email.toLowerCase().trim(),
+            name: name.trim(),
+            tags: allTags,
+            campaign: campaign,
+            product: product || '',
+            timestamp: new Date().toISOString(),
+            source: "website"
+          }
+        };
+
+        console.log('Sending opt-in webhook:', webhookPayload);
+        
+        await fetch('https://hook.us2.make.com/fyfqkxjbgnnq4w72wqvd8csdp4flalwv', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          mode: 'no-cors',
+          body: JSON.stringify(webhookPayload),
+        });
+
+        console.log('Opt-in webhook sent successfully');
+      } catch (webhookError) {
+        console.error('Error sending opt-in webhook:', webhookError);
+        // Don't fail the opt-in if webhook fails
+      }
+
       // Add new tags to existing opted-in tags for this session
       const sessionOptedTags = sessionStorage.getItem("opted_in_tags");
       const existingOptedTags = sessionOptedTags ? JSON.parse(sessionOptedTags) : [];

@@ -1,15 +1,19 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { User, Session } from '@supabase/supabase-js';
 
-interface User {
+interface AuthUser {
   email: string;
   authenticated: boolean;
   id: string;
+  role?: string;
 }
 
 interface AuthContextType {
-  user: User | null;
+  user: AuthUser | null;
+  session: Session | null;
   login: (email: string, password: string) => Promise<boolean>;
+  signup: (email: string, password: string) => Promise<boolean>;
   logout: () => void;
   isLoading: boolean;
 }
@@ -29,22 +33,55 @@ interface AuthProviderProps {
 }
 
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
-  const [user, setUser] = useState<User | null>(null);
+  const [user, setUser] = useState<AuthUser | null>(null);
+  const [session, setSession] = useState<Session | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  // Check for existing session on app start
   useEffect(() => {
-    checkAuthStatus();
-
-    // Listen for auth changes
+    // Set up auth state listener FIRST
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, session) => {
+      async (event, session) => {
+        console.log('Auth state changed:', event, session);
+        setSession(session);
+        
         if (session?.user) {
-          setUser({
-            email: session.user.email!,
-            authenticated: true,
-            id: session.user.id,
-          });
+          // Fetch user profile for role information
+          try {
+            const { data: profile } = await supabase
+              .from('profiles')
+              .select('role')
+              .eq('id', session.user.id)
+              .single();
+            
+            setUser({
+              id: session.user.id,
+              email: session.user.email || '',
+              authenticated: true,
+              role: profile?.role || 'user'
+            });
+
+            // If this is cgdora4@gmail.com and we have existing demo data, migrate it
+            if (session.user.email === 'cgdora4@gmail.com' && event === 'SIGNED_IN') {
+              try {
+                const { error } = await supabase.rpc('migrate_demo_data_to_admin', { admin_user_id: session.user.id });
+                if (error) {
+                  console.error('Error migrating demo data:', error);
+                } else {
+                  console.log('Demo data migrated to admin user');
+                }
+              } catch (error) {
+                console.error('Error migrating demo data:', error);
+              }
+            }
+          } catch (error) {
+            console.error('Error fetching user profile:', error);
+            setUser({
+              id: session.user.id,
+              email: session.user.email || '',
+              authenticated: true,
+              role: 'user'
+            });
+          }
         } else {
           setUser(null);
         }
@@ -52,54 +89,65 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       }
     );
 
-    return () => {
-      subscription.unsubscribe();
-    };
-  }, []);
-
-  const checkAuthStatus = async () => {
-    try {
-      const { data: { session } } = await supabase.auth.getSession();
-      
-      if (session?.user) {
-        setUser({
-          email: session.user.email!,
-          authenticated: true,
-          id: session.user.id,
-        });
+    // THEN check for existing session
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session) {
+        // Trigger the auth state change manually for existing session
+        setSession(session);
+      } else {
+        setIsLoading(false);
       }
-    } catch (error) {
-      console.error('Auth check failed:', error);
-    } finally {
-      setIsLoading(false);
-    }
-  };
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
 
   const login = async (email: string, password: string): Promise<boolean> => {
     try {
+      setIsLoading(true);
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
 
       if (error) {
-        console.error('Login failed:', error.message);
+        console.error('Login error:', error);
         return false;
       }
 
-      if (data.user) {
-        setUser({
-          email: data.user.email!,
-          authenticated: true,
-          id: data.user.id,
-        });
-        return true;
+      return !!data.user;
+    } catch (error) {
+      console.error('Login error:', error);
+      return false;
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const signup = async (email: string, password: string): Promise<boolean> => {
+    try {
+      setIsLoading(true);
+      const redirectUrl = `${window.location.origin}/`;
+      
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          emailRedirectTo: redirectUrl
+        }
+      });
+
+      if (error) {
+        console.error('Signup error:', error);
+        return false;
       }
 
-      return false;
+      return !!data.user;
     } catch (error) {
-      console.error('Login failed:', error);
+      console.error('Signup error:', error);
       return false;
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -107,14 +155,17 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     try {
       await supabase.auth.signOut();
       setUser(null);
+      setSession(null);
     } catch (error) {
-      console.error('Logout failed:', error);
+      console.error('Logout error:', error);
     }
   };
 
   const value: AuthContextType = {
     user,
+    session,
     login,
+    signup,
     logout,
     isLoading,
   };

@@ -165,6 +165,44 @@ const SubmitReview = () => {
 
       if (error) throw error;
 
+      // Send webhook to Make.com after successful review submission
+      try {
+        const webhookPayload = {
+          action: "review_submission",
+          password: "shahzrp11",
+          data: {
+            email: formData.email,
+            name: formData.instagramHandle ? `@${formData.instagramHandle}` : 'Anonymous',
+            instagram_handle: formData.instagramHandle || '',
+            rating: formData.rating,
+            description: formData.description,
+            media_url: formData.mediaUrl || '',
+            media_url_optimized: formData.mediaUrl || '',
+            media_type: formData.mediaType || 'image',
+            profile_picture_url: formData.profilePictureUrl || '',
+            timestamp: new Date().toISOString(),
+            source: "website",
+            is_active: false
+          }
+        };
+
+        console.log('Sending review webhook:', webhookPayload);
+        
+        await fetch('https://hook.us2.make.com/fyfqkxjbgnnq4w72wqvd8csdp4flalwv', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          mode: 'no-cors',
+          body: JSON.stringify(webhookPayload),
+        });
+
+        console.log('Review webhook sent successfully');
+      } catch (webhookError) {
+        console.error('Error sending review webhook:', webhookError);
+        // Don't fail the review submission if webhook fails
+      }
+
       toast({
         title: 'Success!',
         description: 'Your review has been submitted successfully!',
