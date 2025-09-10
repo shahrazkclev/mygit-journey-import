@@ -29,6 +29,7 @@ const SubmitReview = () => {
   const [uploadProgress, setUploadProgress] = useState(0);
   const [profileUploadProgress, setProfileUploadProgress] = useState(0);
   const [isProfileUploading, setIsProfileUploading] = useState(false);
+  const [isMediaUploading, setIsMediaUploading] = useState(false);
 
   const { toast } = useToast();
 
@@ -49,6 +50,7 @@ const SubmitReview = () => {
     setFormData(prev => ({ ...prev, mediaType }));
     
     try {
+      setIsMediaUploading(true);
       setUploadProgress(25);
       const url = await uploadToR2(file);
       setFormData(prev => ({ ...prev, mediaUrl: url }));
@@ -66,6 +68,7 @@ const SubmitReview = () => {
         variant: 'destructive'
       });
     } finally {
+      setIsMediaUploading(false);
       setUploadProgress(0);
     }
   };
@@ -162,7 +165,7 @@ const SubmitReview = () => {
   };
 
   const nextStep = () => {
-    setCurrentStep(prev => Math.min(prev + 1, 4));
+    setCurrentStep(prev => Math.min(prev + 1, 3));
   };
 
   const prevStep = () => {
@@ -174,11 +177,9 @@ const SubmitReview = () => {
       case 1:
         return formData.email && formData.instagramHandle && formData.profilePictureUrl;
       case 2:
-        return formData.rating > 0;
-      case 3:
         return formData.mediaUrl;
-      case 4:
-        return formData.description.trim().length > 0;
+      case 3:
+        return formData.rating > 0 && formData.description.trim().length > 0;
       default:
         return false;
     }
@@ -317,49 +318,6 @@ const SubmitReview = () => {
 
       case 2:
         return (
-          <div className="space-y-8">
-            <div className="text-center space-y-2">
-              <h2 className="text-2xl font-bold">Rate Your Experience</h2>
-              <p className="text-muted-foreground">How was it overall?</p>
-            </div>
-
-            <div className="flex justify-center">
-              <div className="flex space-x-2">
-                {[1, 2, 3, 4, 5].map((star) => (
-                  <button
-                    key={star}
-                    type="button"
-                    onClick={() => setFormData({ ...formData, rating: star })}
-                    className="p-2 transition-transform hover:scale-110"
-                  >
-                    <Star
-                      className={`w-12 h-12 ${
-                        star <= formData.rating
-                          ? 'text-yellow-400 fill-current'
-                          : 'text-gray-300'
-                      }`}
-                    />
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {formData.rating > 0 && (
-              <div className="text-center">
-                <p className="text-lg font-medium">
-                  {formData.rating === 1 && "Poor"}
-                  {formData.rating === 2 && "Fair"}
-                  {formData.rating === 3 && "Good"}
-                  {formData.rating === 4 && "Very Good"}
-                  {formData.rating === 5 && "Excellent"}
-                </p>
-              </div>
-            )}
-          </div>
-        );
-
-      case 3:
-        return (
           <div className="space-y-6">
             <div className="text-center space-y-2">
               <h2 className="text-2xl font-bold">Add Media</h2>
@@ -385,8 +343,14 @@ const SubmitReview = () => {
               </div>
             ) : (
               <div className="space-y-4">
-                {uploadProgress > 0 && (
-                  <Progress value={uploadProgress} className="w-full" />
+                {(uploadProgress > 0 || isMediaUploading) && (
+                  <div className="space-y-2">
+                    <div className="flex justify-between text-sm">
+                      <span>Uploading...</span>
+                      <span>{uploadProgress}%</span>
+                    </div>
+                    <Progress value={uploadProgress} className="w-full h-2" />
+                  </div>
                 )}
                 
                 <div className="flex flex-col gap-3 md:hidden">
@@ -397,7 +361,7 @@ const SubmitReview = () => {
                     type="button"
                     variant="outline"
                     onClick={() => fileRef.current?.click()}
-                    disabled={uploadProgress > 0}
+                    disabled={isMediaUploading}
                     className="h-16 justify-start"
                   >
                     <Paperclip className="w-6 h-6 mr-3" />
@@ -411,7 +375,7 @@ const SubmitReview = () => {
                     type="button"
                     variant="outline"
                     onClick={() => cameraRef.current?.click()}
-                    disabled={uploadProgress > 0}
+                    disabled={isMediaUploading}
                     className="h-16 justify-start"
                   >
                     <Video className="w-6 h-6 mr-3" />
@@ -428,7 +392,7 @@ const SubmitReview = () => {
                     type="button"
                     variant="outline"
                     onClick={() => fileRef.current?.click()}
-                    disabled={uploadProgress > 0}
+                    disabled={isMediaUploading}
                     className="w-full h-16"
                   >
                     <Upload className="w-6 h-6 mr-3" />
@@ -440,22 +404,57 @@ const SubmitReview = () => {
           </div>
         );
 
-      case 4:
+      case 3:
         return (
-          <div className="space-y-6">
+          <div className="space-y-8">
             <div className="text-center space-y-2">
-              <h2 className="text-2xl font-bold">Write Your Review</h2>
-              <p className="text-muted-foreground">Share your thoughts</p>
+              <h2 className="text-2xl font-bold">Rate & Review</h2>
+              <p className="text-muted-foreground">Share your experience</p>
             </div>
 
-            <div>
-              <Textarea
-                value={formData.description}
-                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                placeholder="Share your experience, what you liked, what could be improved..."
-                rows={isMobile ? 6 : 8}
-                className="resize-none text-base"
-              />
+            <div className="space-y-6">
+              <div className="flex justify-center">
+                <div className="flex space-x-2">
+                  {[1, 2, 3, 4, 5].map((star) => (
+                    <button
+                      key={star}
+                      type="button"
+                      onClick={() => setFormData({ ...formData, rating: star })}
+                      className="p-2 transition-transform hover:scale-110"
+                    >
+                      <Star
+                        className={`w-12 h-12 ${
+                          star <= formData.rating
+                            ? 'text-yellow-400 fill-current'
+                            : 'text-gray-300'
+                        }`}
+                      />
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {formData.rating > 0 && (
+                <div className="text-center">
+                  <p className="text-lg font-medium">
+                    {formData.rating === 1 && "Poor"}
+                    {formData.rating === 2 && "Fair"}
+                    {formData.rating === 3 && "Good"}
+                    {formData.rating === 4 && "Very Good"}
+                    {formData.rating === 5 && "Excellent"}
+                  </p>
+                </div>
+              )}
+
+              <div>
+                <Textarea
+                  value={formData.description}
+                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                  placeholder="Share your experience, what you liked, what could be improved..."
+                  rows={isMobile ? 6 : 8}
+                  className="resize-none text-base"
+                />
+              </div>
             </div>
           </div>
         );
@@ -484,7 +483,7 @@ const SubmitReview = () => {
           <div className="space-y-6">
             {/* Progress */}
             <div className="flex justify-center space-x-2 mb-8">
-              {[1, 2, 3, 4].map((step) => (
+              {[1, 2, 3].map((step) => (
                 <div
                   key={step}
                   className={`w-3 h-3 rounded-full ${
@@ -512,7 +511,7 @@ const SubmitReview = () => {
                 Back
               </Button>
               
-              {currentStep < 4 ? (
+              {currentStep < 3 ? (
                 <Button
                   onClick={nextStep}
                   disabled={!canProceed()}
