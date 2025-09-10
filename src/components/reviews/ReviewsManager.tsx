@@ -238,8 +238,15 @@ export const ReviewsManager = () => {
         description: "Review updated successfully",
       });
       
-      fetchReviews(activeTab === 'pending' ? false : activeTab === 'published' ? true : undefined);
-      fetchStats();
+      // Update local state immediately for instant UI feedback
+      setReviews(prevReviews => 
+        prevReviews.map(review => 
+          review.id === reviewId 
+            ? { ...review, ...filteredUpdates }
+            : review
+        )
+      );
+      
     } catch (error) {
       console.error('Error updating review:', error);
       toast({
@@ -332,9 +339,15 @@ export const ReviewsManager = () => {
     try {
       console.log('Saving review with data:', editingReview);
       await updateReview(selectedReview.id, editingReview);
+      
+      // Close dialog and reset state
       setEditDialogOpen(false);
       setSelectedReview(null);
       setEditingReview({});
+      
+      // Force a fresh fetch of reviews to ensure UI updates
+      await fetchReviews(activeTab === 'pending' ? false : activeTab === 'published' ? true : undefined);
+      
     } catch (error) {
       console.error('Error in handleEditSave:', error);
       // Don't close dialog on error so user can try again
