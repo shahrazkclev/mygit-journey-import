@@ -11,6 +11,7 @@ import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from '@/contexts/AuthContext';
 import { 
   Star, 
   Settings, 
@@ -80,6 +81,7 @@ interface ReviewStats {
 }
 
 export const ReviewsManager = () => {
+  const { user } = useAuth();
   const [activeTab, setActiveTab] = useState("pending");
   const [reviews, setReviews] = useState<ReviewWithCustomer[]>([]);
   const [customers, setCustomers] = useState<Customer[]>([]);
@@ -106,7 +108,7 @@ export const ReviewsManager = () => {
   const { toast } = useToast();
 
   // Demo user ID for contacts
-  const DEMO_USER_ID = "550e8400-e29b-41d4-a716-446655440000";
+  // Remove the hardcoded DEMO_USER_ID line since we're using auth now
 
   // Fetch customers for cross-reference
   const fetchCustomers = async () => {
@@ -114,7 +116,7 @@ export const ReviewsManager = () => {
       const { data, error } = await supabase
         .from('contacts')
         .select('id, email, first_name, last_name, status, tags, created_at, updated_at')
-        .eq('user_id', DEMO_USER_ID)
+        .eq('user_id', user.id)
         .eq('status', 'subscribed');
 
       if (error) throw error;
@@ -360,7 +362,7 @@ export const ReviewsManager = () => {
       const { data, error } = await supabase
         .from('contacts')
         .insert({
-          user_id: DEMO_USER_ID,
+          user_id: user.id,
           email: review.user_email,
           first_name: review.user_name?.split(' ')[0] || null,
           last_name: review.user_name?.split(' ').slice(1).join(' ') || null,

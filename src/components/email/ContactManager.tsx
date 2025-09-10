@@ -11,7 +11,7 @@ import { TagInput } from '@/components/ui/tag-input';
 import { Plus, Edit, Trash2, ShoppingCart, User, Users, Tag } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
-import { DEMO_USER_ID } from '@/lib/demo-auth';
+import { useAuth } from '@/contexts/AuthContext';
 import { EditContactDialog } from './EditContactDialog';
 
 interface Contact {
@@ -57,6 +57,7 @@ interface ContactList {
 }
 
 export const ContactManager: React.FC = () => {
+  const { user } = useAuth();
   const [contacts, setContacts] = useState<Contact[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
   const [emailLists, setEmailLists] = useState<EmailList[]>([]);
@@ -79,6 +80,11 @@ export const ContactManager: React.FC = () => {
   const [filterByPurchase, setFilterByPurchase] = useState<'all' | 'purchased' | 'not_purchased'>('all');
   const [bulkListId, setBulkListId] = useState<string>('');
 
+  // Don't load data if user is not authenticated
+  if (!user) {
+    return <div className="p-6">Please log in to view contacts.</div>;
+  }
+
   useEffect(() => {
     loadContacts();
     loadProducts();
@@ -94,7 +100,7 @@ export const ContactManager: React.FC = () => {
       const { data, error } = await supabase
         .from('contacts')
         .select('*')
-        .eq('user_id', DEMO_USER_ID)
+        .eq('user_id', user.id)
         .eq('status', 'subscribed') // Only load subscribed contacts
         .order('created_at', { ascending: false });
 
@@ -112,7 +118,7 @@ export const ContactManager: React.FC = () => {
       const { data, error } = await supabase
         .from('products')
         .select('*')
-        .eq('user_id', DEMO_USER_ID)
+        .eq('user_id', user.id)
         .order('name');
 
       if (error) throw error;
@@ -127,7 +133,7 @@ export const ContactManager: React.FC = () => {
       const { data, error } = await supabase
         .from('email_lists')
         .select('*')
-        .eq('user_id', DEMO_USER_ID)
+        .eq('user_id', user.id)
         .order('name');
 
       if (error) throw error;
@@ -177,7 +183,7 @@ export const ContactManager: React.FC = () => {
       const { data: contacts, error: contactsError } = await supabase
         .from('contacts')
         .select('tags')
-        .eq('user_id', DEMO_USER_ID);
+        .eq('user_id', user.id);
 
       if (contactsError) throw contactsError;
 
@@ -185,7 +191,7 @@ export const ContactManager: React.FC = () => {
       const { data: tagRules, error: rulesError } = await supabase
         .from('tag_rules')
         .select('trigger_tags, add_tags, remove_tags')
-        .eq('user_id', DEMO_USER_ID);
+        .eq('user_id', user.id);
 
       if (rulesError) throw rulesError;
 
@@ -272,7 +278,7 @@ export const ContactManager: React.FC = () => {
       const { data, error } = await supabase
         .from('contacts')
         .insert([{
-          user_id: DEMO_USER_ID,
+          user_id: user.id,
           email: newContact.email,
           first_name: newContact.first_name || null,
           last_name: newContact.last_name || null,

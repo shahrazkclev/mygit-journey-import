@@ -8,7 +8,9 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { useToast } from "@/hooks/use-toast";
 import { CheckCircle } from "lucide-react";
 
-const DEMO_USER_ID = "550e8400-e29b-41d4-a716-446655440000";
+// For opt-in page, we still use the admin user ID directly since this is a public page
+// but we need to map it to the real admin user
+const ADMIN_USER_ID = "3e01343e-9ad5-452e-95ac-d16c58c6cae2";
 
 export default function OptIn() {
   const [searchParams] = useSearchParams();
@@ -62,7 +64,7 @@ export default function OptIn() {
       const { data: tagRules, error } = await supabase
         .from('tag_rules')
         .select('add_tags, protected, password')
-        .eq('user_id', DEMO_USER_ID)
+        .eq('user_id', ADMIN_USER_ID)
         .eq('protected', true);
 
       if (error) throw error;
@@ -122,7 +124,7 @@ export default function OptIn() {
         const { data: tagRules, error } = await supabase
           .from('tag_rules')
           .select('add_tags, password')
-          .eq('user_id', DEMO_USER_ID)
+          .eq('user_id', ADMIN_USER_ID)
           .eq('protected', true);
 
         if (error) throw error;
@@ -167,7 +169,7 @@ export default function OptIn() {
       const { error } = await supabase
         .from('contacts')
         .insert({
-          user_id: DEMO_USER_ID,
+          user_id: ADMIN_USER_ID,
           email: email.toLowerCase().trim(),
           first_name: name.split(' ')[0],
           last_name: name.split(' ').slice(1).join(' ') || null,
@@ -183,7 +185,7 @@ export default function OptIn() {
             .from('contacts')
             .select('tags')
             .eq('email', email.toLowerCase().trim())
-            .eq('user_id', DEMO_USER_ID)
+            .eq('user_id', ADMIN_USER_ID)
             .single();
 
           const existingTags = existingContact?.tags || [];
@@ -196,7 +198,7 @@ export default function OptIn() {
               status: 'subscribed'
             })
             .eq('email', email.toLowerCase().trim())
-            .eq('user_id', DEMO_USER_ID);
+            .eq('user_id', ADMIN_USER_ID);
 
           if (updateError) throw updateError;
         } else {
