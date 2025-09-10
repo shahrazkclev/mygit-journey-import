@@ -105,13 +105,12 @@ export const ContactManager: React.FC = () => {
       }
 
       console.log('🔍 Loading contacts for user ID:', user.id);
-      console.log('👤 Full user object:', user);
 
       const { data, error } = await supabase
         .from('contacts')
         .select('*')
         .eq('user_id', user.id)
-        .eq('status', 'subscribed') // Only load subscribed contacts
+        .eq('status', 'subscribed')
         .order('created_at', { ascending: false });
 
       console.log('📊 Raw contacts query result:', { data, error, count: data?.length || 0 });
