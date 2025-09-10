@@ -1,32 +1,26 @@
-import React, { useState, useRef } from 'react';
+import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { useToast } from '@/hooks/use-toast';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 interface VideoCompressorProps {
-  videoUrl: string;
+  videoFile: File;
   onCompressed: (compressedBlob: Blob, originalSize: number, compressedSize: number) => void;
   onCancel: () => void;
-  targetResolution: string;
-  maxFileSizeMB: number;
-  quality: number;
-  compressionPreset: string;
 }
 
 export const VideoCompressor: React.FC<VideoCompressorProps> = ({
-  videoUrl,
+  videoFile,
   onCompressed,
   onCancel,
-  targetResolution,
-  maxFileSizeMB,
-  quality,
-  compressionPreset
 }) => {
   const [isCompressing, setIsCompressing] = useState(false);
   const [progress, setProgress] = useState(0);
   const [status, setStatus] = useState('');
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-  const videoRef = useRef<HTMLVideoElement>(null);
+  const [targetResolution, setTargetResolution] = useState('1280x720');
+  const [quality, setQuality] = useState(0.7);
+  const [compressionPreset, setCompressionPreset] = useState('balanced');
   const { toast } = useToast();
 
   const compressVideo = async () => {
@@ -35,18 +29,13 @@ export const VideoCompressor: React.FC<VideoCompressorProps> = ({
       setProgress(0);
       setStatus('Loading video...');
       
-      console.log(`Starting compression with preset: ${compressionPreset}, quality: ${quality}, resolution: ${targetResolution}, maxSize: ${maxFileSizeMB}MB`);
-      
-      // Check for any worker-related errors
-      if (typeof Worker === 'undefined') {
-        console.warn('Web Workers not supported in this environment');
-      }
+      console.log(`Starting compression with preset: ${compressionPreset}, quality: ${quality}, resolution: ${targetResolution}`);
 
-      // Create video element
+      // Create video element from file
       const video = document.createElement('video');
-      video.crossOrigin = 'anonymous';
+      const videoUrl = URL.createObjectURL(videoFile);
       video.src = videoUrl;
-      video.muted = true; // Mute to avoid audio issues
+      video.muted = true;
       
       await new Promise((resolve, reject) => {
         video.onloadedmetadata = resolve;
@@ -79,16 +68,13 @@ export const VideoCompressor: React.FC<VideoCompressorProps> = ({
       canvas.height = newHeight;
       const ctx = canvas.getContext('2d')!;
 
-      // Calculate target bitrate based on file size and duration
-      const targetBitrate = (maxFileSizeMB * 8 * 1024) / video.duration; // kbps
-      
-      // Apply compression preset to quality and bitrate
-      let adjustedQuality = quality;
+      // Calculate target bitrate based on quality and preset
       let bitrateMultiplier = 1.0;
+      let adjustedQuality = quality;
       
       switch (compressionPreset) {
         case 'ultra':
-          adjustedQuality = quality * 0.5; // More aggressive compression
+          adjustedQuality = quality * 0.5;
           bitrateMultiplier = 0.3;
           break;
         case 'aggressive':
@@ -108,9 +94,10 @@ export const VideoCompressor: React.FC<VideoCompressorProps> = ({
           bitrateMultiplier = 0.5;
       }
       
-      // Map quality to video bitrate with preset adjustments
-      const videoBitrate = Math.max(100, targetBitrate * adjustedQuality * bitrateMultiplier * 0.8); // Minimum 100kbps
-      const audioBitrate = Math.max(32, targetBitrate * adjustedQuality * bitrateMultiplier * 0.2); // Minimum 32kbps
+      // Calculate bitrates based on resolution and quality
+      const baseBitrate = (newWidth * newHeight * 24 * adjustedQuality) / 1000; // Base calculation
+      const videoBitrate = Math.max(100, baseBitrate * bitrateMultiplier * 0.8);
+      const audioBitrate = Math.max(32, baseBitrate * bitrateMultiplier * 0.2);
 
       console.log(`Compression settings: ${compressionPreset} preset, ${newWidth}x${newHeight}, ${videoBitrate}kbps video, ${audioBitrate}kbps audio`);
 
@@ -154,19 +141,19 @@ export const VideoCompressor: React.FC<VideoCompressorProps> = ({
 
       mediaRecorder.onstop = () => {
         const compressedBlob = new Blob(chunks, { type: 'video/webm' });
-        // Estimate original size more accurately
-        const originalSize = video.duration * video.videoWidth * video.videoHeight * 4; // 4 bytes per pixel estimate
-        onCompressed(compressedBlob, originalSize, compressedBlob.size);
+        URL.revokeObjectURL(videoUrl); // Clean up
+        onCompressed(compressedBlob, videoFile.size, compressedBlob.size);
+        setIsCompressing(false);
       };
 
       // Start recording
-      mediaRecorder.start(1000); // Record in 1-second chunks for better performance
+      mediaRecorder.start(1000);
 
       setProgress(40);
       setStatus(`Processing frames on your PC using ${compressionPreset} preset...`);
 
-      // Process video frame by frame with better performance
-      const fps = 24; // Use 24 FPS for better compression
+      // Process video frame by frame
+      const fps = 24;
       const totalFrames = Math.floor(video.duration * fps);
       let currentFrame = 0;
 
@@ -195,7 +182,7 @@ export const VideoCompressor: React.FC<VideoCompressorProps> = ({
           
           currentFrame++;
           
-          // Use setTimeout for better performance on PC
+          // Use setTimeout for better performance
           setTimeout(processFrame, 10);
         };
       };
@@ -210,24 +197,83 @@ export const VideoCompressor: React.FC<VideoCompressorProps> = ({
       console.error('Compression error:', error);
       toast({
         title: "Compression failed",
-        description: `Failed to compress video: ${error.message}`,
+        description: `Failed to compress video: ${error instanceof Error ? error.message : 'Unknown error'}`,
         variant: "destructive"
       });
       setIsCompressing(false);
     }
   };
 
+  const formatFileSize = (bytes: number) => {
+    if (bytes === 0) return '0 Bytes';
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+  };
+
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 p-6 bg-card rounded-lg border">
       <div className="text-center">
         <h3 className="text-lg font-semibold">Video Compression</h3>
         <p className="text-sm text-muted-foreground">
-          Compressing video with <span className="font-medium text-primary">{compressionPreset}</span> preset
+          Optimize your video for faster uploads and better performance
         </p>
         <div className="text-xs text-muted-foreground mt-1">
-          Resolution: {targetResolution} | Max Size: {maxFileSizeMB}MB | Quality: {Math.round(quality * 100)}%
+          Original Size: {formatFileSize(videoFile.size)}
         </div>
       </div>
+
+      {!isCompressing && (
+        <div className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div>
+              <label className="text-sm font-medium mb-2 block">Resolution</label>
+              <Select value={targetResolution} onValueChange={setTargetResolution}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="1920x1080">1080p (1920x1080)</SelectItem>
+                  <SelectItem value="1280x720">720p (1280x720)</SelectItem>
+                  <SelectItem value="854x480">480p (854x480)</SelectItem>
+                  <SelectItem value="640x360">360p (640x360)</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div>
+              <label className="text-sm font-medium mb-2 block">Quality ({Math.round(quality * 100)}%)</label>
+              <Select value={quality.toString()} onValueChange={(value) => setQuality(parseFloat(value))}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="0.9">High (90%)</SelectItem>
+                  <SelectItem value="0.7">Medium (70%)</SelectItem>
+                  <SelectItem value="0.5">Low (50%)</SelectItem>
+                  <SelectItem value="0.3">Very Low (30%)</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div>
+              <label className="text-sm font-medium mb-2 block">Compression</label>
+              <Select value={compressionPreset} onValueChange={setCompressionPreset}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="light">Light</SelectItem>
+                  <SelectItem value="balanced">Balanced</SelectItem>
+                  <SelectItem value="aggressive">Aggressive</SelectItem>
+                  <SelectItem value="ultra">Ultra</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+        </div>
+      )}
 
       {isCompressing && (
         <div className="space-y-3">

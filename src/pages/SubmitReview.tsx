@@ -21,7 +21,7 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Progress } from '@/components/ui/progress';
+import { VideoCompressor } from '@/components/reviews/VideoCompressor';
 
 interface MediaFile {
   file: File;
@@ -62,17 +62,20 @@ const SubmitReview: React.FC = () => {
     profilePicture: null,
     profilePictureUrl: ''
   });
-  const [uploading, setUploading] = useState(false);
+  const [showCompressor, setShowCompressor] = useState(false);
+  const [videoFile, setVideoFile] = useState<File | null>(null);
+  const [isUploading, setIsUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const { toast } = useToast();
 
   const totalSteps = 2;
 
   // Upload to Cloudflare R2 via Worker
-  const uploadToR2 = async (file: File): Promise<string> => {
+  const uploadToR2 = async (file: File, isOptimized: boolean = false): Promise<string> => {
     try {
       const formData = new FormData();
       formData.append('file', file);
+      formData.append('isOptimized', isOptimized.toString());
       
       // Your Cloudflare Worker endpoint
       const workerUrl = 'https://r2-upload-proxy.cleverpoly-store.workers.dev';
@@ -116,24 +119,40 @@ const SubmitReview: React.FC = () => {
 
       const mediaType = file.type.startsWith('video/') ? 'video' : 'image';
 
-      if (file.type.startsWith('video/')) {
-        const video = document.createElement('video');
-        video.preload = 'metadata';
-        video.onloadedmetadata = () => {
-          if (video.duration > 30) {
-            toast({
-              title: "Video too long",
-              description: `${file.name} is too long. Please select videos shorter than 30 seconds`,
-              variant: "destructive"
-            });
-            return;
-          }
-          addMediaFile(file, mediaType);
-        };
-        video.src = URL.createObjectURL(file);
-      } else {
-        addMediaFile(file, mediaType);
-      }
+  const addMediaFile = (file: File, type: string) => {
+    const mediaFile: MediaFile = {
+      file,
+      type,
+      url: '',
+      localUrl: URL.createObjectURL(file),
+      id: `${Date.now()}-${Math.random().toString(36).substring(2)}`
+    };
+
+    setFormData(prev => ({
+      ...prev,
+      mediaFiles: [...prev.mediaFiles, mediaFile]
+    }));
+
+    // Upload immediately
+    uploadToR2(file, false).then(url => {
+      setFormData(prev => ({
+        ...prev,
+        mediaFiles: prev.mediaFiles.map(mf => 
+          mf.id === mediaFile.id ? { ...mf, url } : mf
+        )
+      }));
+    }).catch(error => {
+      toast({
+        title: "Upload failed",
+        description: `Failed to upload ${file.name}. Please try again.`,
+        variant: "destructive"
+      });
+    });
+  };
+
+  const canSubmit = () => {
+    return formData.rating > 0 && formData.description.trim() !== '' && formData.mediaFiles.length > 0;
+  };
     });
   };
 
@@ -152,7 +171,7 @@ const SubmitReview: React.FC = () => {
     }));
 
     // Upload immediately
-    uploadToR2(file).then(url => {
+    uploadToR2(file, false).then(url => {
       setFormData(prev => ({
         ...prev,
         mediaFiles: prev.mediaFiles.map(mf => 
@@ -208,11 +227,11 @@ const SubmitReview: React.FC = () => {
     }));
 
     // Show upload progress
-    setUploading(true);
+    setIsUploading(true);
     setUploadProgress(0);
 
     try {
-      const uploadedUrl = await uploadToR2(file);
+      const uploadedUrl = await uploadToR2(file, false);
       setFormData(prev => ({ 
         ...prev, 
         profilePictureUrl: uploadedUrl 
@@ -230,13 +249,13 @@ const SubmitReview: React.FC = () => {
       });
       // Keep local preview for user experience
     } finally {
-      setUploading(false);
+      setIsUploading(false);
       setUploadProgress(0);
     }
   };
 
   const handleSubmit = async () => {
-    setUploading(true);
+    setIsUploading(true);
     
     try {
       const reviewData = {
@@ -285,7 +304,7 @@ const SubmitReview: React.FC = () => {
         variant: "destructive"
       });
     } finally {
-      setUploading(false);
+      setIsUploading(false);
     }
   };
 
@@ -305,8 +324,83 @@ const SubmitReview: React.FC = () => {
     return formData.instagram.trim() !== '' && formData.profilePictureUrl !== '';
   };
 
-  const canSubmit = () => {
-    return formData.rating > 0 && formData.description.trim() !== '' && formData.mediaFiles.length > 0;
+  const handleVideoCompressed = async (compressedBlob: Blob, originalSize: number, compressedSize: number) => {
+    // Convert blob to file with _optimized suffix
+    const compressedFile = new File([compressedBlob], 'video_optimized.webm', {
+      type: 'video/webm'
+    });
+    
+    try {
+      const uploadedUrl = await uploadToR2(compressedFile, true); // Mark as optimized
+      
+      // Update the media file with the uploaded optimized URL
+      if (videoFile) {
+        const mediaFileId = formData.mediaFiles.find(mf => 
+          mf.localUrl === URL.createObjectURL(videoFile)
+        )?.id;
+        
+        if (mediaFileId) {
+          setFormData(prev => ({
+            ...prev,
+            mediaFiles: prev.mediaFiles.map(mf => 
+              mf.id === mediaFileId ? { ...mf, url: uploadedUrl } : mf
+            )
+          }));
+        }
+      }
+      
+      setShowCompressor(false);
+      setVideoFile(null);
+      
+      const compressionRatio = Math.round((1 - compressedSize / originalSize) * 100);
+      toast({
+        title: "Video optimized!",
+        description: `File size reduced by ${compressionRatio}% (${(originalSize / 1024 / 1024).toFixed(1)}MB → ${(compressedSize / 1024 / 1024).toFixed(1)}MB)`,
+      });
+    } catch (error) {
+      console.error('Failed to upload optimized video:', error);
+      toast({
+        title: "Upload failed",
+        description: "Failed to upload optimized video. Please try again.",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const handleSkipCompression = async () => {
+    if (videoFile) {
+      try {
+        const uploadedUrl = await uploadToR2(videoFile, false); // Upload original
+        
+        const mediaFileId = formData.mediaFiles.find(mf => 
+          mf.localUrl === URL.createObjectURL(videoFile)
+        )?.id;
+        
+        if (mediaFileId) {
+          setFormData(prev => ({
+            ...prev,
+            mediaFiles: prev.mediaFiles.map(mf => 
+              mf.id === mediaFileId ? { ...mf, url: uploadedUrl } : mf
+            )
+          }));
+        }
+        
+        setShowCompressor(false);
+        setVideoFile(null);
+        
+        toast({
+          title: "Video uploaded",
+          description: "Original video uploaded successfully",
+        });
+      } catch (error) {
+        console.error('Failed to upload original video:', error);
+        toast({
+          title: "Upload failed",
+          description: "Failed to upload video. Please try again.",
+          variant: "destructive"
+        });
+      }
+    }
   };
 
   // Generate preview review data
@@ -672,7 +766,7 @@ const SubmitReview: React.FC = () => {
           ) : (
             <Button
               onClick={handleSubmit}
-              disabled={!canSubmit() || uploading}
+              disabled={!canSubmit() || isUploading}
               className="flex items-center gap-2"
             >
               {uploading ? (
