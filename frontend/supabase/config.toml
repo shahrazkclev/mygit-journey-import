@@ -1,0 +1,5 @@
+
+project_id = "mixifcnokcmxarpzwfiy"
+
+[functions.sync-contacts]
+verify_jwt = false
