@@ -558,15 +558,6 @@ const SubmitReview = () => {
                   We appreciate you taking the time to share your experience with us.
                 </p>
               </div>
-              
-              <div className="pt-4">
-                <Button 
-                  onClick={() => window.location.reload()} 
-                  className="bg-green-600 hover:bg-green-700 text-white"
-                >
-                  Submit Another Review
-                </Button>
-              </div>
             </CardContent>
           </Card>
         </div>
