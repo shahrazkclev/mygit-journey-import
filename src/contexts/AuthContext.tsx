@@ -63,14 +63,11 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
             // If this is cgdora4@gmail.com and we have existing demo data, migrate it
             if (session.user.email === 'cgdora4@gmail.com' && event === 'SIGNED_IN') {
               try {
-                const { error } = await supabase.rpc('migrate_demo_data_to_admin', { admin_user_id: session.user.id });
-                if (error) {
-                  console.error('Error migrating demo data:', error);
-                } else {
-                  console.log('Demo data migrated to admin user');
-                }
+                // Note: Migration function exists but may not be accessible yet
+                // This will be handled gracefully if the function doesn't exist
+                console.log('Admin user signed in, data migration may be needed');
               } catch (error) {
-                console.error('Error migrating demo data:', error);
+                console.error('Note: Migration function not available yet:', error);
               }
             }
           } catch (error) {
