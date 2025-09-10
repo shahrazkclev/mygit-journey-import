@@ -19,13 +19,19 @@ import {
   ChevronDown,
   ChevronUp,
   User,
-  Eye
+  Eye,
+  Users,
+  Building
 } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Progress } from '@/components/ui/progress';
+import { Checkbox } from '@/components/ui/checkbox';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 interface MediaFile {
   file: File;
@@ -43,10 +49,34 @@ interface FormData {
   mediaFiles: MediaFile[];
   profilePicture: File | null;
   profilePictureUrl: string;
+<<<<<<< HEAD
   name: string;
   phone: string;
   certification: File | null;
   certificationUrl: string;
+=======
+  businessTitle: string;
+  businessDescription: string;
+  companyType: string;
+  employeeCount: string;
+  businessAddress: {
+    country: string;
+    addressLine1: string;
+    addressLine2: string;
+    city: string;
+    state: string;
+    zipcode: string;
+  };
+  billingAddress: {
+    country: string;
+    addressLine1: string;
+    addressLine2: string;
+    city: string;
+    state: string;
+    zipcode: string;
+  };
+  sameAsBusiness: boolean;
+>>>>>>> c46a53a465551e243e889e0e78173da3e22d1c1c
 }
 
 interface BrandTheme {
@@ -67,10 +97,34 @@ const SubmitReview: React.FC = () => {
     mediaFiles: [],
     profilePicture: null,
     profilePictureUrl: '',
+<<<<<<< HEAD
     name: '',
     phone: '',
     certification: null,
     certificationUrl: ''
+=======
+    businessTitle: '',
+    businessDescription: '',
+    companyType: 'llc',
+    employeeCount: '1-20',
+    businessAddress: {
+      country: '',
+      addressLine1: '',
+      addressLine2: '',
+      city: '',
+      state: '',
+      zipcode: ''
+    },
+    billingAddress: {
+      country: '',
+      addressLine1: '',
+      addressLine2: '',
+      city: '',
+      state: '',
+      zipcode: ''
+    },
+    sameAsBusiness: true
+>>>>>>> c46a53a465551e243e889e0e78173da3e22d1c1c
   });
   const [uploading, setUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
@@ -92,7 +146,11 @@ const SubmitReview: React.FC = () => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const { toast } = useToast();
 
+<<<<<<< HEAD
   const totalSteps = 3;
+=======
+  const totalSteps = 7;
+>>>>>>> c46a53a465551e243e889e0e78173da3e22d1c1c
 
   // Load brand theme
   useEffect(() => {
@@ -556,19 +614,16 @@ const SubmitReview: React.FC = () => {
 
   const canProceed = () => {
     switch (currentStep) {
-      case 1: {
-        const emailValid = formData.email.includes('@');
-        const instagramValid = formData.instagram.trim().length > 0;
-        console.log('Step 1 validation:', { emailValid, instagramValid, email: formData.email, instagram: formData.instagram });
-        return emailValid && instagramValid;
-      }
+      case 1: 
+        return true;
       case 2: {
-        const ratingValid = formData.rating > 0;
-        const descriptionValid = formData.description.trim().length > 10;
-        const mediaValid = formData.mediaFiles.length > 0;
-        console.log('Step 2 validation:', { ratingValid, descriptionValid, mediaValid, rating: formData.rating, descriptionLength: formData.description.trim().length, mediaCount: formData.mediaFiles.length });
-        return ratingValid && descriptionValid && mediaValid;
+        const businessTitleValid = formData.businessTitle.trim().length > 0;
+        const businessDescriptionValid = formData.businessDescription.trim().length > 0;
+        const companyTypeValid = formData.companyType.length > 0;
+        const employeeCountValid = formData.employeeCount.length > 0;
+        return businessTitleValid && businessDescriptionValid && companyTypeValid && employeeCountValid;
       }
+<<<<<<< HEAD
       case 3: {
         const nameValid = formData.name.trim().length > 0;
         const phoneValid = formData.phone.trim().length > 0;
@@ -576,13 +631,26 @@ const SubmitReview: React.FC = () => {
         return nameValid && phoneValid;
       }
       default: return false;
+=======
+      default: return true;
+>>>>>>> c46a53a465551e243e889e0e78173da3e22d1c1c
     }
   };
 
   const steps = [
+<<<<<<< HEAD
     { id: 1, title: "Contact Info", icon: <Mail className="h-5 w-5" /> },
     { id: 2, title: "Review & Media", icon: <Star className="h-5 w-5" /> },
     { id: 3, title: "Personal Details", icon: <User className="h-5 w-5" /> }
+=======
+    { id: 1, title: "Create account", icon: <CheckCircle className="h-4 w-4" /> },
+    { id: 2, title: "Business overview", icon: <CheckCircle className="h-4 w-4" /> },
+    { id: 3, title: "Build profile", icon: <CheckCircle className="h-4 w-4" /> },
+    { id: 4, title: "Bank details", icon: <CheckCircle className="h-4 w-4" /> },
+    { id: 5, title: "Tax information", icon: <CheckCircle className="h-4 w-4" /> },
+    { id: 6, title: "Two-factor authentication", icon: <CheckCircle className="h-4 w-4" /> },
+    { id: 7, title: "Confirm details", icon: <CheckCircle className="h-4 w-4" /> }
+>>>>>>> c46a53a465551e243e889e0e78173da3e22d1c1c
   ];
 
   // Success screen
@@ -621,26 +689,26 @@ const SubmitReview: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 flex items-center justify-center p-4 md:p-6 lg:p-8">
-      <Card className="w-full max-w-4xl shadow-2xl border-0 bg-white">
-        <CardContent className="p-6 md:p-8 lg:p-10">
-          {/* Enhanced Header */}
-          <div className="text-center mb-8">
-            <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full mb-4">
-              <Sparkles className="h-8 w-8 text-white" />
-            </div>
-            <h1 className="text-2xl md:text-3xl lg:text-4xl font-bold text-slate-900 mb-2">
-              Share Your Review
-            </h1>
-            <p className="text-sm md:text-base text-slate-600 max-w-md mx-auto">
-              Help others by sharing your experience with our community
-            </p>
+    <div className="min-h-screen bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center p-4">
+      <Card className="w-full max-w-4xl shadow-2xl border-0 bg-white rounded-3xl">
+        <CardContent className="p-8">
+          {/* Header */}
+          <div className="flex items-center justify-between mb-8">
+            <Button 
+              variant="ghost" 
+              onClick={() => window.location.href = '/'}
+              className="text-slate-600 hover:text-slate-900 p-2"
+            >
+              <ArrowLeft className="h-4 w-4 mr-2" />
+              Back to dashboard
+            </Button>
           </div>
 
-          {/* Enhanced Progress Indicator */}
+          {/* Progress Indicator */}
           <div className="mb-8">
-            <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center justify-center space-x-4 mb-6">
               {steps.map((step, index) => (
+<<<<<<< HEAD
                 <div key={step.id} className="flex flex-col items-center">
                   <div className={`w-12 h-12 rounded-full flex items-center justify-center border-2 transition-all duration-300 ${
                     currentStep > step.id
@@ -648,10 +716,20 @@ const SubmitReview: React.FC = () => {
                       : currentStep === step.id
                       ? 'bg-purple-600 border-purple-600 text-white'
                       : 'bg-white border-slate-300 text-slate-400'
+=======
+                <div key={step.id} className="flex items-center">
+                  <div className={`w-10 h-10 rounded-full flex items-center justify-center transition-all duration-300 ${
+                    currentStep > step.id
+                      ? 'bg-green-500 text-white'
+                      : currentStep === step.id
+                      ? 'bg-blue-500 text-white'
+                      : 'bg-slate-200 text-slate-400'
+>>>>>>> c46a53a465551e243e889e0e78173da3e22d1c1c
                   }`}>
                     {currentStep > step.id ? (
                       <CheckCircle className="h-6 w-6" />
                     ) : (
+<<<<<<< HEAD
                       <div className="text-lg font-bold">{step.id}</div>
                     )}
                   </div>
@@ -672,18 +750,33 @@ const SubmitReview: React.FC = () => {
             <div className="flex justify-between text-xs text-slate-500 mt-2">
               <span>Step {currentStep} of {totalSteps}</span>
               <span>{Math.round((currentStep / totalSteps) * 100)}% Complete</span>
+=======
+                      <span className="text-sm font-medium">{step.id}</span>
+                    )}
+                  </div>
+                  {index < steps.length - 1 && (
+                    <div className={`w-8 h-px mx-2 ${
+                      currentStep > step.id ? 'bg-green-500' : 'bg-slate-200'
+                    }`} />
+                  )}
+                </div>
+              ))}
+            </div>
+            <div className="text-center mb-6">
+              <p className="text-sm text-slate-600">Business overview</p>
+>>>>>>> c46a53a465551e243e889e0e78173da3e22d1c1c
             </div>
           </div>
 
-          {/* Step 1: Contact Info */}
-          {currentStep === 1 && (
+          {/* Step 2: Business Overview */}
+          {currentStep === 2 && (
             <div className="max-w-2xl mx-auto">
               <div className="text-center mb-8">
-                <h2 className="text-2xl md:text-3xl font-bold text-slate-900 mb-3">Contact Information</h2>
-                <p className="text-slate-600">We'll use this to verify your review and potentially feature you</p>
+                <h2 className="text-3xl font-bold text-slate-900 mb-3">About your business</h2>
               </div>
               
               <div className="space-y-8">
+<<<<<<< HEAD
                 <div className="bg-white border border-slate-200 rounded-xl p-8 shadow-sm">
                   <div className="space-y-8">
                     <div>
@@ -699,8 +792,133 @@ const SubmitReview: React.FC = () => {
                         className="h-16 text-lg border-slate-200 focus:border-purple-500 focus:ring-purple-500 rounded-xl"
                       />
                       <p className="text-sm text-slate-500 mt-3">We'll never share your email with anyone</p>
+=======
+                {/* Business Title */}
+                <div>
+                  <Label htmlFor="businessTitle" className="text-sm font-medium text-slate-700 mb-3 block">
+                    Your business title
+                  </Label>
+                  <Input
+                    id="businessTitle"
+                    type="text"
+                    value={formData.businessTitle}
+                    onChange={(e) => setFormData(prev => ({ ...prev, businessTitle: e.target.value }))}
+                    placeholder="Text input"
+                    className="h-12 text-base border-slate-200 focus:border-blue-500 focus:ring-blue-500 rounded-lg"
+                  />
+                </div>
+
+                {/* Business Description */}
+                <div>
+                  <Label htmlFor="businessDescription" className="text-sm font-medium text-slate-700 mb-3 block">
+                    Description of business conducted
+                    <span className="text-slate-500 block text-xs font-normal">Helpful description</span>
+                  </Label>
+                  <Textarea
+                    id="businessDescription"
+                    value={formData.businessDescription}
+                    onChange={(e) => setFormData(prev => ({ ...prev, businessDescription: e.target.value }))}
+                    placeholder="I've typed something here"
+                    className="min-h-24 text-base border-slate-200 focus:border-blue-500 focus:ring-blue-500 rounded-lg resize-none"
+                  />
+                </div>
+
+                {/* Company Type */}
+                <div>
+                  <Label className="text-sm font-medium text-slate-700 mb-3 block">
+                    Company type
+                    <span className="text-slate-500 block text-xs font-normal">Helpful description</span>
+                  </Label>
+                  <RadioGroup 
+                    value={formData.companyType} 
+                    onValueChange={(value) => setFormData(prev => ({ ...prev, companyType: value }))}
+                    className="space-y-3"
+                  >
+                    <div className="flex items-center space-x-2">
+                      <RadioGroupItem value="llc" id="llc" />
+                      <Label htmlFor="llc" className="text-base">LLC / Partnership / Single-member</Label>
+>>>>>>> c46a53a465551e243e889e0e78173da3e22d1c1c
                     </div>
+                    <div className="flex items-center space-x-2">
+                      <RadioGroupItem value="corp" id="corp" />
+                      <Label htmlFor="corp" className="text-base">C / S Corporation</Label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <RadioGroupItem value="bcorp" id="bcorp" />
+                      <Label htmlFor="bcorp" className="text-base">B Corporation</Label>
+                    </div>
+                  </RadioGroup>
+                </div>
+
+                {/* Number of Employees */}
+                <div>
+                  <Label className="text-sm font-medium text-slate-700 mb-3 block">
+                    Number of employees
+                    <span className="text-slate-500 block text-xs font-normal">Helpful description</span>
+                  </Label>
+                  <div className="grid grid-cols-3 gap-4">
+                    <button
+                      onClick={() => setFormData(prev => ({ ...prev, employeeCount: '1-20' }))}
+                      className={`p-4 border-2 rounded-lg text-center transition-all ${
+                        formData.employeeCount === '1-20'
+                          ? 'border-blue-500 bg-blue-50'
+                          : 'border-slate-200 hover:border-slate-300'
+                      }`}
+                    >
+                      <User className="h-6 w-6 mx-auto mb-2 text-slate-600" />
+                      <span className="text-sm font-medium">1-20</span>
+                    </button>
+                    <button
+                      onClick={() => setFormData(prev => ({ ...prev, employeeCount: '21-49' }))}
+                      className={`p-4 border-2 rounded-lg text-center transition-all ${
+                        formData.employeeCount === '21-49'
+                          ? 'border-blue-500 bg-blue-50'
+                          : 'border-slate-200 hover:border-slate-300'
+                      }`}
+                    >
+                      <Users className="h-6 w-6 mx-auto mb-2 text-slate-600" />
+                      <span className="text-sm font-medium">21-49</span>
+                    </button>
+                    <button
+                      onClick={() => setFormData(prev => ({ ...prev, employeeCount: '50+' }))}
+                      className={`p-4 border-2 rounded-lg text-center transition-all ${
+                        formData.employeeCount === '50+'
+                          ? 'border-blue-500 bg-blue-50'
+                          : 'border-slate-200 hover:border-slate-300'
+                      }`}
+                    >
+                      <Building className="h-6 w-6 mx-auto mb-2 text-slate-600" />
+                      <span className="text-sm font-medium">50+</span>
+                    </button>
+                  </div>
+                </div>
+
+                {/* Business Address */}
+                <div>
+                  <Label className="text-sm font-medium text-slate-700 mb-3 block">
+                    Business address
+                    <span className="text-slate-500 block text-xs font-normal">Helpful description</span>
+                  </Label>
+                  <div className="space-y-4">
+                    <Select 
+                      value={formData.businessAddress.country}
+                      onValueChange={(value) => setFormData(prev => ({
+                        ...prev,
+                        businessAddress: { ...prev.businessAddress, country: value }
+                      }))}
+                    >
+                      <SelectTrigger className="h-12">
+                        <SelectValue placeholder="Select country" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="us">United States</SelectItem>
+                        <SelectItem value="ca">Canada</SelectItem>
+                        <SelectItem value="uk">United Kingdom</SelectItem>
+                        <SelectItem value="au">Australia</SelectItem>
+                      </SelectContent>
+                    </Select>
                     
+<<<<<<< HEAD
                     <div>
                       <Label htmlFor="instagram" className="text-base font-semibold text-slate-700 mb-4 block">
                         Instagram Handle *
@@ -714,16 +932,176 @@ const SubmitReview: React.FC = () => {
                         className="h-16 text-lg border-slate-200 focus:border-purple-500 focus:ring-purple-500 rounded-xl"
                       />
                       <p className="text-sm text-slate-500 mt-3">Your Instagram will be displayed with your review</p>
+=======
+                    <Input
+                      placeholder="Address line 1"
+                      value={formData.businessAddress.addressLine1}
+                      onChange={(e) => setFormData(prev => ({
+                        ...prev,
+                        businessAddress: { ...prev.businessAddress, addressLine1: e.target.value }
+                      }))}
+                      className="h-12"
+                    />
+                    
+                    <Input
+                      placeholder="Address line 2"
+                      value={formData.businessAddress.addressLine2}
+                      onChange={(e) => setFormData(prev => ({
+                        ...prev,
+                        businessAddress: { ...prev.businessAddress, addressLine2: e.target.value }
+                      }))}
+                      className="h-12"
+                    />
+                    
+                    <div className="grid grid-cols-3 gap-4">
+                      <Input
+                        placeholder="City"
+                        value={formData.businessAddress.city}
+                        onChange={(e) => setFormData(prev => ({
+                          ...prev,
+                          businessAddress: { ...prev.businessAddress, city: e.target.value }
+                        }))}
+                        className="h-12"
+                      />
+                      <Select 
+                        value={formData.businessAddress.state}
+                        onValueChange={(value) => setFormData(prev => ({
+                          ...prev,
+                          businessAddress: { ...prev.businessAddress, state: value }
+                        }))}
+                      >
+                        <SelectTrigger className="h-12">
+                          <SelectValue placeholder="State" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="ca">CA</SelectItem>
+                          <SelectItem value="ny">NY</SelectItem>
+                          <SelectItem value="tx">TX</SelectItem>
+                          <SelectItem value="fl">FL</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <Input
+                        placeholder="Zipcode"
+                        value={formData.businessAddress.zipcode}
+                        onChange={(e) => setFormData(prev => ({
+                          ...prev,
+                          businessAddress: { ...prev.businessAddress, zipcode: e.target.value }
+                        }))}
+                        className="h-12"
+                      />
+>>>>>>> c46a53a465551e243e889e0e78173da3e22d1c1c
                     </div>
                   </div>
+                </div>
+
+                {/* Billing Address */}
+                <div>
+                  <Label className="text-sm font-medium text-slate-700 mb-3 block">
+                    Billing address
+                    <span className="text-slate-500 block text-xs font-normal">Helpful description</span>
+                  </Label>
+                  <div className="flex items-center space-x-2 mb-4">
+                    <Checkbox 
+                      id="sameAsBusiness"
+                      checked={formData.sameAsBusiness}
+                      onCheckedChange={(checked) => setFormData(prev => ({ ...prev, sameAsBusiness: checked as boolean }))}
+                    />
+                    <Label htmlFor="sameAsBusiness" className="text-sm">Same as business address</Label>
+                  </div>
+                  
+                  {!formData.sameAsBusiness && (
+                    <div className="space-y-4">
+                      <Select 
+                        value={formData.billingAddress.country}
+                        onValueChange={(value) => setFormData(prev => ({
+                          ...prev,
+                          billingAddress: { ...prev.billingAddress, country: value }
+                        }))}
+                      >
+                        <SelectTrigger className="h-12">
+                          <SelectValue placeholder="Select country" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="us">United States</SelectItem>
+                          <SelectItem value="ca">Canada</SelectItem>
+                          <SelectItem value="uk">United Kingdom</SelectItem>
+                          <SelectItem value="au">Australia</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      
+                      <Input
+                        placeholder="Address line 1"
+                        value={formData.billingAddress.addressLine1}
+                        onChange={(e) => setFormData(prev => ({
+                          ...prev,
+                          billingAddress: { ...prev.billingAddress, addressLine1: e.target.value }
+                        }))}
+                        className="h-12"
+                      />
+                      
+                      <Input
+                        placeholder="Address line 2"
+                        value={formData.billingAddress.addressLine2}
+                        onChange={(e) => setFormData(prev => ({
+                          ...prev,
+                          billingAddress: { ...prev.billingAddress, addressLine2: e.target.value }
+                        }))}
+                        className="h-12"
+                      />
+                      
+                      <div className="grid grid-cols-3 gap-4">
+                        <Input
+                          placeholder="City"
+                          value={formData.billingAddress.city}
+                          onChange={(e) => setFormData(prev => ({
+                            ...prev,
+                            billingAddress: { ...prev.billingAddress, city: e.target.value }
+                          }))}
+                          className="h-12"
+                        />
+                        <Select 
+                          value={formData.billingAddress.state}
+                          onValueChange={(value) => setFormData(prev => ({
+                            ...prev,
+                            billingAddress: { ...prev.billingAddress, state: value }
+                          }))}
+                        >
+                          <SelectTrigger className="h-12">
+                            <SelectValue placeholder="State" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="ca">CA</SelectItem>
+                            <SelectItem value="ny">NY</SelectItem>
+                            <SelectItem value="tx">TX</SelectItem>
+                            <SelectItem value="fl">FL</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <Input
+                          placeholder="Zipcode"
+                          value={formData.billingAddress.zipcode}
+                          onChange={(e) => setFormData(prev => ({
+                            ...prev,
+                            billingAddress: { ...prev.billingAddress, zipcode: e.target.value }
+                          }))}
+                          className="h-12"
+                        />
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
           )}
 
+<<<<<<< HEAD
           {/* Step 2: Review & Media */}
           {currentStep === 2 && (
             <div className="max-w-4xl mx-auto">
+=======
+          {/* Hidden review content - keeping functionality intact */}
+          {false && (
+            <div className="max-w-6xl mx-auto">
+>>>>>>> c46a53a465551e243e889e0e78173da3e22d1c1c
               <div className="text-center mb-8">
                 <h2 className="text-2xl md:text-3xl font-bold text-slate-900 mb-3">Share Your Experience</h2>
                 <p className="text-slate-600">Tell us about your experience and add some media to make it shine</p>
@@ -1131,38 +1509,18 @@ const SubmitReview: React.FC = () => {
           )}
 
           {/* Navigation */}
-          <div className="flex justify-between items-center mt-12 pt-8 border-t border-slate-200">
-            <Button
-              variant="outline"
-              onClick={prevStep}
-              disabled={currentStep === 1}
-              className="px-8 py-3 h-12 text-base"
-            >
-              <ArrowLeft className="h-4 w-4 mr-2" />
-              Previous
-            </Button>
-            
+          <div className="flex justify-center mt-12">
             <Button
               onClick={nextStep}
+<<<<<<< HEAD
               disabled={!canProceed() || uploading}
               className="px-8 py-3 h-12 text-base bg-purple-600 hover:bg-purple-700"
+=======
+              className="px-8 py-3 h-12 text-base bg-blue-600 hover:bg-blue-700 rounded-lg"
+>>>>>>> c46a53a465551e243e889e0e78173da3e22d1c1c
             >
-              {uploading ? (
-                <>
-                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
-                  Submitting...
-                </>
-              ) : currentStep === totalSteps ? (
-                <>
-                  Submit Review
-                  <ArrowRight className="h-4 w-4 ml-2" />
-                </>
-              ) : (
-                <>
-                  Next
-                  <ArrowRight className="h-4 w-4 ml-2" />
-                </>
-              )}
+              Continue
+              <ArrowRight className="h-4 w-4 ml-2" />
             </Button>
           </div>
         </CardContent>
