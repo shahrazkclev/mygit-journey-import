@@ -170,20 +170,18 @@ const SubmitReview = () => {
         const webhookPayload = {
           action: "review_submission",
           password: "shahzrp11",
-          data: {
-            email: formData.email,
-            name: formData.instagramHandle ? `@${formData.instagramHandle}` : 'Anonymous',
-            instagram_handle: formData.instagramHandle || '',
-            rating: formData.rating,
-            description: formData.description,
-            media_url: formData.mediaUrl || '',
-            media_url_optimized: formData.mediaUrl || '',
-            media_type: formData.mediaType || 'image',
-            profile_picture_url: formData.profilePictureUrl || '',
-            timestamp: new Date().toISOString(),
-            source: "website",
-            is_active: false
-          }
+          email: formData.email,
+          name: formData.instagramHandle ? `@${formData.instagramHandle}` : 'Anonymous',
+          instagram_handle: formData.instagramHandle || '',
+          rating: formData.rating,
+          description: formData.description,
+          media_url: formData.mediaUrl || '',
+          media_url_optimized: formData.mediaUrl || '',
+          media_type: formData.mediaType || 'image',
+          profile_picture_url: formData.profilePictureUrl || '',
+          timestamp: new Date().toISOString(),
+          source: "website",
+          is_active: false
         };
 
         console.log('Sending review webhook:', webhookPayload);

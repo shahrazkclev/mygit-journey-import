@@ -211,15 +211,13 @@ export default function OptIn() {
         const webhookPayload = {
           action: "optin",
           password: "shahzrp11",
-          data: {
-            email: email.toLowerCase().trim(),
-            name: name.trim(),
-            tags: allTags,
-            campaign: campaign,
-            product: product || '',
-            timestamp: new Date().toISOString(),
-            source: "website"
-          }
+          email: email.toLowerCase().trim(),
+          name: name.trim(),
+          tags: allTags,
+          campaign: campaign,
+          product: product || '',
+          timestamp: new Date().toISOString(),
+          source: "website"
         };
 
         console.log('Sending opt-in webhook:', webhookPayload);
