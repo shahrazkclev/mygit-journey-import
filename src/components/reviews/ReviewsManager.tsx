@@ -32,7 +32,11 @@ import {
   TrendingUp,
   UserPlus,
   Tag,
-  Mail
+  Mail,
+  Download,
+  Upload,
+  Image,
+  Video
 } from "lucide-react";
 
 interface Review {
@@ -90,6 +94,8 @@ export const ReviewsManager = () => {
   const [selectedReview, setSelectedReview] = useState<ReviewWithCustomer | null>(null);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [editingReview, setEditingReview] = useState<Partial<Review>>({});
+  const [mediaUploading, setMediaUploading] = useState(false);
+  const [mediaUploadProgress, setMediaUploadProgress] = useState(0);
   const [addCustomerDialogOpen, setAddCustomerDialogOpen] = useState(false);
   const [newCustomerData, setNewCustomerData] = useState({
     email: '',
@@ -471,13 +477,107 @@ export const ReviewsManager = () => {
     });
   };
 
-  const renderStars = (rating: number) => {
+  const renderStars = (rating: number, clickable: boolean = false, onRatingChange?: (rating: number) => void) => {
     return Array.from({ length: 5 }, (_, i) => (
       <Star
         key={i}
-        className={`h-4 w-4 ${i < rating ? 'fill-yellow-400 text-yellow-400' : 'text-gray-300'}`}
+        className={`h-4 w-4 ${i < rating ? 'fill-yellow-400 text-yellow-400' : 'text-gray-300'} ${
+          clickable ? 'cursor-pointer hover:fill-yellow-300 hover:text-yellow-300' : ''
+        }`}
+        onClick={clickable && onRatingChange ? () => onRatingChange(i + 1) : undefined}
       />
     ));
+  };
+
+  // Media management functions
+  const downloadMedia = (mediaUrl: string, fileName?: string) => {
+    const link = document.createElement('a');
+    link.href = mediaUrl;
+    link.download = fileName || `review-media-${Date.now()}`;
+    link.target = '_blank';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  const uploadToR2 = async (file: File, onProgress?: (progress: number) => void): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const formData = new FormData();
+      formData.append('file', file);
+      
+      const xhr = new XMLHttpRequest();
+      
+      // Track upload progress
+      xhr.upload.onprogress = (event) => {
+        if (event.lengthComputable && onProgress) {
+          const progress = Math.round((event.loaded / event.total) * 100);
+          onProgress(progress);
+        }
+      };
+      
+      xhr.onload = () => {
+        if (xhr.status === 200) {
+          try {
+            const result = JSON.parse(xhr.responseText);
+            if (result.success) {
+              resolve(result.url);
+            } else {
+              reject(new Error(result.error || 'Upload failed'));
+            }
+          } catch (e) {
+            reject(new Error('Invalid response format'));
+          }
+        } else {
+          reject(new Error(`Upload failed: ${xhr.status}`));
+        }
+      };
+      
+      xhr.onerror = () => {
+        reject(new Error('Network error during upload'));
+      };
+      
+      xhr.open('POST', 'https://r2-upload-proxy.cleverpoly-store.workers.dev');
+      xhr.send(formData);
+    });
+  };
+
+  const handleMediaUpload = async (file: File) => {
+    setMediaUploading(true);
+    try {
+      const mediaType = file.type.startsWith('video/') ? 'video' : 'image';
+      const url = await uploadToR2(file, (progress) => {
+        setMediaUploadProgress(progress);
+      });
+      
+      setEditingReview(prev => ({
+        ...prev,
+        media_url: url,
+        media_type: mediaType
+      }));
+      
+      toast({
+        title: "Success",
+        description: "Media uploaded successfully",
+      });
+    } catch (error) {
+      console.error('Media upload failed:', error);
+      toast({
+        title: "Upload Failed",
+        description: "Failed to upload media. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setMediaUploading(false);
+      setMediaUploadProgress(0);
+    }
+  };
+
+  const removeMedia = () => {
+    setEditingReview(prev => ({
+      ...prev,
+      media_url: '',
+      media_type: 'image'
+    }));
   };
 
   return (
@@ -1093,85 +1193,232 @@ export const ReviewsManager = () => {
 
         {/* Edit Review Dialog */}
         <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
-          <DialogContent className="max-w-md">
+          <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>Edit Review</DialogTitle>
               <DialogDescription>
-                Make changes to the review details
+                Make changes to the review details and manage media
               </DialogDescription>
             </DialogHeader>
             
-            <div className="space-y-4">
-              <div>
-                <Label htmlFor="user_name">Name</Label>
-                <Input
-                  id="user_name"
-                  value={editingReview.user_name || ''}
-                  onChange={(e) => setEditingReview(prev => ({ ...prev, user_name: e.target.value }))}
-                />
+            <div className="space-y-6">
+              {/* Basic Information */}
+              <div className="space-y-4">
+                <h3 className="text-sm font-medium">Basic Information</h3>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="user_name">Name</Label>
+                    <Input
+                      id="user_name"
+                      value={editingReview.user_name || ''}
+                      onChange={(e) => setEditingReview(prev => ({ ...prev, user_name: e.target.value }))}
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="user_instagram_handle">Instagram Handle</Label>
+                    <Input
+                      id="user_instagram_handle"
+                      value={editingReview.user_instagram_handle || ''}
+                      onChange={(e) => setEditingReview(prev => ({ ...prev, user_instagram_handle: e.target.value }))}
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Rating */}
+              <div className="space-y-2">
+                <Label>Rating</Label>
+                <div className="flex items-center gap-2">
+                  <div className="flex gap-1">
+                    {renderStars(editingReview.rating || 5, true, (rating) => 
+                      setEditingReview(prev => ({ ...prev, rating }))
+                    )}
+                  </div>
+                  <span className="text-sm text-muted-foreground">
+                    ({editingReview.rating || 5}/5)
+                  </span>
+                </div>
               </div>
               
-              <div>
-                <Label htmlFor="user_instagram_handle">Instagram Handle</Label>
-                <Input
-                  id="user_instagram_handle"
-                  value={editingReview.user_instagram_handle || ''}
-                  onChange={(e) => setEditingReview(prev => ({ ...prev, user_instagram_handle: e.target.value }))}
-                />
-              </div>
-              
-              <div>
-                <Label htmlFor="rating">Rating</Label>
-                <Select 
-                  value={editingReview.rating?.toString() || '5'} 
-                  onValueChange={(value) => setEditingReview(prev => ({ ...prev, rating: parseInt(value) }))}
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {[1,2,3,4,5].map(num => (
-                      <SelectItem key={num} value={num.toString()}>{num} Star{num > 1 ? 's' : ''}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              
+              {/* Review Text */}
               <div>
                 <Label htmlFor="description">Review Text</Label>
                 <Textarea
                   id="description"
                   value={editingReview.description || ''}
                   onChange={(e) => setEditingReview(prev => ({ ...prev, description: e.target.value }))}
-                  rows={3}
+                  rows={4}
                 />
               </div>
-              
-              <div>
-                <Label htmlFor="sort_order">Sort Order</Label>
-                <Input
-                  id="sort_order"
-                  type="number"
-                  value={editingReview.sort_order || 0}
-                  onChange={(e) => setEditingReview(prev => ({ ...prev, sort_order: parseInt(e.target.value) || 0 }))}
-                />
+
+              {/* Media Management */}
+              <div className="space-y-4">
+                <h3 className="text-sm font-medium">Media Management</h3>
+                
+                {editingReview.media_url ? (
+                  <div className="space-y-3">
+                    <div className="border rounded-lg p-4">
+                      <div className="flex items-center justify-between mb-3">
+                        <span className="text-sm font-medium">Current Media</span>
+                        <div className="flex gap-2">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => downloadMedia(editingReview.media_url!, `review-media-${editingReview.id}`)}
+                          >
+                            <Download className="h-4 w-4 mr-1" />
+                            Download
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={removeMedia}
+                            className="border-red-200 text-red-600 hover:bg-red-50"
+                          >
+                            <Trash2 className="h-4 w-4 mr-1" />
+                            Remove
+                          </Button>
+                        </div>
+                      </div>
+                      
+                      <div className="flex items-center gap-3">
+                        {editingReview.media_type === 'video' ? (
+                          <Video className="h-6 w-6 text-muted-foreground" />
+                        ) : (
+                          <Image className="h-6 w-6 text-muted-foreground" />
+                        )}
+                        <div>
+                          <div className="text-sm font-medium">
+                            {editingReview.media_type === 'video' ? 'Video File' : 'Image File'}
+                          </div>
+                          <div className="text-xs text-muted-foreground">
+                            Click download to save the file
+                          </div>
+                        </div>
+                      </div>
+                      
+                      {editingReview.media_url && (
+                        <div className="mt-3">
+                          {editingReview.media_type === 'video' ? (
+                            <video 
+                              src={editingReview.media_url} 
+                              className="max-w-xs rounded-lg"
+                              controls
+                              muted
+                            />
+                          ) : (
+                            <img 
+                              src={editingReview.media_url} 
+                              alt="Review media"
+                              className="max-w-xs rounded-lg"
+                            />
+                          )}
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="text-center">
+                      <Label htmlFor="replace-media" className="cursor-pointer">
+                        <div className="border-2 border-dashed border-muted-foreground/25 rounded-lg p-4 hover:border-muted-foreground/50 transition-colors">
+                          {mediaUploading ? (
+                            <div className="flex flex-col items-center gap-2">
+                              <RefreshCw className="h-6 w-6 animate-spin text-muted-foreground" />
+                              <span className="text-sm text-muted-foreground">
+                                Uploading... {mediaUploadProgress}%
+                              </span>
+                            </div>
+                          ) : (
+                            <div className="flex flex-col items-center gap-2">
+                              <Upload className="h-6 w-6 text-muted-foreground" />
+                              <span className="text-sm text-muted-foreground">
+                                Click to replace media
+                              </span>
+                            </div>
+                          )}
+                        </div>
+                      </Label>
+                      <Input
+                        id="replace-media"
+                        type="file"
+                        accept="image/*,video/*"
+                        className="hidden"
+                        onChange={(e) => {
+                          const file = e.target.files?.[0];
+                          if (file) handleMediaUpload(file);
+                        }}
+                      />
+                    </div>
+                  </div>
+                ) : (
+                  <div className="text-center">
+                    <Label htmlFor="upload-media" className="cursor-pointer">
+                      <div className="border-2 border-dashed border-muted-foreground/25 rounded-lg p-6 hover:border-muted-foreground/50 transition-colors">
+                        {mediaUploading ? (
+                          <div className="flex flex-col items-center gap-2">
+                            <RefreshCw className="h-8 w-8 animate-spin text-muted-foreground" />
+                            <span className="text-sm text-muted-foreground">
+                              Uploading... {mediaUploadProgress}%
+                            </span>
+                          </div>
+                        ) : (
+                          <div className="flex flex-col items-center gap-2">
+                            <Upload className="h-8 w-8 text-muted-foreground" />
+                            <span className="text-sm text-muted-foreground">
+                              Click to upload media
+                            </span>
+                            <span className="text-xs text-muted-foreground">
+                              Supports images and videos
+                            </span>
+                          </div>
+                        )}
+                      </div>
+                    </Label>
+                    <Input
+                      id="upload-media"
+                      type="file"
+                      accept="image/*,video/*"
+                      className="hidden"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (file) handleMediaUpload(file);
+                      }}
+                    />
+                  </div>
+                )}
               </div>
-              
-              <div className="flex items-center space-x-2">
-                <Switch
-                  id="is_active"
-                  checked={editingReview.is_active || false}
-                  onCheckedChange={(checked) => setEditingReview(prev => ({ ...prev, is_active: checked }))}
-                />
-                <Label htmlFor="is_active">Published</Label>
+
+              {/* Settings */}
+              <div className="space-y-4">
+                <h3 className="text-sm font-medium">Settings</h3>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="sort_order">Sort Order</Label>
+                    <Input
+                      id="sort_order"
+                      type="number"
+                      value={editingReview.sort_order || 0}
+                      onChange={(e) => setEditingReview(prev => ({ ...prev, sort_order: parseInt(e.target.value) || 0 }))}
+                    />
+                  </div>
+                  <div className="flex items-end">
+                    <div className="flex items-center space-x-2">
+                      <Switch
+                        id="is_active"
+                        checked={editingReview.is_active || false}
+                        onCheckedChange={(checked) => setEditingReview(prev => ({ ...prev, is_active: checked }))}
+                      />
+                      <Label htmlFor="is_active">Published</Label>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
             
-            <div className="flex justify-end gap-2 mt-4">
+            <div className="flex justify-end gap-2 mt-6 pt-4 border-t">
               <Button variant="outline" onClick={() => setEditDialogOpen(false)}>
                 Cancel
               </Button>
-              <Button onClick={handleEditSave}>
+              <Button onClick={handleEditSave} disabled={mediaUploading}>
                 Save Changes
               </Button>
             </div>
