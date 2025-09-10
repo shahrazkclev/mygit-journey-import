@@ -43,7 +43,7 @@ export const VideoCompressor: React.FC<VideoCompressorProps> = ({
       video.src = URL.createObjectURL(videoFile);
       video.muted = true;
 
-      return new Promise<void>((resolve, reject) => {
+      await new Promise<void>((resolve, reject) => {
         video.onloadedmetadata = () => {
           const [targetWidth, targetHeight] = targetResolution.split('x').map(Number);
           
@@ -62,6 +62,7 @@ export const VideoCompressor: React.FC<VideoCompressorProps> = ({
           canvas.height = outputHeight;
 
           setStatus('Processing video...');
+          setProgress(50);
 
           // For demo purposes, we'll simulate compression by creating a smaller canvas
           video.currentTime = 0;
