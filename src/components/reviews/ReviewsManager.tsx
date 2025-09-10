@@ -203,12 +203,19 @@ export const ReviewsManager = () => {
   // Update review
   const updateReview = async (reviewId: string, updates: Partial<Review>) => {
     try {
+      console.log('Updating review:', reviewId, updates);
+      
       const { error } = await supabase
         .from('reviews')
         .update(updates)
         .eq('id', reviewId);
       
-      if (error) throw error;
+      if (error) {
+        console.error('Supabase update error:', error);
+        throw error;
+      }
+      
+      console.log('Review updated successfully');
       
       toast({
         title: "Success",
@@ -221,9 +228,10 @@ export const ReviewsManager = () => {
       console.error('Error updating review:', error);
       toast({
         title: "Error",
-        description: "Failed to update review",
+        description: error instanceof Error ? error.message : "Failed to update review",
         variant: "destructive",
       });
+      throw error; // Re-throw to let the caller handle it
     }
   };
 
@@ -300,12 +308,21 @@ export const ReviewsManager = () => {
 
   // Handle edit form
   const handleEditSave = async () => {
-    if (!selectedReview || !editingReview) return;
+    if (!selectedReview || !editingReview) {
+      console.log('Missing selectedReview or editingReview');
+      return;
+    }
     
-    await updateReview(selectedReview.id, editingReview);
-    setEditDialogOpen(false);
-    setSelectedReview(null);
-    setEditingReview({});
+    try {
+      console.log('Saving review with data:', editingReview);
+      await updateReview(selectedReview.id, editingReview);
+      setEditDialogOpen(false);
+      setSelectedReview(null);
+      setEditingReview({});
+    } catch (error) {
+      console.error('Error in handleEditSave:', error);
+      // Don't close dialog on error so user can try again
+    }
   };
 
   // Add new customer from review
@@ -564,15 +581,25 @@ export const ReviewsManager = () => {
     setMediaUploading(true);
     try {
       const mediaType = file.type.startsWith('video/') ? 'video' : 'image';
+      console.log('Uploading file:', file.name, 'type:', mediaType);
+      
       const url = await uploadToR2(file, (progress) => {
         setMediaUploadProgress(progress);
       });
       
-      setEditingReview(prev => ({
-        ...prev,
+      console.log('Upload successful, URL:', url);
+      
+      const updatedMediaData = {
         media_url: url,
         media_type: mediaType
+      };
+      
+      setEditingReview(prev => ({
+        ...prev,
+        ...updatedMediaData
       }));
+      
+      console.log('Updated editingReview with media data:', updatedMediaData);
       
       toast({
         title: "Success",
@@ -582,7 +609,7 @@ export const ReviewsManager = () => {
       console.error('Media upload failed:', error);
       toast({
         title: "Upload Failed",
-        description: "Failed to upload media. Please try again.",
+        description: error instanceof Error ? error.message : "Failed to upload media. Please try again.",
         variant: "destructive",
       });
     } finally {
