@@ -22,7 +22,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Progress } from '@/components/ui/progress';
-import { VideoCompressor } from '@/components/reviews/VideoCompressor';
+
 
 interface MediaFile {
   file: File;
@@ -63,8 +63,6 @@ const SubmitReview: React.FC = () => {
     profilePicture: null,
     profilePictureUrl: ''
   });
-  const [showCompressor, setShowCompressor] = useState(false);
-  const [videoFile, setVideoFile] = useState<File | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const { toast } = useToast();
@@ -119,25 +117,7 @@ const SubmitReview: React.FC = () => {
       }
 
       const mediaType = file.type.startsWith('video/') ? 'video' : 'image';
-
-      if (file.type.startsWith('video/')) {
-        // Show compression options for videos
-        setVideoFile(file);
-        const mediaFile: MediaFile = {
-          file,
-          type: mediaType,
-          url: '',
-          localUrl: URL.createObjectURL(file),
-          id: `${Date.now()}-${Math.random().toString(36).substring(2)}`
-        };
-        setFormData(prev => ({
-          ...prev,
-          mediaFiles: [...prev.mediaFiles, mediaFile]
-        }));
-        setShowCompressor(true);
-      } else {
-        addMediaFile(file, mediaType);
-      }
+      addMediaFile(file, mediaType);
     });
   };
 
@@ -313,84 +293,6 @@ const SubmitReview: React.FC = () => {
     return formData.instagram.trim() !== '' && formData.profilePictureUrl !== '';
   };
 
-  const handleVideoCompressed = async (compressedBlob: Blob, originalSize: number, compressedSize: number) => {
-    // Convert blob to file with _optimized suffix
-    const compressedFile = new File([compressedBlob], 'video_optimized.webm', {
-      type: 'video/webm'
-    });
-    
-    try {
-      const uploadedUrl = await uploadToR2(compressedFile, true); // Mark as optimized
-      
-      // Update the media file with the uploaded optimized URL
-      if (videoFile) {
-        const mediaFileId = formData.mediaFiles.find(mf => 
-          mf.localUrl === URL.createObjectURL(videoFile)
-        )?.id;
-        
-        if (mediaFileId) {
-          setFormData(prev => ({
-            ...prev,
-            mediaFiles: prev.mediaFiles.map(mf => 
-              mf.id === mediaFileId ? { ...mf, url: uploadedUrl } : mf
-            )
-          }));
-        }
-      }
-      
-      setShowCompressor(false);
-      setVideoFile(null);
-      
-      const compressionRatio = Math.round((1 - compressedSize / originalSize) * 100);
-      toast({
-        title: "Video optimized!",
-        description: `File size reduced by ${compressionRatio}% (${(originalSize / 1024 / 1024).toFixed(1)}MB → ${(compressedSize / 1024 / 1024).toFixed(1)}MB)`,
-      });
-    } catch (error) {
-      console.error('Failed to upload optimized video:', error);
-      toast({
-        title: "Upload failed",
-        description: "Failed to upload optimized video. Please try again.",
-        variant: "destructive"
-      });
-    }
-  };
-
-  const handleSkipCompression = async () => {
-    if (videoFile) {
-      try {
-        const uploadedUrl = await uploadToR2(videoFile, false); // Upload original
-        
-        const mediaFileId = formData.mediaFiles.find(mf => 
-          mf.localUrl === URL.createObjectURL(videoFile)
-        )?.id;
-        
-        if (mediaFileId) {
-          setFormData(prev => ({
-            ...prev,
-            mediaFiles: prev.mediaFiles.map(mf => 
-              mf.id === mediaFileId ? { ...mf, url: uploadedUrl } : mf
-            )
-          }));
-        }
-        
-        setShowCompressor(false);
-        setVideoFile(null);
-        
-        toast({
-          title: "Video uploaded",
-          description: "Original video uploaded successfully",
-        });
-      } catch (error) {
-        console.error('Failed to upload original video:', error);
-        toast({
-          title: "Upload failed",
-          description: "Failed to upload video. Please try again.",
-          variant: "destructive"
-        });
-      }
-    }
-  };
 
   // Generate preview review data
   const getPreviewReview = (): PreviewReview => ({
@@ -800,42 +702,6 @@ const SubmitReview: React.FC = () => {
           )}
         </div>
 
-        {/* Video Compressor Modal */}
-        {showCompressor && videoFile && (
-          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-            <div className="bg-background rounded-lg max-w-lg w-full max-h-[90vh] overflow-y-auto">
-              <VideoCompressor
-                videoFile={videoFile}
-                onCompressed={handleVideoCompressed}
-                onCancel={() => {
-                  setShowCompressor(false);
-                  setVideoFile(null);
-                  // Clear the preview URL
-                  if (formData.mediaFiles.length > 0) {
-                    const lastFile = formData.mediaFiles[formData.mediaFiles.length - 1];
-                    if (lastFile.localUrl?.startsWith('blob:')) {
-                      URL.revokeObjectURL(lastFile.localUrl);
-                      setFormData(prev => ({
-                        ...prev,
-                        mediaFiles: prev.mediaFiles.slice(0, -1)
-                      }));
-                    }
-                  }
-                }}
-              />
-              <div className="p-6 pt-0">
-                <Button
-                  onClick={handleSkipCompression}
-                  variant="outline"
-                  className="w-full"
-                  disabled={isUploading}
-                >
-                  {isUploading ? 'Uploading...' : 'Skip Compression & Upload Original'}
-                </Button>
-              </div>
-            </div>
-          </div>
-        )}
       </div>
     </div>
   );
