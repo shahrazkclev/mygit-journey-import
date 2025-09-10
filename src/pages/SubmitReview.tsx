@@ -21,6 +21,7 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Progress } from '@/components/ui/progress';
 import { VideoCompressor } from '@/components/reviews/VideoCompressor';
 
 interface MediaFile {
@@ -119,6 +120,27 @@ const SubmitReview: React.FC = () => {
 
       const mediaType = file.type.startsWith('video/') ? 'video' : 'image';
 
+      if (file.type.startsWith('video/')) {
+        // Show compression options for videos
+        setVideoFile(file);
+        const mediaFile: MediaFile = {
+          file,
+          type: mediaType,
+          url: '',
+          localUrl: URL.createObjectURL(file),
+          id: `${Date.now()}-${Math.random().toString(36).substring(2)}`
+        };
+        setFormData(prev => ({
+          ...prev,
+          mediaFiles: [...prev.mediaFiles, mediaFile]
+        }));
+        setShowCompressor(true);
+      } else {
+        addMediaFile(file, mediaType);
+      }
+    });
+  };
+
   const addMediaFile = (file: File, type: string) => {
     const mediaFile: MediaFile = {
       file,
@@ -152,39 +174,6 @@ const SubmitReview: React.FC = () => {
 
   const canSubmit = () => {
     return formData.rating > 0 && formData.description.trim() !== '' && formData.mediaFiles.length > 0;
-  };
-    });
-  };
-
-  const addMediaFile = (file: File, type: string) => {
-    const mediaFile: MediaFile = {
-      file,
-      type,
-      url: '',
-      localUrl: URL.createObjectURL(file),
-      id: `${Date.now()}-${Math.random().toString(36).substring(2)}`
-    };
-
-    setFormData(prev => ({
-      ...prev,
-      mediaFiles: [...prev.mediaFiles, mediaFile]
-    }));
-
-    // Upload immediately
-    uploadToR2(file, false).then(url => {
-      setFormData(prev => ({
-        ...prev,
-        mediaFiles: prev.mediaFiles.map(mf => 
-          mf.id === mediaFile.id ? { ...mf, url } : mf
-        )
-      }));
-    }).catch(error => {
-      toast({
-        title: "Upload failed",
-        description: `Failed to upload ${file.name}. Please try again.`,
-        variant: "destructive"
-      });
-    });
   };
 
   const removeMediaFile = (id: string) => {
@@ -593,96 +582,119 @@ const SubmitReview: React.FC = () => {
             <p className="text-muted-foreground">Rate your experience and share your story</p>
           </div>
 
-          {/* Rating */}
-          <div className="text-center space-y-4">
-            <Label className="text-base font-medium">How would you rate your experience? *</Label>
-            <div className="flex justify-center space-x-2">
-              {[1, 2, 3, 4, 5].map((star) => (
-                <button
-                  key={star}
-                  onClick={() => setFormData({ ...formData, rating: star })}
-                  className={`w-12 h-12 transition-all duration-200 ${
-                    formData.rating >= star
-                      ? 'text-yellow-400'
-                      : 'text-gray-300 hover:text-yellow-200'
-                  }`}
-                >
-                  <Star className="w-full h-full fill-current" />
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* Media Upload */}
-          <div>
-            <Label className="text-base font-medium">Upload Media *</Label>
-            <div className="mt-2 space-y-4">
-              <div className="border-2 border-dashed border-muted-foreground/25 rounded-lg p-6 text-center">
-                <label className="cursor-pointer">
-                  <input
-                    type="file"
-                    accept="image/*,video/*"
-                    multiple
-                    onChange={(e) => {
-                      const files = e.target.files;
-                      if (files) handleFileUpload(files);
-                    }}
-                    className="hidden"
-                  />
-                  <div className="space-y-2">
-                    <Upload className="w-8 h-8 mx-auto text-muted-foreground" />
-                    <p className="text-sm text-muted-foreground">
-                      Click to upload images or videos
-                    </p>
-                    <p className="text-xs text-muted-foreground">
-                      Max 50MB, videos under 30 seconds
-                    </p>
-                  </div>
-                </label>
+          <div className="space-y-6">
+            {/* Rating */}
+            <div>
+              <Label className="text-base font-medium mb-3 block">Rating *</Label>
+              <div className="flex items-center justify-center space-x-2">
+                {[1, 2, 3, 4, 5].map((star) => (
+                  <button
+                    key={star}
+                    type="button"
+                    onClick={() => setFormData({ ...formData, rating: star })}
+                    className="transition-colors hover:scale-110 transform"
+                  >
+                    <Star
+                      className={`w-8 h-8 ${
+                        star <= formData.rating
+                          ? 'fill-yellow-400 text-yellow-400'
+                          : 'text-gray-300 hover:text-yellow-300'
+                      }`}
+                    />
+                  </button>
+                ))}
               </div>
-
-              {/* Media Preview */}
-              {formData.mediaFiles.length > 0 && (
-                <div className="grid grid-cols-2 gap-4">
-                  {formData.mediaFiles.map((media) => (
-                    <div key={media.id} className="relative group">
-                      {media.type === 'video' ? (
-                        <video
-                          src={media.localUrl}
-                          className="w-full h-24 object-cover rounded-lg"
-                          controls
-                        />
-                      ) : (
-                        <img
-                          src={media.localUrl}
-                          alt="Media preview"
-                          className="w-full h-24 object-cover rounded-lg"
-                        />
-                      )}
-                      <button
-                        onClick={() => removeMediaFile(media.id)}
-                        className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 hover:bg-red-600 opacity-0 group-hover:opacity-100 transition-opacity"
-                      >
-                        <X className="w-3 h-3" />
-                      </button>
-                    </div>
-                  ))}
-                </div>
-              )}
+              <p className="text-center text-sm text-muted-foreground mt-2">
+                {formData.rating === 0 && "Click to rate"}
+                {formData.rating === 1 && "Poor"}
+                {formData.rating === 2 && "Fair"}
+                {formData.rating === 3 && "Good"}
+                {formData.rating === 4 && "Very Good"}
+                {formData.rating === 5 && "Excellent"}
+              </p>
             </div>
-          </div>
 
-          {/* Description */}
-          <div>
-            <Label htmlFor="description" className="text-base font-medium">Tell us about your experience *</Label>
-            <Textarea
-              id="description"
-              value={formData.description}
-              onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-              placeholder="Share your thoughts, what you loved, what could be improved..."
-              className="mt-2 min-h-[120px]"
-              required
-            />
+            {/* Media Upload */}
+            <div>
+              <Label className="text-base font-medium mb-3 block">Upload Media *</Label>
+              <div className="space-y-4">
+                {/* Upload Zone */}
+                <div className="border-2 border-dashed border-muted-foreground/25 rounded-lg p-6 text-center hover:border-muted-foreground/50 transition-colors">
+                  <label className="cursor-pointer block">
+                    <input
+                      type="file"
+                      accept="image/*,video/*"
+                      multiple
+                      onChange={(e) => e.target.files && handleFileUpload(e.target.files)}
+                      className="hidden"
+                    />
+                    <div className="space-y-3">
+                      <div className="flex justify-center">
+                        <Upload className="w-8 h-8 text-muted-foreground" />
+                      </div>
+                      <div>
+                        <p className="text-sm font-medium">Click to upload or drag and drop</p>
+                        <p className="text-xs text-muted-foreground">
+                          Images or videos (Max 50MB, videos under 30s)
+                        </p>
+                      </div>
+                    </div>
+                  </label>
+                </div>
+
+                {/* Uploaded Files */}
+                {formData.mediaFiles.length > 0 && (
+                  <div className="grid grid-cols-2 gap-3">
+                    {formData.mediaFiles.map((mediaFile) => (
+                      <div key={mediaFile.id} className="relative group">
+                        <div className="aspect-square rounded-lg overflow-hidden bg-muted">
+                          {mediaFile.type === 'video' ? (
+                            <video
+                              src={mediaFile.localUrl}
+                              className="w-full h-full object-cover"
+                              controls={false}
+                              muted
+                            />
+                          ) : (
+                            <img
+                              src={mediaFile.localUrl}
+                              alt="Uploaded media"
+                              className="w-full h-full object-cover"
+                            />
+                          )}
+                        </div>
+                        <button
+                          onClick={() => removeMediaFile(mediaFile.id)}
+                          className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 hover:bg-red-600 opacity-0 group-hover:opacity-100 transition-opacity"
+                        >
+                          <X className="w-3 h-3" />
+                        </button>
+                        <div className="absolute bottom-1 left-1 bg-black/50 text-white text-xs px-1 py-0.5 rounded">
+                          {mediaFile.type === 'video' ? (
+                            <Video className="w-3 h-3" />
+                          ) : (
+                            <ImageIcon className="w-3 h-3" />
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Description */}
+            <div>
+              <Label htmlFor="description" className="text-base font-medium">Your Review *</Label>
+              <Textarea
+                id="description"
+                value={formData.description}
+                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                placeholder="Share your thoughts, what you loved, what could be improved..."
+                className="mt-2 min-h-[120px]"
+                required
+              />
+            </div>
           </div>
         </div>
 
@@ -717,17 +729,21 @@ const SubmitReview: React.FC = () => {
           <div className="flex items-center justify-center space-x-4 mb-4">
             {Array.from({ length: totalSteps }, (_, i) => (
               <div key={i} className="flex items-center">
-                <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium transition-colors ${
-                  i + 1 <= currentStep
-                    ? 'bg-primary text-primary-foreground'
-                    : 'bg-muted text-muted-foreground'
-                }`}>
+                <div
+                  className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-semibold ${
+                    i + 1 <= currentStep
+                      ? 'bg-primary text-primary-foreground'
+                      : 'bg-muted text-muted-foreground'
+                  }`}
+                >
                   {i + 1}
                 </div>
                 {i < totalSteps - 1 && (
-                  <div className={`w-12 h-1 ml-4 transition-colors ${
-                    i + 1 < currentStep ? 'bg-primary' : 'bg-muted'
-                  }`} />
+                  <div
+                    className={`w-16 h-1 mx-2 ${
+                      i + 1 < currentStep ? 'bg-primary' : 'bg-muted'
+                    }`}
+                  />
                 )}
               </div>
             ))}
@@ -769,7 +785,7 @@ const SubmitReview: React.FC = () => {
               disabled={!canSubmit() || isUploading}
               className="flex items-center gap-2"
             >
-              {uploading ? (
+              {isUploading ? (
                 <>
                   <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
                   Submitting...
@@ -783,6 +799,43 @@ const SubmitReview: React.FC = () => {
             </Button>
           )}
         </div>
+
+        {/* Video Compressor Modal */}
+        {showCompressor && videoFile && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+            <div className="bg-background rounded-lg max-w-lg w-full max-h-[90vh] overflow-y-auto">
+              <VideoCompressor
+                videoFile={videoFile}
+                onCompressed={handleVideoCompressed}
+                onCancel={() => {
+                  setShowCompressor(false);
+                  setVideoFile(null);
+                  // Clear the preview URL
+                  if (formData.mediaFiles.length > 0) {
+                    const lastFile = formData.mediaFiles[formData.mediaFiles.length - 1];
+                    if (lastFile.localUrl?.startsWith('blob:')) {
+                      URL.revokeObjectURL(lastFile.localUrl);
+                      setFormData(prev => ({
+                        ...prev,
+                        mediaFiles: prev.mediaFiles.slice(0, -1)
+                      }));
+                    }
+                  }
+                }}
+              />
+              <div className="p-6 pt-0">
+                <Button
+                  onClick={handleSkipCompression}
+                  variant="outline"
+                  className="w-full"
+                  disabled={isUploading}
+                >
+                  {isUploading ? 'Uploading...' : 'Skip Compression & Upload Original'}
+                </Button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
