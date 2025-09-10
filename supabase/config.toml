@@ -1,10 +1,1 @@
 project_id = "mixifcnokcmxarpzwfiy"
-
-[functions.send-campaign]
-verify_jwt = false
-
-[functions.sync-contacts]
-verify_jwt = false
-
-[functions.generate-email]
-verify_jwt = false

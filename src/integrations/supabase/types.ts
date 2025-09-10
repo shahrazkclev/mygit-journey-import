@@ -291,6 +291,7 @@ export type Database = {
           is_active: boolean | null
           media_type: string
           media_url: string
+          media_url_optimized: string | null
           rating: number
           sort_order: number | null
           updated_at: string | null
@@ -306,6 +307,7 @@ export type Database = {
           is_active?: boolean | null
           media_type: string
           media_url: string
+          media_url_optimized?: string | null
           rating: number
           sort_order?: number | null
           updated_at?: string | null
@@ -321,6 +323,7 @@ export type Database = {
           is_active?: boolean | null
           media_type?: string
           media_url?: string
+          media_url_optimized?: string | null
           rating?: number
           sort_order?: number | null
           updated_at?: string | null
