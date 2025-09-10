@@ -1,7 +1,6 @@
 import { supabase } from "@/integrations/supabase/client";
-import { DEMO_USER_ID } from "@/lib/demo-auth";
 
-export const bulkImportProducts = async () => {
+export const bulkImportProducts = async (userId: string) => {
   const products = [
     { name: "The Lazy Motion Library", category: "premium", price: 99 },
     { name: "Advanced 3d Product Animation Course", category: "course", price: 40 },
@@ -46,7 +45,7 @@ export const bulkImportProducts = async () => {
     const { data: existingProducts, error: fetchError } = await supabase
       .from('products')
       .select('name')
-      .eq('user_id', DEMO_USER_ID);
+      .eq('user_id', userId);
 
     if (fetchError) {
       console.error('Error fetching existing products:', fetchError);
@@ -65,7 +64,7 @@ export const bulkImportProducts = async () => {
     // Prepare products for insertion
     const productsToInsert = newProducts.map(product => ({
       ...product,
-      user_id: DEMO_USER_ID,
+      user_id: userId,
       description: `${product.category} - ${product.name}`,
       sku: product.name.replace(/[^a-zA-Z0-9]/g, '-').toUpperCase()
     }));

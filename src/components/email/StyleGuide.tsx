@@ -10,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Palette, Image, Sparkles, Save, Eye, Settings } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { DEMO_USER_ID } from "@/lib/demo-auth";
+import { useAuth } from "@/contexts/AuthContext";
 import { useGlobalTheme } from "@/hooks/useGlobalTheme";
 import { setCssThemeFromHex } from "@/lib/theme";
 
@@ -55,6 +55,7 @@ interface PageThemeColors {
 }
 
 export const StyleGuide = () => {
+  const { user } = useAuth();
   const [loading, setLoading] = useState(false);
   const [brandInitialized, setBrandInitialized] = useState(false);
   const [brandIdentity, setBrandIdentity] = useState<BrandIdentity>({
@@ -106,7 +107,7 @@ export const StyleGuide = () => {
       const { data, error } = await supabase
         .from('style_guides')
         .select('*')
-        .eq('user_id', DEMO_USER_ID)
+        .eq('user_id', user?.id)
         .order('created_at', { ascending: false })
         .limit(1);
 
@@ -158,7 +159,7 @@ export const StyleGuide = () => {
       const { data: existingData, error: checkError } = await supabase
         .from('style_guides')
         .select('id')
-        .eq('user_id', DEMO_USER_ID)
+        .eq('user_id', user?.id)
         .order('created_at', { ascending: false })
         .limit(1);
 
@@ -181,7 +182,7 @@ export const StyleGuide = () => {
           .from('style_guides')
           .insert([
             {
-              user_id: DEMO_USER_ID,
+              user_id: user?.id,
               page_theme_primary: colors.primary,
               page_theme_secondary: colors.secondary,
               page_theme_accent: colors.accent,
@@ -202,7 +203,7 @@ export const StyleGuide = () => {
       const { data: existingData, error: checkError } = await supabase
         .from('style_guides')
         .select('id')
-        .eq('user_id', DEMO_USER_ID)
+        .eq('user_id', user?.id)
         .limit(1);
 
       if (checkError) throw checkError;
@@ -226,7 +227,7 @@ export const StyleGuide = () => {
       };
 
       const styleGuideData = {
-        user_id: DEMO_USER_ID,
+        user_id: user?.id,
         brand_name: brandIdentity.name,
         primary_color: brandIdentity.primaryColor,
         secondary_color: brandIdentity.secondaryColor,
@@ -248,7 +249,7 @@ export const StyleGuide = () => {
         result = await supabase
           .from('style_guides')
           .update(styleGuideData)
-          .eq('user_id', DEMO_USER_ID);
+          .eq('user_id', user?.id);
       } else {
         result = await supabase
           .from('style_guides')
@@ -290,7 +291,7 @@ export const StyleGuide = () => {
         body: {
           prompt: "Create a preview email showcasing the brand style",
           subject: "Style Guide Preview Email",
-          userId: DEMO_USER_ID,
+          userId: user?.id,
           styleGuide: {
             brandName: brandIdentity.name,
             primaryColor: brandIdentity.primaryColor,

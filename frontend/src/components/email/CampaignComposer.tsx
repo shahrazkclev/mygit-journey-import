@@ -13,6 +13,7 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { EmailEditor, EmailElement } from "./EmailEditor";
 import { EditablePreview } from "./editor/EditablePreview";
+import { useAuth } from "@/contexts/AuthContext";
 import { SendCampaignModal } from "./SendCampaignModal";
 import { DEMO_USER_ID } from "@/lib/demo-auth";
 
@@ -21,6 +22,7 @@ interface CampaignComposerProps {
 }
 
 export const CampaignComposer: React.FC<CampaignComposerProps> = ({ onSave }) => {
+  const { user } = useAuth();
   const [subject, setSubject] = useState("");
   const [prompt, setPrompt] = useState("");
   const [generatedTemplate, setGeneratedTemplate] = useState("");
@@ -92,17 +94,19 @@ export const CampaignComposer: React.FC<CampaignComposerProps> = ({ onSave }) =>
   const promptTextareaRef = React.useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
-    loadEmailLists();
-    loadProducts();
-    loadStyleGuide();
-  }, []);
+    if (user?.id) {
+      loadEmailLists();
+      loadProducts();
+      loadStyleGuide();
+    }
+  }, [user?.id]);
 
   const loadEmailLists = async () => {
     try {
       const { data, error } = await supabase
         .from('email_lists')
         .select('*')
-        .eq('user_id', DEMO_USER_ID)
+        .eq('user_id', user?.id)
         .order('created_at', { ascending: false });
 
       if (error) throw error;
@@ -117,7 +121,7 @@ export const CampaignComposer: React.FC<CampaignComposerProps> = ({ onSave }) =>
       const { data, error } = await supabase
         .from('style_guides')
         .select('*')
-        .eq('user_id', DEMO_USER_ID)
+        .eq('user_id', user?.id)
         .order('created_at', { ascending: false })
         .limit(1);
 
@@ -157,7 +161,7 @@ export const CampaignComposer: React.FC<CampaignComposerProps> = ({ onSave }) =>
       const { data, error } = await supabase
         .from('products')
         .select('*')
-        .eq('user_id', DEMO_USER_ID)
+        .eq('user_id', user?.id)
         .order('created_at', { ascending: false });
 
       if (error) {
@@ -747,7 +751,7 @@ export const CampaignComposer: React.FC<CampaignComposerProps> = ({ onSave }) =>
         .from('campaigns')
         .insert([
           {
-            user_id: DEMO_USER_ID,
+            user_id: user?.id,
             name: `Campaign: ${subject}`,
             subject: subject,
             html_content: generatedTemplate,

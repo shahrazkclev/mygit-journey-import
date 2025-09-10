@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { TagInput } from "@/components/ui/tag-input";
 import { Trash2, Plus, Lock, Unlock, Edit } from "lucide-react";
 import { toast } from "sonner";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface LockedTag {
   id: string;
@@ -17,6 +18,7 @@ interface LockedTag {
 }
 
 export const LockTagsManager = () => {
+  const { user } = useAuth();
   const [lockedTags, setLockedTags] = useState<LockedTag[]>([]);
   const [isCreating, setIsCreating] = useState(false);
   const [allTags, setAllTags] = useState<string[]>([]);
@@ -31,9 +33,11 @@ export const LockTagsManager = () => {
   });
 
   useEffect(() => {
-    loadLockedTags();
-    loadAllTags();
-  }, []);
+    if (user?.id) {
+      loadLockedTags();
+      loadAllTags();
+    }
+  }, [user?.id]);
 
   const loadLockedTags = async () => {
     try {
@@ -71,9 +75,17 @@ export const LockTagsManager = () => {
       const { data: contacts, error: contactsError } = await supabase
         .from('contacts')
         .select('tags')
-        .eq('user_id', '550e8400-e29b-41d4-a716-446655440000');
+        .eq('user_id', user?.id);
 
       if (contactsError) throw contactsError;
+
+      // Get products for tag suggestions
+      const { data: products, error: productsError } = await supabase
+        .from('products')
+        .select('name, category')
+        .eq('user_id', user?.id);
+
+      if (productsError) throw productsError;
 
       // Combine all tags
       const allTagsSet = new Set<string>();
@@ -81,6 +93,14 @@ export const LockTagsManager = () => {
       contacts?.forEach(contact => {
         if (contact.tags) {
           contact.tags.forEach((tag: string) => allTagsSet.add(tag.trim()));
+        }
+      });
+
+      // Add product names as tag suggestions
+      products?.forEach(product => {
+        allTagsSet.add(product.name.trim());
+        if (product.category) {
+          allTagsSet.add(product.category.trim());
         }
       });
 

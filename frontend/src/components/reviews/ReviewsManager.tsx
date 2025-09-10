@@ -12,7 +12,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useToast } from "@/hooks/use-toast";
 import { useGlobalTheme } from "@/hooks/useGlobalTheme";
 import { supabase } from "@/integrations/supabase/client";
-import { VideoCompressor } from './VideoCompressor';
 import { StyleGuide } from "@/components/email/StyleGuide";
 import { 
   Star, 
@@ -84,6 +83,7 @@ interface ReviewStats {
 }
 
 export const ReviewsManager = () => {
+  const { user } = useAuth();
   const [activeTab, setActiveTab] = useState("pending");
   const [settingsSubTab, setSettingsSubTab] = useState("style");
   const [reviews, setReviews] = useState<ReviewWithCustomer[]>([]);
@@ -121,8 +121,7 @@ export const ReviewsManager = () => {
   const [compressionStatus, setMinimizeionStatus] = useState('');
   const [showVideoCompressor, setShowVideoCompressor] = useState(false);
 
-  // Demo user ID for contacts
-  const DEMO_USER_ID = "550e8400-e29b-41d4-a716-446655440000";
+  // Demo user ID for contacts (removed - using user from useAuth)
 
   // Fetch customers for cross-reference
   const fetchCustomers = async () => {
@@ -130,7 +129,7 @@ export const ReviewsManager = () => {
       const { data, error } = await supabase
         .from('contacts')
         .select('id, email, first_name, last_name, status, tags, created_at, updated_at')
-        .eq('user_id', DEMO_USER_ID)
+        .eq('user_id', user?.id)
         .eq('status', 'subscribed');
 
       if (error) throw error;
@@ -370,7 +369,7 @@ export const ReviewsManager = () => {
       const { data, error } = await supabase
         .from('contacts')
         .insert({
-          user_id: DEMO_USER_ID,
+          user_id: user?.id,
           email: review.user_email,
           first_name: review.user_name?.split(' ')[0] || null,
           last_name: review.user_name?.split(' ').slice(1).join(' ') || null,
@@ -1456,18 +1455,18 @@ export const ReviewsManager = () => {
             </DialogHeader>
             
             {showVideoCompressor && selectedVideoReview ? (
-              <VideoCompressor
-                videoUrl={selectedVideoReview.media_url}
-                onCompressed={handleCompressedVideo}
-                onCancel={() => {
-                  setShowVideoCompressor(false);
-                  setMinimizeionDialogOpen(false);
-                }}
-                targetResolution={compressionSettings.targetResolution}
-                maxFileSizeMB={compressionSettings.maxFileSizeMB}
-                quality={compressionSettings.quality}
-                compressionPreset={compressionSettings.compressionPreset}
-              />
+              <div className="p-4 text-center">
+                <p>Video compression feature is not available.</p>
+                <Button 
+                  onClick={() => {
+                    setShowVideoCompressor(false);
+                    setMinimizeionDialogOpen(false);
+                  }}
+                  className="mt-2"
+                >
+                  Close
+                </Button>
+              </div>
             ) : (
               <>
                 <div className="space-y-4">

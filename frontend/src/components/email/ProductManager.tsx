@@ -8,7 +8,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Plus, Package, Edit, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
-import { DEMO_USER_ID } from '@/lib/demo-auth';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface Product {
   id: string;
@@ -21,6 +21,7 @@ interface Product {
 }
 
 export const ProductManager: React.FC = () => {
+  const { user } = useAuth();
   const [products, setProducts] = useState<Product[]>([]);
   const [newProduct, setNewProduct] = useState({
     name: '',
@@ -41,7 +42,7 @@ export const ProductManager: React.FC = () => {
       const { data, error } = await supabase
         .from('products')
         .select('*')
-        .eq('user_id', DEMO_USER_ID)
+        .eq('user_id', user?.id)
         .order('created_at', { ascending: false });
 
       if (error) throw error;
@@ -62,7 +63,7 @@ export const ProductManager: React.FC = () => {
       const { data, error } = await supabase
         .from('products')
         .insert([{
-          user_id: DEMO_USER_ID,
+          user_id: user?.id,
           name: newProduct.name,
           description: newProduct.description || null,
           price: newProduct.price ? parseFloat(newProduct.price) : null,

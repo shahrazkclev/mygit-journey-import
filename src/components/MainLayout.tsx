@@ -5,6 +5,7 @@ import { EmailCampaignApp } from "./EmailCampaignApp";
 import { ReviewsManager } from "./reviews/ReviewsManager";
 import { Users, Star, Menu, X } from "lucide-react";
 
+
 export const MainLayout = () => {
   const [activePanel, setActivePanel] = useState("customers");
   const [sidebarOpen, setSidebarOpen] = useState(false);

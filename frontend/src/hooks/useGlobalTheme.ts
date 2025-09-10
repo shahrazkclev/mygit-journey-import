@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { DEMO_USER_ID } from "@/lib/demo-auth";
+import { useAuth } from "@/contexts/AuthContext";
 import { setCssThemeFromHex } from "@/lib/theme";
 
 // Global state for theme persistence across tab switches
@@ -12,6 +12,7 @@ let globalThemeState = {
 };
 
 export const useGlobalTheme = () => {
+  const { user } = useAuth();
   const [themeColors, setThemeColors] = useState(globalThemeState);
 
   const updateTheme = (colors: Partial<typeof globalThemeState>) => {
@@ -31,7 +32,7 @@ export const useGlobalTheme = () => {
       const { data, error } = await supabase
         .from('style_guides')
         .select('page_theme_primary, page_theme_secondary, page_theme_accent')
-        .eq('user_id', DEMO_USER_ID)
+        .eq('user_id', user?.id)
         .order('created_at', { ascending: false })
         .limit(1);
 

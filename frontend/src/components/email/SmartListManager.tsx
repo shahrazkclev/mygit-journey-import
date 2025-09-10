@@ -13,7 +13,7 @@ import { TagInput } from "@/components/ui/tag-input";
 import { Trash2, Plus, List, Zap, Users, Tag, UserPlus, Edit, Copy, Search } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
-import { DEMO_USER_ID } from "@/lib/demo-auth";
+import { useAuth } from "@/contexts/AuthContext";
 import { DynamicListRuleBuilder } from "./DynamicListRuleBuilder";
 import { ContactFilter } from "./ContactFilter";
 
@@ -82,7 +82,7 @@ export const SmartListManager = () => {
           *,
           contact_lists(count)
         `)
-        .eq('user_id', DEMO_USER_ID)
+        .eq('user_id', user?.id)
         .order('created_at', { ascending: false });
 
       if (listsError) {
@@ -108,7 +108,7 @@ export const SmartListManager = () => {
       const { data: contactsData, error: contactsError } = await supabase
         .from('contacts')
         .select('id, first_name, last_name, email, tags')
-        .eq('user_id', DEMO_USER_ID);
+        .eq('user_id', user?.id);
 
       if (contactsError) {
         console.error('Error loading contacts:', contactsError);
@@ -142,7 +142,7 @@ export const SmartListManager = () => {
       const { data: contacts, error: contactsError } = await supabase
         .from('contacts')
         .select('tags')
-        .eq('user_id', DEMO_USER_ID);
+        .eq('user_id', user?.id);
 
       if (contactsError) throw contactsError;
 
@@ -150,7 +150,7 @@ export const SmartListManager = () => {
       const { data: tagRules, error: rulesError } = await supabase
         .from('tag_rules')
         .select('trigger_tags, add_tags, remove_tags')
-        .eq('user_id', DEMO_USER_ID);
+        .eq('user_id', user?.id);
 
       if (rulesError) throw rulesError;
 
@@ -202,7 +202,7 @@ export const SmartListManager = () => {
         .insert({
           name: newList.name,
           description: newList.description,
-          user_id: DEMO_USER_ID,
+          user_id: user?.id,
           list_type: newList.list_type,
           rule_config: ruleConfig
         })
@@ -349,7 +349,7 @@ export const SmartListManager = () => {
     const { data: allContactsData, error: contactsError } = await supabase
       .from('contacts')
       .select('id, first_name, last_name, email, tags')
-      .eq('user_id', DEMO_USER_ID);
+      .eq('user_id', user?.id);
 
     if (contactsError) {
       console.error('Error loading contacts:', contactsError);
@@ -504,7 +504,7 @@ export const SmartListManager = () => {
         .insert({
           name: duplicateName,
           description: `Static copy of ${originalList.name}`,
-          user_id: DEMO_USER_ID,
+          user_id: user?.id,
           list_type: 'static',
           rule_config: null
         })

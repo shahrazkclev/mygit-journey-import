@@ -12,7 +12,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Plus, Upload, Edit, Trash2, Users, Package, List, Search, Filter, Download, UserPlus, UserMinus, CheckSquare, Square } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { DEMO_USER_ID } from "@/lib/demo-auth";
+import { useAuth } from "@/contexts/AuthContext";
 import { ContactFilter } from "./ContactFilter";
 
 type Product = {
@@ -52,6 +52,7 @@ type ContactList = {
 };
 
 export const EmailListManager = () => {
+  const { user } = useAuth();
   const [lists, setLists] = useState<EmailList[]>([]);
   const [contacts, setContacts] = useState<Contact[]>([]);
   const [contactLists, setContactLists] = useState<ContactList[]>([]);
@@ -221,7 +222,7 @@ export const EmailListManager = () => {
           .from('email_lists')
           .insert([
             {
-              user_id: DEMO_USER_ID,
+              user_id: user?.id,
               name: newListName.trim(),
               description: newListDescription.trim() || null,
             }
@@ -324,7 +325,7 @@ export const EmailListManager = () => {
           .from('contacts')
           .insert([
             {
-              user_id: DEMO_USER_ID,
+              user_id: user?.id,
               email: newContact.email.trim(),
               first_name: newContact.firstName.trim() || null,
               last_name: newContact.lastName.trim() || null,

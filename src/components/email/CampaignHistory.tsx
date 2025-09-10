@@ -30,7 +30,7 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
-import { DEMO_USER_ID } from '@/lib/demo-auth';
+import { useAuth } from '@/contexts/AuthContext';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 
 interface Campaign {
@@ -59,6 +59,7 @@ interface CampaignSend {
 }
 
 export const CampaignHistory: React.FC = () => {
+  const { user } = useAuth();
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
   const [campaignSends, setCampaignSends] = useState<CampaignSend[]>([]);
   const [selectedCampaign, setSelectedCampaign] = useState<Campaign | null>(null);
@@ -114,7 +115,7 @@ export const CampaignHistory: React.FC = () => {
       const { data, error } = await supabase
         .from('campaigns')
         .select('*')
-        .eq('user_id', DEMO_USER_ID)
+        .eq('user_id', user?.id)
         .order('created_at', { ascending: false });
 
       if (error) throw error;
@@ -138,7 +139,7 @@ export const CampaignHistory: React.FC = () => {
         .from('campaigns')
         .delete()
         .eq('id', campaignId)
-        .eq('user_id', DEMO_USER_ID);
+        .eq('user_id', user?.id);
 
       if (error) {
         console.error('Error deleting campaign:', error);
@@ -172,7 +173,7 @@ export const CampaignHistory: React.FC = () => {
         .from('campaigns')
         .delete()
         .in('id', campaignIds)
-        .eq('user_id', DEMO_USER_ID);
+        .eq('user_id', user?.id);
 
       if (error) {
         console.error('Error deleting campaigns:', error);
@@ -245,7 +246,7 @@ export const CampaignHistory: React.FC = () => {
       const { data: listData, error: listError } = await supabase
         .from('email_lists')
         .insert([{
-          user_id: DEMO_USER_ID,
+          user_id: user?.id,
           name: newListName.trim(),
           description: newListDescription.trim() || `Created from campaign: ${selectedCampaign.name}`
         }])
@@ -267,7 +268,7 @@ export const CampaignHistory: React.FC = () => {
         .from('contacts')
         .select('id')
         .in('email', successfulSends.map(send => send.contact_email))
-        .eq('user_id', DEMO_USER_ID);
+        .eq('user_id', user?.id);
 
       if (contactsError) throw contactsError;
 

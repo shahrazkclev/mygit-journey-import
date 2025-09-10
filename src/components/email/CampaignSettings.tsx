@@ -11,9 +11,10 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/component
 import { Settings, Clock, Zap, Link, AlertCircle, ChevronDown, ChevronRight, Bot } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
-import { DEMO_USER_ID } from "@/lib/demo-auth";
+import { useAuth } from "@/contexts/AuthContext";
 
 export const CampaignSettings = () => {
+  const { user } = useAuth();
   const [webhookUrl, setWebhookUrl] = useState("");
   const [aiInstructions, setAiInstructions] = useState("");
   const [showFullPrompt, setShowFullPrompt] = useState(false);
@@ -30,7 +31,7 @@ export const CampaignSettings = () => {
       const { data, error } = await supabase
         .from('user_settings')
         .select('webhook_url, ai_instructions')
-        .eq('user_id', DEMO_USER_ID)
+        .eq('user_id', user?.id)
         .single();
 
       if (error && error.code !== 'PGRST116') {
@@ -99,7 +100,7 @@ Return ONLY the clean email content.`;
     setIsLoading(true);
     try {
       const settingsData = {
-        user_id: DEMO_USER_ID,
+        user_id: user?.id,
         webhook_url: webhookUrl
       };
 
@@ -133,7 +134,7 @@ Return ONLY the clean email content.`;
     setIsSavingAi(true);
     try {
       const settingsData = {
-        user_id: DEMO_USER_ID,
+        user_id: user?.id,
         ai_instructions: aiInstructions
       };
 

@@ -8,7 +8,7 @@ import { AlertCircle, Send, Pause, Play, CheckCircle, XCircle, Users, Clock, Mai
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
-import { DEMO_USER_ID } from '@/lib/demo-auth';
+import { useAuth } from '@/contexts/AuthContext';
 import { api } from '@/lib/api';
 
 interface SendCampaignModalProps {
@@ -34,6 +34,7 @@ export const SendCampaignModal: React.FC<SendCampaignModalProps> = ({
   htmlContent,
   selectedLists
 }) => {
+  const { user } = useAuth();
   const [campaignTitle, setCampaignTitle] = useState(subject);
   const [campaignName, setCampaignName] = useState('Campaign ' + new Date().toLocaleDateString());
   const [senderSequence, setSenderSequence] = useState(1);
@@ -153,7 +154,7 @@ export const SendCampaignModal: React.FC<SendCampaignModalProps> = ({
     const { data: settings, error: settingsError } = await supabase
       .from('user_settings')
       .select('webhook_url')
-      .eq('user_id', DEMO_USER_ID)
+      .eq('user_id', user?.id)
       .maybeSingle();
 
     if (settingsError) {

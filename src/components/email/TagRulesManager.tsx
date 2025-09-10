@@ -11,6 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { TagInput } from "@/components/ui/tag-input";
 import { Trash2, Plus, Settings, Edit, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface TagRule {
   id: string;
@@ -26,6 +27,7 @@ interface TagRule {
 }
 
 export const TagRulesManager = () => {
+  const { user } = useAuth();
   const [rules, setRules] = useState<TagRule[]>([]);
   const [isCreating, setIsCreating] = useState(false);
   const [editingRule, setEditingRule] = useState<string | null>(null);
@@ -51,9 +53,11 @@ export const TagRulesManager = () => {
   });
 
   useEffect(() => {
-    loadRules();
-    loadAllTags();
-  }, []);
+    if (user?.id) {
+      loadRules();
+      loadAllTags();
+    }
+  }, [user?.id]);
 
   const loadRules = async () => {
     try {
@@ -78,7 +82,7 @@ export const TagRulesManager = () => {
       const { data: contacts, error: contactsError } = await supabase
         .from('contacts')
         .select('tags')
-        .eq('user_id', '550e8400-e29b-41d4-a716-446655440000');
+        .eq('user_id', user?.id);
 
       if (contactsError) throw contactsError;
 
@@ -86,9 +90,17 @@ export const TagRulesManager = () => {
       const { data: tagRules, error: rulesError } = await supabase
         .from('tag_rules')
         .select('trigger_tags, add_tags, remove_tags')
-        .eq('user_id', '550e8400-e29b-41d4-a716-446655440000');
+        .eq('user_id', user?.id);
 
       if (rulesError) throw rulesError;
+
+      // Get products for tag suggestions
+      const { data: products, error: productsError } = await supabase
+        .from('products')
+        .select('name, category')
+        .eq('user_id', user?.id);
+
+      if (productsError) throw productsError;
 
       // Combine all tags
       const allTagsSet = new Set<string>();
@@ -110,6 +122,14 @@ export const TagRulesManager = () => {
         }
         if (rule.remove_tags) {
           rule.remove_tags.forEach((tag: string) => allTagsSet.add(tag.trim()));
+        }
+      });
+
+      // Add product names as tag suggestions
+      products?.forEach(product => {
+        allTagsSet.add(product.name.trim());
+        if (product.category) {
+          allTagsSet.add(product.category.trim());
         }
       });
 

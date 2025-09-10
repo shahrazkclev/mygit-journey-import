@@ -11,7 +11,7 @@ import { TagInput } from "@/components/ui/tag-input";
 import { Trash2, Plus, Tag, Users, Link, ChevronDown, ChevronRight, Edit, Upload, FileSpreadsheet, User } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
-import { DEMO_USER_ID } from "@/lib/demo-auth";
+import { useAuth } from "@/contexts/AuthContext";
 import { EditContactDialog } from "./EditContactDialog";
 
 interface Contact {
@@ -37,6 +37,7 @@ interface DbContact {
 }
 
 export const SimpleContactManager = () => {
+  const { user } = useAuth();
   const [contacts, setContacts] = useState<Contact[]>([]);
   const [filteredContacts, setFilteredContacts] = useState<Contact[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
@@ -91,11 +92,13 @@ export const SimpleContactManager = () => {
   );
 
   useEffect(() => {
-    loadContacts();
-    loadEmailLists();
-    loadContactLists();
-    loadAllTags();
-  }, []);
+    if (user?.id) {
+      loadContacts();
+      loadEmailLists();
+      loadContactLists();
+      loadAllTags();
+    }
+  }, [user?.id]);
 
   // Listen for contact updates from other components
   useEffect(() => {
@@ -130,7 +133,7 @@ export const SimpleContactManager = () => {
       const { data, error } = await supabase
         .from('contacts')
         .select('id, user_id, created_at, updated_at, email, first_name, last_name, status, tags')
-        .eq('user_id', DEMO_USER_ID)
+        .eq('user_id', user?.id)
         .eq('status', 'subscribed') // Only load subscribed contacts
         .order('created_at', { ascending: false });
 
@@ -184,7 +187,7 @@ export const SimpleContactManager = () => {
       const { data, error } = await supabase
         .from('email_lists')
         .select('*')
-        .eq('user_id', DEMO_USER_ID)
+        .eq('user_id', user?.id)
         .order('created_at', { ascending: false });
 
       if (error) {
@@ -233,7 +236,7 @@ export const SimpleContactManager = () => {
       const { data: contacts, error: contactsError } = await supabase
         .from('contacts')
         .select('tags')
-        .eq('user_id', DEMO_USER_ID);
+        .eq('user_id', user?.id);
 
       if (contactsError) throw contactsError;
 
@@ -241,9 +244,17 @@ export const SimpleContactManager = () => {
       const { data: tagRules, error: rulesError } = await supabase
         .from('tag_rules')
         .select('trigger_tags, add_tags, remove_tags')
-        .eq('user_id', DEMO_USER_ID);
+        .eq('user_id', user?.id);
 
       if (rulesError) throw rulesError;
+
+      // Get products for tag suggestions
+      const { data: products, error: productsError } = await supabase
+        .from('products')
+        .select('name, category')
+        .eq('user_id', user?.id);
+
+      if (productsError) throw productsError;
 
       // Combine all tags
       const allTagsSet = new Set<string>();
@@ -265,6 +276,14 @@ export const SimpleContactManager = () => {
         }
         if (rule.remove_tags) {
           rule.remove_tags.forEach((tag: string) => allTagsSet.add(tag.trim()));
+        }
+      });
+
+      // Add product names as tag suggestions
+      products?.forEach(product => {
+        allTagsSet.add(product.name.trim());
+        if (product.category) {
+          allTagsSet.add(product.category.trim());
         }
       });
 
@@ -330,7 +349,7 @@ export const SimpleContactManager = () => {
       const { data: existingContact, error: selectError } = await supabase
         .from('contacts')
         .select('id, tags, first_name, last_name')
-        .eq('user_id', DEMO_USER_ID)
+        .eq('user_id', user?.id)
         .eq('email', newContact.email)
         .maybeSingle();
 
@@ -371,7 +390,7 @@ export const SimpleContactManager = () => {
         const { error: insertError } = await supabase
           .from('contacts')
           .insert({
-            user_id: DEMO_USER_ID,
+            user_id: user?.id,
             email: newContact.email,
             first_name: firstName || null,
             last_name: lastName || null,
@@ -517,7 +536,7 @@ export const SimpleContactManager = () => {
             const { error } = await supabase
               .from('contacts')
               .insert({
-                user_id: DEMO_USER_ID,
+                user_id: user?.id,
                 email: email,
                 first_name: firstName || null,
                 last_name: lastName || null,
