@@ -207,15 +207,31 @@ const SubmitReview: React.FC = () => {
       profilePictureUrl: previewUrl
     }));
 
+    // Show upload progress
+    setUploading(true);
+    setUploadProgress(0);
+
     try {
       const uploadedUrl = await uploadToR2(file);
       setFormData(prev => ({ 
         ...prev, 
         profilePictureUrl: uploadedUrl 
       }));
+      toast({
+        title: "Success",
+        description: "Profile picture uploaded successfully",
+      });
     } catch (error) {
       console.error('Profile picture upload failed:', error);
-      // Keep local preview
+      toast({
+        title: "Upload failed",
+        description: "Failed to upload profile picture. Please try again.",
+        variant: "destructive"
+      });
+      // Keep local preview for user experience
+    } finally {
+      setUploading(false);
+      setUploadProgress(0);
     }
   };
 

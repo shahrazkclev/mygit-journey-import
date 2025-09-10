@@ -284,7 +284,7 @@ export const ReviewsManager = () => {
 
   // Copy submission link
   const copySubmissionLink = () => {
-    const link = `${window.location.origin}/submitreview`;
+    const link = `${window.location.origin}/submit-review`;
     navigator.clipboard.writeText(link);
     toast({
       title: "Copied!",
@@ -483,14 +483,14 @@ export const ReviewsManager = () => {
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
-      <div className="border-b bg-card/50 backdrop-blur-sm">
-        <div className="px-6 py-4">
+      <div className="border-b bg-card/50 backdrop-blur-sm sticky top-0 z-50">
+        <div className="container mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-2xl font-bold text-foreground">
+              <h1 className="text-xl md:text-2xl lg:text-3xl font-bold text-foreground">
                 Reviews Manager
               </h1>
-              <p className="text-sm text-muted-foreground">
+              <p className="text-xs md:text-sm lg:text-base text-muted-foreground">
                 Manage customer reviews and submissions
               </p>
             </div>
@@ -507,32 +507,44 @@ export const ReviewsManager = () => {
           {/* Navigation Tabs */}
           <div className="bg-card rounded-lg border p-1 shadow-sm">
             <TabsList className="grid grid-cols-2 md:grid-cols-4 w-full bg-transparent gap-1 h-auto">
-              <TabsTrigger value="pending" className="flex items-center justify-center gap-1.5 text-xs md:text-sm px-2 md:px-3 py-2.5">
+              <TabsTrigger 
+                value="pending" 
+                className="flex items-center justify-center gap-1.5 text-xs md:text-sm px-2 md:px-3 py-2.5 rounded-md data-[state=active]:bg-primary data-[state=active]:text-primary-foreground transition-all"
+              >
                 <Clock className="h-4 w-4" />
                 <span className="hidden sm:inline">Pending</span>
                 {stats.pending_count > 0 && (
-                  <Badge variant="secondary" className="ml-1 h-5 min-w-[20px] px-1 text-xs">
+                  <div className="ml-1 bg-destructive text-destructive-foreground rounded-full min-w-[20px] h-5 flex items-center justify-center text-xs font-medium px-1">
                     {stats.pending_count}
-                  </Badge>
+                  </div>
                 )}
               </TabsTrigger>
               
-              <TabsTrigger value="published" className="flex items-center justify-center gap-1.5 text-xs md:text-sm px-2 md:px-3 py-2.5">
+              <TabsTrigger 
+                value="published" 
+                className="flex items-center justify-center gap-1.5 text-xs md:text-sm px-2 md:px-3 py-2.5 rounded-md data-[state=active]:bg-primary data-[state=active]:text-primary-foreground transition-all"
+              >
                 <Star className="h-4 w-4" />
                 <span className="hidden sm:inline">Published</span>
                 {stats.approved_count > 0 && (
-                  <Badge variant="secondary" className="ml-1 h-5 min-w-[20px] px-1 text-xs">
+                  <div className="ml-1 bg-green-500 text-white rounded-full min-w-[20px] h-5 flex items-center justify-center text-xs font-medium px-1">
                     {stats.approved_count}
-                  </Badge>
+                  </div>
                 )}
               </TabsTrigger>
               
-              <TabsTrigger value="analytics" className="flex items-center justify-center gap-1.5 text-xs md:text-sm px-2 md:px-3 py-2.5">
+              <TabsTrigger 
+                value="analytics" 
+                className="flex items-center justify-center gap-1.5 text-xs md:text-sm px-2 md:px-3 py-2.5 rounded-md data-[state=active]:bg-primary data-[state=active]:text-primary-foreground transition-all"
+              >
                 <TrendingUp className="h-4 w-4" />
                 <span className="hidden sm:inline">Analytics</span>
               </TabsTrigger>
               
-              <TabsTrigger value="all" className="flex items-center justify-center gap-1.5 text-xs md:text-sm px-2 md:px-3 py-2.5">
+              <TabsTrigger 
+                value="all" 
+                className="flex items-center justify-center gap-1.5 text-xs md:text-sm px-2 md:px-3 py-2.5 rounded-md data-[state=active]:bg-primary data-[state=active]:text-primary-foreground transition-all"
+              >
                 <Users className="h-4 w-4" />
                 <span className="hidden sm:inline">All Reviews</span>
               </TabsTrigger>
@@ -540,24 +552,22 @@ export const ReviewsManager = () => {
           </div>
 
           {/* Pending Reviews Tab */}
-          <TabsContent value="pending">
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between">
-                <div>
-                  <CardTitle className="flex items-center gap-2">
-                    <Clock className="h-5 w-5" />
-                    Pending Reviews
-                  </CardTitle>
-                  <CardDescription>
-                    Review and approve incoming submissions
-                  </CardDescription>
-                </div>
-                <Button variant="outline" size="sm" onClick={() => fetchReviews(false)} disabled={loading}>
-                  {loading ? <RefreshCw className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
-                  Refresh
-                </Button>
-              </CardHeader>
-              <CardContent>
+          <TabsContent value="pending" className="space-y-0 bg-card rounded-lg border p-6">
+            <div className="flex flex-row items-center justify-between mb-6">
+              <div>
+                <h2 className="text-lg font-semibold flex items-center gap-2">
+                  <Clock className="h-5 w-5" />
+                  Pending Reviews
+                </h2>
+                <p className="text-sm text-muted-foreground">
+                  Review and approve incoming submissions
+                </p>
+              </div>
+              <Button variant="outline" size="sm" onClick={() => fetchReviews(false)} disabled={loading}>
+                {loading ? <RefreshCw className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
+                Refresh
+              </Button>
+            </div>
                 {loading ? (
                   <div className="text-center py-12">
                     <RefreshCw className="h-8 w-8 mx-auto animate-spin text-muted-foreground mb-4" />
@@ -722,29 +732,25 @@ export const ReviewsManager = () => {
                     ))}
                   </div>
                 )}
-              </CardContent>
-            </Card>
           </TabsContent>
 
           {/* Published Reviews Tab */}
-          <TabsContent value="published">
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between">
-                <div>
-                  <CardTitle className="flex items-center gap-2">
-                    <Star className="h-5 w-5" />
-                    Published Reviews
-                  </CardTitle>
-                  <CardDescription>
-                    Manage approved and published reviews
-                  </CardDescription>
-                </div>
-                <Button variant="outline" size="sm" onClick={() => fetchReviews(true)} disabled={loading}>
-                  {loading ? <RefreshCw className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
-                  Refresh
-                </Button>
-              </CardHeader>
-              <CardContent>
+          <TabsContent value="published" className="space-y-0 bg-card rounded-lg border p-6">
+            <div className="flex flex-row items-center justify-between mb-6">
+              <div>
+                <h2 className="text-lg font-semibold flex items-center gap-2">
+                  <Star className="h-5 w-5" />
+                  Published Reviews
+                </h2>
+                <p className="text-sm text-muted-foreground">
+                  Manage approved and published reviews
+                </p>
+              </div>
+              <Button variant="outline" size="sm" onClick={() => fetchReviews(true)} disabled={loading}>
+                {loading ? <RefreshCw className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
+                Refresh
+              </Button>
+            </div>
                 {loading ? (
                   <div className="text-center py-12">
                     <RefreshCw className="h-8 w-8 mx-auto animate-spin text-muted-foreground mb-4" />
@@ -883,8 +889,6 @@ export const ReviewsManager = () => {
                     ))}
                   </div>
                 )}
-              </CardContent>
-            </Card>
           </TabsContent>
 
           {/* Analytics Tab */}
@@ -940,7 +944,6 @@ export const ReviewsManager = () => {
                 <CardDescription>Complete overview of all review submissions</CardDescription>
               </CardHeader>
               <CardContent>
-                {/* Same structure as pending/published but showing all reviews */}
                 {loading ? (
                   <div className="text-center py-12">
                     <RefreshCw className="h-8 w-8 mx-auto animate-spin text-muted-foreground mb-4" />
