@@ -298,9 +298,13 @@ export const SimpleContactManager = () => {
 
     if (searchTerm) {
       filtered = filtered.filter(contact =>
-        contact.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        contact.first_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        contact.last_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
         contact.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        contact.phone?.includes(searchTerm)
+        contact.phone?.includes(searchTerm) ||
+        contact.tags?.some(tag => 
+          tag.toLowerCase().includes(searchTerm.toLowerCase())
+        )
       );
     }
 

@@ -44,7 +44,7 @@ export const LockTagsManager = () => {
       const { data, error } = await supabase
         .from('tag_rules')
         .select('id, add_tags, password')
-        .eq('user_id', '550e8400-e29b-41d4-a716-446655440000')
+        .eq('user_id', 'user?.id')
         .eq('protected', true)
         .not('add_tags', 'is', null);
 
@@ -122,7 +122,7 @@ export const LockTagsManager = () => {
         const { error } = await supabase
           .from('tag_rules')
           .insert({
-            user_id: '550e8400-e29b-41d4-a716-446655440000',
+            user_id: 'user?.id',
             name: `Lock: ${tag}`,
             description: `Password protection for tag: ${tag}`,
             trigger_tag: 'never-trigger', // Will never match

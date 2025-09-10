@@ -8,6 +8,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { UserX, Search, Download, Trash2, Calendar, UserCheck, Filter, RotateCcw } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface UnsubscribedUser {
   id: string;
@@ -26,6 +27,7 @@ interface UnsubscribedUser {
 }
 
 export const UnsubscribeManager = () => {
+  const { user } = useAuth();
   const [unsubscribedUsers, setUnsubscribedUsers] = useState<UnsubscribedUser[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
@@ -36,8 +38,10 @@ export const UnsubscribeManager = () => {
 
   // Load unsubscribe data from database
   useEffect(() => {
-    loadUnsubscribeData();
-  }, []);
+    if (user?.id) {
+      loadUnsubscribeData();
+    }
+  }, [user?.id]);
 
   // Add a test button for debugging
   const addTestUnsubscribe = async () => {
@@ -45,7 +49,7 @@ export const UnsubscribeManager = () => {
       const testData = {
         email: 'test@example.com',
         unsubscribed_at: new Date().toISOString(),
-        user_id: '550e8400-e29b-41d4-a716-446655440000',
+        user_id: 'user?.id',
         reason: 'Testing unsubscribe display'
       };
       
@@ -74,7 +78,7 @@ export const UnsubscribeManager = () => {
       const { data, error } = await supabase
         .from('contacts')
         .select('id, email, first_name, last_name, tags, created_at, updated_at, status')
-        .eq('user_id', '550e8400-e29b-41d4-a716-446655440000')
+        .eq('user_id', 'user?.id')
         .contains('tags', ['unsub']);
 
       if (error) throw error;
@@ -84,7 +88,7 @@ export const UnsubscribeManager = () => {
         email: c.email,
         unsubscribed_at: c.updated_at || c.created_at,
         reason: undefined,
-        user_id: '550e8400-e29b-41d4-a716-446655440000',
+        user_id: 'user?.id',
         contact: {
           id: c.id,
           email: c.email,

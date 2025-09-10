@@ -582,7 +582,10 @@ export const EmailListManager = () => {
     const matchesSearch = !searchQuery || 
       contact.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
       contact.first_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      contact.last_name?.toLowerCase().includes(searchQuery.toLowerCase());
+      contact.last_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      contact.tags?.some(tag => 
+        tag.toLowerCase().includes(searchQuery.toLowerCase())
+      );
     
     const matchesTag = filterTag === "all" || 
       (contact.tags && contact.tags.includes(filterTag));

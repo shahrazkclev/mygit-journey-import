@@ -11,6 +11,7 @@ import { TagInput } from '@/components/ui/tag-input';
 import { ShoppingCart, Trash2, Calendar, DollarSign } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface Contact {
   id: string;
@@ -52,6 +53,7 @@ export const EditContactDialog: React.FC<EditContactDialogProps> = ({
   onClose,
   onContactUpdated
 }) => {
+  const { user } = useAuth();
   const [formData, setFormData] = useState({
     email: '',
     firstName: '',
@@ -86,11 +88,11 @@ export const EditContactDialog: React.FC<EditContactDialogProps> = ({
 
   // Load products and contact products
   useEffect(() => {
-    if (isOpen) {
+    if (isOpen && user?.id) {
       loadProducts();
       loadAllTags();
     }
-  }, [isOpen]);
+  }, [isOpen, user?.id]);
 
   // Handle click outside to close dropdown
   useEffect(() => {
@@ -129,7 +131,7 @@ export const EditContactDialog: React.FC<EditContactDialogProps> = ({
       const { data: contacts, error: contactsError } = await supabase
         .from('contacts')
         .select('tags')
-        .eq('user_id', '550e8400-e29b-41d4-a716-446655440000');
+        .eq('user_id', 'user?.id');
 
       if (contactsError) throw contactsError;
 
@@ -137,7 +139,7 @@ export const EditContactDialog: React.FC<EditContactDialogProps> = ({
       const { data: tagRules, error: rulesError } = await supabase
         .from('tag_rules')
         .select('trigger_tags, add_tags, remove_tags')
-        .eq('user_id', '550e8400-e29b-41d4-a716-446655440000');
+        .eq('user_id', 'user?.id');
 
       if (rulesError) throw rulesError;
 
@@ -164,15 +166,23 @@ export const EditContactDialog: React.FC<EditContactDialogProps> = ({
         }
       });
 
+      // Get products for tag suggestions
+      const { data: productsData, error: productsError } = await supabase
+        .from('products')
+        .select('name, category')
+        .eq('user_id', user?.id);
+      if (productsError) throw productsError;
+      
       // Add product names as tag suggestions
-      products.forEach(product => {
+      productsData?.forEach(product => {
         allTagsSet.add(product.name.trim());
         if (product.category) {
           allTagsSet.add(product.category.trim());
         }
       });
 
-      setAllTags(Array.from(allTagsSet).filter(Boolean).sort());
+      const finalTags = Array.from(allTagsSet).filter(Boolean).sort();
+      setAllTags(finalTags);
     } catch (error) {
       console.error('Error loading tags:', error);
     }

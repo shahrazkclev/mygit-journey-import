@@ -424,7 +424,10 @@ export const ContactManager: React.FC = () => {
     const matchesSearch = searchQuery === '' || 
       contact.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
       (contact.first_name && contact.first_name.toLowerCase().includes(searchQuery.toLowerCase())) ||
-      (contact.last_name && contact.last_name.toLowerCase().includes(searchQuery.toLowerCase()));
+      (contact.last_name && contact.last_name.toLowerCase().includes(searchQuery.toLowerCase())) ||
+      contact.tags?.some(tag => 
+        tag.toLowerCase().includes(searchQuery.toLowerCase())
+      );
 
     // Product filter
     const hasSpecificProduct = allContactProducts.some(cp => cp.contact_id === contact.id && cp.product_id === filterByProduct);
