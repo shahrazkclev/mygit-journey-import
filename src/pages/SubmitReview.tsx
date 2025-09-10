@@ -33,19 +33,6 @@ const SubmitReview = () => {
 
   const { toast } = useToast();
 
-  const simulateProgress = useCallback(() => {
-    let progress = 0;
-    const interval = setInterval(() => {
-      progress += Math.random() * 15 + 5; // Random increment between 5-20
-      if (progress >= 90) {
-        progress = 90; // Stop at 90% until real upload completes
-        clearInterval(interval);
-      }
-      setUploadProgress(Math.min(progress, 90));
-    }, 200);
-    return interval;
-  }, []);
-
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -66,14 +53,9 @@ const SubmitReview = () => {
       setIsMediaUploading(true);
       setUploadProgress(0);
       
-      // Start progress simulation
-      const progressInterval = simulateProgress();
-      
-      const url = await uploadToR2(file);
-      
-      // Clear simulation and complete progress
-      clearInterval(progressInterval);
-      setUploadProgress(100);
+      const url = await uploadToR2(file, (progress) => {
+        setUploadProgress(progress);
+      });
       
       setFormData(prev => ({ ...prev, mediaUrl: url }));
       
@@ -99,9 +81,10 @@ const SubmitReview = () => {
     setProfileUploadProgress(25);
     
     try {
-      const url = await uploadToR2(file);
+      const url = await uploadToR2(file, (progress) => {
+        setProfileUploadProgress(progress);
+      });
       setFormData(prev => ({ ...prev, profilePictureUrl: url }));
-      setProfileUploadProgress(100);
       
       toast({
         title: 'Success',
@@ -120,21 +103,45 @@ const SubmitReview = () => {
     }
   };
 
-  const uploadToR2 = async (file: File): Promise<string> => {
-    const formDataToSend = new FormData();
-    formDataToSend.append('file', file);
-    
-    const response = await fetch('https://r2-upload-proxy.cleverpoly-store.workers.dev', {
-      method: 'POST',
-      body: formDataToSend,
+  const uploadToR2 = async (file: File, onProgress?: (progress: number) => void): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const formData = new FormData();
+      formData.append('file', file);
+      
+      const xhr = new XMLHttpRequest();
+      
+      // Track upload progress
+      xhr.upload.onprogress = (event) => {
+        if (event.lengthComputable && onProgress) {
+          const progress = Math.round((event.loaded / event.total) * 100);
+          onProgress(progress);
+        }
+      };
+      
+      xhr.onload = () => {
+        if (xhr.status === 200) {
+          try {
+            const result = JSON.parse(xhr.responseText);
+            if (result.success) {
+              resolve(result.url);
+            } else {
+              reject(new Error(result.error || 'Upload failed'));
+            }
+          } catch (e) {
+            reject(new Error('Invalid response format'));
+          }
+        } else {
+          reject(new Error(`Upload failed: ${xhr.status}`));
+        }
+      };
+      
+      xhr.onerror = () => {
+        reject(new Error('Network error during upload'));
+      };
+      
+      xhr.open('POST', 'https://r2-upload-proxy.cleverpoly-store.workers.dev');
+      xhr.send(formData);
     });
-    
-    if (!response.ok) {
-      throw new Error(`Upload failed: ${response.status}`);
-    }
-    
-    const result = await response.json();
-    return result.url;
   };
 
   const handleSubmit = async () => {
@@ -159,7 +166,7 @@ const SubmitReview = () => {
 
       toast({
         title: 'Success!',
-        description: 'Your review has been submitted and is pending approval.',
+        description: 'Your review has been submitted successfully!',
       });
 
       // Reset form
