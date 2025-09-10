@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useCallback, memo } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -33,6 +33,19 @@ const SubmitReview = () => {
 
   const { toast } = useToast();
 
+  const simulateProgress = useCallback(() => {
+    let progress = 0;
+    const interval = setInterval(() => {
+      progress += Math.random() * 15 + 5; // Random increment between 5-20
+      if (progress >= 90) {
+        progress = 90; // Stop at 90% until real upload completes
+        clearInterval(interval);
+      }
+      setUploadProgress(Math.min(progress, 90));
+    }, 200);
+    return interval;
+  }, []);
+
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -51,10 +64,18 @@ const SubmitReview = () => {
     
     try {
       setIsMediaUploading(true);
-      setUploadProgress(25);
+      setUploadProgress(0);
+      
+      // Start progress simulation
+      const progressInterval = simulateProgress();
+      
       const url = await uploadToR2(file);
-      setFormData(prev => ({ ...prev, mediaUrl: url }));
+      
+      // Clear simulation and complete progress
+      clearInterval(progressInterval);
       setUploadProgress(100);
+      
+      setFormData(prev => ({ ...prev, mediaUrl: url }));
       
       toast({
         title: 'Success',
@@ -69,7 +90,7 @@ const SubmitReview = () => {
       });
     } finally {
       setIsMediaUploading(false);
-      setUploadProgress(0);
+      setTimeout(() => setUploadProgress(0), 1000); // Clear progress after delay
     }
   };
 
@@ -185,20 +206,36 @@ const SubmitReview = () => {
     }
   };
 
-  // Enhanced Review Card Component
-  const ReviewCard = ({ isMobile = false }) => {
-    const userName = formData.instagramHandle.replace('@', '') || 'Username';
+  // Enhanced Review Card Component with memoization to prevent flickering
+  const ReviewCard = memo<{
+    isMobile?: boolean;
+    mediaUrl: string;
+    mediaType: 'image' | 'video';
+    rating: number;
+    description: string;
+    profilePictureUrl: string;
+    instagramHandle: string;
+  }>(({ isMobile = false, mediaUrl, mediaType, rating, description, profilePictureUrl, instagramHandle }) => {
+    const userName = instagramHandle.replace('@', '') || 'Username';
     const avatarInitial = userName.charAt(0).toUpperCase();
     
     const cardSize = isMobile ? "w-40 h-60" : "w-80 h-[480px]";
     
     return (
       <div className={`relative ${cardSize} rounded-2xl overflow-hidden shadow-xl bg-gray-900`}>
-        {formData.mediaUrl ? (
-          formData.mediaType === 'video' ? (
-            <video className="w-full h-full object-cover" src={formData.mediaUrl} muted loop autoPlay playsInline />
+        {mediaUrl ? (
+          mediaType === 'video' ? (
+            <video 
+              key={mediaUrl} // Force re-mount only when URL changes
+              className="w-full h-full object-cover" 
+              src={mediaUrl} 
+              muted 
+              loop 
+              autoPlay 
+              playsInline 
+            />
           ) : (
-            <img className="w-full h-full object-cover" src={formData.mediaUrl} alt="Review media" />
+            <img className="w-full h-full object-cover" src={mediaUrl} alt="Review media" />
           )
         ) : (
           <div className="w-full h-full bg-gradient-to-br from-slate-100 to-slate-200 flex items-center justify-center">
@@ -212,29 +249,29 @@ const SubmitReview = () => {
           <div className={`space-y-${isMobile ? '1' : '3'}`}>
             <div className="flex items-center space-x-1">
               {Array.from({ length: 5 }, (_, i) => (
-                <svg key={i} className={`${isMobile ? 'w-3 h-3' : 'w-5 h-5'} ${i < formData.rating ? 'text-yellow-400' : 'text-gray-300'}`} fill="currentColor" viewBox="0 0 20 20">
+                <svg key={i} className={`${isMobile ? 'w-3 h-3' : 'w-5 h-5'} ${i < rating ? 'text-yellow-400' : 'text-gray-300'}`} fill="currentColor" viewBox="0 0 20 20">
                   <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.286 3.957a1 1 0 00.95.69h4.162c.969 0 1.371 1.24.588 1.81l-3.367 2.445a1 1 0 00-.364 1.118l1.287 3.957c.3.921-.755 1.688-1.54 1.118l-3.367-2.445a1 1 0 00-1.175 0l-3.367 2.445c-.784.57-1.838-.197-1.54-1.118l1.287-3.957a1 1 0 00-.364-1.118L2.05 9.384c-.783-.57-.38-1.81.588-1.81h4.162a1 1 0 00.95-.69L9.049 2.927z" />
                 </svg>
               ))}
             </div>
             <p className={`${isMobile ? 'text-xs' : 'text-sm'} text-white/90 line-clamp-2`}>
-              "{formData.description || 'Your review will appear here...'}"
+              "{description || 'Your review will appear here...'}"
             </p>
             <div className={`flex items-center space-x-2 ${isMobile ? 'text-xs' : 'text-sm'}`}>
               <div className={`${isMobile ? 'w-5 h-5' : 'w-10 h-10'} rounded-full overflow-hidden bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center font-bold text-white`}>
-                {formData.profilePictureUrl ? (
-                  <img src={formData.profilePictureUrl} alt="Profile" className="w-full h-full object-cover" />
+                {profilePictureUrl ? (
+                  <img src={profilePictureUrl} alt="Profile" className="w-full h-full object-cover" />
                 ) : (
                   avatarInitial
                 )}
               </div>
-              <span className="font-medium">{formData.instagramHandle || '@username'}</span>
+              <span className="font-medium">{instagramHandle || '@username'}</span>
             </div>
           </div>
         </div>
       </div>
     );
-  };
+  });
 
   const renderStep = () => {
     const isMobile = typeof window !== 'undefined' && window.innerWidth < 1024;
@@ -473,7 +510,15 @@ const SubmitReview = () => {
             <Card className="bg-gradient-to-br from-slate-50 to-white">
               <CardContent className="p-4">
                 <div className="flex justify-center">
-                  <ReviewCard isMobile={true} />
+                  <ReviewCard 
+                    isMobile={true}
+                    mediaUrl={formData.mediaUrl}
+                    mediaType={formData.mediaType}
+                    rating={formData.rating}
+                    description={formData.description}
+                    profilePictureUrl={formData.profilePictureUrl}
+                    instagramHandle={formData.instagramHandle}
+                  />
                 </div>
               </CardContent>
             </Card>
@@ -543,7 +588,15 @@ const SubmitReview = () => {
                     <p className="text-muted-foreground">See how your review will look</p>
                   </div>
                   <div className="flex justify-center">
-                    <ReviewCard isMobile={false} />
+                    <ReviewCard 
+                      isMobile={false}
+                      mediaUrl={formData.mediaUrl}
+                      mediaType={formData.mediaType}
+                      rating={formData.rating}
+                      description={formData.description}
+                      profilePictureUrl={formData.profilePictureUrl}
+                      instagramHandle={formData.instagramHandle}
+                    />
                   </div>
                 </CardContent>
               </Card>
