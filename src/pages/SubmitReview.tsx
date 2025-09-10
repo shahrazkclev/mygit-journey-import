@@ -25,6 +25,7 @@ const SubmitReview = () => {
   });
   
   const [currentStep, setCurrentStep] = useState(1);
+  const [isSubmitted, setIsSubmitted] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [profileUploadProgress, setProfileUploadProgress] = useState(0);
@@ -169,17 +170,8 @@ const SubmitReview = () => {
         description: 'Your review has been submitted successfully!',
       });
 
-      // Reset form
-      setFormData({
-        email: '',
-        instagramHandle: '',
-        rating: 0,
-        description: '',
-        profilePictureUrl: '',
-        mediaUrl: '',
-        mediaType: 'image'
-      });
-      setCurrentStep(1);
+      // Show thank you page instead of resetting
+      setIsSubmitted(true);
     } catch (error) {
       console.error('Submission error:', error);
       toast({
@@ -507,6 +499,44 @@ const SubmitReview = () => {
         return null;
     }
   };
+
+  // Show thank you page after submission
+  if (isSubmitted) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="max-w-md mx-auto p-8 text-center">
+          <Card className="bg-gradient-to-br from-green-50 to-emerald-50 border-green-200">
+            <CardContent className="p-8 space-y-6">
+              <div className="w-16 h-16 mx-auto bg-green-100 rounded-full flex items-center justify-center">
+                <svg className="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                </svg>
+              </div>
+              
+              <div className="space-y-3">
+                <h1 className="text-3xl font-bold text-green-900">Thank You!</h1>
+                <p className="text-green-700 text-lg">
+                  Your review has been submitted successfully.
+                </p>
+                <p className="text-green-600 text-sm">
+                  We appreciate you taking the time to share your experience with us.
+                </p>
+              </div>
+              
+              <div className="pt-4">
+                <Button 
+                  onClick={() => window.location.reload()} 
+                  className="bg-green-600 hover:bg-green-700 text-white"
+                >
+                  Submit Another Review
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background">
