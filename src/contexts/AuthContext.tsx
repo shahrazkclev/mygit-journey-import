@@ -178,9 +178,11 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         setSession(session);
         
         if (session?.user) {
+          console.log('🔍 User session found:', session.user.email);
           // Defer Supabase calls with setTimeout to avoid deadlocks
           setTimeout(async () => {
             try {
+              console.log('🔍 Fetching profile for user:', session.user.id);
               // Fetch user profile for role information
               const { data: profile } = await supabase
                 .from('profiles')
@@ -188,16 +190,21 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
                 .eq('id', session.user.id)
                 .single();
               
-              setUser({
+              console.log('👤 Profile data:', profile);
+              
+              const authUser = {
                 id: session.user.id,
                 email: session.user.email || '',
                 authenticated: true,
                 role: profile?.role || 'user'
-              });
+              };
+              
+              console.log('✅ Setting auth user:', authUser);
+              setUser(authUser);
 
               // If this is cgdora4@gmail.com, ensure we have demo data
               if (session.user.email === 'cgdora4@gmail.com' && event === 'SIGNED_IN') {
-                console.log('Admin user signed in, ensuring demo data exists...');
+                console.log('🔄 Admin user signed in, running migration...');
                 try {
                   // First try to migrate existing demo data
                   const { error: migrationError } = await supabase.rpc('migrate_demo_data_to_admin', {
@@ -205,9 +212,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
                   });
                   
                   if (migrationError) {
-                    console.error('Migration error:', migrationError);
+                    console.error('❌ Migration error:', migrationError);
                   } else {
-                    console.log('✅ Demo data migration completed');
+                    console.log('✅ Demo data migrated successfully');
                   }
 
                   // Check if we have any data, if not, create some demo data
@@ -228,7 +235,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
                     await createInitialDemoData(session.user.id);
                   }
                 } catch (error) {
-                  console.error('Demo data setup failed:', error);
+                  console.error('❌ Migration failed:', error);
                 }
               }
             } catch (error) {

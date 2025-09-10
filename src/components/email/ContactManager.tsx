@@ -82,12 +82,21 @@ export const ContactManager: React.FC = () => {
 
   // Don't load data if user is not authenticated
   if (!user) {
-    return <div className="p-6">Please log in to view contacts.</div>;
+    return (
+      <div className="p-6 bg-card rounded-lg shadow-sm">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+          <p className="text-muted-foreground">Loading contacts...</p>
+        </div>
+      </div>
+    );
   }
 
   // Load initial data when user is authenticated
   useEffect(() => {
+    console.log('🔄 useEffect triggered, user:', user?.id);
     if (user?.id) {
+      console.log('✅ User authenticated, loading data...');
       loadContacts();
       loadProducts();
       loadEmailLists();
@@ -100,19 +109,26 @@ export const ContactManager: React.FC = () => {
   const loadContacts = async () => {
     try {
       if (!user?.id) {
+        console.log('❌ No user ID available');
         return;
       }
+
+      console.log('🔍 Loading contacts for user:', user.id);
 
       const { data, error } = await supabase
         .from('contacts')
         .select('*')
         .eq('user_id', user.id)
-        .eq('status', 'subscribed') // Only load subscribed contacts
+        .eq('status', 'subscribed')
         .order('created_at', { ascending: false });
 
-      if (error) throw error;
-      const cleaned = (data || []).filter((c: any) => !((c.tags || []).some((t: string) => (t || '').trim().toLowerCase() === 'unsub')));
-      setContacts(cleaned);
+      if (error) {
+        console.error('❌ Error loading contacts:', error);
+        throw error;
+      }
+
+      console.log('✅ Loaded contacts:', data?.length || 0);
+      setContacts(data || []);
     } catch (error) {
       console.error('Error loading contacts:', error);
       toast.error('Failed to load contacts');
