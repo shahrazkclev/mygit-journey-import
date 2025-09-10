@@ -44,6 +44,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         setSession(session);
         
         if (session?.user) {
+          console.log('🔍 User session found:', session.user.email);
           // Defer Supabase calls with setTimeout to avoid deadlocks
           setTimeout(async () => {
             try {
@@ -69,19 +70,19 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
               // If this is cgdora4@gmail.com and we have existing demo data, migrate it
               if (session.user.email === 'cgdora4@gmail.com' && event === 'SIGNED_IN') {
-                console.log('Admin user signed in, migrating demo data...');
+                console.log('🔄 Admin user signed in, running migration...');
                 try {
                   const { error: migrationError } = await supabase.rpc('migrate_demo_data_to_admin', {
                     admin_user_id: session.user.id
                   });
                   
                   if (migrationError) {
-                    console.error('Migration error:', migrationError);
+                    console.error('❌ Migration error:', migrationError);
                   } else {
-                    console.log('✅ Demo data migrated successfully to admin user');
+                    console.log('✅ Demo data migrated successfully');
                   }
                 } catch (error) {
-                  console.error('Migration failed:', error);
+                  console.error('❌ Migration failed:', error);
                 }
               }
             } catch (error) {

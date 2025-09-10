@@ -1,16 +1,22 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { useGlobalTheme } from "@/hooks/useGlobalTheme";
+import { useAuth } from "@/contexts/AuthContext";
 import { EmailCampaignApp } from "./EmailCampaignApp";
 import { ReviewsManager } from "./reviews/ReviewsManager";
-import { Users, Star, Menu, X } from "lucide-react";
+import { Users, Star, Menu, X, LogOut } from "lucide-react";
 
 export const MainLayout = () => {
   const [activePanel, setActivePanel] = useState("customers");
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const { user, logout } = useAuth();
   
   // Initialize global theme
   useGlobalTheme();
+
+  if (!user) {
+    return <div>Loading...</div>;
+  }
 
   const panels = [
     {
@@ -82,9 +88,18 @@ export const MainLayout = () => {
           </nav>
 
           {/* Footer */}
-          <div className="p-4 border-t">
+          <div className="p-4 border-t space-y-2">
+            <Button
+              variant="outline"
+              size="sm"
+              className="w-full justify-start gap-3 h-10"
+              onClick={logout}
+            >
+              <LogOut className="h-4 w-4" />
+              <span>Sign Out</span>
+            </Button>
             <p className="text-xs text-muted-foreground text-center">
-              Business Management Platform
+              Logged in as {user.email}
             </p>
           </div>
         </div>
