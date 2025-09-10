@@ -303,7 +303,7 @@ export const SimpleContactManager = () => {
     }
 
     try {
-      const tags = newContact.tags
+      const newTags = newContact.tags
         .split(',')
         .map(tag => tag.trim())
         .filter(tag => tag.length > 0);
@@ -325,30 +325,74 @@ export const SimpleContactManager = () => {
         lastName = rest.join(" ");
       }
 
-      const { error } = await supabase
+      // Check if contact already exists
+      const { data: existingContact, error: selectError } = await supabase
         .from('contacts')
-        .insert({
-          user_id: DEMO_USER_ID,
-          email: newContact.email,
-          first_name: firstName || null,
-          last_name: lastName || null,
-          // status will default to 'subscribed' on DB
-          tags: tags.length ? tags : null
-        });
+        .select('id, tags, first_name, last_name')
+        .eq('user_id', DEMO_USER_ID)
+        .eq('email', newContact.email)
+        .maybeSingle();
 
-      if (error) {
-        console.error('Error adding contact:', error);
-        toast.error("Failed to add contact");
+      if (selectError) {
+        console.error('Error checking existing contact:', selectError);
+        toast.error("Failed to check existing contact");
         return;
       }
 
-      toast.success("Contact added successfully!");
+      if (existingContact) {
+        // Contact exists - merge tags and update
+        const existingTags = existingContact.tags || [];
+        const mergedTags = [...new Set([...existingTags, ...newTags])]; // Remove duplicates
+        
+        // Update name if it was empty or if new name is provided
+        const updatedFirstName = existingContact.first_name || firstName;
+        const updatedLastName = existingContact.last_name || lastName;
+
+        const { error: updateError } = await supabase
+          .from('contacts')
+          .update({
+            first_name: updatedFirstName || null,
+            last_name: updatedLastName || null,
+            tags: mergedTags.length ? mergedTags : null,
+            status: 'subscribed' // Ensure they're subscribed if re-adding
+          })
+          .eq('id', existingContact.id);
+
+        if (updateError) {
+          console.error('Error updating existing contact:', updateError);
+          toast.error("Failed to update existing contact");
+          return;
+        }
+
+        toast.success(`Contact updated! Added ${newTags.length} new tag(s) to existing contact.`);
+      } else {
+        // Contact doesn't exist - create new one
+        const { error: insertError } = await supabase
+          .from('contacts')
+          .insert({
+            user_id: DEMO_USER_ID,
+            email: newContact.email,
+            first_name: firstName || null,
+            last_name: lastName || null,
+            status: 'subscribed',
+            tags: newTags.length ? newTags : null
+          });
+
+        if (insertError) {
+          console.error('Error adding new contact:', insertError);
+          toast.error("Failed to add new contact");
+          return;
+        }
+
+        toast.success("New contact added successfully!");
+      }
+
       setNewContact({ name: "", email: "", phone: "", tags: "" });
       setIsAddDialogOpen(false);
       loadContacts();
     } catch (error) {
-      console.error('Error adding contact:', error);
-      toast.error("Failed to add contact");
+      console.error('Error handling contact:', error);
+      toast.error("Failed to process contact");
     }
   };
 
