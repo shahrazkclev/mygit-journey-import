@@ -33,16 +33,19 @@ const SubmitReview = () => {
 
   const { toast } = useToast();
 
-  const simulateProgress = useCallback(() => {
+  const simulateProgress = useCallback((fileSize: number) => {
     let progress = 0;
+    const estimatedTime = Math.max(2000, Math.min(15000, fileSize / 1000)); // 2-15 seconds based on file size
+    const increment = 90 / (estimatedTime / 300); // Reach 90% over estimated time
+    
     const interval = setInterval(() => {
-      progress += Math.random() * 15 + 5; // Random increment between 5-20
+      progress += increment * (0.8 + Math.random() * 0.4); // Vary speed realistically
       if (progress >= 90) {
         progress = 90; // Stop at 90% until real upload completes
         clearInterval(interval);
       }
       setUploadProgress(Math.min(progress, 90));
-    }, 200);
+    }, 300);
     return interval;
   }, []);
 
@@ -66,8 +69,8 @@ const SubmitReview = () => {
       setIsMediaUploading(true);
       setUploadProgress(0);
       
-      // Start progress simulation
-      const progressInterval = simulateProgress();
+      // Start progress simulation based on file size
+      const progressInterval = simulateProgress(file.size);
       
       const url = await uploadToR2(file);
       
@@ -130,7 +133,8 @@ const SubmitReview = () => {
     });
     
     if (!response.ok) {
-      throw new Error(`Upload failed: ${response.status}`);
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(`Upload failed: ${response.status} - ${errorData.error || 'Unknown error'}`);
     }
     
     const result = await response.json();
@@ -207,7 +211,7 @@ const SubmitReview = () => {
   };
 
   // Enhanced Review Card Component with memoization to prevent flickering
-  const ReviewCard = memo<{
+  interface ReviewCardProps {
     isMobile?: boolean;
     mediaUrl: string;
     mediaType: 'image' | 'video';
@@ -215,7 +219,9 @@ const SubmitReview = () => {
     description: string;
     profilePictureUrl: string;
     instagramHandle: string;
-  }>(({ isMobile = false, mediaUrl, mediaType, rating, description, profilePictureUrl, instagramHandle }) => {
+  }
+
+  const ReviewCard = memo<ReviewCardProps>(({ isMobile = false, mediaUrl, mediaType, rating, description, profilePictureUrl, instagramHandle }) => {
     const userName = instagramHandle.replace('@', '') || 'Username';
     const avatarInitial = userName.charAt(0).toUpperCase();
     
