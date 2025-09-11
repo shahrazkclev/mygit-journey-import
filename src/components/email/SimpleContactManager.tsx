@@ -1101,22 +1101,22 @@ export const SimpleContactManager = () => {
         </CardHeader>
         <CardContent className="space-y-4">
           {/* Filters */}
-          <div className="flex flex-col lg:flex-row space-y-2 lg:space-y-0 lg:space-x-4">
-            <div className="flex-1">
+          <div className="flex flex-col lg:flex-row space-y-4 lg:space-y-0 lg:space-x-4">
+            <div className="flex-1 flex items-start">
               <Input
                 placeholder="Search contacts..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="border-email-primary/30 focus:border-email-primary"
+                className="border-email-primary/30 focus:border-email-primary w-full"
               />
             </div>
-            <div className="flex-1">
+            <div className="flex-1 flex items-start">
               <TagInput
                 value={tagFilter}
                 onChange={setTagFilter}
                 suggestions={allTags}
                 placeholder="Filter by tag..."
-                className="border-email-primary/30 focus:border-email-primary"
+                className="border-email-primary/30 focus:border-email-primary w-full"
               />
             </div>
           </div>
