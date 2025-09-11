@@ -1714,6 +1714,7 @@ export const ReviewsManager = () => {
                             className="max-w-xs rounded-lg"
                             controls
                             muted
+                            crossOrigin="anonymous"
                             id="video-frame-extractor"
                           />
                           
