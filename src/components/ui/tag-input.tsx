@@ -69,8 +69,9 @@ export const TagInput = React.forwardRef<HTMLInputElement, TagInputProps>(
     }, [inputValue, suggestions, value]); // Use value instead of tags to prevent infinite loop
 
     const addTag = (tag: string) => {
-      if (tag && !tags.includes(tag)) {
-        const newTags = [...tags, tag];
+      const normalizedTag = tag.toLowerCase().trim();
+      if (normalizedTag && !tags.includes(normalizedTag)) {
+        const newTags = [...tags, normalizedTag];
         onChange(newTags.join(', '));
         setInputValue("");
         setShowSuggestions(false);

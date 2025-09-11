@@ -160,9 +160,9 @@ export default function OptIn() {
     setIsSubmitting(true);
 
     try {
-      // Prepare tags for webhook
-      const allTags = [...tags];
-      if (product) allTags.push(product);
+      // Prepare tags for webhook (normalized to lowercase)
+      const allTags = [...tags.map(tag => tag.toLowerCase().trim())];
+      if (product) allTags.push(product.toLowerCase().trim());
 
       // Send webhook to Make.com for opt-in processing
       const webhookPayload = {

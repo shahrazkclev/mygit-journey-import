@@ -263,7 +263,7 @@ export const EditContactDialog: React.FC<EditContactDialogProps> = ({
           email: formData.email.trim(),
           first_name: formData.firstName.trim() || null,
           last_name: formData.lastName.trim() || null,
-          tags: formData.tags.split(',').map(tag => tag.trim()).filter(tag => tag.length > 0),
+          tags: formData.tags.split(',').map(tag => tag.toLowerCase().trim()).filter(tag => tag.length > 0),
           status: formData.status,
         })
         .eq('id', contact.id);

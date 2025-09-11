@@ -329,7 +329,7 @@ export const EmailListManager = () => {
               email: newContact.email.trim(),
               first_name: newContact.firstName.trim() || null,
               last_name: newContact.lastName.trim() || null,
-              tags: newContact.tags.split(',').map(tag => tag.trim()).filter(tag => tag.length > 0),
+              tags: newContact.tags.split(',').map(tag => tag.toLowerCase().trim()).filter(tag => tag.length > 0),
               status: newContact.status,
             }
           ])
@@ -391,7 +391,7 @@ export const EmailListManager = () => {
           email: newContact.email.trim(),
           first_name: newContact.firstName.trim() || null,
           last_name: newContact.lastName.trim() || null,
-          tags: newContact.tags.split(',').map(tag => tag.trim()).filter(tag => tag.length > 0),
+          tags: newContact.tags.split(',').map(tag => tag.toLowerCase().trim()).filter(tag => tag.length > 0),
           status: newContact.status,
         })
         .eq('id', editingContact.id)

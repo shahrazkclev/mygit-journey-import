@@ -115,21 +115,21 @@ export const TagRulesManager = () => {
       // Add tags from rules
       tagRules?.forEach(rule => {
         if (rule.trigger_tags) {
-          rule.trigger_tags.forEach((tag: string) => allTagsSet.add(tag.trim()));
+          rule.trigger_tags.forEach((tag: string) => allTagsSet.add(tag.toLowerCase().trim()));
         }
         if (rule.add_tags) {
-          rule.add_tags.forEach((tag: string) => allTagsSet.add(tag.trim()));
+          rule.add_tags.forEach((tag: string) => allTagsSet.add(tag.toLowerCase().trim()));
         }
         if (rule.remove_tags) {
-          rule.remove_tags.forEach((tag: string) => allTagsSet.add(tag.trim()));
+          rule.remove_tags.forEach((tag: string) => allTagsSet.add(tag.toLowerCase().trim()));
         }
       });
 
-      // Add product names as tag suggestions
+      // Add product names as tag suggestions (normalized to lowercase)
       products?.forEach(product => {
-        allTagsSet.add(product.name.trim());
+        allTagsSet.add(product.name.toLowerCase().trim());
         if (product.category) {
-          allTagsSet.add(product.category.trim());
+          allTagsSet.add(product.category.toLowerCase().trim());
         }
       });
 
@@ -149,14 +149,14 @@ export const TagRulesManager = () => {
       const { error } = await supabase
         .from('tag_rules')
         .insert({
-          user_id: 'user?.id',
+          user_id: user?.id,
           name: newRule.name,
           description: newRule.description,
-          trigger_tag: newRule.trigger_tags[0] || '', // Legacy field
-          trigger_tags: newRule.trigger_tags,
+          trigger_tag: newRule.trigger_tags[0]?.toLowerCase().trim() || '', // Legacy field
+          trigger_tags: newRule.trigger_tags.map(tag => tag.toLowerCase().trim()),
           trigger_match_type: newRule.trigger_match_type,
-          add_tags: newRule.add_tags,
-          remove_tags: newRule.remove_tags,
+          add_tags: newRule.add_tags.map(tag => tag.toLowerCase().trim()),
+          remove_tags: newRule.remove_tags.map(tag => tag.toLowerCase().trim()),
           replace_all_tags: newRule.replace_all_tags,
           enabled: true
         });
@@ -185,11 +185,11 @@ export const TagRulesManager = () => {
         .update({
           name: editRule.name,
           description: editRule.description,
-          trigger_tag: editRule.trigger_tags[0] || '', // Legacy field
-          trigger_tags: editRule.trigger_tags,
+          trigger_tag: editRule.trigger_tags[0]?.toLowerCase().trim() || '', // Legacy field
+          trigger_tags: editRule.trigger_tags.map(tag => tag.toLowerCase().trim()),
           trigger_match_type: editRule.trigger_match_type,
-          add_tags: editRule.add_tags,
-          remove_tags: editRule.remove_tags,
+          add_tags: editRule.add_tags.map(tag => tag.toLowerCase().trim()),
+          remove_tags: editRule.remove_tags.map(tag => tag.toLowerCase().trim()),
           replace_all_tags: editRule.replace_all_tags
         })
         .eq('id', ruleId);

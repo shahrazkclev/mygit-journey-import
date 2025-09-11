@@ -338,7 +338,7 @@ export const SimpleContactManager = () => {
     try {
       const newTags = newContact.tags
         .split(',')
-        .map(tag => tag.trim())
+        .map(tag => tag.toLowerCase().trim())
         .filter(tag => tag.length > 0);
 
       // Split name into first_name and last_name, or generate from email if no name
@@ -602,7 +602,7 @@ export const SimpleContactManager = () => {
 
     try {
       if (bulkTagOperation === 'add') {
-        const tagsToAdd = bulkTags.split(',').map(tag => tag.trim()).filter(tag => tag.length > 0);
+        const tagsToAdd = bulkTags.split(',').map(tag => tag.toLowerCase().trim()).filter(tag => tag.length > 0);
         
         for (const contactId of selectedContacts) {
           const contact = contacts.find(c => c.id === contactId);
@@ -620,7 +620,7 @@ export const SimpleContactManager = () => {
         }
         toast.success(`Added tags to ${selectedContacts.size} contacts`);
       } else {
-        const tagsToRemove = bulkTagsToRemove.split(',').map(tag => tag.trim()).filter(tag => tag.length > 0);
+        const tagsToRemove = bulkTagsToRemove.split(',').map(tag => tag.toLowerCase().trim()).filter(tag => tag.length > 0);
         
         for (const contactId of selectedContacts) {
           const contact = contacts.find(c => c.id === contactId);

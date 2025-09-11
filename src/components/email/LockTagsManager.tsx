@@ -119,15 +119,16 @@ export const LockTagsManager = () => {
     try {
       // Create a new tag rule for each locked tag
       for (const tag of newLock.tags) {
+        const normalizedTag = tag.toLowerCase().trim();
         const { error } = await supabase
           .from('tag_rules')
           .insert({
-            user_id: 'user?.id',
-            name: `Lock: ${tag}`,
-            description: `Password protection for tag: ${tag}`,
+            user_id: user?.id,
+            name: `Lock: ${normalizedTag}`,
+            description: `Password protection for tag: ${normalizedTag}`,
             trigger_tag: 'never-trigger', // Will never match
             trigger_tags: ['never-trigger'],
-            add_tags: [tag],
+            add_tags: [normalizedTag],
             remove_tags: [],
             replace_all_tags: false,
             protected: true,

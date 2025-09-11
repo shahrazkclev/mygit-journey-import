@@ -226,31 +226,31 @@ export const ContactManager: React.FC = () => {
       // Combine all tags
       const allTagsSet = new Set<string>();
       
-      // Add tags from contacts
+      // Add tags from contacts (normalized to lowercase)
       contacts?.forEach(contact => {
         if (contact.tags) {
-          contact.tags.forEach((tag: string) => allTagsSet.add(tag.trim()));
+          contact.tags.forEach((tag: string) => allTagsSet.add(tag.toLowerCase().trim()));
         }
       });
 
-      // Add tags from rules
+      // Add tags from rules (normalized to lowercase)
       tagRules?.forEach(rule => {
         if (rule.trigger_tags) {
-          rule.trigger_tags.forEach((tag: string) => allTagsSet.add(tag.trim()));
+          rule.trigger_tags.forEach((tag: string) => allTagsSet.add(tag.toLowerCase().trim()));
         }
         if (rule.add_tags) {
-          rule.add_tags.forEach((tag: string) => allTagsSet.add(tag.trim()));
+          rule.add_tags.forEach((tag: string) => allTagsSet.add(tag.toLowerCase().trim()));
         }
         if (rule.remove_tags) {
-          rule.remove_tags.forEach((tag: string) => allTagsSet.add(tag.trim()));
+          rule.remove_tags.forEach((tag: string) => allTagsSet.add(tag.toLowerCase().trim()));
         }
       });
 
-      // Add product names as tag suggestions
+      // Add product names as tag suggestions (normalized to lowercase)
       products.forEach(product => {
-        allTagsSet.add(product.name.trim());
+        allTagsSet.add(product.name.toLowerCase().trim());
         if (product.category) {
-          allTagsSet.add(product.category.trim());
+          allTagsSet.add(product.category.toLowerCase().trim());
         }
       });
 
@@ -306,7 +306,7 @@ export const ContactManager: React.FC = () => {
     }
 
     try {
-      const tags = newContact.tags ? newContact.tags.split(',').map(t => t.trim()).filter(t => t) : [];
+      const tags = newContact.tags ? newContact.tags.split(',').map(t => t.toLowerCase().trim()).filter(t => t) : [];
       
       const { data, error } = await supabase
         .from('contacts')
