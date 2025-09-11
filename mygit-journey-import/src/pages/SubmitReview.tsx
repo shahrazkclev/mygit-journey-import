@@ -235,7 +235,7 @@ const SubmitReview = () => {
     const userName = instagramHandle.replace('@', '') || 'Username';
     const avatarInitial = userName.charAt(0).toUpperCase();
     
-    const cardSize = isMobile ? "w-56 h-84" : "w-80 h-[480px]";
+    const cardSize = isMobile ? "w-80 h-120" : "w-80 h-[480px]";
     
     return (
       <div className={`relative ${cardSize} rounded-2xl overflow-hidden shadow-xl bg-gray-900`}>
@@ -562,7 +562,7 @@ const SubmitReview = () => {
           {/* Mobile Preview */}
           <div className="lg:hidden order-first">
             <Card className="bg-gradient-to-br from-slate-50 to-white">
-              <CardContent className="p-4">
+              <CardContent className="p-2">
                 <div className="flex justify-center">
                   <ReviewCard 
                     isMobile={true}
