@@ -45,10 +45,7 @@ export default function OptIn() {
       }
     }
 
-    // Prefill name if provided in URL
-    if (nameParam) {
-      setName(nameParam);
-    }
+    // Name is already prefilled from URL parameter in useState initialization
 
     // Check for protected tags
     checkProtectedTags();
