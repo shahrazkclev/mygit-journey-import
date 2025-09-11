@@ -717,6 +717,10 @@ export type Database = {
         Args: { p_email?: string; p_reason?: string; p_user_id?: string }
         Returns: undefined
       }
+      is_current_user_admin: {
+        Args: Record<PropertyKey, never>
+        Returns: boolean
+      }
       map_user_id: {
         Args: { input_user_id: string }
         Returns: string
