@@ -711,6 +711,15 @@ export const ReviewsManager = () => {
       return;
     }
 
+    if (video.readyState < 2) {
+      toast({
+        title: "Error",
+        description: "Video is not ready. Please wait for it to load.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     try {
       setThumbnailUploading(true);
       
@@ -720,16 +729,20 @@ export const ReviewsManager = () => {
       if (!ctx) throw new Error('Could not get canvas context');
       
       // Set canvas dimensions to match video
-      canvas.width = video.videoWidth;
-      canvas.height = video.videoHeight;
+      canvas.width = video.videoWidth || 1280;
+      canvas.height = video.videoHeight || 720;
       
       // Draw current video frame to canvas
       ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
       
       // Convert canvas to blob
-      const blob = await new Promise<Blob>((resolve) => {
+      const blob = await new Promise<Blob>((resolve, reject) => {
         canvas.toBlob((blob) => {
-          if (blob) resolve(blob);
+          if (blob) {
+            resolve(blob);
+          } else {
+            reject(new Error('Failed to create blob from canvas'));
+          }
         }, 'image/jpeg', 0.8);
       });
       
@@ -748,7 +761,7 @@ export const ReviewsManager = () => {
       console.error('Frame extraction failed:', error);
       toast({
         title: "Extraction Failed",
-        description: "Failed to extract frame from video. Please try again.",
+        description: error instanceof Error ? error.message : "Failed to extract frame from video. Please try again.",
         variant: "destructive",
       });
     } finally {
