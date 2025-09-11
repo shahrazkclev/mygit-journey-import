@@ -817,20 +817,22 @@ export const SimpleContactManager = () => {
       </Card>
 
       {/* Contacts Management */}
-      <Card className="shadow-soft bg-gradient-to-br from-email-background to-background">
-        <CardHeader>
+      <Card className="shadow-xl shadow-email-primary/10 bg-gradient-to-br from-email-background via-white to-email-muted/20 border border-email-primary/20">
+        <CardHeader className="bg-gradient-to-r from-email-primary/5 via-email-accent/5 to-email-primary/5 border-b border-email-primary/20">
           <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4">
             <div>
-              <CardTitle className="flex items-center space-x-2">
-                <Users className="h-5 w-5 text-email-secondary" />
-                <span className="text-email-secondary">Contacts ({filteredContacts.length})</span>
+              <CardTitle className="flex items-center space-x-3">
+                <div className="p-2 bg-gradient-to-br from-email-primary to-email-accent rounded-lg shadow-sm">
+                  <Users className="h-5 w-5 text-white" />
+                </div>
+                <span className="text-email-secondary font-semibold">Contacts ({filteredContacts.length})</span>
                 {selectedContacts.size > 0 && (
-                  <Badge variant="secondary" className="bg-email-accent/20 text-email-accent">
+                  <Badge variant="secondary" className="bg-gradient-to-r from-email-accent to-email-primary text-white shadow-sm">
                     {selectedContacts.size} selected
                   </Badge>
                 )}
               </CardTitle>
-              <CardDescription>
+              <CardDescription className="text-email-secondary/80 mt-2">
                 Manage your contacts with tag-based organization. Names auto-generated from emails when missing.
               </CardDescription>
             </div>
@@ -1101,32 +1103,37 @@ export const SimpleContactManager = () => {
         </CardHeader>
         <CardContent className="space-y-6">
           {/* Search and Filter Section */}
-          <div className="bg-email-muted/20 rounded-lg p-4 border border-email-primary/10">
-            <div className="flex flex-col space-y-4">
-              <h3 className="text-sm font-medium text-email-primary">Search & Filter</h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="search-contacts" className="text-xs font-medium text-email-secondary">
-                    Search Contacts
+          <div className="bg-gradient-to-br from-email-background via-white to-email-muted/30 rounded-xl p-6 border border-email-primary/20 shadow-lg shadow-email-primary/10">
+            <div className="flex flex-col space-y-5">
+              <div className="flex items-center space-x-2">
+                <div className="w-1 h-6 bg-gradient-to-b from-email-primary to-email-accent rounded-full"></div>
+                <h3 className="text-lg font-semibold text-email-primary">Search & Filter</h3>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-3">
+                  <Label htmlFor="search-contacts" className="text-sm font-medium text-email-secondary flex items-center space-x-2">
+                    <div className="w-2 h-2 bg-email-accent rounded-full"></div>
+                    <span>Search Contacts</span>
                   </Label>
                   <Input
                     id="search-contacts"
                     placeholder="Search by name or email..."
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
-                    className="border-email-primary/30 focus:border-email-primary bg-white"
+                    className="border-email-primary/30 focus:border-email-primary focus:ring-2 focus:ring-email-primary/20 bg-white/80 backdrop-blur-sm shadow-sm hover:shadow-md transition-all duration-200"
                   />
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="filter-tags" className="text-xs font-medium text-email-secondary">
-                    Filter by Tag
+                <div className="space-y-3">
+                  <Label htmlFor="filter-tags" className="text-sm font-medium text-email-secondary flex items-center space-x-2">
+                    <div className="w-2 h-2 bg-email-accent rounded-full"></div>
+                    <span>Filter by Tag</span>
                   </Label>
                   <Input
                     id="filter-tags"
                     placeholder="Enter tag to filter..."
                     value={tagFilter}
                     onChange={(e) => setTagFilter(e.target.value)}
-                    className="border-email-primary/30 focus:border-email-primary bg-white"
+                    className="border-email-primary/30 focus:border-email-primary focus:ring-2 focus:ring-email-primary/20 bg-white/80 backdrop-blur-sm shadow-sm hover:shadow-md transition-all duration-200"
                   />
                 </div>
               </div>
@@ -1135,16 +1142,16 @@ export const SimpleContactManager = () => {
 
 
           {/* Contacts List */}
-          <div className="space-y-2">
+          <div className="space-y-3">
             {filteredContacts.length > 0 && (
-              <div className="flex items-center p-3 bg-email-muted/30 rounded-lg border border-email-primary/10">
+              <div className="flex items-center p-4 bg-gradient-to-r from-email-primary/5 via-email-accent/5 to-email-primary/5 rounded-xl border border-email-primary/20 shadow-sm">
                 <input
                   type="checkbox"
                   checked={selectedContacts.size === filteredContacts.length && filteredContacts.length > 0}
                   onChange={(e) => handleSelectAll(e.target.checked)}
-                  className="h-4 w-4 text-email-primary focus:ring-email-primary border-gray-300 rounded"
+                  className="h-4 w-4 text-email-primary focus:ring-2 focus:ring-email-primary/20 border-email-primary/30 rounded"
                 />
-                <Label className="ml-3 text-sm font-medium text-email-primary cursor-pointer">
+                <Label className="ml-3 text-sm font-semibold text-email-primary cursor-pointer">
                   Select All ({filteredContacts.length})
                 </Label>
               </div>
@@ -1153,8 +1160,10 @@ export const SimpleContactManager = () => {
             {filteredContacts.map(contact => (
               <div
                 key={contact.id}
-                className={`flex items-center justify-between p-4 border rounded-lg hover:bg-email-muted/20 transition-colors ${
-                  selectedContacts.has(contact.id) ? 'bg-email-primary/10 border-email-primary/30' : 'border-email-primary/10'
+                className={`group flex items-center justify-between p-5 border rounded-xl transition-all duration-200 hover:shadow-lg hover:scale-[1.02] ${
+                  selectedContacts.has(contact.id) 
+                    ? 'bg-gradient-to-r from-email-primary/10 via-email-accent/5 to-email-primary/10 border-email-primary/40 shadow-md' 
+                    : 'bg-gradient-to-r from-white via-email-muted/20 to-white border-email-primary/20 shadow-sm hover:border-email-primary/30'
                 }`}
               >
                 <div className="flex items-center space-x-3 flex-1">
@@ -1196,7 +1205,7 @@ export const SimpleContactManager = () => {
                     )}
                   </div>
                 </div>
-                <div className="flex items-center space-x-2 flex-shrink-0">
+                <div className="flex items-center space-x-2 flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
                   <Button
                     variant="ghost"
                     size="sm"
@@ -1204,7 +1213,7 @@ export const SimpleContactManager = () => {
                       setEditingContact(contact);
                       setShowEditContactDialog(true);
                     }}
-                    className="text-email-primary hover:text-email-primary/80 hover:bg-email-primary/10"
+                    className="text-email-primary hover:text-white hover:bg-email-primary shadow-sm hover:shadow-md transition-all duration-200"
                   >
                     <Edit className="h-4 w-4" />
                   </Button>
@@ -1212,7 +1221,7 @@ export const SimpleContactManager = () => {
                     variant="ghost"
                     size="sm"
                     onClick={() => handleDeleteContact(contact.id)}
-                    className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                    className="text-red-600 hover:text-white hover:bg-red-500 shadow-sm hover:shadow-md transition-all duration-200"
                   >
                     <Trash2 className="h-4 w-4" />
                   </Button>
