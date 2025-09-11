@@ -214,14 +214,16 @@ export const ProductManager: React.FC = () => {
         </Dialog>
       </div>
 
-      <Card className="shadow-soft bg-gradient-to-br from-email-background to-background">
-        <CardHeader>
-          <CardTitle className="flex items-center text-email-secondary">
-            <Package className="h-5 w-5 mr-2" />
-            Products ({products.length})
+      <Card className="shadow-xl shadow-email-primary/10 bg-gradient-to-br from-email-background via-white to-email-muted/20 border border-email-primary/20">
+        <CardHeader className="bg-gradient-to-r from-email-primary/5 via-email-accent/5 to-email-primary/5 border-b border-email-primary/20">
+          <CardTitle className="flex items-center space-x-3">
+            <div className="p-2 bg-gradient-to-br from-email-primary to-email-accent rounded-lg shadow-sm">
+              <Package className="h-5 w-5 text-white" />
+            </div>
+            <span className="text-email-secondary font-semibold">Products ({products.length})</span>
           </CardTitle>
         </CardHeader>
-        <CardContent>
+        <CardContent className="pt-6">
           <div className="space-y-3">
             {products.length === 0 ? (
               <p className="text-muted-foreground text-center py-8">

@@ -1101,9 +1101,9 @@ export const SimpleContactManager = () => {
             </div>
           </div>
         </CardHeader>
-        <CardContent className="space-y-8">
+        <CardContent className="space-y-8 pt-6">
           {/* Search and Filter Section */}
-          <div className="bg-gradient-to-br from-email-background via-white to-email-muted/30 rounded-xl p-6 border border-email-primary/20 shadow-lg shadow-email-primary/10">
+          <div className="bg-gradient-to-br from-email-background via-white to-email-muted/30 rounded-xl p-6 border border-email-primary/20 shadow-lg shadow-email-primary/10 mt-4">
             <div className="flex flex-col space-y-5">
               <div className="flex items-center space-x-2">
                 <div className="w-1 h-6 bg-gradient-to-b from-email-primary to-email-accent rounded-full"></div>

@@ -456,14 +456,19 @@ export const TagRulesManager = () => {
 
       <div className="grid gap-4">
         {rules.length === 0 ? (
-          <Card>
-            <CardContent className="flex flex-col items-center justify-center py-8">
-              <Settings className="h-12 w-12 text-muted-foreground mb-4" />
-              <h3 className="text-lg font-semibold mb-2">No Tag Rules Yet</h3>
-              <p className="text-muted-foreground text-center mb-4">
+          <Card className="shadow-xl shadow-email-primary/10 bg-gradient-to-br from-email-background via-white to-email-muted/20 border border-email-primary/20">
+            <CardContent className="flex flex-col items-center justify-center py-12">
+              <div className="p-4 bg-gradient-to-br from-email-primary/10 to-email-accent/10 rounded-full mb-6">
+                <Settings className="h-12 w-12 text-email-primary" />
+              </div>
+              <h3 className="text-xl font-semibold text-email-secondary mb-3">No Tag Rules Yet</h3>
+              <p className="text-email-secondary/80 text-center mb-6 max-w-md">
                 Create your first tag rule to automatically manage contact tags based on triggers.
               </p>
-              <Button onClick={() => setIsCreating(true)} className="flex items-center gap-2">
+              <Button 
+                onClick={() => setIsCreating(true)} 
+                className="bg-gradient-to-r from-email-primary to-email-accent hover:from-email-primary/90 hover:to-email-accent/90 text-white shadow-lg hover:shadow-xl transition-all duration-200 flex items-center gap-2"
+              >
                 <Plus className="h-4 w-4" />
                 Create First Rule
               </Button>
@@ -471,13 +476,13 @@ export const TagRulesManager = () => {
           </Card>
         ) : (
           rules.map((rule) => (
-            <Card key={rule.id} className={!rule.enabled ? "opacity-60" : ""}>
-              <CardHeader>
+            <Card key={rule.id} className={`shadow-lg shadow-email-primary/5 bg-gradient-to-br from-white via-email-muted/10 to-white border border-email-primary/20 hover:shadow-xl hover:shadow-email-primary/10 transition-all duration-200 ${!rule.enabled ? "opacity-60" : ""}`}>
+              <CardHeader className="bg-gradient-to-r from-email-primary/5 via-email-accent/5 to-email-primary/5 border-b border-email-primary/20">
                 <div className="flex items-start justify-between">
                   <div className="space-y-1">
-                    <CardTitle className="text-lg">{rule.name}</CardTitle>
+                    <CardTitle className="text-lg text-email-secondary font-semibold">{rule.name}</CardTitle>
                     {rule.description && (
-                      <CardDescription>{rule.description}</CardDescription>
+                      <CardDescription className="text-email-secondary/80">{rule.description}</CardDescription>
                     )}
                   </div>
                   <div className="flex items-center gap-2">

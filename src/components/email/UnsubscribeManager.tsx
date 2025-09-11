@@ -312,43 +312,49 @@ export const UnsubscribeManager = () => {
   return (
     <div className="space-y-6">
       {/* Stats Overview */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <Card className="shadow-soft border-destructive/20">
-          <CardContent className="p-4">
-            <div className="flex items-center space-x-2">
-              <UserX className="h-5 w-5 text-destructive" />
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <Card className="shadow-xl shadow-red-500/10 bg-gradient-to-br from-red-50 via-white to-red-50/50 border border-red-200">
+          <CardContent className="p-6">
+            <div className="flex items-center space-x-3">
+              <div className="p-2 bg-gradient-to-br from-red-500 to-red-600 rounded-lg shadow-sm">
+                <UserX className="h-5 w-5 text-white" />
+              </div>
               <div>
-                <p className="text-2xl font-bold">{unsubscribedUsers.length}</p>
-                <p className="text-sm text-muted-foreground">Total Unsubscribed</p>
+                <p className="text-3xl font-bold text-red-600">{unsubscribedUsers.length}</p>
+                <p className="text-sm font-semibold text-red-700">Total Unsubscribed</p>
               </div>
             </div>
           </CardContent>
         </Card>
         
-        <Card className="shadow-soft border-email-warning/20">
-          <CardContent className="p-4">
-            <div className="flex items-center space-x-2">
-              <Calendar className="h-5 w-5 text-email-warning" />
+        <Card className="shadow-xl shadow-yellow-500/10 bg-gradient-to-br from-yellow-50 via-white to-yellow-50/50 border border-yellow-200">
+          <CardContent className="p-6">
+            <div className="flex items-center space-x-3">
+              <div className="p-2 bg-gradient-to-br from-yellow-500 to-yellow-600 rounded-lg shadow-sm">
+                <Calendar className="h-5 w-5 text-white" />
+              </div>
               <div>
-                <p className="text-2xl font-bold">
+                <p className="text-3xl font-bold text-yellow-600">
                   {unsubscribedUsers.filter(u => {
                     const date = u.unsubscribed_at || u.created_at;
                     return date && new Date(date) > new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
                   }).length}
                 </p>
-                <p className="text-sm text-muted-foreground">This Week</p>
+                <p className="text-sm font-semibold text-yellow-700">This Week</p>
               </div>
             </div>
           </CardContent>
         </Card>
         
-        <Card className="shadow-soft border-email-accent/20">
-          <CardContent className="p-4">
-            <div className="flex items-center space-x-2">
-              <Search className="h-5 w-5 text-email-accent" />
+        <Card className="shadow-xl shadow-email-accent/10 bg-gradient-to-br from-email-accent/10 via-white to-email-accent/5 border border-email-accent/20">
+          <CardContent className="p-6">
+            <div className="flex items-center space-x-3">
+              <div className="p-2 bg-gradient-to-br from-email-accent to-email-primary rounded-lg shadow-sm">
+                <Search className="h-5 w-5 text-white" />
+              </div>
               <div>
-                <p className="text-2xl font-bold">2.3%</p>
-                <p className="text-sm text-muted-foreground">Unsubscribe Rate</p>
+                <p className="text-3xl font-bold text-email-accent">2.3%</p>
+                <p className="text-sm font-semibold text-email-accent">Unsubscribe Rate</p>
               </div>
             </div>
           </CardContent>
@@ -356,12 +362,14 @@ export const UnsubscribeManager = () => {
       </div>
 
       {/* Search and Controls */}
-      <Card className="shadow-soft border-email-primary/20">
-        <CardHeader>
+      <Card className="shadow-xl shadow-email-primary/10 bg-gradient-to-br from-email-background via-white to-email-muted/20 border border-email-primary/20">
+        <CardHeader className="bg-gradient-to-r from-email-primary/5 via-email-accent/5 to-email-primary/5 border-b border-email-primary/20">
           <CardTitle className="flex items-center justify-between">
-            <span className="flex items-center space-x-2">
-              <UserX className="h-5 w-5 text-destructive" />
-              <span>Unsubscribed Users ({filteredUsers.length})</span>
+            <span className="flex items-center space-x-3">
+              <div className="p-2 bg-gradient-to-br from-red-500 to-red-600 rounded-lg shadow-sm">
+                <UserX className="h-5 w-5 text-white" />
+              </div>
+              <span className="text-email-secondary font-semibold">Unsubscribed Users ({filteredUsers.length})</span>
             </span>
             <div className="flex items-center space-x-2">
               {selectedUsers.size > 0 && (
@@ -395,7 +403,7 @@ export const UnsubscribeManager = () => {
             Manage users who have unsubscribed from your email campaigns. Use filters to find specific users and restore them if needed.
           </CardDescription>
         </CardHeader>
-        <CardContent>
+        <CardContent className="pt-6">
           <div className="space-y-4">
             {/* Search and Filters */}
             <div className="grid grid-cols-1 md:grid-cols-5 gap-4">

@@ -307,7 +307,7 @@ export const LockTagsManager = () => {
                 These tags are password protected and require authentication to add via API/forms.
               </CardDescription>
             </CardHeader>
-            <CardContent>
+            <CardContent className="pt-6">
               <div className="space-y-4">
                 {lockedTags.map((lockedTag) => (
                   <div key={lockedTag.id} className="border rounded-lg p-4">

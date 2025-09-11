@@ -1182,44 +1182,52 @@ export const ReviewsManager = () => {
 
           {/* Analytics Tab */}
           <TabsContent value="analytics">
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-              <Card>
+            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+              <Card className="shadow-xl shadow-blue-500/10 bg-gradient-to-br from-blue-50 via-white to-blue-50/50 border border-blue-200">
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">Total Submissions</CardTitle>
-                  <FileText className="h-4 w-4 text-muted-foreground" />
+                  <CardTitle className="text-sm font-semibold text-blue-700">Total Submissions</CardTitle>
+                  <div className="p-2 bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg shadow-sm">
+                    <FileText className="h-4 w-4 text-white" />
+                  </div>
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold">{stats.total_submissions}</div>
+                  <div className="text-3xl font-bold text-blue-600">{stats.total_submissions}</div>
                 </CardContent>
               </Card>
               
-              <Card>
+              <Card className="shadow-xl shadow-yellow-500/10 bg-gradient-to-br from-yellow-50 via-white to-yellow-50/50 border border-yellow-200">
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">Pending Reviews</CardTitle>
-                  <Clock className="h-4 w-4 text-muted-foreground" />
+                  <CardTitle className="text-sm font-semibold text-yellow-700">Pending Reviews</CardTitle>
+                  <div className="p-2 bg-gradient-to-br from-yellow-500 to-yellow-600 rounded-lg shadow-sm">
+                    <Clock className="h-4 w-4 text-white" />
+                  </div>
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold">{stats.pending_count}</div>
+                  <div className="text-3xl font-bold text-yellow-600">{stats.pending_count}</div>
                 </CardContent>
               </Card>
               
-              <Card>
+              <Card className="shadow-xl shadow-green-500/10 bg-gradient-to-br from-green-50 via-white to-green-50/50 border border-green-200">
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">Published Reviews</CardTitle>
-                  <Star className="h-4 w-4 text-muted-foreground" />
+                  <CardTitle className="text-sm font-semibold text-green-700">Published Reviews</CardTitle>
+                  <div className="p-2 bg-gradient-to-br from-green-500 to-green-600 rounded-lg shadow-sm">
+                    <Star className="h-4 w-4 text-white" />
+                  </div>
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold">{stats.approved_count}</div>
+                  <div className="text-3xl font-bold text-green-600">{stats.approved_count}</div>
                 </CardContent>
               </Card>
               
-              <Card>
+              <Card className="shadow-xl shadow-email-accent/10 bg-gradient-to-br from-email-accent/10 via-white to-email-accent/5 border border-email-accent/20">
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">Average Rating</CardTitle>
-                  <TrendingUp className="h-4 w-4 text-muted-foreground" />
+                  <CardTitle className="text-sm font-semibold text-email-accent">Average Rating</CardTitle>
+                  <div className="p-2 bg-gradient-to-br from-email-accent to-email-primary rounded-lg shadow-sm">
+                    <TrendingUp className="h-4 w-4 text-white" />
+                  </div>
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold">{stats.average_rating}/5</div>
+                  <div className="text-3xl font-bold text-email-accent">{stats.average_rating}/5</div>
                 </CardContent>
               </Card>
             </div>
@@ -1227,12 +1235,17 @@ export const ReviewsManager = () => {
 
           {/* All Reviews Tab */}
           <TabsContent value="all">
-            <Card>
-              <CardHeader>
-                <CardTitle>All Reviews</CardTitle>
-                <CardDescription>Complete overview of all review submissions</CardDescription>
+            <Card className="shadow-xl shadow-email-primary/10 bg-gradient-to-br from-email-background via-white to-email-muted/20 border border-email-primary/20">
+              <CardHeader className="bg-gradient-to-r from-email-primary/5 via-email-accent/5 to-email-primary/5 border-b border-email-primary/20">
+                <CardTitle className="flex items-center space-x-3">
+                  <div className="p-2 bg-gradient-to-br from-email-primary to-email-accent rounded-lg shadow-sm">
+                    <Star className="h-5 w-5 text-white" />
+                  </div>
+                  <span className="text-email-secondary font-semibold">All Reviews</span>
+                </CardTitle>
+                <CardDescription className="text-email-secondary/80 mt-2">Complete overview of all review submissions</CardDescription>
               </CardHeader>
-              <CardContent>
+              <CardContent className="pt-6">
                 {loading ? (
                   <div className="text-center py-12">
                     <RefreshCw className="h-8 w-8 mx-auto animate-spin text-muted-foreground mb-4" />

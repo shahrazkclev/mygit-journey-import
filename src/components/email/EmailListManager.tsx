@@ -788,7 +788,7 @@ export const EmailListManager = () => {
                 </div>
               </div>
             </CardHeader>
-            <CardContent className="space-y-6">
+            <CardContent className="space-y-6 pt-6">
               {/* Bulk Operations */}
               {selectedContacts.length > 0 && (
                 <div className="bg-gradient-to-r from-blue-50 via-blue-100/50 to-blue-50 rounded-xl p-4 border border-blue-200 shadow-sm">
@@ -847,7 +847,7 @@ export const EmailListManager = () => {
               )}
 
               {/* Search and Filter Section */}
-              <div className="bg-gradient-to-br from-email-background via-white to-email-muted/30 rounded-xl p-6 border border-email-primary/20 shadow-lg shadow-email-primary/10">
+              <div className="bg-gradient-to-br from-email-background via-white to-email-muted/30 rounded-xl p-6 border border-email-primary/20 shadow-lg shadow-email-primary/10 mt-4">
                 <div className="flex flex-col space-y-5">
                   <div className="flex items-center space-x-2">
                     <div className="w-1 h-6 bg-gradient-to-b from-email-primary to-email-accent rounded-full"></div>
@@ -1028,7 +1028,7 @@ export const EmailListManager = () => {
                 </div>
               </div>
             </CardHeader>
-            <CardContent>
+            <CardContent className="pt-6">
               <div className="border rounded-lg">
                 <Table>
                   <TableHeader>
