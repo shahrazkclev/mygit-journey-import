@@ -1,0 +1,533 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dynamic Review Cards</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+<style>
+    #carousel svg {
+        width: 1rem;
+        height: 1rem;
+    }
+    .no-scrollbar::-webkit-scrollbar { display: none; }
+    .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+    .grabbing { cursor: grabbing; }
+    .grab { cursor: grab; }
+    
+    /* Loading states removed - no more skeletons */
+    
+    .fade-in {
+        animation: fadeIn 0.3s ease-in;
+    }
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(10px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+    
+    .error-state {
+        background: #fef2f2;
+        border: 1px solid #fecaca;
+        color: #dc2626;
+    }
+    
+    /* Prevent layout shifts */
+    #component-wrapper {
+        contain: layout style;
+        will-change: auto;
+    }
+    
+    /* Media loading states */
+    .media-placeholder {
+        background: linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%);
+        transition: opacity 0.3s ease;
+    }
+    
+    .media-content {
+        transition: opacity 0.3s ease;
+    }
+    
+    /* Skeleton loading */
+    .skeleton-card {
+        background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+        background-size: 200% 100%;
+        animation: skeleton-loading 1.5s infinite;
+    }
+    
+    @keyframes skeleton-loading {
+        0% { background-position: 200% 0; }
+        100% { background-position: -200% 0; }
+    }
+    
+    /* Thumbnail and video states */
+    .thumbnail-layer {
+        transition: opacity 0.3s ease;
+    }
+    
+    .video-layer {
+        transition: opacity 0.3s ease;
+    }
+    
+    .video-layer.hidden {
+        opacity: 0;
+    }
+    
+    .thumbnail-layer.hidden {
+        opacity: 0;
+    }
+</style>
+</head>
+<body class="bg-stone-100 text-gray-800 font-sans">
+
+<div id="component-wrapper" class="w-full max-w-6xl mx-auto relative">
+    <!-- Loading Skeletons -->
+    <div id="loading-skeletons" class="flex gap-4 py-8 px-4">
+        <div class="skeleton-card w-64 h-96 rounded-2xl flex-shrink-0"></div>
+        <div class="skeleton-card w-64 h-96 rounded-2xl flex-shrink-0"></div>
+        <div class="skeleton-card w-64 h-96 rounded-2xl flex-shrink-0"></div>
+        <div class="skeleton-card w-64 h-96 rounded-2xl flex-shrink-0"></div>
+        <div class="skeleton-card w-64 h-96 rounded-2xl flex-shrink-0"></div>
+    </div>
+    
+    <!-- Main Carousel - Hidden initially -->
+    <div id="carousel-wrapper" class="no-scrollbar w-full overflow-x-scroll scroll-smooth grab px-4 hidden">
+        <div id="carousel" class="flex gap-4 py-8 px-4">
+        </div>
+    </div>
+</div>
+
+<script>
+    // Supabase Configuration
+    const SUPABASE_URL = "https://mixifcnokcmxarpzwfiy.supabase.co";
+    const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1peGlmY25va2NteGFycHp3Zml5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTM0NjYwNTEsImV4cCI6MjA2OTA0MjA1MX0.-4uIuzcHcDGS20-dtKbjVFOtpBSmwYhT9Bgt6KA-dXI";
+    const { createClient } = supabase;
+    const supabaseClient = createClient(SUPABASE_URL, SUPABASE_KEY);
+
+    // Global state
+    let isUnmutedGlobally = false;
+    let reviews = [];
+    let isLoading = true;
+    let hasError = false;
+    const isMobile = window.matchMedia("(pointer: coarse)").matches;
+    
+    // Performance optimizations
+    const LOADING_TIMEOUT = 5000; // 5 second timeout (reduced for embedded scenarios)
+    
+    // Preload critical resources
+    function preloadCriticalResources() {
+        // Preload sample images for faster fallback
+        const sampleImages = [
+            'https://images.unsplash.com/photo-1494790108755-2616b612b786?w=100&h=100&fit=crop&crop=face',
+            'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&h=100&fit=crop&crop=face',
+            'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=100&h=100&fit=crop&crop=face'
+        ];
+        
+        sampleImages.forEach(src => {
+            const img = new Image();
+            img.src = src;
+        });
+    }
+
+    // Utility functions
+    function generateAvatarInitial(name) { return name ? name.charAt(0).toUpperCase() : 'U'; }
+    function generateAvatarGradient(name) {
+        const colors = ['from-purple-500 to-pink-500', 'from-blue-500 to-teal-500', 'from-green-500 to-emerald-500', 'from-orange-500 to-red-500', 'from-indigo-500 to-purple-500', 'from-pink-500 to-rose-500', 'from-cyan-500 to-blue-500', 'from-yellow-500 to-orange-500'];
+        const hash = name ? name.split('').reduce((a, b) => a + b.charCodeAt(0), 0) : 0;
+        return colors[hash % colors.length];
+    }
+    function renderStars(rating) {
+        return Array.from({ length: 5 }, (_, i) => `<svg class="w-4 h-4 ${i < rating ? 'text-yellow-400' : 'text-gray-300'}" fill="currentColor" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.286 3.957a1 1 0 00.95.69h4.162c.969 0 1.371 1.24.588 1.81l-3.367 2.445a1 1 0 00-.364 1.118l1.287 3.957c.3.921-.755 1.688-1.54 1.118l-3.367-2.445a1 1 0 00-1.175 0l-3.367 2.445c-.784.57-1.838-.197-1.54-1.118l1.287-3.957a1 1 0 00-.364-1.118L2.05 9.384c-.783-.57-.38-1.81.588-1.81h4.162a1 1 0 00.95-.69L9.049 2.927z"></path></svg>`).join('');
+    }
+
+    function createReviewCard(review) {
+        const avatarInitial = generateAvatarInitial(review.user_name);
+        const avatarGradient = generateAvatarGradient(review.user_name);
+        const stars = renderStars(review.rating);
+        const mediaUrl = review.media_url_optimized || review.media_url;
+        const thumbnailUrl = review.thumbnail_url || review.media_url; // Use thumbnail if available, fallback to media
+        const profilePictureUrl = review.profile_picture_url || review.profile_picture;
+
+        // Create card with thumbnail immediately visible, video loads in background
+        return `
+            <div class="video-card relative w-64 h-96 aspect-[2/3] flex-shrink-0 rounded-2xl overflow-hidden transition-transform duration-500 ease-in-out md:hover:scale-105 shadow-lg group bg-gray-200" data-review-id="${review.id}" data-media-url="${mediaUrl}" data-media-type="${review.media_type}" data-thumbnail-url="${thumbnailUrl}" data-has-played="false">
+                <!-- Thumbnail layer - shows immediately -->
+                <div class="thumbnail-layer absolute inset-0">
+                    <img src="${thumbnailUrl}" alt="Review thumbnail" class="absolute inset-0 w-full h-full object-cover transition-transform duration-500 ease-in-out md:group-hover:scale-110" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+                    <div class="absolute inset-0 bg-gray-200 flex items-center justify-center" style="display: none;">
+                        <div class="text-gray-400 text-sm">No thumbnail</div>
+                    </div>
+                </div>
+                
+                <!-- Video layer - hidden initially, shows on hover -->
+                <div class="video-layer absolute inset-0 hidden">
+                    <div class="video-container absolute inset-0"></div>
+                </div>
+                
+                <div class="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent"></div>
+                
+                <!-- Mute button - will be added when video loads -->
+                <div class="mute-button-container"></div>
+                
+                <!-- Play button - will be added when video loads -->
+                <div class="play-button-container"></div>
+                
+                <div class="relative z-10 p-4 flex flex-col justify-end h-full text-white">
+                    <div class="space-y-3">
+                        <div class="flex items-center space-x-1">${stars}</div>
+                        <p class="text-sm text-white/90 line-clamp-2 select-none">"${review.description}"</p>
+                        <div class="flex items-center space-x-2 text-sm">
+                            <div class="w-8 h-8 rounded-full overflow-hidden bg-gradient-to-br ${avatarGradient} flex items-center justify-center font-bold text-white">
+                                ${profilePictureUrl ? `<img src="${profilePictureUrl}" alt="Profile" class="w-full h-full object-cover" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';"><span style="display: none;">${avatarInitial}</span>` : avatarInitial}
+                            </div>
+                            <a href="https://instagram.com/${review.user_instagram_handle.replace('@', '')}" target="_blank" rel="noopener noreferrer" class="flex items-center space-x-1.5 group">
+                                <svg class="w-4 h-4 text-white/80 group-hover:text-blue-300" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.85s-.011 3.585-.069 4.85c-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.85-.07-3.252-.148-4.771-1.691-4.919-4.919-.058-1.265-.069-1.645-.069-4.85s.011-3.585.069-4.85c.149-3.225 1.664-4.771 4.919-4.919 1.266-.057 1.644-.07 4.85-.07zM12 5.838a6.162 6.162 0 100 12.324 6.162 6.162 0 000-12.324zM12 16a4 4 0 110-8 4 4 0 010 8zm6.406-11.845a1.44 1.44 0 100 2.88 1.44 1.44 0 000-2.88z"/></svg>
+                                <span class="font-medium text-white group-hover:text-blue-300 transition-colors">${review.user_instagram_handle}</span>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>`;
+    }
+
+    function updateCardState(card) {
+        const video = card.querySelector('video');
+        const muteBtn = card.querySelector('.mute-btn');
+        if (!video || !muteBtn) return;
+
+        const unmutedIcon = card.querySelector('.mute-icon-unmuted');
+        const mutedIcon = card.querySelector('.mute-icon-muted');
+        
+        video.muted = !isUnmutedGlobally;
+
+        unmutedIcon.classList.toggle('hidden', video.muted);
+        mutedIcon.classList.toggle('hidden', !video.muted);
+
+        if (isMobile) {
+            muteBtn.style.cssText = 'top: 1rem; right: 1rem; padding: 0.375rem;';
+        } else {
+             if (video.muted) { 
+                muteBtn.style.cssText = 'top: 50%; left: 50%; transform: translate(-50%, -50%); padding: 1rem;';
+                unmutedIcon.classList.remove('w-5', 'h-5'); unmutedIcon.classList.add('w-10', 'h-10');
+                mutedIcon.classList.remove('w-5', 'h-5'); mutedIcon.classList.add('w-10', 'h-10');
+            } else { 
+                muteBtn.style.cssText = 'top: 1rem; right: 1rem; padding: 0.375rem;';
+                unmutedIcon.classList.remove('w-10', 'h-10'); unmutedIcon.classList.add('w-5', 'h-5');
+                mutedIcon.classList.remove('w-10', 'h-10'); mutedIcon.classList.add('w-5', 'h-5');
+            }
+        }
+    }
+    
+    async function loadReviews() {
+        // Set up timeout to prevent hanging
+        const timeoutId = setTimeout(() => {
+            if (isLoading) {
+                console.warn('Loading timeout reached, hiding component');
+                hideComponent();
+            }
+        }, LOADING_TIMEOUT);
+        
+        try {
+            // Test Supabase connection first
+            console.log('Attempting to connect to Supabase...');
+            console.log('Supabase URL:', SUPABASE_URL);
+            console.log('Supabase Key:', SUPABASE_KEY.substring(0, 20) + '...');
+            
+            // Use Promise.race to handle both the API call and timeout
+            const apiPromise = supabaseClient
+                .from('reviews')
+                .select('*')
+                .eq('is_active', true)
+                .order('sort_order', { ascending: true })
+                .order('created_at', { ascending: false })
+                .limit(20); // Limit to 20 reviews for better performance
+            
+            console.log('API call initiated...');
+            const { data, error } = await apiPromise;
+            
+            clearTimeout(timeoutId);
+            
+            if (error) { 
+                console.error('Supabase API error:', error);
+                console.error('Error details:', JSON.stringify(error, null, 2));
+                throw error; 
+            }
+            
+            reviews = data || [];
+            console.log('Loaded reviews from Supabase:', reviews.length);
+            console.log('Sample review data:', reviews[0]);
+            
+            if (reviews.length === 0) { 
+                console.log('No reviews found, hiding component');
+                hideComponent();
+                return; 
+            }
+            
+            addReviewsProgressively(reviews);
+            
+        } catch (error) {
+            clearTimeout(timeoutId);
+            console.error('Error loading reviews from Supabase:', error);
+            console.error('Error stack:', error.stack);
+            
+            // Hide component instead of showing sample data
+            console.log('Hiding component due to API error');
+            hideComponent();
+        }
+    }
+
+    // Loading state functions removed - no more loading skeletons
+    
+    function hideComponent() {
+        // Hide the entire component wrapper
+        const wrapper = document.getElementById('component-wrapper');
+        if (wrapper) {
+            wrapper.style.display = 'none';
+        }
+        isLoading = false;
+        hasError = true;
+    }
+    
+    // Global variable to store all reviews for infinite scroll
+    let allReviews = [];
+    
+    function addReviewsProgressively(reviewsToAdd) {
+        const carousel = document.getElementById('carousel');
+        if (!carousel) return;
+        
+        // Clear carousel
+        carousel.innerHTML = '';
+        
+        // Add all reviews to carousel
+        reviewsToAdd.forEach((review, index) => {
+            const cardHTML = createReviewCard(review);
+            carousel.insertAdjacentHTML('beforeend', cardHTML);
+            const newCard = carousel.lastElementChild;
+            if (newCard) {
+                newCard.classList.add('fade-in');
+                newCard.dataset.originalIndex = index; // Store original index
+                initializeSingleCard(newCard);
+            }
+        });
+        
+        // Initialize carousel interactions
+        initializeCarousel();
+        
+        // Hide skeletons and show carousel
+        document.getElementById('loading-skeletons').classList.add('hidden');
+        document.getElementById('carousel-wrapper').classList.remove('hidden');
+        
+        isLoading = false;
+    }
+    
+
+    function initializeCarousel() {
+        const carouselWrapper = document.getElementById('carousel-wrapper');
+        let isDown = false, startX, scrollLeft;
+        
+        carouselWrapper.addEventListener('mousedown', (e) => { 
+            isDown = true; 
+            carouselWrapper.classList.add('grabbing'); 
+            startX = e.pageX - carouselWrapper.offsetLeft; 
+            scrollLeft = carouselWrapper.scrollLeft; 
+        });
+        
+        carouselWrapper.addEventListener('mouseleave', () => { 
+            isDown = false; 
+            carouselWrapper.classList.remove('grabbing'); 
+        });
+        
+        carouselWrapper.addEventListener('mouseup', () => { 
+            isDown = false; 
+            carouselWrapper.classList.remove('grabbing'); 
+        });
+        
+        carouselWrapper.addEventListener('mousemove', (e) => { 
+            if (!isDown) return; 
+            e.preventDefault(); 
+            const x = e.pageX - carouselWrapper.offsetLeft; 
+            const walk = (x - startX) * 3; 
+            carouselWrapper.scrollLeft = scrollLeft - walk; 
+        });
+        
+        carouselWrapper.addEventListener('wheel', (e) => { 
+            if (e.deltaY !== 0) { 
+                e.preventDefault(); 
+                carouselWrapper.scrollLeft += e.deltaY * 2; // 2x faster scroll speed
+            }
+        });
+    }
+
+    function loadVideoAsync(card) {
+        const mediaUrl = card.dataset.mediaUrl;
+        const mediaType = card.dataset.mediaType;
+        const videoContainer = card.querySelector('.video-container');
+        const muteButtonContainer = card.querySelector('.mute-button-container');
+        const playButtonContainer = card.querySelector('.play-button-container');
+
+        if (!mediaUrl || mediaType !== 'video') {
+            return; // Only load videos
+        }
+
+        // Create video element
+        const video = document.createElement('video');
+        video.className = 'absolute inset-0 w-full h-full object-cover transition-transform duration-500 ease-in-out md:group-hover:scale-110';
+        video.muted = true;
+        video.loop = true;
+        video.playsInline = true;
+        video.preload = 'metadata';
+        video.src = mediaUrl;
+
+        // Add mute button for video
+        const muteButton = document.createElement('button');
+        muteButton.className = 'mute-btn absolute z-20 bg-black/30 rounded-full backdrop-blur-sm transition-all duration-300 opacity-100 md:opacity-0 md:group-hover:opacity-100 hover:bg-black/50';
+        muteButton.innerHTML = `
+            <svg class="w-5 h-5 text-white hidden mute-icon-unmuted" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z"></path></svg>
+            <svg class="w-5 h-5 text-white mute-icon-muted" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15zM17 14l4-4m0 4l-4-4"></path></svg>
+        `;
+
+        // Add play button for mobile
+        const playButton = document.createElement('button');
+        playButton.className = 'play-btn md:hidden absolute z-20 top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-black/30 rounded-full backdrop-blur-sm p-4 transition-opacity duration-300';
+        playButton.innerHTML = '<svg class="w-10 h-10 text-white" fill="currentColor" viewBox="0 0 20 20"><path d="M6.3 2.841A1.5 1.5 0 004 4.11V15.89a1.5 1.5 0 002.3 1.269l9.344-5.89a1.5 1.5 0 000-2.538L6.3 2.84z"></path></svg>';
+
+        muteButtonContainer.appendChild(muteButton);
+        playButtonContainer.appendChild(playButton);
+        videoContainer.appendChild(video);
+
+        // When video loads, initialize it but keep it hidden
+        video.addEventListener('loadeddata', () => {
+            initializeVideoCard(card, video, muteButton, playButton);
+        });
+
+        video.addEventListener('error', () => {
+            console.warn('Video failed to load:', mediaUrl);
+        });
+    }
+
+    function initializeVideoCard(card, video, muteBtn, playBtn) {
+        updateCardState(card);
+        
+        if (!isMobile) {
+            card.addEventListener('mouseenter', () => {
+                // Show video layer and hide thumbnail
+                const thumbnailLayer = card.querySelector('.thumbnail-layer');
+                const videoLayer = card.querySelector('.video-layer');
+                
+                if (thumbnailLayer && videoLayer) {
+                    thumbnailLayer.classList.add('hidden');
+                    videoLayer.classList.remove('hidden');
+                }
+                
+                video.play().catch(e => console.error("Autoplay failed", e));
+            });
+            
+            card.addEventListener('mouseleave', () => {
+                const hasPlayed = card.dataset.hasPlayed === 'true';
+                
+                if (!hasPlayed) {
+                    // If video hasn't been played yet, show thumbnail again
+                    const thumbnailLayer = card.querySelector('.thumbnail-layer');
+                    const videoLayer = card.querySelector('.video-layer');
+                    
+                    if (thumbnailLayer && videoLayer) {
+                        videoLayer.classList.add('hidden');
+                        thumbnailLayer.classList.remove('hidden');
+                    }
+                }
+                
+                video.pause();
+            });
+        }
+
+        if (muteBtn) {
+            muteBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                isUnmutedGlobally = !isUnmutedGlobally;
+                document.querySelectorAll('.video-card').forEach(updateCardState);
+            });
+        }
+        
+        if (isMobile) {
+            card.addEventListener('click', (event) => {
+                if (event.target.closest('a')) return;
+
+                if (video.paused) {
+                    document.querySelectorAll('.video-card video').forEach(otherVideo => {
+                        if (otherVideo !== video) otherVideo.pause();
+                    });
+                    
+                    isUnmutedGlobally = true;
+                    document.querySelectorAll('.video-card').forEach(updateCardState);
+                    
+                    // Show video layer and hide thumbnail on mobile play
+                    const thumbnailLayer = card.querySelector('.thumbnail-layer');
+                    const videoLayer = card.querySelector('.video-layer');
+                    
+                    if (thumbnailLayer && videoLayer) {
+                        thumbnailLayer.classList.add('hidden');
+                        videoLayer.classList.remove('hidden');
+                    }
+                    
+                    video.play().catch(e => console.error("Play failed", e));
+                } else {
+                    video.pause();
+                }
+            });
+            
+            video.addEventListener('play', () => { 
+                if(playBtn) playBtn.style.opacity = '0';
+                // Mark that this video has been played
+                card.dataset.hasPlayed = 'true';
+            });
+            video.addEventListener('pause', () => { if(playBtn) playBtn.style.opacity = '1'; });
+        }
+    }
+
+    function initializeSingleCard(card) {
+        // Start loading video in background (thumbnails are already visible)
+        loadVideoAsync(card);
+    }
+    
+    // Sample reviews removed - component will hide if no real data is available
+    
+    // Retry functionality - removed since we're hiding component on error
+    
+    // Robust initialization function
+    function initializeComponent() {
+        console.log('Initializing reviews component...');
+        
+        try {
+            preloadCriticalResources();
+            
+            // Start loading immediately - no delay needed
+            loadReviews();
+            
+        } catch (error) {
+            console.error('Error during initialization:', error);
+            // Hide component if initialization fails
+            hideComponent();
+        }
+    }
+    
+    // Initialize when DOM is ready
+    document.addEventListener('DOMContentLoaded', initializeComponent);
+    
+    // Also initialize if script loads after DOM is ready (for embedded scenarios)
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', initializeComponent);
+    } else {
+        // DOM is already ready, initialize immediately
+        initializeComponent();
+    }
+    
+    // Fallback initialization after a delay (for very slow loading scenarios)
+    setTimeout(() => {
+        if (isLoading && !hasError) {
+            console.log('Fallback initialization triggered');
+            initializeComponent();
+        }
+    }, 1000); // Reduced from 2000ms to 1000ms
+</script>
+</body>
+</html>

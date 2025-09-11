@@ -1,0 +1,232 @@
+/* Fonts loaded via index.html for stability */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Definition of the design system. All colors, gradients, fonts, etc should be defined here. 
+All colors MUST be HSL.
+*/
+
+@layer base {
+  :root {
+    /* Base design system - clean and professional */
+    --background: 0 0% 100%;
+    --foreground: 224 71% 4%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 224 71% 4%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 224 71% 4%;
+
+    --primary: 0 84% 60%;
+    --primary-foreground: 210 40% 98%;
+
+    --secondary: 220 14% 96%;
+    --secondary-foreground: 220 9% 46%;
+
+    --muted: 220 14% 96%;
+    --muted-foreground: 220 9% 46%;
+
+    --accent: 220 14% 96%;
+    --accent-foreground: 220 9% 46%;
+
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 210 40% 98%;
+
+    --border: 220 13% 91%;
+    --input: 220 13% 91%;
+    --ring: 221 83% 53%;
+
+    /* Unified theme system - all components use these */
+    --theme-primary: 221 83% 53%;
+    --theme-secondary: 204 86% 53%;
+    --theme-accent: 142 71% 45%;
+    --theme-success: 142 71% 45%;
+    --theme-warning: 35 91% 62%;
+    --theme-error: 0 84% 60%;
+    
+    /* Background variations */
+    --theme-background: 220 14% 99%;
+    --theme-surface: 0 0% 100%;
+    --theme-muted: 220 14% 96%;
+    
+    /* Text variations */
+    --theme-text-primary: 224 71% 4%;
+    --theme-text-secondary: 220 9% 46%;
+    --theme-text-muted: 220 9% 60%;
+
+    --radius: 0.5rem;
+
+    --sidebar-background: 0 0% 98%;
+
+    --sidebar-foreground: 240 5.3% 26.1%;
+
+    --sidebar-primary: 240 5.9% 10%;
+
+    --sidebar-primary-foreground: 0 0% 98%;
+
+    --sidebar-accent: 240 4.8% 95.9%;
+
+    --sidebar-accent-foreground: 240 5.9% 10%;
+
+    --sidebar-border: 220 13% 91%;
+
+    --sidebar-ring: 217.2 91.2% 59.8%;
+  }
+
+  .dark {
+    --background: 224 71% 4%;
+    --foreground: 210 40% 98%;
+
+    --card: 224 71% 4%;
+    --card-foreground: 210 40% 98%;
+
+    --popover: 224 71% 4%;
+    --popover-foreground: 210 40% 98%;
+
+    --primary: 210 40% 98%;
+    --primary-foreground: 224 71% 4%;
+
+    --secondary: 215 27% 17%;
+    --secondary-foreground: 210 40% 98%;
+
+    --muted: 215 27% 17%;
+    --muted-foreground: 217 10% 65%;
+
+    --accent: 215 27% 17%;
+    --accent-foreground: 210 40% 98%;
+
+    --destructive: 0 63% 31%;
+    --destructive-foreground: 210 40% 98%;
+
+    --border: 215 27% 17%;
+    --input: 215 27% 17%;
+    --ring: 216 34% 17%;
+
+    /* Dark theme adjustments */
+    --theme-background: 224 71% 4%;
+    --theme-surface: 215 27% 17%;
+    --theme-muted: 215 27% 17%;
+    
+    --theme-text-primary: 210 40% 98%;
+    --theme-text-secondary: 217 10% 65%;
+    --theme-text-muted: 217 10% 50%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+    font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    line-height: 1.6;
+    font-feature-settings: "cv11", "ss01";
+    font-variant-numeric: oldstyle-nums;
+    text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    font-weight: 600;
+    line-height: 1.2;
+    letter-spacing: -0.025em;
+  }
+
+  h1 { font-size: 2.25rem; }
+  h2 { font-size: 1.875rem; }
+  h3 { font-size: 1.5rem; }
+  
+  /* Custom scrollbar styles for mobile */
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+  
+  /* Smooth scrolling for toolbar */
+  .scroll-smooth {
+    scroll-behavior: smooth;
+  }
+  
+  /* Enhanced visual hierarchy */
+  .theme-gradient-soft {
+    background: linear-gradient(135deg, 
+      hsl(var(--theme-background)), 
+      hsl(var(--theme-muted))
+    );
+  }
+  
+  .theme-gradient-card {
+    background: linear-gradient(145deg, 
+      hsl(var(--theme-surface)), 
+      hsl(var(--theme-muted))
+    );
+  }
+  
+  /* Improved shadows with theme awareness */
+  .theme-shadow-sm {
+    box-shadow: 0 1px 2px 0 hsl(var(--theme-text-primary) / 0.05);
+  }
+  
+  .theme-shadow-md {
+    box-shadow: 0 4px 6px -1px hsl(var(--theme-text-primary) / 0.1), 
+                0 2px 4px -1px hsl(var(--theme-text-primary) / 0.06);
+  }
+  
+  /* Clean focus states */
+  .theme-focus:focus-visible {
+    outline: 2px solid hsl(var(--theme-primary));
+    outline-offset: 2px;
+    border-radius: calc(var(--radius) - 2px);
+  }
+
+  /* Smooth transitions */
+  .theme-transition {
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  /* Review carousel styles */
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+  .no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  .grabbing {
+    cursor: grabbing;
+  }
+  .grab {
+    cursor: grab;
+  }
+  .line-clamp-2 {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  /* Enhanced card animations */
+  .video-card {
+    transform-origin: center;
+    will-change: transform;
+  }
+  
+  .video-card.scale-105 {
+    transform: scale(1.05);
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+  }
+  
+  .video-card:hover {
+    transform: scale(1.05);
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+  }
+}

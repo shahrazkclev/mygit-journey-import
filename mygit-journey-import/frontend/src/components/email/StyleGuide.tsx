@@ -1,0 +1,536 @@
+import { useState, useEffect } from "react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { ColorPicker } from "@/components/ui/color-picker";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Palette, Image, Sparkles, Save, Eye, Settings } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
+import { useGlobalTheme } from "@/hooks/useGlobalTheme";
+import { setCssThemeFromHex } from "@/lib/theme";
+
+interface BrandIdentity {
+  name: string;
+  primaryColor: string;
+  secondaryColor: string;
+  accentColor: string;
+  font: string;
+  voice: string;
+  brandVoice: string;
+  logo: string;
+  signature: string;
+  signatureFont: string;
+}
+
+interface StyleGuideResponse {
+  id: string;
+  user_id: string;
+  created_at: string;
+  updated_at: string;
+  brand_name: string;
+  primary_color: string;
+  secondary_color: string;
+  accent_color: string;
+  font_family: string;
+  tone: string;
+  brand_voice: string | null;
+  logo_url: string | null;
+  email_signature: string;
+  signature_font?: string; // Optional for backward compatibility
+  page_theme_primary: string;
+  page_theme_secondary: string;
+  page_theme_accent: string;
+  template_preview: string | null;
+}
+
+interface PageThemeColors {
+  primary: string;
+  secondary: string;
+  accent: string;
+}
+
+export const StyleGuide = () => {
+  const { user } = useAuth();
+  const [loading, setLoading] = useState(false);
+  const [brandInitialized, setBrandInitialized] = useState(false);
+  const [brandIdentity, setBrandIdentity] = useState<BrandIdentity>({
+    name: "Cleverpoly",
+    primaryColor: "#6A7059",
+    secondaryColor: "#F9F8F5",
+    accentColor: "#FCD34D",
+    font: "Inter, Lato, Open Sans, sans-serif",
+    voice: "friendly",
+    brandVoice: "Clean and professional aesthetic using generous white space and a card-based design to create an organized and user-friendly experience. The tone should be helpful and direct.",
+    logo: "",
+    signature: "Best regards,\nCleverpoly\n\nIf you have any questions or need assistance, feel free to contact us at cleverpoly.store@gmail.com",
+    signatureFont: "'Inter', sans-serif"
+  });
+
+  const [jsonPrompt, setJsonPrompt] = useState<string>("");
+
+  // Page theme colors (separate from brand colors) - use global state
+  const { themeColors, updateTheme } = useGlobalTheme();
+  const pageThemeColors = {
+    primary: themeColors.primary,
+    secondary: themeColors.secondary,
+    accent: themeColors.accent
+  };
+
+  const setPageThemeColors = (colors: { primary?: string; secondary?: string; accent?: string }) => {
+    updateTheme(colors);
+    // Save immediately to Supabase when colors change
+    const updatedColors = { ...pageThemeColors, ...colors };
+    saveThemeToSupabase(updatedColors);
+  };
+
+  const { toast } = useToast();
+
+  // Keep browser tab title in sync with brand name
+  useEffect(() => {
+    if (brandIdentity.name) {
+      document.title = `${brandIdentity.name} – Email Campaign Manager`;
+    }
+  }, [brandIdentity.name]);
+
+  // Load existing style guide on component mount only once
+  useEffect(() => {
+    loadStyleGuide();
+  }, []);
+
+  const loadStyleGuide = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('style_guides')
+        .select('*')
+        .eq('user_id', user?.id)
+        .order('created_at', { ascending: false })
+        .limit(1);
+
+      if (error) throw error;
+
+      if (data && data.length > 0) {
+        const guide = data[0] as StyleGuideResponse;
+        
+        // Only load from database if it's not the default values - otherwise keep Cleverpoly defaults
+        const isDefaultData = guide.brand_name === 'Your Brand' || guide.brand_name === 'Cleverpoly';
+        
+        if (!brandInitialized && !isDefaultData) {
+          setBrandIdentity({
+            name: guide.brand_name,
+            primaryColor: guide.primary_color,
+            secondaryColor: guide.secondary_color,
+            accentColor: guide.accent_color,
+            font: guide.font_family,
+            voice: guide.tone,
+            brandVoice: guide.brand_voice || '',
+            logo: guide.logo_url || '',
+            signature: guide.email_signature,
+            signatureFont: guide.signature_font || "'Inter', sans-serif",
+          });
+          setBrandInitialized(true);
+        }
+
+        setPageThemeColors({
+          primary: guide.page_theme_primary,
+          secondary: guide.page_theme_secondary,
+          accent: guide.page_theme_accent,
+        });
+        setJsonPrompt(guide.template_preview || '');
+      } else {
+        // No data exists, save the Cleverpoly defaults to database
+        setBrandInitialized(true);
+        setTimeout(() => saveBrandToSupabase(), 500);
+      }
+    } catch (error) {
+      console.error('Error loading style guide:', error);
+      // On error, keep the Cleverpoly defaults
+      setBrandInitialized(true);
+    }
+  };
+
+  // Persist page theme colors to Supabase
+  const saveThemeToSupabase = async (colors: PageThemeColors) => {
+    try {
+      const { data: existingData, error: checkError } = await supabase
+        .from('style_guides')
+        .select('id')
+        .eq('user_id', user?.id)
+        .order('created_at', { ascending: false })
+        .limit(1);
+
+      if (checkError) throw checkError;
+
+      let result;
+      if (existingData && existingData.length > 0) {
+        // Only update page_theme_* fields — do NOT touch brand fields here
+        result = await supabase
+          .from('style_guides')
+          .update({
+            page_theme_primary: colors.primary,
+            page_theme_secondary: colors.secondary,
+            page_theme_accent: colors.accent,
+          })
+          .eq('id', existingData[0].id);
+      } else {
+        // Insert minimal record relying on column defaults for brand fields
+        result = await supabase
+          .from('style_guides')
+          .insert([
+            {
+              user_id: user?.id,
+              page_theme_primary: colors.primary,
+              page_theme_secondary: colors.secondary,
+              page_theme_accent: colors.accent,
+            }
+          ]);
+      }
+
+      if (result.error) throw result.error;
+      console.log('Theme auto-saved to Supabase:', colors);
+    } catch (error) {
+      console.error('Error auto-saving theme:', error);
+    }
+  };
+
+  // Persist brand identity to Supabase
+  const saveBrandToSupabase = async () => {
+    try {
+      const { data: existingData, error: checkError } = await supabase
+        .from('style_guides')
+        .select('id')
+        .eq('user_id', user?.id)
+        .limit(1);
+
+      if (checkError) throw checkError;
+
+      // Create a simple JSON style prompt instead of complex HTML
+      const stylePrompt = {
+        brandName: brandIdentity.name,
+        colors: {
+          primary: brandIdentity.primaryColor,
+          secondary: brandIdentity.secondaryColor,
+          accent: brandIdentity.accentColor
+        },
+        typography: {
+          fontFamily: brandIdentity.font
+        },
+        voice: {
+          tone: brandIdentity.voice,
+          description: brandIdentity.brandVoice
+        },
+        signature: brandIdentity.signature
+      };
+
+      const styleGuideData = {
+        user_id: user?.id,
+        brand_name: brandIdentity.name,
+        primary_color: brandIdentity.primaryColor,
+        secondary_color: brandIdentity.secondaryColor,
+        accent_color: brandIdentity.accentColor,
+        font_family: brandIdentity.font,
+        tone: brandIdentity.voice,
+        brand_voice: brandIdentity.brandVoice,
+        logo_url: brandIdentity.logo,
+        email_signature: brandIdentity.signature,
+        signature_font: brandIdentity.signatureFont,
+        page_theme_primary: pageThemeColors.primary,
+        page_theme_secondary: pageThemeColors.secondary,
+        page_theme_accent: pageThemeColors.accent,
+        template_preview: (jsonPrompt && jsonPrompt.trim()) ? jsonPrompt : JSON.stringify(stylePrompt),
+      };
+
+      let result;
+      if (existingData && existingData.length > 0) {
+        result = await supabase
+          .from('style_guides')
+          .update(styleGuideData)
+          .eq('user_id', user?.id);
+      } else {
+        result = await supabase
+          .from('style_guides')
+          .insert([styleGuideData]);
+      }
+
+      if (result.error) throw result.error;
+      console.log('Brand identity saved to Supabase:', brandIdentity);
+    } catch (error) {
+      console.error('Error saving brand identity:', error);
+    }
+  };
+
+  const handleSaveStyleGuide = async () => {
+    setLoading(true);
+    try {
+      await saveBrandToSupabase();
+      await saveThemeToSupabase(pageThemeColors);
+
+      toast({
+        title: "Style Guide Saved",
+        description: "Your brand style guide has been saved successfully.",
+      });
+    } catch (error) {
+      console.error('Error saving style guide:', error);
+      toast({
+        title: "Error",
+        description: "Failed to save style guide. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handlePreviewStyle = async () => {
+    try {
+      const { data, error } = await supabase.functions.invoke('generate-email', {
+        body: {
+          prompt: "Create a preview email showcasing the brand style",
+          subject: "Style Guide Preview Email",
+          userId: user?.id,
+          styleGuide: {
+            brandName: brandIdentity.name,
+            primaryColor: brandIdentity.primaryColor,
+            secondaryColor: brandIdentity.secondaryColor,
+            accentColor: brandIdentity.accentColor,
+            fontFamily: brandIdentity.font,
+            tone: brandIdentity.voice,
+            brandVoice: brandIdentity.brandVoice,
+            logoUrl: brandIdentity.logo,
+            emailSignature: brandIdentity.signature,
+            signatureFont: brandIdentity.signatureFont,
+          }
+        }
+      });
+
+      if (error) throw error;
+
+      if (data?.htmlContent) {
+        const previewWindow = window.open('', '_blank');
+        if (previewWindow) {
+          previewWindow.document.write(data.htmlContent);
+          previewWindow.document.close();
+        }
+      } else {
+        toast({
+          title: "Preview Error",
+          description: "Unable to generate preview content.",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      console.error('Error generating preview:', error);
+      toast({
+        title: "Preview Error",
+        description: "Failed to generate email preview. Using fallback.",
+        variant: "destructive",
+      });
+      
+      // Fallback preview
+      const fallbackHTML = `
+        <!DOCTYPE html>
+        <html>
+          <head>
+            <style>
+              body { font-family: ${brandIdentity.font}; margin: 20px; }
+              .header { background: ${brandIdentity.primaryColor}; color: white; padding: 20px; border-radius: 8px; }
+              .content { margin: 20px 0; }
+              .button { background: ${brandIdentity.accentColor}; color: white; padding: 12px 24px; border: none; border-radius: 6px; }
+              .footer { margin-top: 40px; padding: 20px; background: ${brandIdentity.secondaryColor}20; border-radius: 6px; }
+            </style>
+          </head>
+          <body>
+            <div class="header">
+              <h1>${brandIdentity.name}</h1>
+              <p>Style Guide Preview Email</p>
+            </div>
+            <div class="content">
+              <p>This is a preview of your brand style guide in action.</p>
+              <p>Brand Voice: ${brandIdentity.brandVoice}</p>
+              <button class="button">Call to Action</button>
+            </div>
+            <div class="footer">
+              <pre>${brandIdentity.signature}</pre>
+            </div>
+          </body>
+        </html>
+      `;
+      
+      const previewWindow = window.open('', '_blank');
+      if (previewWindow) {
+        previewWindow.document.write(fallbackHTML);
+        previewWindow.document.close();
+      }
+    }
+  };
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-2xl font-bold text-email-primary">Style Guide & Theme Control</h2>
+          <p className="text-muted-foreground">
+            Customize your brand identity and application theme
+          </p>
+        </div>
+      </div>
+
+      {/* Page Theme Control */}
+      <Card className="shadow-soft bg-gradient-to-br from-email-background to-background border-email-primary/20">
+        <CardHeader>
+          <CardTitle className="flex items-center space-x-2">
+            <Settings className="h-5 w-5 text-email-primary" />
+            <span className="text-email-primary">Page Theme Control</span>
+          </CardTitle>
+          <CardDescription>
+            Control the color theme of this application interface (separate from email brand colors)
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="space-y-2">
+              <Label>Primary Theme Color</Label>
+              <ColorPicker
+                value={pageThemeColors.primary}
+                onChange={(color) => {
+                  setPageThemeColors({ primary: color });
+                }}
+                label="Primary"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Secondary Theme Color</Label>
+              <ColorPicker
+                value={pageThemeColors.secondary}
+                onChange={(color) => {
+                  setPageThemeColors({ secondary: color });
+                }}
+                label="Secondary"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Accent Theme Color</Label>
+              <ColorPicker
+                value={pageThemeColors.accent}
+                onChange={(color) => {
+                  setPageThemeColors({ accent: color });
+                }}
+                label="Accent"
+              />
+            </div>
+          </div>
+
+          <div className="mt-4">
+            <Button onClick={handleSaveStyleGuide} size="sm" variant="outline" className="flex items-center space-x-2">
+              <Save className="h-4 w-4" />
+              <span>Save Theme</span>
+            </Button>
+            <p className="text-xs text-muted-foreground mt-2">
+              Changes are applied instantly. Click "Save Theme" to persist them.
+            </p>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Brand Identity */}
+      <Card className="shadow-soft bg-gradient-to-br from-email-background to-background border-email-primary/20">
+        <CardHeader>
+          <CardTitle className="flex items-center space-x-2">
+            <Sparkles className="h-5 w-5 text-email-secondary" />
+            <span className="text-email-secondary">Brand Identity</span>
+          </CardTitle>
+          <CardDescription>
+            Define your brand colors and identity for AI-generated emails
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="brandName">Brand Name</Label>
+              <Input
+                id="brandName"
+                value={brandIdentity.name}
+                onChange={(e) => {
+                  setBrandIdentity({...brandIdentity, name: e.target.value});
+                  setBrandInitialized(true); // Mark as user-modified
+                  // Auto-save brand changes
+                  setTimeout(() => saveBrandToSupabase(), 1000);
+                }}
+                placeholder="Your Brand Name"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="logoUrl">Logo URL (optional)</Label>
+              <Input
+                id="logoUrl"
+                value={brandIdentity.logo}
+                onChange={(e) => {
+                  setBrandIdentity({...brandIdentity, logo: e.target.value});
+                  setTimeout(() => saveBrandToSupabase(), 1000);
+                }}
+                placeholder="https://example.com/logo.png"
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="space-y-2">
+              <Label>Primary Brand Color</Label>
+              <ColorPicker
+                value={brandIdentity.primaryColor}
+                onChange={(color) => {
+                  setBrandIdentity({...brandIdentity, primaryColor: color});
+                  setBrandInitialized(true); // Mark as user-modified
+                  setTimeout(() => saveBrandToSupabase(), 1000);
+                }}
+                label="Primary"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Secondary Brand Color</Label>
+              <ColorPicker
+                value={brandIdentity.secondaryColor}
+                onChange={(color) => {
+                  setBrandIdentity({...brandIdentity, secondaryColor: color});
+                  setBrandInitialized(true); // Mark as user-modified
+                  setTimeout(() => saveBrandToSupabase(), 1000);
+                }}
+                label="Secondary"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Accent Brand Color</Label>
+              <ColorPicker
+                value={brandIdentity.accentColor}
+                onChange={(color) => {
+                  setBrandIdentity({...brandIdentity, accentColor: color});
+                  setBrandInitialized(true); // Mark as user-modified
+                  setTimeout(() => saveBrandToSupabase(), 1000);
+                }}
+                label="Accent"
+              />
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+
+
+      {/* Action Buttons */}
+      <div className="flex space-x-4">
+        <Button onClick={handlePreviewStyle} variant="outline" className="flex items-center space-x-2">
+          <Eye className="h-4 w-4" />
+          <span>Generate Test Email</span>
+        </Button>
+        <Button onClick={handleSaveStyleGuide} disabled={loading} className="flex items-center space-x-2">
+          <Save className="h-4 w-4" />
+          <span>Save Style Guide</span>
+        </Button>
+      </div>
+    </div>
+  );
+};
