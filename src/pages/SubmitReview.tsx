@@ -12,6 +12,8 @@ import { Progress } from '@/components/ui/progress';
 const SubmitReview = () => {
   const fileRef = useRef<HTMLInputElement>(null);
   const cameraRef = useRef<HTMLInputElement>(null);
+  const cameraPhotoRef = useRef<HTMLInputElement>(null);
+  const cameraVideoRef = useRef<HTMLInputElement>(null);
   const profileFileRef = useRef<HTMLInputElement>(null);
 
   const [formData, setFormData] = useState({
@@ -77,13 +79,51 @@ const SubmitReview = () => {
     }
   };
 
+  const compressImage = (file: File, maxWidth: number = 150, quality: number = 0.7): Promise<File> => {
+    return new Promise((resolve) => {
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d')!;
+      const img = new Image();
+      
+      img.onload = () => {
+        // Calculate new dimensions
+        const ratio = Math.min(maxWidth / img.width, maxWidth / img.height);
+        const newWidth = img.width * ratio;
+        const newHeight = img.height * ratio;
+        
+        canvas.width = newWidth;
+        canvas.height = newHeight;
+        
+        // Draw and compress
+        ctx.drawImage(img, 0, 0, newWidth, newHeight);
+        canvas.toBlob((blob) => {
+          if (blob) {
+            const compressedFile = new File([blob], file.name, {
+              type: 'image/jpeg',
+              lastModified: Date.now()
+            });
+            resolve(compressedFile);
+          } else {
+            resolve(file); // Fallback to original if compression fails
+          }
+        }, 'image/jpeg', quality);
+      };
+      
+      img.src = URL.createObjectURL(file);
+    });
+  };
+
   const handleProfilePictureUpload = async (file: File) => {
     setIsProfileUploading(true);
     setProfileUploadProgress(25);
     
     try {
-      const url = await uploadToR2(file, (progress) => {
-        setProfileUploadProgress(progress);
+      // Compress the image to low resolution for profile pictures
+      const compressedFile = await compressImage(file, 150, 0.6);
+      setProfileUploadProgress(50);
+      
+      const url = await uploadToR2(compressedFile, (progress) => {
+        setProfileUploadProgress(50 + (progress * 0.5)); // Scale progress from 50-100
       });
       setFormData(prev => ({ ...prev, profilePictureUrl: url }));
       
@@ -277,7 +317,13 @@ const SubmitReview = () => {
             <div className={`flex items-center space-x-2 ${isMobile ? 'text-xs' : 'text-sm'}`}>
               <div className={`${isMobile ? 'w-5 h-5' : 'w-10 h-10'} rounded-full overflow-hidden bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center font-bold text-white`}>
                 {profilePictureUrl ? (
-                  <img src={profilePictureUrl} alt="Profile" className="w-full h-full object-cover" />
+                  <img 
+                    src={profilePictureUrl} 
+                    alt="Profile" 
+                    className="w-full h-full object-cover" 
+                    loading="lazy"
+                    style={{ imageRendering: 'auto' }}
+                  />
                 ) : (
                   avatarInitial
                 )}
@@ -338,7 +384,13 @@ const SubmitReview = () => {
                   <div className="relative">
                     <div className="w-16 h-16 rounded-full overflow-hidden bg-gray-100">
                       {formData.profilePictureUrl ? (
-                        <img src={formData.profilePictureUrl} alt="Profile" className="w-full h-full object-cover" />
+                        <img 
+                          src={formData.profilePictureUrl} 
+                          alt="Profile" 
+                          className="w-full h-full object-cover" 
+                          loading="lazy"
+                          style={{ imageRendering: 'auto' }}
+                        />
                       ) : (
                         <div className="w-full h-full flex items-center justify-center text-gray-400">
                           <Camera className="w-6 h-6" />
@@ -435,11 +487,17 @@ const SubmitReview = () => {
                   <Button
                     type="button"
                     variant="outline"
-                    onClick={() => cameraRef.current?.click()}
+                    onClick={() => {
+                      // Try to trigger camera directly
+                      if (cameraRef.current) {
+                        cameraRef.current.setAttribute('capture', 'environment');
+                        cameraRef.current.click();
+                      }
+                    }}
                     disabled={isMediaUploading}
                     className="h-16 justify-start"
                   >
-                    <Video className="w-6 h-6 mr-3" />
+                    <Camera className="w-6 h-6 mr-3" />
                     <div className="text-left">
                       <div className="font-medium">Take Photo/Video</div>
                       <div className="text-sm text-muted-foreground">Use your camera</div>
@@ -556,22 +614,24 @@ const SubmitReview = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      <div className="max-w-6xl mx-auto p-4">
+      <div className="max-w-6xl mx-auto p-4 pb-16">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           {/* Mobile Preview */}
           <div className="lg:hidden order-first">
             <Card className="bg-gradient-to-br from-slate-50 to-white">
               <CardContent className="p-4">
                 <div className="flex justify-center">
-                  <ReviewCard 
-                    isMobile={true}
-                    mediaUrl={formData.mediaUrl}
-                    mediaType={formData.mediaType}
-                    rating={formData.rating}
-                    description={formData.description}
-                    profilePictureUrl={formData.profilePictureUrl}
-                    instagramHandle={formData.instagramHandle}
-                  />
+                  <div className="w-full max-w-sm">
+                    <ReviewCard 
+                      isMobile={true}
+                      mediaUrl={formData.mediaUrl}
+                      mediaType={formData.mediaType}
+                      rating={formData.rating}
+                      description={formData.description}
+                      profilePictureUrl={formData.profilePictureUrl}
+                      instagramHandle={formData.instagramHandle}
+                    />
+                  </div>
                 </div>
               </CardContent>
             </Card>
