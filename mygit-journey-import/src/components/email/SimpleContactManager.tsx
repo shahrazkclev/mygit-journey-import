@@ -845,7 +845,7 @@ export const SimpleContactManager = () => {
               <div className="flex flex-wrap gap-2">
                 <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
                   <DialogTrigger asChild>
-                    <Button className="bg-email-primary hover:bg-email-primary/90 text-white">
+                    <Button size="sm" className="bg-email-primary hover:bg-email-primary/90 text-white">
                       <Plus className="h-4 w-4 mr-2" />
                       Add Contact
                     </Button>
