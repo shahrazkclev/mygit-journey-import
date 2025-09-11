@@ -84,7 +84,10 @@ export const TagRulesManager = () => {
         .select('tags')
         .eq('user_id', user?.id);
 
-      if (contactsError) throw contactsError;
+      if (contactsError) {
+        console.error('Error loading contacts for tags:', contactsError);
+        // Don't throw, just continue with empty contacts
+      }
 
       // Get tags from existing tag rules
       const { data: tagRules, error: rulesError } = await supabase
@@ -92,7 +95,10 @@ export const TagRulesManager = () => {
         .select('trigger_tags, add_tags, remove_tags')
         .eq('user_id', user?.id);
 
-      if (rulesError) throw rulesError;
+      if (rulesError) {
+        console.error('Error loading tag rules for tags:', rulesError);
+        // Don't throw, just continue with empty rules
+      }
 
       // Get products for tag suggestions
       const { data: products, error: productsError } = await supabase
@@ -100,35 +106,56 @@ export const TagRulesManager = () => {
         .select('name, category')
         .eq('user_id', user?.id);
 
-      if (productsError) throw productsError;
+      if (productsError) {
+        console.error('Error loading products for tags:', productsError);
+        // Don't throw, just continue with empty products
+      }
 
-      // Combine all tags
+      // Combine all tags safely
       const allTagsSet = new Set<string>();
       
       // Add tags from contacts
       contacts?.forEach(contact => {
-        if (contact.tags) {
-          contact.tags.forEach((tag: string) => allTagsSet.add(tag.trim()));
+        if (contact?.tags && Array.isArray(contact.tags)) {
+          contact.tags.forEach((tag: string) => {
+            if (tag && typeof tag === 'string') {
+              allTagsSet.add(tag.trim());
+            }
+          });
         }
       });
 
       // Add tags from rules
       tagRules?.forEach(rule => {
-        if (rule.trigger_tags) {
-          rule.trigger_tags.forEach((tag: string) => allTagsSet.add(tag.toLowerCase().trim()));
+        if (rule?.trigger_tags && Array.isArray(rule.trigger_tags)) {
+          rule.trigger_tags.forEach((tag: string) => {
+            if (tag && typeof tag === 'string') {
+              allTagsSet.add(tag.toLowerCase().trim());
+            }
+          });
         }
-        if (rule.add_tags) {
-          rule.add_tags.forEach((tag: string) => allTagsSet.add(tag.toLowerCase().trim()));
+        if (rule?.add_tags && Array.isArray(rule.add_tags)) {
+          rule.add_tags.forEach((tag: string) => {
+            if (tag && typeof tag === 'string') {
+              allTagsSet.add(tag.toLowerCase().trim());
+            }
+          });
         }
-        if (rule.remove_tags) {
-          rule.remove_tags.forEach((tag: string) => allTagsSet.add(tag.toLowerCase().trim()));
+        if (rule?.remove_tags && Array.isArray(rule.remove_tags)) {
+          rule.remove_tags.forEach((tag: string) => {
+            if (tag && typeof tag === 'string') {
+              allTagsSet.add(tag.toLowerCase().trim());
+            }
+          });
         }
       });
 
       // Add product names as tag suggestions (normalized to lowercase)
       products?.forEach(product => {
-        allTagsSet.add(product.name.toLowerCase().trim());
-        if (product.category) {
+        if (product?.name && typeof product.name === 'string') {
+          allTagsSet.add(product.name.toLowerCase().trim());
+        }
+        if (product?.category && typeof product.category === 'string') {
           allTagsSet.add(product.category.toLowerCase().trim());
         }
       });
@@ -136,6 +163,8 @@ export const TagRulesManager = () => {
       setAllTags(Array.from(allTagsSet).filter(Boolean).sort());
     } catch (error) {
       console.error('Error loading tags:', error);
+      // Set empty array as fallback
+      setAllTags([]);
     }
   };
 
@@ -145,11 +174,16 @@ export const TagRulesManager = () => {
       return;
     }
 
+    if (!user?.id) {
+      toast.error('User not authenticated');
+      return;
+    }
+
     try {
       const { error } = await supabase
         .from('tag_rules')
         .insert({
-          user_id: user?.id,
+          user_id: user.id,
           name: newRule.name,
           description: newRule.description,
           trigger_tag: newRule.trigger_tags[0]?.toLowerCase().trim() || '', // Legacy field
@@ -286,7 +320,19 @@ export const TagRulesManager = () => {
     }
   };
 
-  return (
+  // Add error boundary to prevent crashes
+  if (!user) {
+    return (
+      <div className="space-y-6">
+        <div className="flex items-center justify-center py-8">
+          <p className="text-muted-foreground">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
+  try {
+    return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div className="space-y-1">
@@ -580,5 +626,18 @@ export const TagRulesManager = () => {
         )}
       </div>
     </div>
-  );
+    );
+  } catch (error) {
+    console.error('TagRulesManager render error:', error);
+    return (
+      <div className="space-y-6">
+        <div className="flex items-center justify-center py-8">
+          <div className="text-center">
+            <h3 className="text-lg font-semibold mb-2">Something went wrong</h3>
+            <p className="text-muted-foreground">Please refresh the page and try again.</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
 };
