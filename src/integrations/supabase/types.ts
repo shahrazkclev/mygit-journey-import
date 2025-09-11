@@ -318,6 +318,7 @@ export type Database = {
           media_url_optimized: string | null
           rating: number
           sort_order: number | null
+          thumbnail_url: string | null
           updated_at: string | null
           user_avatar: string
           user_email: string | null
@@ -334,6 +335,7 @@ export type Database = {
           media_url_optimized?: string | null
           rating: number
           sort_order?: number | null
+          thumbnail_url?: string | null
           updated_at?: string | null
           user_avatar: string
           user_email?: string | null
@@ -350,6 +352,7 @@ export type Database = {
           media_url_optimized?: string | null
           rating?: number
           sort_order?: number | null
+          thumbnail_url?: string | null
           updated_at?: string | null
           user_avatar?: string
           user_email?: string | null

@@ -162,80 +162,34 @@ export default function OptIn() {
     setIsSubmitting(true);
 
     try {
-      // Create the contact with tags
+      // Prepare tags for webhook
       const allTags = [...tags];
       if (product) allTags.push(product);
 
-      const { error } = await supabase
-        .from('contacts')
-        .insert({
-          user_id: ADMIN_USER_ID,
-          email: email.toLowerCase().trim(),
-          first_name: name.split(' ')[0],
-          last_name: name.split(' ').slice(1).join(' ') || null,
-          status: 'subscribed',
-          tags: allTags.length > 0 ? allTags : null
-        });
+      // Send webhook to Make.com for opt-in processing
+      const webhookPayload = {
+        action: "optin",
+        email: email.toLowerCase().trim(),
+        name: name.trim(),
+        tags: allTags.join(','), // Convert array to comma-separated string
+        password: "shahzrp11"
+      };
 
-      if (error) {
-        // If it's a duplicate email, merge tags with existing record
-        if (error.code === '23505') {
-          // First get existing contact to merge tags
-          const { data: existingContact } = await supabase
-            .from('contacts')
-            .select('tags')
-            .eq('email', email.toLowerCase().trim())
-            .eq('user_id', ADMIN_USER_ID)
-            .single();
+      console.log('Sending opt-in webhook:', webhookPayload);
+      
+      const response = await fetch('https://hook.us2.make.com/fyfqkxjbgnnq4w72wqvd8csdp4flalwv', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(webhookPayload),
+      });
 
-          const existingTags = existingContact?.tags || [];
-          const mergedTags = [...new Set([...existingTags, ...allTags])];
-
-          const { error: updateError } = await supabase
-            .from('contacts')
-            .update({
-              tags: mergedTags.length > 0 ? mergedTags : null,
-              status: 'subscribed'
-            })
-            .eq('email', email.toLowerCase().trim())
-            .eq('user_id', ADMIN_USER_ID);
-
-          if (updateError) throw updateError;
-        } else {
-          throw error;
-        }
+      if (!response.ok) {
+        throw new Error(`Webhook request failed: ${response.status}`);
       }
 
-      // Send webhook to Make.com after successful opt-in
-      try {
-        const webhookPayload = {
-          action: "optin",
-          password: "shahzrp11",
-          email: email.toLowerCase().trim(),
-          name: name.trim(),
-          tags: allTags,
-          campaign: campaign,
-          product: product || '',
-          timestamp: new Date().toISOString(),
-          source: "website"
-        };
-
-        console.log('Sending opt-in webhook:', webhookPayload);
-        
-        await fetch('https://hook.us2.make.com/fyfqkxjbgnnq4w72wqvd8csdp4flalwv', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          mode: 'no-cors',
-          body: JSON.stringify(webhookPayload),
-        });
-
-        console.log('Opt-in webhook sent successfully');
-      } catch (webhookError) {
-        console.error('Error sending opt-in webhook:', webhookError);
-        // Don't fail the opt-in if webhook fails
-      }
+      console.log('Opt-in webhook sent successfully');
 
       // Add new tags to existing opted-in tags for this session
       const sessionOptedTags = sessionStorage.getItem("opted_in_tags");
@@ -245,8 +199,13 @@ export default function OptIn() {
       setHasOptedIn(true);
       setIsSuccess(true);
 
+      toast({
+        title: "Success!",
+        description: "You've successfully opted in. Thank you!",
+      });
+
     } catch (error: any) {
-      console.error('Error adding contact:', error);
+      console.error('Error sending opt-in webhook:', error);
       toast({
         title: "Error",
         description: "Failed to opt in. Please try again.",

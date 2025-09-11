@@ -46,6 +46,7 @@ interface Review {
   user_name: string;
   media_url: string;
   media_type: string;
+  thumbnail_url?: string;
   rating: number;
   description: string;
   user_avatar: string;
@@ -98,6 +99,8 @@ export const ReviewsManager = () => {
   const [editingReview, setEditingReview] = useState<Partial<Review>>({});
   const [mediaUploading, setMediaUploading] = useState(false);
   const [mediaUploadProgress, setMediaUploadProgress] = useState(0);
+  const [thumbnailUploading, setThumbnailUploading] = useState(false);
+  const [thumbnailUploadProgress, setThumbnailUploadProgress] = useState(0);
   const [addCustomerDialogOpen, setAddCustomerDialogOpen] = useState(false);
   const [newCustomerData, setNewCustomerData] = useState({
     email: '',
@@ -655,6 +658,102 @@ export const ReviewsManager = () => {
       media_url: '',
       media_type: 'image'
     }));
+  };
+
+  const handleThumbnailUpload = async (file: File) => {
+    setThumbnailUploading(true);
+    try {
+      console.log('Uploading thumbnail:', file.name);
+      
+      const url = await uploadToR2(file, (progress) => {
+        setThumbnailUploadProgress(progress);
+      });
+      
+      console.log('Thumbnail upload successful, URL:', url);
+      
+      setEditingReview(prev => ({
+        ...prev,
+        thumbnail_url: url
+      }));
+      
+      toast({
+        title: "Success",
+        description: "Thumbnail uploaded successfully",
+      });
+    } catch (error) {
+      console.error('Thumbnail upload failed:', error);
+      toast({
+        title: "Upload Failed",
+        description: error instanceof Error ? error.message : "Failed to upload thumbnail. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setThumbnailUploading(false);
+      setThumbnailUploadProgress(0);
+    }
+  };
+
+  const removeThumbnail = () => {
+    setEditingReview(prev => ({
+      ...prev,
+      thumbnail_url: ''
+    }));
+  };
+
+  const extractVideoFrame = async () => {
+    const video = document.getElementById('video-frame-extractor') as HTMLVideoElement;
+    if (!video) {
+      toast({
+        title: "Error",
+        description: "Video element not found",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      setThumbnailUploading(true);
+      
+      // Create canvas to capture frame
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d');
+      if (!ctx) throw new Error('Could not get canvas context');
+      
+      // Set canvas dimensions to match video
+      canvas.width = video.videoWidth;
+      canvas.height = video.videoHeight;
+      
+      // Draw current video frame to canvas
+      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+      
+      // Convert canvas to blob
+      const blob = await new Promise<Blob>((resolve) => {
+        canvas.toBlob((blob) => {
+          if (blob) resolve(blob);
+        }, 'image/jpeg', 0.8);
+      });
+      
+      // Create file from blob
+      const file = new File([blob], `frame-${Date.now()}.jpg`, { type: 'image/jpeg' });
+      
+      // Upload the extracted frame
+      await handleThumbnailUpload(file);
+      
+      toast({
+        title: "Success",
+        description: "Frame extracted and uploaded as thumbnail",
+      });
+      
+    } catch (error) {
+      console.error('Frame extraction failed:', error);
+      toast({
+        title: "Extraction Failed",
+        description: "Failed to extract frame from video. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setThumbnailUploading(false);
+    }
   };
 
   return (
@@ -1464,6 +1563,165 @@ export const ReviewsManager = () => {
                 )}
               </div>
 
+              {/* Thumbnail Management */}
+              <div className="space-y-4">
+                <h3 className="text-sm font-medium">Thumbnail Management</h3>
+                <p className="text-xs text-muted-foreground">
+                  Upload a custom thumbnail or extract a frame from the video. This will be shown before the video plays.
+                </p>
+                
+                {editingReview.thumbnail_url ? (
+                  <div className="space-y-3">
+                    <div className="border rounded-lg p-4">
+                      <div className="flex items-center justify-between mb-3">
+                        <span className="text-sm font-medium">Current Thumbnail</span>
+                        <div className="flex gap-2">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => downloadMedia(editingReview.thumbnail_url!, `review-thumbnail-${editingReview.id}`)}
+                          >
+                            <Download className="h-4 w-4 mr-1" />
+                            Download
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={removeThumbnail}
+                            className="border-red-200 text-red-600 hover:bg-red-50"
+                          >
+                            <Trash2 className="h-4 w-4 mr-1" />
+                            Remove
+                          </Button>
+                        </div>
+                      </div>
+                      
+                      <div className="flex items-center gap-3 mb-3">
+                        <Image className="h-6 w-6 text-muted-foreground" />
+                        <div>
+                          <div className="text-sm font-medium">Thumbnail Image</div>
+                          <div className="text-xs text-muted-foreground">
+                            Click download to save the file
+                          </div>
+                        </div>
+                      </div>
+                      
+                      <img 
+                        src={editingReview.thumbnail_url} 
+                        alt="Review thumbnail"
+                        className="max-w-xs rounded-lg"
+                      />
+                    </div>
+
+                    <div className="text-center">
+                      <Label htmlFor="replace-thumbnail" className="cursor-pointer">
+                        <div className="border-2 border-dashed border-muted-foreground/25 rounded-lg p-4 hover:border-muted-foreground/50 transition-colors">
+                          {thumbnailUploading ? (
+                            <div className="flex flex-col items-center gap-2">
+                              <RefreshCw className="h-6 w-6 animate-spin text-muted-foreground" />
+                              <span className="text-sm text-muted-foreground">
+                                Uploading... {thumbnailUploadProgress}%
+                              </span>
+                            </div>
+                          ) : (
+                            <div className="flex flex-col items-center gap-2">
+                              <Upload className="h-6 w-6 text-muted-foreground" />
+                              <span className="text-sm text-muted-foreground">
+                                Click to replace thumbnail
+                              </span>
+                            </div>
+                          )}
+                        </div>
+                      </Label>
+                      <Input
+                        id="replace-thumbnail"
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        onChange={(e) => {
+                          const file = e.target.files?.[0];
+                          if (file) handleThumbnailUpload(file);
+                        }}
+                      />
+                    </div>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    <div className="text-center">
+                      <Label htmlFor="upload-thumbnail" className="cursor-pointer">
+                        <div className="border-2 border-dashed border-muted-foreground/25 rounded-lg p-6 hover:border-muted-foreground/50 transition-colors">
+                          {thumbnailUploading ? (
+                            <div className="flex flex-col items-center gap-2">
+                              <RefreshCw className="h-8 w-8 animate-spin text-muted-foreground" />
+                              <span className="text-sm text-muted-foreground">
+                                Uploading... {thumbnailUploadProgress}%
+                              </span>
+                            </div>
+                          ) : (
+                            <div className="flex flex-col items-center gap-2">
+                              <Upload className="h-8 w-8 text-muted-foreground" />
+                              <span className="text-sm text-muted-foreground">
+                                Click to upload thumbnail
+                              </span>
+                              <span className="text-xs text-muted-foreground">
+                                Supports images only
+                              </span>
+                            </div>
+                          )}
+                        </div>
+                      </Label>
+                      <Input
+                        id="upload-thumbnail"
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        onChange={(e) => {
+                          const file = e.target.files?.[0];
+                          if (file) handleThumbnailUpload(file);
+                        }}
+                      />
+                    </div>
+
+                    {/* Video Frame Extractor */}
+                    {editingReview.media_type === 'video' && editingReview.media_url && (
+                      <div className="border rounded-lg p-4">
+                        <div className="flex items-center gap-3 mb-3">
+                          <Video className="h-6 w-6 text-muted-foreground" />
+                          <div>
+                            <div className="text-sm font-medium">Extract Frame from Video</div>
+                            <div className="text-xs text-muted-foreground">
+                              Choose a frame from the video as thumbnail
+                            </div>
+                          </div>
+                        </div>
+                        
+                        <div className="space-y-3">
+                          <video 
+                            src={editingReview.media_url} 
+                            className="max-w-xs rounded-lg"
+                            controls
+                            muted
+                            id="video-frame-extractor"
+                          />
+                          
+                          <div className="flex gap-2">
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={extractVideoFrame}
+                              disabled={thumbnailUploading}
+                            >
+                              <Image className="h-4 w-4 mr-1" />
+                              Extract Current Frame
+                            </Button>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+
               {/* Settings */}
               <div className="space-y-4">
                 <h3 className="text-sm font-medium">Settings</h3>
@@ -1495,7 +1753,7 @@ export const ReviewsManager = () => {
               <Button variant="outline" onClick={() => setEditDialogOpen(false)}>
                 Cancel
               </Button>
-              <Button onClick={handleEditSave} disabled={mediaUploading}>
+              <Button onClick={handleEditSave} disabled={mediaUploading || thumbnailUploading}>
                 Save Changes
               </Button>
             </div>
