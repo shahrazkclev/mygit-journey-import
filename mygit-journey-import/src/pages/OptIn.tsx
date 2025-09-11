@@ -180,6 +180,9 @@ export default function OptIn() {
       if (password && password.trim()) {
         formData.append('password', password.trim());
       }
+      
+      // Send the correct user_id for admin
+      formData.append('user_id', '3e01343e-9ad5-452e-95ac-d16c58c6cae2');
 
       console.log('Sending opt-in webhook with form data:', {
         action: 'optin',
