@@ -1590,17 +1590,56 @@ export const ReviewsManager = () => {
               {/* Tags */}
               <div>
                 <Label htmlFor="tags">Tags</Label>
-                <Input
-                  id="tags"
-                  value={(editingReview.tags || []).join(', ')}
-                  onChange={(e) => {
-                    const tags = e.target.value.split(',').map(tag => tag.trim()).filter(tag => tag.length > 0);
-                    setEditingReview(prev => ({ ...prev, tags }));
-                  }}
-                  placeholder="Enter tags separated by commas (e.g., product, positive, video)"
-                />
+                <div className="flex flex-wrap gap-2 p-2 border rounded-md min-h-[40px] bg-background">
+                  {(editingReview.tags || []).map((tag, index) => (
+                    <span
+                      key={index}
+                      className="inline-flex items-center gap-1 px-2 py-1 bg-blue-100 text-blue-800 text-sm rounded-md"
+                    >
+                      {tag}
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const newTags = (editingReview.tags || []).filter((_, i) => i !== index);
+                          setEditingReview(prev => ({ ...prev, tags: newTags }));
+                        }}
+                        className="text-blue-600 hover:text-blue-800"
+                      >
+                        ×
+                      </button>
+                    </span>
+                  ))}
+                  <input
+                    type="text"
+                    className="flex-1 min-w-[120px] border-none outline-none bg-transparent"
+                    placeholder="Type tag and press Enter..."
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' || e.key === ',') {
+                        e.preventDefault();
+                        const value = e.currentTarget.value.trim();
+                        if (value && !(editingReview.tags || []).includes(value)) {
+                          setEditingReview(prev => ({ 
+                            ...prev, 
+                            tags: [...(prev.tags || []), value] 
+                          }));
+                          e.currentTarget.value = '';
+                        }
+                      }
+                    }}
+                    onBlur={(e) => {
+                      const value = e.target.value.trim();
+                      if (value && !(editingReview.tags || []).includes(value)) {
+                        setEditingReview(prev => ({ 
+                          ...prev, 
+                          tags: [...(prev.tags || []), value] 
+                        }));
+                        e.target.value = '';
+                      }
+                    }}
+                  />
+                </div>
                 <p className="text-xs text-muted-foreground mt-1">
-                  Add tags to help categorize and organize reviews
+                  Type tags and press Enter or comma. Tags can contain spaces (e.g., "lazy motion")
                 </p>
               </div>
 
