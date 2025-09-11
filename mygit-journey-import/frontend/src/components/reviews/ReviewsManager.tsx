@@ -57,6 +57,7 @@ interface Review {
   created_at: string;
   updated_at: string;
   thumbnail_url?: string;
+  tags?: string[];
 }
 
 interface Customer {
