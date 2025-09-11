@@ -11,6 +11,8 @@ import { Progress } from '@/components/ui/progress';
 const SubmitReview = () => {
   const fileRef = useRef<HTMLInputElement>(null);
   const cameraRef = useRef<HTMLInputElement>(null);
+  const cameraPhotoRef = useRef<HTMLInputElement>(null);
+  const cameraVideoRef = useRef<HTMLInputElement>(null);
   const profileFileRef = useRef<HTMLInputElement>(null);
 
   const [formData, setFormData] = useState({
@@ -235,7 +237,7 @@ const SubmitReview = () => {
     const userName = instagramHandle.replace('@', '') || 'Username';
     const avatarInitial = userName.charAt(0).toUpperCase();
     
-    const cardSize = isMobile ? "w-40 h-60" : "w-80 h-[480px]";
+    const cardSize = isMobile ? "w-48 h-72" : "w-80 h-[480px]";
     
     return (
       <div className={`relative ${cardSize} rounded-2xl overflow-hidden shadow-xl bg-gray-900`}>
@@ -415,7 +417,8 @@ const SubmitReview = () => {
                 
                 <div className="flex flex-col gap-3 md:hidden">
                   <input ref={fileRef} type="file" accept="image/*,video/*" onChange={handleFileUpload} className="hidden" />
-                  <input ref={cameraRef} type="file" accept="image/*,video/*" capture="environment" onChange={handleFileUpload} className="hidden" />
+                  <input ref={cameraPhotoRef} type="file" accept="image/*" capture="environment" onChange={handleFileUpload} className="hidden" />
+                  <input ref={cameraVideoRef} type="file" accept="video/*" capture="environment" onChange={handleFileUpload} className="hidden" />
                   
                   <Button
                     type="button"
@@ -431,19 +434,35 @@ const SubmitReview = () => {
                     </div>
                   </Button>
                   
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={() => cameraRef.current?.click()}
-                    disabled={isMediaUploading}
-                    className="h-16 justify-start"
-                  >
-                    <Video className="w-6 h-6 mr-3" />
-                    <div className="text-left">
-                      <div className="font-medium">Take Photo/Video</div>
-                      <div className="text-sm text-muted-foreground">Use your camera</div>
-                    </div>
-                  </Button>
+                  <div className="grid grid-cols-2 gap-3">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => cameraPhotoRef.current?.click()}
+                      disabled={isMediaUploading}
+                      className="h-16 justify-start"
+                    >
+                      <Camera className="w-6 h-6 mr-3" />
+                      <div className="text-left">
+                        <div className="font-medium">Take Photo</div>
+                        <div className="text-sm text-muted-foreground">Camera</div>
+                      </div>
+                    </Button>
+                    
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => cameraVideoRef.current?.click()}
+                      disabled={isMediaUploading}
+                      className="h-16 justify-start"
+                    >
+                      <Video className="w-6 h-6 mr-3" />
+                      <div className="text-left">
+                        <div className="font-medium">Record Video</div>
+                        <div className="text-sm text-muted-foreground">Camera</div>
+                      </div>
+                    </Button>
+                  </div>
                 </div>
 
                 <div className="hidden md:block">

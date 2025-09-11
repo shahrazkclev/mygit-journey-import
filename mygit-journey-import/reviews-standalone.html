@@ -60,6 +60,12 @@
         100% { background-position: -200% 0; }
     }
     
+    /* When skeletons are the permanent state (no data), make them more subtle */
+    #loading-skeletons:not(.hidden) .skeleton-card {
+        animation-duration: 3s; /* Slower animation when permanent */
+        opacity: 0.7; /* Slightly transparent */
+    }
+    
     /* Thumbnail and video states */
     .thumbnail-layer {
         transition: opacity 0.3s ease;
@@ -75,6 +81,41 @@
     
     .thumbnail-layer.hidden {
         opacity: 0;
+    }
+    
+    /* Prevent glitches and maintain horizontal layout */
+    .video-card {
+        flex-shrink: 0;
+        contain: layout style paint;
+    }
+    
+    /* Prevent layout shifts during loading */
+    #component-wrapper {
+        min-height: 24rem; /* h-96 */
+    }
+    
+    /* Smooth transitions to prevent glitches */
+    .video-card * {
+        transition: opacity 0.2s ease-in-out, transform 0.3s ease-in-out;
+    }
+    
+    /* Ensure proper stacking context */
+    .video-card {
+        position: relative;
+        z-index: 1;
+    }
+    
+    .video-card:hover {
+        z-index: 2;
+    }
+    
+    /* Mute button hover states */
+    .video-card:hover .mute-btn {
+        opacity: 1 !important;
+    }
+    
+    .mute-btn {
+        transition: opacity 0.3s ease-in-out;
     }
 </style>
 </head>
@@ -152,7 +193,7 @@
         return `
             <div class="video-card relative w-64 h-96 aspect-[2/3] flex-shrink-0 rounded-2xl overflow-hidden transition-transform duration-500 ease-in-out md:hover:scale-105 shadow-lg group bg-gray-200" data-review-id="${review.id}" data-media-url="${mediaUrl}" data-media-type="${review.media_type}" data-thumbnail-url="${thumbnailUrl}" data-has-played="false">
                 <!-- Thumbnail layer - shows immediately -->
-                <div class="thumbnail-layer absolute inset-0">
+                <div class="thumbnail-layer absolute inset-0 pointer-events-none">
                     <img src="${thumbnailUrl}" alt="Review thumbnail" class="absolute inset-0 w-full h-full object-cover transition-transform duration-500 ease-in-out md:group-hover:scale-110" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
                     <div class="absolute inset-0 bg-gray-200 flex items-center justify-center" style="display: none;">
                         <div class="text-gray-400 text-sm">No thumbnail</div>
@@ -160,11 +201,11 @@
                 </div>
                 
                 <!-- Video layer - hidden initially, shows on hover -->
-                <div class="video-layer absolute inset-0 hidden">
+                <div class="video-layer absolute inset-0 hidden pointer-events-none">
                     <div class="video-container absolute inset-0"></div>
                 </div>
                 
-                <div class="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent"></div>
+                <div class="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent pointer-events-none"></div>
                 
                 <!-- Mute button - will be added when video loads -->
                 <div class="mute-button-container"></div>
@@ -172,7 +213,7 @@
                 <!-- Play button - will be added when video loads -->
                 <div class="play-button-container"></div>
                 
-                <div class="relative z-10 p-4 flex flex-col justify-end h-full text-white">
+                <div class="absolute inset-0 p-4 flex flex-col justify-end h-full text-white pointer-events-none">
                     <div class="space-y-3">
                         <div class="flex items-center space-x-1">${stars}</div>
                         <p class="text-sm text-white/90 line-clamp-2 select-none">"${review.description}"</p>
@@ -180,7 +221,7 @@
                             <div class="w-8 h-8 rounded-full overflow-hidden bg-gradient-to-br ${avatarGradient} flex items-center justify-center font-bold text-white">
                                 ${profilePictureUrl ? `<img src="${profilePictureUrl}" alt="Profile" class="w-full h-full object-cover" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';"><span style="display: none;">${avatarInitial}</span>` : avatarInitial}
                             </div>
-                            <a href="https://instagram.com/${review.user_instagram_handle.replace('@', '')}" target="_blank" rel="noopener noreferrer" class="flex items-center space-x-1.5 group">
+                            <a href="https://instagram.com/${review.user_instagram_handle.replace('@', '')}" target="_blank" rel="noopener noreferrer" class="flex items-center space-x-1.5 group pointer-events-auto">
                                 <svg class="w-4 h-4 text-white/80 group-hover:text-blue-300" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.85s-.011 3.585-.069 4.85c-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.85-.07-3.252-.148-4.771-1.691-4.919-4.919-.058-1.265-.069-1.645-.069-4.85s.011-3.585.069-4.85c.149-3.225 1.664-4.771 4.919-4.919 1.266-.057 1.644-.07 4.85-.07zM12 5.838a6.162 6.162 0 100 12.324 6.162 6.162 0 000-12.324zM12 16a4 4 0 110-8 4 4 0 010 8zm6.406-11.845a1.44 1.44 0 100 2.88 1.44 1.44 0 000-2.88z"/></svg>
                                 <span class="font-medium text-white group-hover:text-blue-300 transition-colors">${review.user_instagram_handle}</span>
                             </a>
@@ -212,12 +253,13 @@
                 muteBtn.style.cssText = 'opacity: 0; pointer-events: none;';
             }
         } else {
-             if (video.muted) { 
-                muteBtn.style.cssText = 'top: 50%; left: 50%; transform: translate(-50%, -50%); padding: 1rem;';
+            // On desktop, show button with proper positioning
+            if (video.muted) { 
+                muteBtn.style.cssText = 'top: 50%; left: 50%; transform: translate(-50%, -50%); padding: 1rem; opacity: 0;';
                 unmutedIcon.classList.remove('w-5', 'h-5'); unmutedIcon.classList.add('w-10', 'h-10');
                 mutedIcon.classList.remove('w-5', 'h-5'); mutedIcon.classList.add('w-10', 'h-10');
             } else { 
-                muteBtn.style.cssText = 'top: 1rem; right: 1rem; padding: 0.375rem;';
+                muteBtn.style.cssText = 'top: 1rem; right: 1rem; padding: 0.375rem; opacity: 0;';
                 unmutedIcon.classList.remove('w-10', 'h-10'); unmutedIcon.classList.add('w-5', 'h-5');
                 mutedIcon.classList.remove('w-10', 'h-10'); mutedIcon.classList.add('w-5', 'h-5');
             }
@@ -285,11 +327,18 @@
     // Loading state functions removed - no more loading skeletons
     
     function hideComponent() {
-        // Hide the entire component wrapper
-        const wrapper = document.getElementById('component-wrapper');
-        if (wrapper) {
-            wrapper.style.display = 'none';
+        // Instead of hiding the entire component, keep skeletons visible to maintain space
+        // This prevents layout shifts when no data is available
+        const skeletons = document.getElementById('loading-skeletons');
+        const carousel = document.getElementById('carousel-wrapper');
+        
+        if (skeletons) {
+            skeletons.classList.remove('hidden'); // Keep skeletons visible
         }
+        if (carousel) {
+            carousel.classList.add('hidden'); // Hide empty carousel
+        }
+        
         isLoading = false;
         hasError = true;
     }
@@ -319,9 +368,15 @@
         // Initialize carousel interactions
         initializeCarousel();
         
-        // Hide skeletons and show carousel
-        document.getElementById('loading-skeletons').classList.add('hidden');
-        document.getElementById('carousel-wrapper').classList.remove('hidden');
+        // Only hide skeletons if we have actual data to show
+        if (reviewsToAdd.length > 0) {
+            document.getElementById('loading-skeletons').classList.add('hidden');
+            document.getElementById('carousel-wrapper').classList.remove('hidden');
+        } else {
+            // No data - keep skeletons visible to maintain space
+            document.getElementById('loading-skeletons').classList.remove('hidden');
+            document.getElementById('carousel-wrapper').classList.add('hidden');
+        }
         
         isLoading = false;
     }
@@ -377,7 +432,7 @@
 
         // Create video element
         const video = document.createElement('video');
-        video.className = 'absolute inset-0 w-full h-full object-cover transition-transform duration-500 ease-in-out md:group-hover:scale-110';
+        video.className = 'absolute inset-0 w-full h-full object-cover transition-transform duration-500 ease-in-out md:group-hover:scale-110 pointer-events-none';
         video.muted = true;
         video.loop = true;
         video.playsInline = true;
@@ -386,10 +441,12 @@
 
         // Add mute button for video
         const muteButton = document.createElement('button');
-        muteButton.className = 'mute-btn absolute z-20 bg-black/30 rounded-full backdrop-blur-sm transition-all duration-300 opacity-100 md:opacity-0 md:group-hover:opacity-100 hover:bg-black/50';
+        muteButton.className = 'mute-btn absolute z-20 bg-black/30 rounded-full backdrop-blur-sm transition-all duration-300 opacity-0 hover:bg-black/50';
+        // Set initial position to center (muted state) and hide until video loads
+        muteButton.style.cssText = 'top: 50%; left: 50%; transform: translate(-50%, -50%); padding: 1rem; opacity: 0;';
         muteButton.innerHTML = `
-            <svg class="w-5 h-5 text-white hidden mute-icon-unmuted" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z"></path></svg>
-            <svg class="w-5 h-5 text-white mute-icon-muted" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15zM17 14l4-4m0 4l-4-4"></path></svg>
+            <svg class="w-10 h-10 text-white hidden mute-icon-unmuted" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z"></path></svg>
+            <svg class="w-10 h-10 text-white mute-icon-muted" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15zM17 14l4-4m0 4l-4-4"></path></svg>
         `;
 
         // Add play button for mobile
