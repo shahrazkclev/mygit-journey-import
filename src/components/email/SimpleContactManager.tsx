@@ -8,7 +8,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Checkbox } from "@/components/ui/checkbox";
 import { TagInput } from "@/components/ui/tag-input";
-import { Trash2, Plus, Tag, Users, Link, ChevronDown, ChevronRight, Edit, Upload, FileSpreadsheet, User } from "lucide-react";
+import { Trash2, Plus, Tag, Users, Link, ChevronDown, ChevronRight, Edit, Upload, FileSpreadsheet, User, Search, Filter } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -1102,22 +1102,28 @@ export const SimpleContactManager = () => {
         <CardContent className="space-y-4">
           {/* Filters */}
           <div className="flex flex-col lg:flex-row space-y-4 lg:space-y-0 lg:space-x-4">
-            <div className="flex-1 flex items-start">
-              <Input
-                placeholder="Search contacts..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="border-email-primary/30 focus:border-email-primary w-full"
-              />
+            <div className="flex-1 relative">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-email-primary/60" />
+                <Input
+                  placeholder="Search contacts..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-10 border-email-primary/30 focus:border-email-primary focus:ring-2 focus:ring-email-primary/20 bg-white shadow-sm transition-all duration-200 hover:border-email-primary/50"
+                />
+              </div>
             </div>
-            <div className="flex-1 flex items-start">
-              <TagInput
-                value={tagFilter}
-                onChange={setTagFilter}
-                suggestions={allTags}
-                placeholder="Filter by tag..."
-                className="border-email-primary/30 focus:border-email-primary w-full"
-              />
+            <div className="flex-1 relative">
+              <div className="relative">
+                <Filter className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-email-primary/60" />
+                <TagInput
+                  value={tagFilter}
+                  onChange={setTagFilter}
+                  suggestions={allTags}
+                  placeholder="Filter by tag..."
+                  className="pl-10 border-email-primary/30 focus:border-email-primary focus:ring-2 focus:ring-email-primary/20 bg-white shadow-sm transition-all duration-200 hover:border-email-primary/50"
+                />
+              </div>
             </div>
           </div>
 
