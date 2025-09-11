@@ -272,34 +272,14 @@ serve(async (req) => {
       }
     }
 
-    let finalTags = Array.from(new Set([...existingTags, ...incomingTags]));
-
-    // Set HTTP request context to skip trigger validation
+    // Set session variable for password validation (database trigger will handle validation)
     await supabase.rpc('set_config', {
-      setting_name: 'app.http_request_context',
-      new_value: 'true',
+      setting_name: 'app.protected_tag_password',
+      new_value: password || '',
       is_local: true
     });
 
-    // Validate protected tags directly before processing
-    if (finalTags.length > 0) {
-      try {
-        await supabase.rpc('validate_protected_tags_direct', {
-          p_user_id: finalUserId,
-          p_tags: finalTags,
-          p_password: password || ''
-        });
-      } catch (error: any) {
-        // If validation fails, return the error message
-        return new Response(JSON.stringify({
-          success: false,
-          error: error.message || 'Protected tag validation failed'
-        }), {
-          status: 400,
-          headers: { 'Content-Type': 'application/json' }
-        });
-      }
-    }
+    let finalTags = Array.from(new Set([...existingTags, ...incomingTags]));
 
     // Unsubscribe/Resubscribe via 'unsub' tag (tag-based approach)
     const hasIncomingUnsub = incomingTags.some((t) => t.toLowerCase() === 'unsub');
