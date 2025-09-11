@@ -201,6 +201,7 @@ const SubmitReview = () => {
         media_url_optimized: formData.mediaUrl || '',
         media_type: formData.mediaType || 'image',
         profile_picture_url: formData.profilePictureUrl || '',
+        tags: [], // Empty tags array for new submissions
         timestamp: new Date().toISOString(),
         source: "website",
         is_active: false
@@ -370,8 +371,8 @@ const SubmitReview = () => {
                     let value = e.target.value;
                     // Remove all @ symbols first, then add one if value exists
                     value = value.replace(/@/g, '');
-                    if (value) {
-                      value = '@' + value;
+                    if (value && value.trim()) {
+                      value = '@' + value.trim();
                     }
                     setFormData({ ...formData, instagramHandle: value });
                   }}

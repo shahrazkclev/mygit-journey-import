@@ -9,7 +9,6 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { TagInput } from "@/components/ui/tag-input";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from '@/contexts/AuthContext';
@@ -1591,10 +1590,14 @@ export const ReviewsManager = () => {
               {/* Tags */}
               <div>
                 <Label htmlFor="tags">Tags</Label>
-                <TagInput
-                  value={editingReview.tags || []}
-                  onChange={(tags) => setEditingReview(prev => ({ ...prev, tags }))}
-                  placeholder="Add tags to categorize this review..."
+                <Input
+                  id="tags"
+                  value={(editingReview.tags || []).join(', ')}
+                  onChange={(e) => {
+                    const tags = e.target.value.split(',').map(tag => tag.trim()).filter(tag => tag.length > 0);
+                    setEditingReview(prev => ({ ...prev, tags }));
+                  }}
+                  placeholder="Enter tags separated by commas (e.g., product, positive, video)"
                 />
                 <p className="text-xs text-muted-foreground mt-1">
                   Add tags to help categorize and organize reviews
