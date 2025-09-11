@@ -9,6 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { TagInput } from "@/components/ui/tag-input";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from '@/contexts/AuthContext';
@@ -53,6 +54,7 @@ interface Review {
   user_instagram_handle: string;
   is_active: boolean;
   sort_order: number;
+  tags: string[];
   created_at: string;
   updated_at: string;
 }
@@ -108,6 +110,9 @@ export const ReviewsManager = () => {
     last_name: '',
     tags: [] as string[]
   });
+  const [availableTags, setAvailableTags] = useState<string[]>([]);
+  const [tagFilter, setTagFilter] = useState<string>("all");
+  const [editingTags, setEditingTags] = useState<{ [key: string]: string[] }>({});
   const { toast } = useToast();
 
   // Demo user ID for contacts
@@ -205,6 +210,17 @@ export const ReviewsManager = () => {
     }
   };
 
+  // Fetch available tags from reviews
+  const fetchAvailableTags = async () => {
+    try {
+      const { data, error } = await supabase.rpc('get_review_tags');
+      if (error) throw error;
+      setAvailableTags(data?.map((item: any) => item.tag) || []);
+    } catch (error) {
+      console.error('Error fetching tags:', error);
+    }
+  };
+
   // Update review
   const updateReview = async (reviewId: string, updates: Partial<Review>) => {
     try {
@@ -214,7 +230,7 @@ export const ReviewsManager = () => {
       const validDbFields = [
         'rating', 'is_active', 'sort_order', 'media_url', 'media_type', 
         'user_email', 'description', 'user_avatar', 'user_instagram_handle', 
-        'user_name', 'media_url_optimized', 'thumbnail_url'
+        'user_name', 'media_url_optimized', 'thumbnail_url', 'tags'
       ];
       
       const filteredUpdates = Object.keys(updates)
@@ -260,6 +276,38 @@ export const ReviewsManager = () => {
         variant: "destructive",
       });
       throw error; // Re-throw to let the caller handle it
+    }
+  };
+
+  // Update review tags
+  const updateReviewTags = async (reviewId: string, tags: string[]) => {
+    try {
+      const { error } = await supabase
+        .from('reviews')
+        .update({ tags })
+        .eq('id', reviewId);
+      
+      if (error) throw error;
+      
+      // Update local state
+      setReviews(prev => prev.map(review => 
+        review.id === reviewId ? { ...review, tags } : review
+      ));
+      
+      // Refresh available tags
+      fetchAvailableTags();
+      
+      toast({
+        title: "Tags updated",
+        description: "Review tags have been updated successfully.",
+      });
+    } catch (error) {
+      console.error('Error updating tags:', error);
+      toast({
+        title: "Error",
+        description: "Failed to update tags. Please try again.",
+        variant: "destructive",
+      });
     }
   };
 
@@ -398,6 +446,7 @@ export const ReviewsManager = () => {
   useEffect(() => {
     fetchCustomers();
     fetchStats();
+    fetchAvailableTags();
   }, []);
 
   useEffect(() => {
@@ -863,6 +912,26 @@ export const ReviewsManager = () => {
                 </div>
               </CardHeader>
               <CardContent className="pt-6">
+                {/* Tag Filter Section */}
+                <div className="mb-6 p-4 bg-gradient-to-r from-email-primary/5 to-email-accent/5 rounded-lg border border-email-primary/20">
+                  <div className="flex items-center gap-4">
+                    <div className="flex items-center space-x-2">
+                      <div className="w-1 h-6 bg-gradient-to-b from-email-primary to-email-accent rounded-full"></div>
+                      <h3 className="text-sm font-semibold text-email-primary">Filter by Tags</h3>
+                    </div>
+                    <Select value={tagFilter} onValueChange={setTagFilter}>
+                      <SelectTrigger className="w-48 border-email-primary/30 focus:border-email-primary focus:ring-2 focus:ring-email-primary/20 bg-white/80 backdrop-blur-sm shadow-sm hover:shadow-md transition-all duration-200">
+                        <SelectValue placeholder="Filter by tag" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">All Tags</SelectItem>
+                        {availableTags.map(tag => (
+                          <SelectItem key={tag} value={tag}>{tag}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
                 {loading ? (
                   <div className="text-center py-12">
                     <RefreshCw className="h-8 w-8 mx-auto animate-spin text-muted-foreground mb-4" />
@@ -1054,6 +1123,26 @@ export const ReviewsManager = () => {
                 </div>
               </CardHeader>
               <CardContent className="pt-6">
+                {/* Tag Filter Section */}
+                <div className="mb-6 p-4 bg-gradient-to-r from-email-primary/5 to-email-accent/5 rounded-lg border border-email-primary/20">
+                  <div className="flex items-center gap-4">
+                    <div className="flex items-center space-x-2">
+                      <div className="w-1 h-6 bg-gradient-to-b from-email-primary to-email-accent rounded-full"></div>
+                      <h3 className="text-sm font-semibold text-email-primary">Filter by Tags</h3>
+                    </div>
+                    <Select value={tagFilter} onValueChange={setTagFilter}>
+                      <SelectTrigger className="w-48 border-email-primary/30 focus:border-email-primary focus:ring-2 focus:ring-email-primary/20 bg-white/80 backdrop-blur-sm shadow-sm hover:shadow-md transition-all duration-200">
+                        <SelectValue placeholder="Filter by tag" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">All Tags</SelectItem>
+                        {availableTags.map(tag => (
+                          <SelectItem key={tag} value={tag}>{tag}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
                 {loading ? (
                   <div className="text-center py-12">
                     <RefreshCw className="h-8 w-8 mx-auto animate-spin text-muted-foreground mb-4" />

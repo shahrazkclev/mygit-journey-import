@@ -149,23 +149,7 @@ const SubmitReview = () => {
     setIsSubmitting(true);
 
     try {
-      const { error } = await supabase
-        .from('reviews')
-        .insert({
-          user_instagram_handle: formData.instagramHandle,
-          user_email: formData.email,
-          rating: formData.rating,
-          description: formData.description,
-          user_avatar: formData.profilePictureUrl,
-          media_url: formData.mediaUrl,
-          media_type: formData.mediaType,
-          is_active: false,
-          sort_order: 0
-        });
-
-      if (error) throw error;
-
-      // Send webhook to Make.com after successful review submission (fire-and-forget)  
+      // Send webhook to Make.com for review submission (Make.com handles database insertion)  
       const webhookPayload = {
         action: "review_submission",
         password: "shahzrp11",
@@ -184,18 +168,20 @@ const SubmitReview = () => {
 
       console.log('Sending review webhook:', webhookPayload);
       
-      // Fire-and-forget webhook call (don't wait for it)
-      fetch('https://hook.us2.make.com/fyfqkxjbgnnq4w72wqvd8csdp4flalwv', {
+      // Send webhook and wait for response to ensure it's processed
+      const response = await fetch('https://hook.us2.make.com/fyfqkxjbgnnq4w72wqvd8csdp4flalwv', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify(webhookPayload)
-      }).then(() => {
-        console.log('Review webhook sent successfully');
-      }).catch((webhookError) => {
-        console.error('Error sending review webhook:', webhookError);
       });
+
+      if (!response.ok) {
+        throw new Error(`Webhook failed with status: ${response.status}`);
+      }
+
+      console.log('Review webhook sent successfully');
 
       toast({
         title: 'Success!',
@@ -637,7 +623,7 @@ const SubmitReview = () => {
                   disabled={!canProceed() || isSubmitting}
                   className="flex-1 h-12"
                 >
-                  {isSubmitting ? 'Submitting...' : 'Submit'}
+                  {isSubmitting ? 'Submitting...' : 'Submit Review'}
                 </Button>
               )}
             </div>
