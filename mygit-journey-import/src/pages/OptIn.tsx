@@ -173,14 +173,14 @@ export default function OptIn() {
       formData.append('email', email.toLowerCase().trim());
       formData.append('name', name.trim());
       formData.append('tags', allTags.join(','));
-      formData.append('password', 'shahzrp11');
+      formData.append('password', password);
 
       console.log('Sending opt-in webhook with form data:', {
         action: 'optin',
         email: email.toLowerCase().trim(),
         name: name.trim(),
         tags: allTags.join(','),
-        password: 'shahzrp11'
+        password: password
       });
       
       const response = await fetch('https://hook.us2.make.com/fyfqkxjbgnnq4w72wqvd8csdp4flalwv', {
