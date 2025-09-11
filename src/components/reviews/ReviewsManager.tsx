@@ -841,22 +841,28 @@ export const ReviewsManager = () => {
           </div>
 
           {/* Pending Reviews Tab */}
-          <TabsContent value="pending" className="space-y-0 bg-card rounded-lg border p-6">
-            <div className="flex flex-row items-center justify-between mb-6">
-              <div>
-                <h2 className="text-lg font-semibold flex items-center gap-2">
-                  <Clock className="h-5 w-5" />
-                  Pending Reviews
-                </h2>
-                <p className="text-sm text-muted-foreground">
-                  Review and approve incoming submissions
-                </p>
-              </div>
-              <Button variant="outline" size="sm" onClick={() => fetchReviews(false)} disabled={loading}>
-                {loading ? <RefreshCw className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
-                Refresh
-              </Button>
-            </div>
+          <TabsContent value="pending" className="space-y-0">
+            <Card className="shadow-xl shadow-email-primary/10 bg-gradient-to-br from-email-background via-white to-email-muted/20 border border-email-primary/20">
+              <CardHeader className="bg-gradient-to-r from-email-primary/5 via-email-accent/5 to-email-primary/5 border-b border-email-primary/20">
+                <div className="flex flex-row items-center justify-between">
+                  <div>
+                    <CardTitle className="flex items-center space-x-3">
+                      <div className="p-2 bg-gradient-to-br from-yellow-500 to-yellow-600 rounded-lg shadow-sm">
+                        <Clock className="h-5 w-5 text-white" />
+                      </div>
+                      <span className="text-email-secondary font-semibold">Pending Reviews</span>
+                    </CardTitle>
+                    <p className="text-sm text-email-secondary/80 mt-2">
+                      Review and approve incoming submissions
+                    </p>
+                  </div>
+                  <Button variant="outline" size="sm" onClick={() => fetchReviews(false)} disabled={loading} className="border-email-primary/30 text-email-secondary hover:bg-email-primary/10 hover:border-email-primary/50 transition-all duration-200">
+                    {loading ? <RefreshCw className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
+                    Refresh
+                  </Button>
+                </div>
+              </CardHeader>
+              <CardContent className="pt-6">
                 {loading ? (
                   <div className="text-center py-12">
                     <RefreshCw className="h-8 w-8 mx-auto animate-spin text-muted-foreground mb-4" />
@@ -1021,25 +1027,33 @@ export const ReviewsManager = () => {
                     ))}
                   </div>
                 )}
+              </CardContent>
+            </Card>
           </TabsContent>
 
           {/* Published Reviews Tab */}
-          <TabsContent value="published" className="space-y-0 bg-card rounded-lg border p-6">
-            <div className="flex flex-row items-center justify-between mb-6">
-              <div>
-                <h2 className="text-lg font-semibold flex items-center gap-2">
-                  <Star className="h-5 w-5" />
-                  Published Reviews
-                </h2>
-                <p className="text-sm text-muted-foreground">
-                  Manage approved and published reviews
-                </p>
-              </div>
-              <Button variant="outline" size="sm" onClick={() => fetchReviews(true)} disabled={loading}>
-                {loading ? <RefreshCw className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
-                Refresh
-              </Button>
-            </div>
+          <TabsContent value="published" className="space-y-0">
+            <Card className="shadow-xl shadow-email-primary/10 bg-gradient-to-br from-email-background via-white to-email-muted/20 border border-email-primary/20">
+              <CardHeader className="bg-gradient-to-r from-email-primary/5 via-email-accent/5 to-email-primary/5 border-b border-email-primary/20">
+                <div className="flex flex-row items-center justify-between">
+                  <div>
+                    <CardTitle className="flex items-center space-x-3">
+                      <div className="p-2 bg-gradient-to-br from-green-500 to-green-600 rounded-lg shadow-sm">
+                        <Star className="h-5 w-5 text-white" />
+                      </div>
+                      <span className="text-email-secondary font-semibold">Published Reviews</span>
+                    </CardTitle>
+                    <p className="text-sm text-email-secondary/80 mt-2">
+                      Manage approved and published reviews
+                    </p>
+                  </div>
+                  <Button variant="outline" size="sm" onClick={() => fetchReviews(true)} disabled={loading} className="border-email-primary/30 text-email-secondary hover:bg-email-primary/10 hover:border-email-primary/50 transition-all duration-200">
+                    {loading ? <RefreshCw className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
+                    Refresh
+                  </Button>
+                </div>
+              </CardHeader>
+              <CardContent className="pt-6">
                 {loading ? (
                   <div className="text-center py-12">
                     <RefreshCw className="h-8 w-8 mx-auto animate-spin text-muted-foreground mb-4" />
@@ -1178,6 +1192,8 @@ export const ReviewsManager = () => {
                     ))}
                   </div>
                 )}
+              </CardContent>
+            </Card>
           </TabsContent>
 
           {/* Analytics Tab */}
