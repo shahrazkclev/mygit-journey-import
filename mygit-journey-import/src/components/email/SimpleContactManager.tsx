@@ -1106,7 +1106,7 @@ export const SimpleContactManager = () => {
         <CardContent className="space-y-4">
           {/* Filters */}
           <div className="flex flex-col lg:flex-row space-y-4 lg:space-y-0 lg:space-x-4">
-            <div className="flex-1 flex items-start">
+            <div className="flex-1 flex items-center">
               <Input
                 placeholder="Search contacts..."
                 value={searchTerm}
@@ -1114,7 +1114,7 @@ export const SimpleContactManager = () => {
                 className="border-email-primary/30 focus:border-email-primary w-full"
               />
             </div>
-            <div className="flex-1 flex items-start">
+            <div className="flex-1 flex items-center">
               <Input
                 placeholder="Filter by tag..."
                 value={tagFilter}
