@@ -835,19 +835,16 @@ export const EmailListManager = () => {
               )}
 
               <div className="flex space-x-4 mb-4">
-                <div className="flex-1 relative">
-                  <div className="relative max-w-sm">
-                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-blue-600/60" />
-                    <Input
-                      placeholder="Search contacts..."
-                      value={searchQuery}
-                      onChange={(e) => setSearchQuery(e.target.value)}
-                      className="pl-10 border-blue-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 bg-white shadow-sm transition-all duration-200 hover:border-blue-300"
-                    />
-                  </div>
+                <div className="flex-1">
+                  <Input
+                    placeholder="Search contacts..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="max-w-sm"
+                  />
                 </div>
                 <Select value={filterTag} onValueChange={setFilterTag}>
-                  <SelectTrigger className="w-48 border-blue-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 bg-white shadow-sm transition-all duration-200 hover:border-blue-300">
+                  <SelectTrigger className="w-48">
                     <SelectValue placeholder="Filter by tag" />
                   </SelectTrigger>
                   <SelectContent>
@@ -1025,15 +1022,12 @@ export const EmailListManager = () => {
                               
                               <div className="space-y-4">
                                 <div className="flex space-x-4">
-                                  <div className="flex-1 relative">
-                                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-blue-600/60" />
-                                    <Input
-                                      placeholder="Search contacts in this list..."
-                                      value={listSearchQuery}
-                                      onChange={(e) => setListSearchQuery(e.target.value)}
-                                      className="flex-1 pl-10 border-blue-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 bg-white shadow-sm transition-all duration-200 hover:border-blue-300"
-                                    />
-                                  </div>
+                                  <Input
+                                    placeholder="Search contacts in this list..."
+                                    value={listSearchQuery}
+                                    onChange={(e) => setListSearchQuery(e.target.value)}
+                                    className="flex-1"
+                                  />
                                 </div>
                                 
                                 <div className="border rounded-lg max-h-96 overflow-y-auto">
