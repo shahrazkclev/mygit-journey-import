@@ -171,7 +171,7 @@ export const LockTagsManager = () => {
   const startEditing = (lockedTag: LockedTag) => {
     setEditingTag(lockedTag.id);
     setEditLock({
-      tags: lockedTag.tag.split(', ').map(t => t.trim()),
+      tags: lockedTag.tag.split(',').map(t => t.trim()).filter(Boolean),
       password: lockedTag.password
     });
   };
