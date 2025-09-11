@@ -272,14 +272,87 @@ serve(async (req) => {
       }
     }
 
-    // Set session variable for password validation (database trigger will handle validation)
-    await supabase.rpc('set_config', {
-      setting_name: 'app.protected_tag_password',
-      new_value: password || '',
-      is_local: true
-    });
-
     let finalTags = Array.from(new Set([...existingTags, ...incomingTags]));
+
+    // Validate protected tags directly before processing
+    if (finalTags.length > 0) {
+      try {
+        // Check if any of the tags are protected
+        const { data: protectedRules, error: rulesError } = await supabase
+          .from('tag_rules')
+          .select('add_tags, password')
+          .eq('user_id', finalUserId)
+          .eq('protected', true)
+          .not('add_tags', 'is', null);
+
+        if (rulesError) {
+          console.error('Error checking protected rules:', rulesError);
+          return new Response(JSON.stringify({
+            success: false,
+            error: 'Failed to validate protected tags'
+          }), {
+            status: 500,
+            headers: { 'Content-Type': 'application/json' }
+          });
+        }
+
+        // Check if any of our tags are protected
+        const protectedTags: string[] = [];
+        if (protectedRules && Array.isArray(protectedRules)) {
+          for (const rule of protectedRules) {
+            if (rule.add_tags && Array.isArray(rule.add_tags)) {
+              for (const tag of finalTags) {
+                if (rule.add_tags.includes(tag)) {
+                  protectedTags.push(tag);
+                }
+              }
+            }
+          }
+        }
+
+        // If we have protected tags, validate the password
+        if (protectedTags.length > 0) {
+          if (!password || password.trim() === '') {
+            return new Response(JSON.stringify({
+              success: false,
+              error: `Password required for protected tags: ${protectedTags.join(', ')}`
+            }), {
+              status: 400,
+              headers: { 'Content-Type': 'application/json' }
+            });
+          }
+
+          // Check if the password matches any of the protected rules
+          let validPassword = false;
+          if (protectedRules && Array.isArray(protectedRules)) {
+            validPassword = protectedRules.some(rule => 
+              rule.password === password && 
+              rule.add_tags && 
+              rule.add_tags.some(tag => protectedTags.includes(tag))
+            );
+          }
+
+          if (!validPassword) {
+            return new Response(JSON.stringify({
+              success: false,
+              error: `Invalid password for protected tags: ${protectedTags.join(', ')}`
+            }), {
+              status: 400,
+              headers: { 'Content-Type': 'application/json' }
+            });
+          }
+        }
+      } catch (error) {
+        console.error('Error in protected tag validation:', error);
+        return new Response(JSON.stringify({
+          success: false,
+          error: 'Failed to validate protected tags'
+        }), {
+          status: 500,
+          headers: { 'Content-Type': 'application/json' }
+        });
+      }
+    }
 
     // Unsubscribe/Resubscribe via 'unsub' tag (tag-based approach)
     const hasIncomingUnsub = incomingTags.some((t) => t.toLowerCase() === 'unsub');
