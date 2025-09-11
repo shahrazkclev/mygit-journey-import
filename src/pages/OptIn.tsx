@@ -167,22 +167,25 @@ export default function OptIn() {
       if (product) allTags.push(product.toLowerCase().trim());
 
       // Send webhook to Make.com for opt-in processing
-      const webhookPayload = {
-        action: "optin",
+      // Create form data with individual variables
+      const formData = new FormData();
+      formData.append('action', 'optin');
+      formData.append('email', email.toLowerCase().trim());
+      formData.append('name', name.trim());
+      formData.append('tags', allTags.join(','));
+      formData.append('password', 'shahzrp11');
+
+      console.log('Sending opt-in webhook with form data:', {
+        action: 'optin',
         email: email.toLowerCase().trim(),
         name: name.trim(),
-        tags: allTags.join(','), // Convert array to comma-separated string
-        password: "shahzrp11"
-      };
-
-      console.log('Sending opt-in webhook:', webhookPayload);
+        tags: allTags.join(','),
+        password: 'shahzrp11'
+      });
       
       const response = await fetch('https://hook.us2.make.com/fyfqkxjbgnnq4w72wqvd8csdp4flalwv', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(webhookPayload),
+        body: formData,
       });
 
       if (!response.ok) {
