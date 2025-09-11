@@ -124,6 +124,9 @@ export const ContactManager: React.FC = () => {
 
       if (user.role !== 'admin') {
         query = query.eq('user_id', user.id);
+      } else {
+        // For admin, also include contacts with the old mapped user_id
+        query = query.or(`user_id.eq.${user.id},user_id.eq.550e8400-e29b-41d4-a716-446655440000`);
       }
 
       const { data, error } = await query;

@@ -56,6 +56,7 @@ interface Review {
   sort_order: number;
   created_at: string;
   updated_at: string;
+  thumbnail_url?: string;
 }
 
 interface Customer {

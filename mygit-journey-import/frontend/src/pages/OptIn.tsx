@@ -28,6 +28,11 @@ export default function OptIn() {
   const nameParam = searchParams.get("name") || "";
 
   useEffect(() => {
+    // Clear password field aggressively to prevent autofill
+    setPassword("");
+  }, []);
+
+  useEffect(() => {
     // Check if user has already opted in for any of these specific tags
     const sessionOptedTags = sessionStorage.getItem("opted_in_tags");
     if (sessionOptedTags) {
@@ -307,6 +312,7 @@ export default function OptIn() {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="Enter password for protected tags"
+                  autoComplete="off"
                   required
                 />
                 <p className="text-xs text-muted-foreground mt-1">
