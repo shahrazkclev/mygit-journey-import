@@ -823,66 +823,114 @@ export const SimpleContactManager = () => {
       {/* Contacts Management */}
       <Card className="shadow-soft bg-gradient-to-br from-email-background to-background">
         <CardHeader>
-          <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4">
-            <div>
-              <CardTitle className="flex items-center space-x-2">
-                <Users className="h-5 w-5 text-email-secondary" />
-                <span className="text-email-secondary">Contacts ({filteredContacts.length})</span>
-                {selectedContacts.size > 0 && (
-                  <Badge variant="secondary" className="bg-email-accent/20 text-email-accent">
-                    {selectedContacts.size} selected
-                  </Badge>
-                )}
-              </CardTitle>
-              <CardDescription>
-                Manage your contacts with tag-based organization. Names auto-generated from emails when missing.
-              </CardDescription>
-            </div>
-            <div className="flex flex-wrap gap-2">
-              {selectedContacts.size > 0 && (
-                <>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setShowBulkTagDialog(true)}
-                    className="border-email-accent text-email-accent hover:bg-email-accent/10"
-                  >
-                    <Tag className="h-4 w-4 mr-1" />
-                    Manage Tags
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setShowBulkListDialog(true)}
-                    className="border-email-secondary text-email-secondary hover:bg-email-secondary/10"
-                  >
-                    <Users className="h-4 w-4 mr-1" />
-                    Manage Lists
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={handleBulkDelete}
-                    className="border-red-500 text-red-500 hover:bg-red-50"
-                  >
-                    <Trash2 className="h-4 w-4 mr-1" />
-                    Delete Selected
-                  </Button>
-                </>
-              )}
+          <div className="flex flex-col space-y-4">
+            {/* Header Section */}
+            <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4">
+              <div>
+                <CardTitle className="flex items-center space-x-2">
+                  <Users className="h-5 w-5 text-email-secondary" />
+                  <span className="text-email-secondary">Contacts ({filteredContacts.length})</span>
+                  {selectedContacts.size > 0 && (
+                    <Badge variant="secondary" className="bg-email-accent/20 text-email-accent">
+                      {selectedContacts.size} selected
+                    </Badge>
+                  )}
+                </CardTitle>
+                <CardDescription>
+                  Manage your contacts with tag-based organization. Names auto-generated from emails when missing.
+                </CardDescription>
+              </div>
               
-              {/* CSV Import Button */}
-              <Dialog open={showCsvImportDialog} onOpenChange={setShowCsvImportDialog}>
-                <DialogTrigger asChild>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="border-email-primary text-email-primary hover:bg-email-primary/10"
-                  >
-                    <FileSpreadsheet className="h-4 w-4 mr-1" />
-                    Import CSV
-                  </Button>
-                </DialogTrigger>
+              {/* Action Buttons */}
+              <div className="flex flex-wrap gap-2">
+                <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
+                  <DialogTrigger asChild>
+                    <Button className="bg-email-primary hover:bg-email-primary/90 text-white">
+                      <Plus className="h-4 w-4 mr-2" />
+                      Add Contact
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent className="max-w-md">
+                    <DialogHeader>
+                      <DialogTitle>Add New Contact</DialogTitle>
+                      <DialogDescription>
+                        Add a new contact to your list. Name will be auto-generated from email if not provided.
+                      </DialogDescription>
+                    </DialogHeader>
+                    <div className="space-y-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="name">Name</Label>
+                        <Input
+                          id="name"
+                          value={newContact.name}
+                          onChange={(e) => setNewContact({...newContact, name: e.target.value})}
+                          placeholder="John Doe"
+                          className="border-email-primary/30 focus:border-email-primary"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="email">Email *</Label>
+                        <Input
+                          id="email"
+                          type="email"
+                          value={newContact.email}
+                          onChange={(e) => setNewContact({...newContact, email: e.target.value})}
+                          placeholder="john.doe@example.com"
+                          className="border-email-primary/30 focus:border-email-primary"
+                        />
+                        {newContact.email && !newContact.name && (
+                          <div className="text-xs text-muted-foreground flex items-center">
+                            <User className="h-3 w-3 mr-1" />
+                            Name will be: {generateNameFromEmail(newContact.email)}
+                          </div>
+                        )}
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="phone">Phone</Label>
+                        <Input
+                          id="phone"
+                          value={newContact.phone}
+                          onChange={(e) => setNewContact({...newContact, phone: e.target.value})}
+                          placeholder="+1234567890"
+                          className="border-email-primary/30 focus:border-email-primary"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="tags">Tags</Label>
+                        <Input
+                          id="tags"
+                          value={newContact.tags}
+                          onChange={(e) => setNewContact({...newContact, tags: e.target.value})}
+                          placeholder="customer, premium, vip"
+                          className="border-email-primary/30 focus:border-email-primary"
+                        />
+                        <p className="text-xs text-muted-foreground">
+                          Separate multiple tags with commas
+                        </p>
+                      </div>
+                      <DialogFooter>
+                        <Button variant="outline" onClick={() => setIsAddDialogOpen(false)}>
+                          Cancel
+                        </Button>
+                        <Button onClick={handleAddContact} disabled={!newContact.email}>
+                          Add Contact
+                        </Button>
+                      </DialogFooter>
+                    </div>
+                  </DialogContent>
+                </Dialog>
+
+                <Dialog open={showCsvImportDialog} onOpenChange={setShowCsvImportDialog}>
+                  <DialogTrigger asChild>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="border-email-primary text-email-primary hover:bg-email-primary/10"
+                    >
+                      <FileSpreadsheet className="h-4 w-4 mr-1" />
+                      Import CSV
+                    </Button>
+                  </DialogTrigger>
                 <DialogContent className="max-w-2xl">
                   <DialogHeader>
                     <DialogTitle>Import Contacts from CSV</DialogTitle>
@@ -1103,28 +1151,84 @@ export const SimpleContactManager = () => {
             </div>
           </div>
         </CardHeader>
-        <CardContent className="space-y-4">
-          {/* Filters */}
-          <div className="flex flex-col lg:flex-row lg:items-stretch space-y-4 lg:space-y-0 lg:space-x-4">
-            <div className="flex-1">
-              <Input
-                placeholder="Search contacts..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="border-email-primary/30 focus:border-email-primary w-full"
-                style={{ height: '40px' }}
-              />
-            </div>
-            <div className="flex-1">
-              <Input
-                placeholder="Filter by tag..."
-                value={tagFilter}
-                onChange={(e) => setTagFilter(e.target.value)}
-                className="border-email-primary/30 focus:border-email-primary w-full"
-                style={{ height: '40px' }}
-              />
+        <CardContent className="space-y-6">
+          {/* Search and Filter Section */}
+          <div className="bg-email-muted/20 rounded-lg p-4 border border-email-primary/10">
+            <div className="flex flex-col space-y-4">
+              <h3 className="text-sm font-medium text-email-primary">Search & Filter</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="search-contacts" className="text-xs font-medium text-email-secondary">
+                    Search Contacts
+                  </Label>
+                  <Input
+                    id="search-contacts"
+                    placeholder="Search by name or email..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="border-email-primary/30 focus:border-email-primary bg-white"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="filter-tags" className="text-xs font-medium text-email-secondary">
+                    Filter by Tag
+                  </Label>
+                  <Input
+                    id="filter-tags"
+                    placeholder="Enter tag to filter..."
+                    value={tagFilter}
+                    onChange={(e) => setTagFilter(e.target.value)}
+                    className="border-email-primary/30 focus:border-email-primary bg-white"
+                  />
+                </div>
+              </div>
             </div>
           </div>
+
+          {/* Bulk Operations */}
+          {selectedContacts.size > 0 && (
+            <div className="bg-blue-50 rounded-lg p-4 border border-blue-200">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-2">
+                  <Badge variant="secondary" className="bg-blue-100 text-blue-800">
+                    {selectedContacts.size} selected
+                  </Badge>
+                  <span className="text-sm font-medium text-blue-900">
+                    Bulk Actions
+                  </span>
+                </div>
+                <div className="flex space-x-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setShowBulkTagDialog(true)}
+                    className="border-blue-300 text-blue-700 hover:bg-blue-100"
+                  >
+                    <Tag className="h-4 w-4 mr-1" />
+                    Manage Tags
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setShowBulkListDialog(true)}
+                    className="border-blue-300 text-blue-700 hover:bg-blue-100"
+                  >
+                    <Users className="h-4 w-4 mr-1" />
+                    Manage Lists
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleBulkDelete}
+                    className="border-red-300 text-red-700 hover:bg-red-50"
+                  >
+                    <Trash2 className="h-4 w-4 mr-1" />
+                    Delete Selected
+                  </Button>
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* Available Tags */}
           {allTags.length > 0 && (
