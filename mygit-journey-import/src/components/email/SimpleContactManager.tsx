@@ -1105,23 +1105,19 @@ export const SimpleContactManager = () => {
         </CardHeader>
         <CardContent className="space-y-4">
           {/* Filters */}
-          <div className="flex flex-col lg:flex-row space-y-4 lg:space-y-0 lg:space-x-4 lg:items-center">
-            <div className="flex-1">
-              <Input
-                placeholder="Search contacts..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="border-email-primary/30 focus:border-email-primary w-full h-10"
-              />
-            </div>
-            <div className="flex-1">
-              <Input
-                placeholder="Filter by tag..."
-                value={tagFilter}
-                onChange={(e) => setTagFilter(e.target.value)}
-                className="border-email-primary/30 focus:border-email-primary w-full h-10"
-              />
-            </div>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            <Input
+              placeholder="Search contacts..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="border-email-primary/30 focus:border-email-primary"
+            />
+            <Input
+              placeholder="Filter by tag..."
+              value={tagFilter}
+              onChange={(e) => setTagFilter(e.target.value)}
+              className="border-email-primary/30 focus:border-email-primary"
+            />
           </div>
 
           {/* Available Tags */}
