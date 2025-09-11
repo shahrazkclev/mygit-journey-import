@@ -258,21 +258,12 @@ serve(async (req) => {
     const existingTags = (existingContact?.tags || []).map(normalize).filter(Boolean);
     const incomingTags = parseTags(tags);
 
-    // Set session variable for password validation (for database trigger)
-    if (password) {
-      await supabase.rpc('set_config', {
-        setting_name: 'app.protected_tag_password',
-        new_value: password,
-        is_local: true
-      });
-    } else {
-      // Clear the session variable if no password provided
-      await supabase.rpc('set_config', {
-        setting_name: 'app.protected_tag_password',
-        new_value: '',
-        is_local: true
-      });
-    }
+    // Set session variable for password validation (database trigger will handle validation)
+    await supabase.rpc('set_config', {
+      setting_name: 'app.protected_tag_password',
+      new_value: password || '',
+      is_local: true
+    });
 
     const mergedTags = Array.from(new Set([...existingTags, ...incomingTags]));
 
