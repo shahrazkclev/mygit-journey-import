@@ -318,9 +318,14 @@ export const SimpleContactManager = () => {
     }
 
     if (tagFilter) {
+      // Parse comma-separated tags from TagInput
+      const filterTags = tagFilter.split(',').map(tag => tag.trim().toLowerCase()).filter(Boolean);
+      
       filtered = filtered.filter(contact =>
-        contact.tags?.some(tag => 
-          tag.toLowerCase().includes(tagFilter.toLowerCase())
+        contact.tags?.some(contactTag => 
+          filterTags.some(filterTag => 
+            contactTag.toLowerCase().includes(filterTag)
+          )
         )
       );
     }
@@ -1106,34 +1111,16 @@ export const SimpleContactManager = () => {
               />
             </div>
             <div className="flex-1">
-              <Input
-                placeholder="Filter by tag..."
+              <TagInput
                 value={tagFilter}
-                onChange={(e) => setTagFilter(e.target.value)}
+                onChange={setTagFilter}
+                suggestions={allTags}
+                placeholder="Filter by tag..."
                 className="border-email-primary/30 focus:border-email-primary"
               />
             </div>
           </div>
 
-          {/* Available Tags */}
-          {allTags.length > 0 && (
-            <div className="space-y-2">
-              <Label className="text-sm font-medium">Available Tags:</Label>
-              <div className="flex flex-wrap gap-2">
-                {allTags.map(tag => (
-                  <Badge
-                    key={tag}
-                    variant="outline"
-                    className="cursor-pointer hover:bg-email-accent/10"
-                    onClick={() => setTagFilter(tag)}
-                  >
-                    <Tag className="h-3 w-3 mr-1" />
-                    {tag}
-                  </Badge>
-                ))}
-              </div>
-            </div>
-          )}
 
           {/* Contacts List */}
           <div className="space-y-2">
@@ -1294,36 +1281,6 @@ export const SimpleContactManager = () => {
               </div>
             )}
             
-            {allTags.length > 0 && (
-              <div className="space-y-2">
-                <Label className="text-sm font-medium">Available Tags:</Label>
-                <div className="flex flex-wrap gap-2 max-h-32 overflow-y-auto">
-                  {allTags.map(tag => (
-                    <Badge
-                      key={tag}
-                      variant="outline"
-                      className="cursor-pointer hover:bg-email-accent/10 border-email-accent/30"
-                      onClick={() => {
-                        if (bulkTagOperation === 'add') {
-                          const currentTags = bulkTags.split(',').map(t => t.trim()).filter(t => t.length > 0);
-                          if (!currentTags.includes(tag)) {
-                            setBulkTags(currentTags.length > 0 ? `${bulkTags}, ${tag}` : tag);
-                          }
-                        } else {
-                          const currentTags = bulkTagsToRemove.split(',').map(t => t.trim()).filter(t => t.length > 0);
-                          if (!currentTags.includes(tag)) {
-                            setBulkTagsToRemove(currentTags.length > 0 ? `${bulkTagsToRemove}, ${tag}` : tag);
-                          }
-                        }
-                      }}
-                    >
-                      <Tag className="h-3 w-3 mr-1" />
-                      {tag}
-                    </Badge>
-                  ))}
-                </div>
-              </div>
-            )}
             <div className="flex space-x-2">
               <Button onClick={handleBulkAddTags} className="flex-1 bg-email-accent hover:bg-email-accent/80">
                 {bulkTagOperation === 'add' ? 'Add Tags' : 'Remove Tags'}

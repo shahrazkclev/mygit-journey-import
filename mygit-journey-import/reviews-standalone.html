@@ -197,6 +197,7 @@
 
         const unmutedIcon = card.querySelector('.mute-icon-unmuted');
         const mutedIcon = card.querySelector('.mute-icon-muted');
+        const hasPlayed = card.dataset.hasPlayed === 'true';
         
         video.muted = !isUnmutedGlobally;
 
@@ -204,7 +205,12 @@
         mutedIcon.classList.toggle('hidden', !video.muted);
 
         if (isMobile) {
-            muteBtn.style.cssText = 'top: 1rem; right: 1rem; padding: 0.375rem;';
+            // On mobile, only show mute button after video has been played
+            if (hasPlayed) {
+                muteBtn.style.cssText = 'top: 1rem; right: 1rem; padding: 0.375rem; opacity: 1;';
+            } else {
+                muteBtn.style.cssText = 'opacity: 0; pointer-events: none;';
+            }
         } else {
              if (video.muted) { 
                 muteBtn.style.cssText = 'top: 50%; left: 50%; transform: translate(-50%, -50%); padding: 1rem;';
@@ -479,6 +485,8 @@
                 if(playBtn) playBtn.style.opacity = '0';
                 // Mark that this video has been played
                 card.dataset.hasPlayed = 'true';
+                // Update card state to show mute button on mobile
+                updateCardState(card);
             });
             video.addEventListener('pause', () => { if(playBtn) playBtn.style.opacity = '1'; });
         }
@@ -530,4 +538,4 @@
     }, 1000); // Reduced from 2000ms to 1000ms
 </script>
 </body>
-</html> the assword
+</html>
