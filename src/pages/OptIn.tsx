@@ -24,8 +24,8 @@ export default function OptIn() {
   const [requiresPassword, setRequiresPassword] = useState(false);
   const { toast } = useToast();
 
-  const tags = searchParams.get("tags")?.split(",") || [];
-  const product = searchParams.get("product");
+  const tags = searchParams.get("tags")?.split(",").map(tag => tag.toLowerCase().trim()) || [];
+  const product = searchParams.get("product")?.toLowerCase().trim();
   const campaign = searchParams.get("campaign") || "General Opt-in";
   const nameParam = searchParams.get("name") || "";
 

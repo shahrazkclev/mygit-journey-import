@@ -90,7 +90,7 @@ Return ONLY the email content following the instructions above. Do not use any p
       },
       body: JSON.stringify({
         model: 'claude-sonnet-4-20250514',
-        max_tokens: 1500,
+        max_tokens: 4000,
         messages: [{ role: 'user', content: systemPrompt }],
       }),
     });
