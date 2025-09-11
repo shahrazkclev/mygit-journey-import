@@ -276,27 +276,34 @@ export const LockTagsManager = () => {
 
       <div className="grid gap-4">
         {lockedTags.length === 0 ? (
-          <Card>
-            <CardContent className="flex flex-col items-center justify-center py-8">
-              <Lock className="h-12 w-12 text-muted-foreground mb-4" />
-              <h3 className="text-lg font-semibold mb-2">No Locked Tags</h3>
-              <p className="text-muted-foreground text-center mb-4">
+          <Card className="shadow-xl shadow-email-primary/10 bg-gradient-to-br from-email-background via-white to-email-muted/20 border border-email-primary/20">
+            <CardContent className="flex flex-col items-center justify-center py-12">
+              <div className="p-4 bg-gradient-to-br from-email-primary/10 to-email-accent/10 rounded-full mb-6">
+                <Lock className="h-12 w-12 text-email-primary" />
+              </div>
+              <h3 className="text-xl font-semibold text-email-secondary mb-3">No Locked Tags</h3>
+              <p className="text-email-secondary/80 text-center mb-6 max-w-md">
                 Lock tags with passwords to control who can add them to contacts via API or forms.
               </p>
-              <Button onClick={() => setIsCreating(true)} className="flex items-center gap-2">
+              <Button 
+                onClick={() => setIsCreating(true)} 
+                className="bg-gradient-to-r from-email-primary to-email-accent hover:from-email-primary/90 hover:to-email-accent/90 text-white shadow-lg hover:shadow-xl transition-all duration-200 flex items-center gap-2"
+              >
                 <Lock className="h-4 w-4" />
                 Lock First Tag
               </Button>
             </CardContent>
           </Card>
         ) : (
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Lock className="h-5 w-5" />
-                Locked Tags ({lockedTags.length})
+          <Card className="shadow-xl shadow-email-primary/10 bg-gradient-to-br from-email-background via-white to-email-muted/20 border border-email-primary/20">
+            <CardHeader className="bg-gradient-to-r from-email-primary/5 via-email-accent/5 to-email-primary/5 border-b border-email-primary/20">
+              <CardTitle className="flex items-center space-x-3">
+                <div className="p-2 bg-gradient-to-br from-email-primary to-email-accent rounded-lg shadow-sm">
+                  <Lock className="h-5 w-5 text-white" />
+                </div>
+                <span className="text-email-secondary font-semibold">Locked Tags ({lockedTags.length})</span>
               </CardTitle>
-              <CardDescription>
+              <CardDescription className="text-email-secondary/80 mt-2">
                 These tags are password protected and require authentication to add via API/forms.
               </CardDescription>
             </CardHeader>

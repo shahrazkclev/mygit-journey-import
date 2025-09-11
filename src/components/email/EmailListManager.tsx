@@ -681,13 +681,18 @@ export const EmailListManager = () => {
           </TabsTrigger>
         </TabsList>
 
-        <TabsContent value="contacts" className="space-y-4">
-          <Card>
-            <CardHeader>
+        <TabsContent value="contacts" className="space-y-6">
+          <Card className="shadow-xl shadow-email-primary/10 bg-gradient-to-br from-email-background via-white to-email-muted/20 border border-email-primary/20">
+            <CardHeader className="bg-gradient-to-r from-email-primary/5 via-email-accent/5 to-email-primary/5 border-b border-email-primary/20">
               <div className="flex justify-between items-center">
                 <div>
-                  <CardTitle>Contact Management</CardTitle>
-                  <p className="text-sm text-muted-foreground">
+                  <CardTitle className="flex items-center space-x-3">
+                    <div className="p-2 bg-gradient-to-br from-email-primary to-email-accent rounded-lg shadow-sm">
+                      <Users className="h-5 w-5 text-white" />
+                    </div>
+                    <span className="text-email-secondary font-semibold">Contact Management</span>
+                  </CardTitle>
+                  <p className="text-sm text-email-secondary/80 mt-2">
                     {contacts.length} total contacts
                   </p>
                 </div>
@@ -783,20 +788,25 @@ export const EmailListManager = () => {
                 </div>
               </div>
             </CardHeader>
-            <CardContent>
+            <CardContent className="space-y-6">
               {/* Bulk Operations */}
               {selectedContacts.length > 0 && (
-                <div className="mb-4 p-4 bg-blue-50 rounded-lg border border-blue-200">
+                <div className="bg-gradient-to-r from-blue-50 via-blue-100/50 to-blue-50 rounded-xl p-4 border border-blue-200 shadow-sm">
                   <div className="flex items-center justify-between">
-                    <span className="text-sm font-medium text-blue-900">
-                      {selectedContacts.length} contact(s) selected
-                    </span>
+                    <div className="flex items-center space-x-2">
+                      <Badge variant="secondary" className="bg-blue-100 text-blue-800">
+                        {selectedContacts.length} selected
+                      </Badge>
+                      <span className="text-sm font-medium text-blue-900">
+                        Bulk Actions
+                      </span>
+                    </div>
                     <div className="flex space-x-2">
                       <Select value={selectedList?.id || ""} onValueChange={(value) => {
                         const list = lists.find(l => l.id === value);
                         setSelectedList(list || null);
                       }}>
-                        <SelectTrigger className="w-48">
+                        <SelectTrigger className="w-48 border-blue-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 bg-white shadow-sm transition-all duration-200 hover:border-blue-300">
                           <SelectValue placeholder="Select list to add to" />
                         </SelectTrigger>
                         <SelectContent>
@@ -809,6 +819,7 @@ export const EmailListManager = () => {
                         size="sm" 
                         onClick={handleBulkAddToList}
                         disabled={!selectedList}
+                        className="bg-blue-600 hover:bg-blue-700 text-white shadow-sm hover:shadow-md transition-all duration-200"
                       >
                         <UserPlus className="h-4 w-4 mr-2" />
                         Add to List
@@ -817,7 +828,7 @@ export const EmailListManager = () => {
                         variant="outline" 
                         size="sm" 
                         onClick={handleBulkDelete}
-                        className="border-red-500 text-red-500 hover:bg-red-50"
+                        className="border-red-300 text-red-700 hover:bg-red-50 shadow-sm hover:shadow-md transition-all duration-200"
                       >
                         <Trash2 className="h-4 w-4 mr-2" />
                         Delete Selected
@@ -826,6 +837,7 @@ export const EmailListManager = () => {
                         variant="outline" 
                         size="sm" 
                         onClick={() => setSelectedContacts([])}
+                        className="border-blue-300 text-blue-700 hover:bg-blue-50 shadow-sm hover:shadow-md transition-all duration-200"
                       >
                         Clear Selection
                       </Button>
@@ -834,26 +846,47 @@ export const EmailListManager = () => {
                 </div>
               )}
 
-              <div className="flex space-x-4 mb-4">
-                <div className="flex-1">
-                  <Input
-                    placeholder="Search contacts..."
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    className="max-w-sm"
-                  />
+              {/* Search and Filter Section */}
+              <div className="bg-gradient-to-br from-email-background via-white to-email-muted/30 rounded-xl p-6 border border-email-primary/20 shadow-lg shadow-email-primary/10">
+                <div className="flex flex-col space-y-5">
+                  <div className="flex items-center space-x-2">
+                    <div className="w-1 h-6 bg-gradient-to-b from-email-primary to-email-accent rounded-full"></div>
+                    <h3 className="text-lg font-semibold text-email-primary">Search & Filter</h3>
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="space-y-3">
+                      <Label htmlFor="search-contacts" className="text-sm font-medium text-email-secondary flex items-center space-x-2">
+                        <div className="w-2 h-2 bg-email-accent rounded-full"></div>
+                        <span>Search Contacts</span>
+                      </Label>
+                      <Input
+                        id="search-contacts"
+                        placeholder="Search by name or email..."
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        className="border-email-primary/30 focus:border-email-primary focus:ring-2 focus:ring-email-primary/20 bg-white/80 backdrop-blur-sm shadow-sm hover:shadow-md transition-all duration-200"
+                      />
+                    </div>
+                    <div className="space-y-3">
+                      <Label htmlFor="filter-tags" className="text-sm font-medium text-email-secondary flex items-center space-x-2">
+                        <div className="w-2 h-2 bg-email-accent rounded-full"></div>
+                        <span>Filter by Tag</span>
+                      </Label>
+                      <Select value={filterTag} onValueChange={setFilterTag}>
+                        <SelectTrigger className="border-email-primary/30 focus:border-email-primary focus:ring-2 focus:ring-email-primary/20 bg-white/80 backdrop-blur-sm shadow-sm hover:shadow-md transition-all duration-200">
+                          <SelectValue placeholder="Filter by tag" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="all">All Tags</SelectItem>
+                          {uniqueTags.map(tag => (
+                            <SelectItem key={tag} value={tag}>{tag}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
                 </div>
-                <Select value={filterTag} onValueChange={setFilterTag}>
-                  <SelectTrigger className="w-48">
-                    <SelectValue placeholder="Filter by tag" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Tags</SelectItem>
-                    {uniqueTags.map(tag => (
-                      <SelectItem key={tag} value={tag}>{tag}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+              </div>
                 <ContactFilter
                   onFilterChange={setFilteredContactIds}
                   availableTags={uniqueTags}
@@ -960,13 +993,18 @@ export const EmailListManager = () => {
         </TabsContent>
 
 
-        <TabsContent value="lists" className="space-y-4">
-          <Card>
-            <CardHeader>
+        <TabsContent value="lists" className="space-y-6">
+          <Card className="shadow-xl shadow-email-primary/10 bg-gradient-to-br from-email-background via-white to-email-muted/20 border border-email-primary/20">
+            <CardHeader className="bg-gradient-to-r from-email-primary/5 via-email-accent/5 to-email-primary/5 border-b border-email-primary/20">
               <div className="flex justify-between items-center">
                 <div>
-                  <CardTitle>Email Lists</CardTitle>
-                  <p className="text-sm text-muted-foreground">
+                  <CardTitle className="flex items-center space-x-3">
+                    <div className="p-2 bg-gradient-to-br from-email-primary to-email-accent rounded-lg shadow-sm">
+                      <List className="h-5 w-5 text-white" />
+                    </div>
+                    <span className="text-email-secondary font-semibold">Email Lists</span>
+                  </CardTitle>
+                  <p className="text-sm text-email-secondary/80 mt-2">
                     {lists.length} email lists
                   </p>
                 </div>

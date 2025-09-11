@@ -41,13 +41,13 @@ export const EmailCampaignApp = () => {
       </div>
       
       <div className="container mx-auto p-4 md:p-6">
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
           {/* Navigation Tabs */}
-          <div className="bg-card rounded-lg border p-1 shadow-sm">
-            <TabsList className="grid grid-cols-3 md:grid-cols-6 w-full bg-transparent gap-1 h-auto">
+          <div className="bg-gradient-to-r from-email-background via-white to-email-muted/20 rounded-xl border border-email-primary/20 p-2 shadow-xl shadow-email-primary/10">
+            <TabsList className="grid grid-cols-3 md:grid-cols-6 w-full bg-transparent gap-2 h-auto">
               <TabsTrigger
                 value="compose" 
-                className="flex items-center justify-center gap-1.5 text-xs md:text-sm px-2 md:px-3 py-2.5 rounded-md data-[state=active]:bg-primary data-[state=active]:text-primary-foreground transition-all"
+                className="flex items-center justify-center gap-1.5 text-xs md:text-sm px-3 md:px-4 py-3 rounded-lg data-[state=active]:bg-gradient-to-r data-[state=active]:from-email-primary data-[state=active]:to-email-accent data-[state=active]:text-white data-[state=active]:shadow-md hover:bg-email-primary/10 transition-all duration-200"
               >
                 <Mail className="h-4 w-4" />
                 <span className="hidden sm:inline">Compose</span>
@@ -55,7 +55,7 @@ export const EmailCampaignApp = () => {
               
               <TabsTrigger 
                 value="contacts" 
-                className="flex items-center justify-center gap-1.5 text-xs md:text-sm px-2 md:px-3 py-2.5 rounded-md data-[state=active]:bg-primary data-[state=active]:text-primary-foreground transition-all"
+                className="flex items-center justify-center gap-1.5 text-xs md:text-sm px-3 md:px-4 py-3 rounded-lg data-[state=active]:bg-gradient-to-r data-[state=active]:from-email-primary data-[state=active]:to-email-accent data-[state=active]:text-white data-[state=active]:shadow-md hover:bg-email-primary/10 transition-all duration-200"
               >
                 <Users className="h-4 w-4" />
                 <span className="hidden sm:inline">Contacts</span>
@@ -63,7 +63,7 @@ export const EmailCampaignApp = () => {
               
               <TabsTrigger 
                 value="lists" 
-                className="flex items-center justify-center gap-1.5 text-xs md:text-sm px-2 md:px-3 py-2.5 rounded-md data-[state=active]:bg-primary data-[state=active]:text-primary-foreground transition-all"
+                className="flex items-center justify-center gap-1.5 text-xs md:text-sm px-3 md:px-4 py-3 rounded-lg data-[state=active]:bg-gradient-to-r data-[state=active]:from-email-primary data-[state=active]:to-email-accent data-[state=active]:text-white data-[state=active]:shadow-md hover:bg-email-primary/10 transition-all duration-200"
               >
                 <List className="h-4 w-4" />
                 <span className="hidden sm:inline">Lists</span>
@@ -71,7 +71,7 @@ export const EmailCampaignApp = () => {
               
               <TabsTrigger 
                 value="products" 
-                className="flex items-center justify-center gap-1.5 text-xs md:text-sm px-2 md:px-3 py-2.5 rounded-md data-[state=active]:bg-primary data-[state=active]:text-primary-foreground transition-all"
+                className="flex items-center justify-center gap-1.5 text-xs md:text-sm px-3 md:px-4 py-3 rounded-lg data-[state=active]:bg-gradient-to-r data-[state=active]:from-email-primary data-[state=active]:to-email-accent data-[state=active]:text-white data-[state=active]:shadow-md hover:bg-email-primary/10 transition-all duration-200"
               >
                 <Package className="h-4 w-4" />
                 <span className="hidden sm:inline">Products</span>
@@ -79,7 +79,7 @@ export const EmailCampaignApp = () => {
               
               <TabsTrigger 
                 value="campaigns" 
-                className="flex items-center justify-center gap-1.5 text-xs md:text-sm px-2 md:px-3 py-2.5 rounded-md data-[state=active]:bg-primary data-[state=active]:text-primary-foreground transition-all"
+                className="flex items-center justify-center gap-1.5 text-xs md:text-sm px-3 md:px-4 py-3 rounded-lg data-[state=active]:bg-gradient-to-r data-[state=active]:from-email-primary data-[state=active]:to-email-accent data-[state=active]:text-white data-[state=active]:shadow-md hover:bg-email-primary/10 transition-all duration-200"
               >
                 <BarChart3 className="h-4 w-4" />
                 <span className="hidden sm:inline">Analytics</span>
