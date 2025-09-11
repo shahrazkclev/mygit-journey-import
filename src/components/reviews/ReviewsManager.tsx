@@ -214,7 +214,7 @@ export const ReviewsManager = () => {
       const validDbFields = [
         'rating', 'is_active', 'sort_order', 'media_url', 'media_type', 
         'user_email', 'description', 'user_avatar', 'user_instagram_handle', 
-        'user_name', 'media_url_optimized'
+        'user_name', 'media_url_optimized', 'thumbnail_url'
       ];
       
       const filteredUpdates = Object.keys(updates)

@@ -300,8 +300,8 @@ export const SimpleContactManager = () => {
       const searchLower = searchTerm.toLowerCase();
       filtered = filtered.filter(contact => {
         // Check name fields
-        const firstNameMatch = contact.first_name?.toLowerCase().includes(searchLower);
-        const lastNameMatch = contact.last_name?.toLowerCase().includes(searchLower);
+        const firstNameMatch = contact.name?.toLowerCase().includes(searchLower);
+        const nameMatch = contact.name?.toLowerCase().includes(searchLower);
         const emailMatch = contact.email?.toLowerCase().includes(searchLower);
         const phoneMatch = contact.phone?.includes(searchTerm);
         
@@ -313,7 +313,7 @@ export const SimpleContactManager = () => {
                  tagLower.split(':').some(part => part.trim().startsWith(searchLower));
         });
         
-        return firstNameMatch || lastNameMatch || emailMatch || phoneMatch || tagMatch;
+        return firstNameMatch || nameMatch || emailMatch || phoneMatch || tagMatch;
       });
     }
 
