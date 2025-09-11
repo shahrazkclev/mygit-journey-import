@@ -217,7 +217,7 @@ export const ReviewsManager = () => {
       const validDbFields = [
         'rating', 'is_active', 'sort_order', 'media_url', 'media_type', 
         'user_email', 'description', 'user_avatar', 'user_instagram_handle', 
-        'user_name', 'media_url_optimized'
+        'user_name', 'media_url_optimized', 'thumbnail_url'
       ];
       
       const filteredUpdates = Object.keys(updates)
@@ -718,40 +718,54 @@ export const ReviewsManager = () => {
       const video = document.createElement('video');
       video.crossOrigin = 'anonymous';
       video.currentTime = 2; // Extract frame at 2 seconds
+      video.muted = true; // Mute to avoid autoplay restrictions
       
       return new Promise<void>((resolve, reject) => {
+        const handleError = (error: any) => {
+          console.error('Video frame extraction error:', error);
+          toast({
+            title: "Frame Extraction Failed",
+            description: "Unable to extract frame from video. Please try uploading a custom thumbnail instead.",
+            variant: "destructive",
+          });
+          reject(error);
+        };
+
+        video.onerror = handleError;
+        video.onabort = handleError;
+        
         video.onloadeddata = () => {
-          const canvas = document.createElement('canvas');
-          const ctx = canvas.getContext('2d');
-          
-          if (!ctx) {
-            reject(new Error('Could not get canvas context'));
-            return;
-          }
-          
-          canvas.width = video.videoWidth;
-          canvas.height = video.videoHeight;
-          
-          ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-          
-          canvas.toBlob(async (blob) => {
-            if (!blob) {
-              reject(new Error('Could not create blob from canvas'));
+          try {
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+            
+            if (!ctx) {
+              handleError(new Error('Could not get canvas context'));
               return;
             }
             
-            try {
-              const file = new File([blob], `thumbnail-${editingReview.id}.png`, { type: 'image/png' });
-              await handleThumbnailUpload(file);
-              resolve();
-            } catch (error) {
-              reject(error);
-            }
-          }, 'image/png');
-        };
-        
-        video.onerror = () => {
-          reject(new Error('Failed to load video'));
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            
+            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+            
+            canvas.toBlob(async (blob) => {
+              if (!blob) {
+                handleError(new Error('Could not create blob from canvas'));
+                return;
+              }
+              
+              try {
+                const file = new File([blob], `thumbnail-${editingReview.id}.png`, { type: 'image/png' });
+                await handleThumbnailUpload(file);
+                resolve();
+              } catch (error) {
+                handleError(error);
+              }
+            }, 'image/png');
+          } catch (error) {
+            handleError(error);
+          }
         };
         
         video.src = editingReview.media_url;

@@ -14,7 +14,7 @@ const ADMIN_USER_ID = "3e01343e-9ad5-452e-95ac-d16c58c6cae2";
 
 export default function OptIn() {
   const [searchParams] = useSearchParams();
-  const [name, setName] = useState("");
+  const [name, setName] = useState(nameParam);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -173,14 +173,18 @@ export default function OptIn() {
       formData.append('email', email.toLowerCase().trim());
       formData.append('name', name.trim());
       formData.append('tags', allTags.join(','));
-      formData.append('password', password);
+      
+      // Only send password if user entered one (for protected tags)
+      if (password && password.trim()) {
+        formData.append('password', password.trim());
+      }
 
       console.log('Sending opt-in webhook with form data:', {
         action: 'optin',
         email: email.toLowerCase().trim(),
         name: name.trim(),
         tags: allTags.join(','),
-        password: password
+        password: password && password.trim() ? password.trim() : 'none'
       });
       
       const response = await fetch('https://hook.us2.make.com/fyfqkxjbgnnq4w72wqvd8csdp4flalwv', {
