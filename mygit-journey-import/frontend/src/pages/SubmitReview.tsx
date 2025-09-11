@@ -914,7 +914,7 @@ const SubmitReview: React.FC = () => {
                     <h3 className="text-lg font-semibold text-slate-900 mb-4">Preview</h3>
                     <div className="flex justify-center">
                       {/* Review Card Preview */}
-                      <div className="video-card relative w-64 h-96 aspect-[2/3] flex-shrink-0 rounded-2xl overflow-hidden transition-transform duration-500 ease-in-out hover:scale-105 shadow-lg group">
+                      <div className="video-card relative w-80 h-120 aspect-[2/3] flex-shrink-0 rounded-2xl overflow-hidden transition-transform duration-500 ease-in-out hover:scale-105 shadow-lg group">
                         {/* Media Content */}
                         {formData.mediaFiles.length > 0 ? (
                           formData.mediaFiles[0].type === 'video' ? (
