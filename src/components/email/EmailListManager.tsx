@@ -545,6 +545,61 @@ export const EmailListManager = () => {
     setSelectedList(null);
   };
 
+  const handleBulkDelete = async () => {
+    if (selectedContacts.length === 0) {
+      toast({
+        title: "No contacts selected",
+        description: "Please select contacts to delete.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const confirmMessage = `Are you sure you want to delete ${selectedContacts.length} contact(s)? This action cannot be undone.`;
+    if (!confirm(confirmMessage)) {
+      return;
+    }
+
+    try {
+      // Delete contacts from the database
+      const { error } = await supabase
+        .from('contacts')
+        .delete()
+        .in('id', selectedContacts);
+
+      if (error) {
+        console.error('Error deleting contacts:', error);
+        toast({
+          title: "Error deleting contacts",
+          description: error.message,
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // Also remove from contact_lists if they exist
+      await supabase
+        .from('contact_lists')
+        .delete()
+        .in('contact_id', selectedContacts);
+
+      toast({
+        title: "Contacts deleted successfully",
+        description: `Successfully deleted ${selectedContacts.length} contact(s).`,
+      });
+      
+      setSelectedContacts([]);
+      loadData(); // Refresh the data
+    } catch (error: any) {
+      console.error('Error deleting contacts:', error);
+      toast({
+        title: "Error deleting contacts",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
+  };
+
   const toggleContactSelection = (contactId: string) => {
     setSelectedContacts(prev => 
       prev.includes(contactId) 
@@ -757,6 +812,15 @@ export const EmailListManager = () => {
                       >
                         <UserPlus className="h-4 w-4 mr-2" />
                         Add to List
+                      </Button>
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        onClick={handleBulkDelete}
+                        className="border-red-500 text-red-500 hover:bg-red-50"
+                      >
+                        <Trash2 className="h-4 w-4 mr-2" />
+                        Delete Selected
                       </Button>
                       <Button 
                         variant="outline" 

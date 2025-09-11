@@ -708,6 +708,49 @@ export const SimpleContactManager = () => {
     }
   };
 
+  const handleBulkDelete = async () => {
+    if (selectedContacts.size === 0) {
+      toast.error("Please select contacts to delete");
+      return;
+    }
+
+    const confirmMessage = `Are you sure you want to delete ${selectedContacts.size} contact(s)? This action cannot be undone.`;
+    if (!confirm(confirmMessage)) {
+      return;
+    }
+
+    try {
+      setIsLoading(true);
+      
+      // Delete contacts from the database
+      const { error } = await supabase
+        .from('contacts')
+        .delete()
+        .in('id', Array.from(selectedContacts));
+
+      if (error) {
+        console.error('Error deleting contacts:', error);
+        toast.error("Failed to delete contacts");
+        return;
+      }
+
+      // Also remove from contact_lists if they exist
+      await supabase
+        .from('contact_lists')
+        .delete()
+        .in('contact_id', Array.from(selectedContacts));
+
+      toast.success(`Successfully deleted ${selectedContacts.size} contact(s)`);
+      setSelectedContacts(new Set());
+      loadContacts();
+    } catch (error) {
+      console.error('Error deleting contacts:', error);
+      toast.error("Failed to delete contacts");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   if (isLoading) {
     return <div className="p-6">Loading contacts...</div>;
   }
@@ -806,6 +849,15 @@ export const SimpleContactManager = () => {
                   >
                     <Users className="h-4 w-4 mr-1" />
                     Manage Lists
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleBulkDelete}
+                    className="border-red-500 text-red-500 hover:bg-red-50"
+                  >
+                    <Trash2 className="h-4 w-4 mr-1" />
+                    Delete Selected
                   </Button>
                 </>
               )}
