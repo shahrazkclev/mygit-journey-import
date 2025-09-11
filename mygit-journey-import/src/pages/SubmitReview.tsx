@@ -215,7 +215,8 @@ const SubmitReview = () => {
       case 2:
         return formData.mediaUrl;
       case 3:
-        return formData.rating > 0 && formData.description.trim().length > 0;
+        const wordCount = formData.description.trim().split(/\s+/).filter(word => word.length > 0).length;
+        return formData.rating > 0 && wordCount >= 3 && wordCount <= 8;
       default:
         return false;
     }
@@ -319,8 +320,10 @@ const SubmitReview = () => {
                   value={formData.instagramHandle}
                   onChange={(e) => {
                     let value = e.target.value;
-                    // Automatically add @ if not present
-                    if (value && !value.startsWith('@')) {
+                    // Remove any existing @ symbols first
+                    value = value.replace(/@/g, '');
+                    // Add single @ at the beginning
+                    if (value) {
                       value = '@' + value;
                     }
                     setFormData({ ...formData, instagramHandle: value });
@@ -491,13 +494,28 @@ const SubmitReview = () => {
               )}
 
               <div>
+                <div className="flex justify-between items-center mb-2">
+                  <label className="block text-sm font-medium">Review Text *</label>
+                  <span className={`text-xs ${formData.description.trim().split(/\s+/).filter(word => word.length > 0).length > 8 ? 'text-red-500' : 'text-gray-500'}`}>
+                    {formData.description.trim().split(/\s+/).filter(word => word.length > 0).length}/8 words
+                  </span>
+                </div>
                 <Textarea
                   value={formData.description}
-                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                  placeholder="Share your experience, what you liked, what could be improved..."
-                  rows={isMobile ? 6 : 8}
+                  onChange={(e) => {
+                    const words = e.target.value.trim().split(/\s+/).filter(word => word.length > 0);
+                    // Limit to 8 words maximum
+                    if (words.length <= 8) {
+                      setFormData({ ...formData, description: e.target.value });
+                    }
+                  }}
+                  placeholder="Share your experience in 3-8 words..."
+                  rows={isMobile ? 4 : 6}
                   className="resize-none text-base"
                 />
+                <p className="text-xs text-gray-500 mt-1">
+                  Keep it short and sweet! 3-8 words maximum to ensure it displays properly.
+                </p>
               </div>
             </div>
           </div>
