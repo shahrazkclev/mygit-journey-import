@@ -75,11 +75,18 @@ export const UnsubscribeManager = () => {
   const loadUnsubscribeData = async () => {
     try {
       console.log('🔍 Loading unsubscribe data (tag-based)...');
-      const { data, error } = await supabase
+      
+      // Admin users see all contacts, regular users see only their own
+      let query = supabase
         .from('contacts')
         .select('id, email, first_name, last_name, tags, created_at, updated_at, status')
-        .eq('user_id', user?.id)
         .contains('tags', ['unsub']);
+
+      if (user?.role !== 'admin') {
+        query = query.eq('user_id', user?.id);
+      }
+
+      const { data, error } = await query;
 
       if (error) throw error;
 

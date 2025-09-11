@@ -130,12 +130,18 @@ export const SimpleContactManager = () => {
       console.log('🔄 Loading contacts from database...');
       
 
-      const { data, error } = await supabase
+      // Admin users see all contacts, regular users see only their own
+      let query = supabase
         .from('contacts')
         .select('id, user_id, created_at, updated_at, email, first_name, last_name, status, tags')
-        .eq('user_id', user?.id)
         .eq('status', 'subscribed') // Only load subscribed contacts
         .order('created_at', { ascending: false });
+
+      if (user?.role !== 'admin') {
+        query = query.eq('user_id', user?.id);
+      }
+
+      const { data, error } = await query;
 
       console.log('📊 Contacts query result:', { data, error, count: data?.length });
 

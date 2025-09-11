@@ -113,14 +113,20 @@ export const ContactManager: React.FC = () => {
         return;
       }
 
-      console.log('🔍 Loading contacts for user:', user.id);
+      console.log('🔍 Loading contacts for user:', user.id, 'role:', user.role);
 
-      const { data, error } = await supabase
+      // Admin users see all contacts, regular users see only their own
+      let query = supabase
         .from('contacts')
         .select('*')
-        .eq('user_id', user.id)
         .eq('status', 'subscribed')
         .order('created_at', { ascending: false });
+
+      if (user.role !== 'admin') {
+        query = query.eq('user_id', user.id);
+      }
+
+      const { data, error } = await query;
 
       if (error) {
         console.error('❌ Error loading contacts:', error);
