@@ -1018,7 +1018,7 @@ export const SimpleContactManager = () => {
 
               <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
                 <DialogTrigger asChild>
-                  <Button className="bg-email-primary hover:bg-email-primary/80">
+                  <Button size="sm" variant="outline" className="border-email-primary text-email-primary hover:bg-email-primary/10">
                     <Plus className="h-4 w-4 mr-2" />
                     Add Contact
                   </Button>
@@ -1099,25 +1099,37 @@ export const SimpleContactManager = () => {
             </div>
           </div>
         </CardHeader>
-        <CardContent className="space-y-4">
-          {/* Filters */}
-          <div className="flex flex-col lg:flex-row space-y-4 lg:space-y-0 lg:space-x-4">
-            <div className="flex-1 flex items-start">
-              <Input
-                placeholder="Search contacts..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="border-email-primary/30 focus:border-email-primary w-full"
-              />
-            </div>
-            <div className="flex-1 flex items-start">
-              <TagInput
-                value={tagFilter}
-                onChange={setTagFilter}
-                suggestions={allTags}
-                placeholder="Filter by tag..."
-                className="border-email-primary/30 focus:border-email-primary w-full"
-              />
+        <CardContent className="space-y-6">
+          {/* Search and Filter Section */}
+          <div className="bg-email-muted/20 rounded-lg p-4 border border-email-primary/10">
+            <div className="flex flex-col space-y-4">
+              <h3 className="text-sm font-medium text-email-primary">Search & Filter</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="search-contacts" className="text-xs font-medium text-email-secondary">
+                    Search Contacts
+                  </Label>
+                  <Input
+                    id="search-contacts"
+                    placeholder="Search by name or email..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="border-email-primary/30 focus:border-email-primary bg-white"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="filter-tags" className="text-xs font-medium text-email-secondary">
+                    Filter by Tag
+                  </Label>
+                  <Input
+                    id="filter-tags"
+                    placeholder="Enter tag to filter..."
+                    value={tagFilter}
+                    onChange={(e) => setTagFilter(e.target.value)}
+                    className="border-email-primary/30 focus:border-email-primary bg-white"
+                  />
+                </div>
+              </div>
             </div>
           </div>
 
