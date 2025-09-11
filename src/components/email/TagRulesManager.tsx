@@ -169,7 +169,7 @@ export const TagRulesManager = () => {
   };
 
   const handleCreateRule = async () => {
-    if (!newRule.name || newRule.trigger_tags.length === 0) {
+    if (!newRule.name || !newRule.trigger_tags || newRule.trigger_tags.length === 0) {
       toast.error('Please fill in the rule name and trigger tags');
       return;
     }
@@ -186,11 +186,11 @@ export const TagRulesManager = () => {
           user_id: user.id,
           name: newRule.name,
           description: newRule.description,
-          trigger_tag: newRule.trigger_tags[0]?.toLowerCase().trim() || '', // Legacy field
-          trigger_tags: newRule.trigger_tags.map(tag => tag.toLowerCase().trim()),
+          trigger_tag: (newRule.trigger_tags || [])[0]?.toLowerCase().trim() || '', // Legacy field
+          trigger_tags: (newRule.trigger_tags || []).map(tag => tag.toLowerCase().trim()),
           trigger_match_type: newRule.trigger_match_type,
-          add_tags: newRule.add_tags.map(tag => tag.toLowerCase().trim()),
-          remove_tags: newRule.remove_tags.map(tag => tag.toLowerCase().trim()),
+          add_tags: (newRule.add_tags || []).map(tag => tag.toLowerCase().trim()),
+          remove_tags: (newRule.remove_tags || []).map(tag => tag.toLowerCase().trim()),
           replace_all_tags: newRule.replace_all_tags,
           enabled: true
         });
@@ -208,7 +208,7 @@ export const TagRulesManager = () => {
   };
 
   const handleUpdateRule = async (ruleId: string) => {
-    if (!editRule.name || editRule.trigger_tags.length === 0) {
+    if (!editRule.name || !editRule.trigger_tags || editRule.trigger_tags.length === 0) {
       toast.error('Please fill in the rule name and trigger tags');
       return;
     }
@@ -219,11 +219,11 @@ export const TagRulesManager = () => {
         .update({
           name: editRule.name,
           description: editRule.description,
-          trigger_tag: editRule.trigger_tags[0]?.toLowerCase().trim() || '', // Legacy field
-          trigger_tags: editRule.trigger_tags.map(tag => tag.toLowerCase().trim()),
+          trigger_tag: (editRule.trigger_tags || [])[0]?.toLowerCase().trim() || '', // Legacy field
+          trigger_tags: (editRule.trigger_tags || []).map(tag => tag.toLowerCase().trim()),
           trigger_match_type: editRule.trigger_match_type,
-          add_tags: editRule.add_tags.map(tag => tag.toLowerCase().trim()),
-          remove_tags: editRule.remove_tags.map(tag => tag.toLowerCase().trim()),
+          add_tags: (editRule.add_tags || []).map(tag => tag.toLowerCase().trim()),
+          remove_tags: (editRule.remove_tags || []).map(tag => tag.toLowerCase().trim()),
           replace_all_tags: editRule.replace_all_tags
         })
         .eq('id', ruleId);
@@ -388,7 +388,7 @@ export const TagRulesManager = () => {
             <div>
               <Label htmlFor="trigger-tags">Trigger Tags</Label>
               <TagInput
-                value={newRule.trigger_tags.join(', ')}
+                value={(newRule.trigger_tags || []).join(', ')}
                 onChange={(value) => setNewRule({ ...newRule, trigger_tags: value.split(',').map(t => t.trim()).filter(Boolean) })}
                 suggestions={allTags}
                 placeholder="e.g., bought-product-x, premium-customer"
@@ -418,7 +418,7 @@ export const TagRulesManager = () => {
             <div>
               <Label htmlFor="add-tags">Tags to Add</Label>
               <TagInput
-                value={newRule.add_tags.join(', ')}
+                value={(newRule.add_tags || []).join(', ')}
                 onChange={(value) => setNewRule({ ...newRule, add_tags: value.split(',').map(t => t.trim()).filter(Boolean) })}
                 suggestions={allTags}
                 placeholder="e.g., customer, premium"
@@ -427,7 +427,7 @@ export const TagRulesManager = () => {
             <div>
               <Label htmlFor="remove-tags">Tags to Remove</Label>
               <TagInput
-                value={newRule.remove_tags.join(', ')}
+                value={(newRule.remove_tags || []).join(', ')}
                 onChange={(value) => setNewRule({ ...newRule, remove_tags: value.split(',').map(t => t.trim()).filter(Boolean) })}
                 suggestions={allTags}
                 placeholder="e.g., interested-in-discount, prospect"
@@ -525,7 +525,7 @@ export const TagRulesManager = () => {
                     <div>
                       <Label htmlFor="edit-trigger-tags">Trigger Tags</Label>
                       <TagInput
-                        value={editRule.trigger_tags.join(', ')}
+                        value={(editRule.trigger_tags || []).join(', ')}
                         onChange={(value) => setEditRule({ ...editRule, trigger_tags: value.split(',').map(t => t.trim()).filter(Boolean) })}
                         suggestions={allTags}
                         placeholder="e.g., bought-product-x, premium-customer"
@@ -549,7 +549,7 @@ export const TagRulesManager = () => {
                     <div>
                       <Label htmlFor="edit-add-tags">Tags to Add</Label>
                       <TagInput
-                        value={editRule.add_tags.join(', ')}
+                        value={(editRule.add_tags || []).join(', ')}
                         onChange={(value) => setEditRule({ ...editRule, add_tags: value.split(',').map(t => t.trim()).filter(Boolean) })}
                         suggestions={allTags}
                         placeholder="e.g., customer, premium"
@@ -558,7 +558,7 @@ export const TagRulesManager = () => {
                     <div>
                       <Label htmlFor="edit-remove-tags">Tags to Remove</Label>
                       <TagInput
-                        value={editRule.remove_tags.join(', ')}
+                        value={(editRule.remove_tags || []).join(', ')}
                         onChange={(value) => setEditRule({ ...editRule, remove_tags: value.split(',').map(t => t.trim()).filter(Boolean) })}
                         suggestions={allTags}
                         placeholder="e.g., interested-in-discount, prospect"
@@ -587,13 +587,13 @@ export const TagRulesManager = () => {
                     <div>
                       <Label className="text-sm font-medium">Triggers ({rule.trigger_match_type?.toUpperCase() || 'ANY'}):</Label>
                       <div className="flex flex-wrap gap-1 mt-1">
-                        {(rule.trigger_tags || [rule.trigger_tag]).filter(Boolean).map((tag, index) => (
+                        {(rule.trigger_tags || [rule.trigger_tag] || []).filter(Boolean).map((tag, index) => (
                           <Badge key={index} variant="outline">{tag}</Badge>
                         ))}
                       </div>
                     </div>
                     
-                    {rule.add_tags.length > 0 && (
+                    {rule.add_tags && rule.add_tags.length > 0 && (
                       <div>
                         <Label className="text-sm font-medium text-green-700">Add Tags:</Label>
                         <div className="flex flex-wrap gap-1 mt-1">
@@ -606,7 +606,7 @@ export const TagRulesManager = () => {
                       </div>
                     )}
                     
-                    {rule.remove_tags.length > 0 && (
+                    {rule.remove_tags && rule.remove_tags.length > 0 && (
                       <div>
                         <Label className="text-sm font-medium text-red-700">Remove Tags:</Label>
                         <div className="flex flex-wrap gap-1 mt-1">
