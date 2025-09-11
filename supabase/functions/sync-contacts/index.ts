@@ -272,40 +272,20 @@ serve(async (req) => {
       }
     }
 
-    // Validate password only if trying to add protected tags
+    // Set session variable for password validation (for database trigger)
     if (password) {
-      const { data: protectedRules, error: rulesError } = await supabase
-        .from('tag_rules')
-        .select('add_tags, password')
-        .eq('user_id', finalUserId)
-        .eq('protected', true);
-
-      if (!rulesError && protectedRules?.length) {
-        const protectedTags: string[] = [];
-        protectedRules.forEach((rule: any) => {
-          if (rule.add_tags) {
-            rule.add_tags.forEach((tag: string) => {
-              if (incomingTags.includes(tag) && !protectedTags.includes(tag)) {
-                protectedTags.push(tag);
-              }
-            });
-          }
-        });
-
-        if (protectedTags.length > 0) {
-          let passwordValid = false;
-          for (const rule of protectedRules) {
-            if (rule.add_tags && rule.add_tags.some((t: string) => protectedTags.includes(t))) {
-              if (rule.password === password) { passwordValid = true; break; }
-            }
-          }
-          if (!passwordValid) {
-            return new Response(JSON.stringify({ 
-              error: `Invalid password for protected tags: ${protectedTags.join(', ')}`
-            }), { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
-          }
-        }
-      }
+      await supabase.rpc('set_config', {
+        setting_name: 'app.protected_tag_password',
+        new_value: password,
+        is_local: true
+      });
+    } else {
+      // Clear the session variable if no password provided
+      await supabase.rpc('set_config', {
+        setting_name: 'app.protected_tag_password',
+        new_value: '',
+        is_local: true
+      });
     }
 
     let finalTags = Array.from(new Set([...existingTags, ...incomingTags]));
