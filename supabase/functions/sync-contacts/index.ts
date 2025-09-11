@@ -118,7 +118,7 @@ serve(async (req) => {
     });
 
     let finalEmail = normalizedEmail;
-    let finalUserId = user_id || '550e8400-e29b-41d4-a716-446655440000';
+    let finalUserId = user_id || '3e01343e-9ad5-452e-95ac-d16c58c6cae2';
 
     // If no email but we have contact_id, resolve it first
     if (!finalEmail && normalizedContactId) {

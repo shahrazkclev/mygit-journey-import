@@ -331,11 +331,13 @@ export const LockTagsManager = () => {
                       </div>
                     ) : (
                       <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-2 flex-wrap">
                           <Lock className="h-4 w-4" />
-                          <Badge variant="secondary" className="px-3 py-1">
-                            {lockedTag.tag}
-                          </Badge>
+                          {lockedTag.tag.split(',').map((tag, index) => (
+                            <Badge key={index} variant="secondary" className="px-3 py-1">
+                              {tag.trim()}
+                            </Badge>
+                          ))}
                         </div>
                         <div className="flex items-center gap-2">
                           <Button
