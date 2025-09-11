@@ -131,6 +131,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "contact_lists_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "contacts_with_mapped_user_id"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "contact_lists_list_id_fkey"
             columns: ["list_id"]
             isOneToOne: false
@@ -167,6 +174,13 @@ export type Database = {
             columns: ["contact_id"]
             isOneToOne: false
             referencedRelation: "contacts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contact_products_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "contacts_with_mapped_user_id"
             referencedColumns: ["id"]
           },
           {
@@ -621,11 +635,74 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      contacts_with_mapped_user_id: {
+        Row: {
+          created_at: string | null
+          email: string | null
+          first_name: string | null
+          id: string | null
+          last_name: string | null
+          status: string | null
+          tags: string[] | null
+          updated_at: string | null
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          email?: string | null
+          first_name?: string | null
+          id?: string | null
+          last_name?: string | null
+          status?: string | null
+          tags?: string[] | null
+          updated_at?: string | null
+          user_id?: never
+        }
+        Update: {
+          created_at?: string | null
+          email?: string | null
+          first_name?: string | null
+          id?: string | null
+          last_name?: string | null
+          status?: string | null
+          tags?: string[] | null
+          updated_at?: string | null
+          user_id?: never
+        }
+        Relationships: []
+      }
     }
     Functions: {
+      add_comprehensive_test_duplicates: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
+      }
+      add_comprehensive_test_duplicates_all_tables: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
+      }
+      add_test_case_duplicates: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
+      }
       apply_tag_rules_pure: {
         Args: { p_tags: string[]; p_user_id: string }
+        Returns: string[]
+      }
+      cleanup_comprehensive_test_duplicates: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
+      }
+      cleanup_comprehensive_test_duplicates_all_tables: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
+      }
+      cleanup_test_case_duplicates: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
+      }
+      comprehensive_normalize_tags: {
+        Args: { tags_array: string[] }
         Returns: string[]
       }
       generate_unsubscribe_token: {
@@ -640,9 +717,52 @@ export type Database = {
         Args: { p_email?: string; p_reason?: string; p_user_id?: string }
         Returns: undefined
       }
+      map_user_id: {
+        Args: { input_user_id: string }
+        Returns: string
+      }
+      merge_all_case_sensitive_duplicates: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          contacts_updated: number
+          merged_variations: string[]
+          normalized_tag: string
+          tag_rules_updated: number
+        }[]
+      }
+      merge_all_case_sensitive_duplicates_comprehensive: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          contacts_updated: number
+          merged_variations: string[]
+          normalized_name: string
+          products_updated: number
+          tag_rules_updated: number
+        }[]
+      }
+      merge_case_sensitive_duplicates: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          affected_contacts: number
+          affected_tag_rules: number
+          merged_from: string[]
+          normalized_tag: string
+        }[]
+      }
+      merge_specific_case_duplicates: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          action: string
+          details: string
+        }[]
+      }
       migrate_demo_data_to_admin: {
         Args: { admin_user_id: string }
         Returns: undefined
+      }
+      normalize_tags: {
+        Args: { tags_array: string[] }
+        Returns: string[]
       }
       reapply_tag_rules_for_user: {
         Args: { p_user_id: string }
@@ -651,6 +771,10 @@ export type Database = {
       reapply_tag_rules_to_unsubscribed_contacts: {
         Args: { p_user_id: string }
         Returns: undefined
+      }
+      tag_exists: {
+        Args: { search_tag: string; tags_array: string[] }
+        Returns: boolean
       }
     }
     Enums: {
