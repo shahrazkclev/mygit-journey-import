@@ -257,7 +257,8 @@ const SubmitReview = () => {
       case 2:
         return formData.mediaUrl;
       case 3:
-        return formData.rating > 0 && formData.description.trim().length > 0;
+        const wordCount = formData.description.split(' ').filter(word => word.length > 0).length;
+        return formData.rating > 0 && wordCount >= 3 && wordCount <= 8;
       default:
         return false;
     }
@@ -276,7 +277,7 @@ const SubmitReview = () => {
     const userName = instagramHandle.replace('@', '') || 'Username';
     const avatarInitial = userName.charAt(0).toUpperCase();
     
-    const cardSize = isMobile ? "w-40 h-60" : "w-80 h-[480px]";
+    const cardSize = isMobile ? "w-80 h-120" : "w-80 h-[480px]";
     
     return (
       <div className={`relative ${cardSize} rounded-2xl overflow-hidden shadow-xl bg-gray-900`}>
@@ -367,8 +368,9 @@ const SubmitReview = () => {
                   value={formData.instagramHandle}
                   onChange={(e) => {
                     let value = e.target.value;
-                    // Automatically add @ if not present
-                    if (value && !value.startsWith('@')) {
+                    // Remove all @ symbols first, then add one if value exists
+                    value = value.replace(/@/g, '');
+                    if (value) {
                       value = '@' + value;
                     }
                     setFormData({ ...formData, instagramHandle: value });
@@ -566,10 +568,19 @@ const SubmitReview = () => {
               )}
 
               <div>
+                <label className="block text-sm font-medium mb-2">Review Text *</label>
+                <div className="mb-2 text-xs text-muted-foreground">
+                  {formData.description.split(' ').filter(word => word.length > 0).length}/8 words
+                </div>
                 <Textarea
                   value={formData.description}
-                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                  placeholder="Share your experience, what you liked, what could be improved..."
+                  onChange={(e) => {
+                    const words = e.target.value.split(' ').filter(word => word.length > 0);
+                    if (words.length <= 8) {
+                      setFormData({ ...formData, description: e.target.value });
+                    }
+                  }}
+                  placeholder="Write your review (3-8 words)..."
                   rows={isMobile ? 6 : 8}
                   className="resize-none text-base"
                 />

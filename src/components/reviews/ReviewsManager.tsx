@@ -1042,6 +1042,16 @@ export const ReviewsManager = () => {
                         
                         <p className="text-sm">{review.description}</p>
                         
+                        {review.tags && review.tags.length > 0 && (
+                          <div className="flex flex-wrap gap-1 mt-2">
+                            {review.tags.map((tag, index) => (
+                              <Badge key={index} variant="secondary" className="text-xs">
+                                {tag}
+                              </Badge>
+                            ))}
+                          </div>
+                        )}
+                        
                         {review.media_url && (
                           <div className="mt-2">
                             {review.media_type === 'video' ? (
@@ -1226,6 +1236,16 @@ export const ReviewsManager = () => {
                         </div>
                         
                         <p className="text-sm">{review.description}</p>
+                        
+                        {review.tags && review.tags.length > 0 && (
+                          <div className="flex flex-wrap gap-1 mt-2">
+                            {review.tags.map((tag, index) => (
+                              <Badge key={index} variant="secondary" className="text-xs">
+                                {tag}
+                              </Badge>
+                            ))}
+                          </div>
+                        )}
                         
                         {review.media_url && (
                           <div className="mt-2">
@@ -1430,6 +1450,16 @@ export const ReviewsManager = () => {
                         
                         <p className="text-sm">{review.description}</p>
                         
+                        {review.tags && review.tags.length > 0 && (
+                          <div className="flex flex-wrap gap-1 mt-2">
+                            {review.tags.map((tag, index) => (
+                              <Badge key={index} variant="secondary" className="text-xs">
+                                {tag}
+                              </Badge>
+                            ))}
+                          </div>
+                        )}
+                        
                         {review.media_url && (
                           <div className="mt-2">
                             {review.media_type === 'video' ? (
@@ -1556,6 +1586,19 @@ export const ReviewsManager = () => {
                   onChange={(e) => setEditingReview(prev => ({ ...prev, description: e.target.value }))}
                   rows={4}
                 />
+              </div>
+
+              {/* Tags */}
+              <div>
+                <Label htmlFor="tags">Tags</Label>
+                <TagInput
+                  value={editingReview.tags || []}
+                  onChange={(tags) => setEditingReview(prev => ({ ...prev, tags }))}
+                  placeholder="Add tags to categorize this review..."
+                />
+                <p className="text-xs text-muted-foreground mt-1">
+                  Add tags to help categorize and organize reviews
+                </p>
               </div>
 
               {/* Media Management */}
