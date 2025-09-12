@@ -183,6 +183,7 @@ export const SendCampaignModal: React.FC<SendCampaignModalProps> = ({
         selected_lists: selectedLists,
         sender_sequence: senderSequence,
         webhook_url: webhookUrl,
+        user_id: user?.id || '',
         emails_per_sequence: emailsPerSequence,
         max_sender_sequences: maxSenderSequences
       });

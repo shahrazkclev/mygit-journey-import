@@ -9,6 +9,7 @@ export const api = {
     selected_lists: string[];
     sender_sequence: number;
     webhook_url: string;
+    user_id: string;
     emails_per_sequence?: number;
     max_sender_sequences?: number;
   }) {
@@ -17,7 +18,7 @@ export const api = {
       const { data: campaign, error: campaignError } = await supabase
         .from('campaigns')
         .insert({
-          user_id: '550e8400-e29b-41d4-a716-446655440000',
+          user_id: params.user_id,
           name: params.title,
           subject: params.subject,
           html_content: params.html_content,
