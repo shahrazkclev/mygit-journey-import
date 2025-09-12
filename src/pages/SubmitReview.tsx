@@ -40,10 +40,10 @@ const SubmitReview = () => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    if (file.size > 50 * 1024 * 1024) {
+    if (file.size > 100 * 1024 * 1024) {
       toast({
         title: 'File too large',
-        description: 'Please select a file smaller than 50MB.',
+        description: 'Please select a file smaller than 100MB.',
         variant: 'destructive'
       });
       return;
@@ -114,6 +114,15 @@ const SubmitReview = () => {
   };
 
   const handleProfilePictureUpload = async (file: File) => {
+    if (file.size > 100 * 1024 * 1024) {
+      toast({
+        title: 'File too large',
+        description: 'Please select a profile picture smaller than 100MB.',
+        variant: 'destructive'
+      });
+      return;
+    }
+
     setIsProfileUploading(true);
     setProfileUploadProgress(25);
     
