@@ -96,15 +96,24 @@ export const api = {
 
   async resumeCampaign(id: string) {
     try {
-      const { error } = await supabase
-        .from('campaigns')
-        .update({ status: 'sending' })
-        .eq('id', id);
+      // Call the resume-campaign edge function
+      const { data, error } = await supabase.functions.invoke('resume-campaign', {
+        body: { campaignId: id }
+      });
+      
       if (error) throw error;
-      return { ok: true } as const;
+      
+      return { 
+        ok: true, 
+        json: async () => data 
+      } as const;
     } catch (error) {
       console.error('Resume campaign error:', error);
-      return { ok: false, status: 500, statusText: (error as Error).message } as const;
+      return { 
+        ok: false, 
+        status: 500, 
+        statusText: (error as Error).message 
+      } as const;
     }
   },
 };

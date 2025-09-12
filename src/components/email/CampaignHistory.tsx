@@ -31,6 +31,7 @@ import {
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
+import { api } from '@/lib/api';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 
 interface Campaign {
@@ -159,6 +160,24 @@ export const CampaignHistory: React.FC = () => {
     } catch (error) {
       console.error('Error deleting campaign:', error);
       toast.error('Failed to delete campaign');
+    }
+  };
+
+  const resumeCampaign = async (campaignId: string) => {
+    try {
+      const response = await api.resumeCampaign(campaignId);
+      
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`Failed to resume campaign: ${errorText}`);
+      }
+
+      const result = await response.json();
+      toast.success(`Campaign resumed! ${result.pending_count} emails pending`);
+      loadCampaigns();
+    } catch (error) {
+      console.error('Error resuming campaign:', error);
+      toast.error('Failed to resume campaign');
     }
   };
 
@@ -652,6 +671,21 @@ export const CampaignHistory: React.FC = () => {
                           >
                             <Eye className="h-4 w-4" />
                           </Button>
+                          
+                          {campaign.status === 'paused' && (
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                resumeCampaign(campaign.id);
+                              }}
+                              className="h-8 w-8 p-0 text-green-600 hover:text-green-700"
+                              title="Resume Campaign"
+                            >
+                              <Play className="h-4 w-4" />
+                            </Button>
+                          )}
                           
                           <AlertDialog>
                             <AlertDialogTrigger asChild>

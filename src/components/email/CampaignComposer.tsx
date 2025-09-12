@@ -8,13 +8,14 @@ import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Wand2, Send, Eye, Save, Palette, Code, Edit, Type } from "lucide-react";
+import { Wand2, Send, Eye, Save, Palette, Code, Edit, Type, Pause, Play } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { EmailEditor, EmailElement } from "./EmailEditor";
 import { EditablePreview } from "./editor/EditablePreview";
 import { SendCampaignModal } from "./SendCampaignModal";
 import { useAuth } from "@/contexts/AuthContext";
+import { api } from "@/lib/api";
 
 interface CampaignComposerProps {
   onSave?: (campaignData: any) => void;
@@ -85,6 +86,7 @@ export const CampaignComposer: React.FC<CampaignComposerProps> = ({ onSave }) =>
 
   const [emailLists, setEmailLists] = useState<any[]>([]);
   const [products, setProducts] = useState<any[]>([]);
+  const [pausedCampaigns, setPausedCampaigns] = useState<any[]>([]);
 
   // Product autocomplete state
   const [showProductAutocomplete, setShowProductAutocomplete] = useState(false);
@@ -97,6 +99,7 @@ export const CampaignComposer: React.FC<CampaignComposerProps> = ({ onSave }) =>
       loadEmailLists();
       loadProducts();
       loadStyleGuide();
+      loadPausedCampaigns();
     }
   }, [user?.id]);
 
@@ -808,8 +811,81 @@ export const CampaignComposer: React.FC<CampaignComposerProps> = ({ onSave }) =>
     onSave?.(campaignData);
   };
 
+  const loadPausedCampaigns = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('campaigns')
+        .select('*')
+        .eq('user_id', user?.id)
+        .eq('status', 'paused')
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      setPausedCampaigns(data || []);
+    } catch (error) {
+      console.error('Error loading paused campaigns:', error);
+    }
+  };
+
+  const resumeCampaign = async (campaignId: string) => {
+    try {
+      const response = await api.resumeCampaign(campaignId);
+      
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`Failed to resume campaign: ${errorText}`);
+      }
+
+      const result = await response.json();
+      toast.success(`Campaign resumed! ${result.pending_count} emails pending`);
+      loadPausedCampaigns(); // Refresh the list
+    } catch (error) {
+      console.error('Error resuming campaign:', error);
+      toast.error('Failed to resume campaign');
+    }
+  };
+
   return (
     <div className="space-y-6">
+      {/* Paused Campaigns Section */}
+      {pausedCampaigns.length > 0 && (
+        <Card className="shadow-soft bg-gradient-to-br from-orange-50 to-red-50 border-orange-200">
+          <CardHeader>
+            <CardTitle className="text-orange-700 flex items-center gap-2">
+              <Pause className="h-5 w-5" />
+              Paused Campaigns
+            </CardTitle>
+            <CardDescription>
+              You have {pausedCampaigns.length} paused campaign{pausedCampaigns.length > 1 ? 's' : ''} that can be resumed
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-3">
+              {pausedCampaigns.map((campaign) => (
+                <div key={campaign.id} className="flex items-center justify-between p-3 bg-white rounded-lg border border-orange-200">
+                  <div className="flex-1">
+                    <h4 className="font-medium text-gray-900">{campaign.name}</h4>
+                    <p className="text-sm text-gray-600">{campaign.subject}</p>
+                    <div className="flex items-center gap-4 mt-1 text-xs text-gray-500">
+                      <span>Sent: {campaign.sent_count || 0}/{campaign.total_recipients || 0}</span>
+                      <span>Created: {new Date(campaign.created_at).toLocaleDateString()}</span>
+                    </div>
+                  </div>
+                  <Button
+                    size="sm"
+                    onClick={() => resumeCampaign(campaign.id)}
+                    className="bg-orange-600 hover:bg-orange-700 text-white"
+                  >
+                    <Play className="h-4 w-4 mr-1" />
+                    Resume
+                  </Button>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Email Content Form */}
       <Card className="shadow-soft bg-gradient-to-br from-email-background to-background border-email-primary/20">
         <CardHeader>
