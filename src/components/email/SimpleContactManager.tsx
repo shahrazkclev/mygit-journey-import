@@ -44,6 +44,13 @@ export const SimpleContactManager = () => {
   const [tagFilter, setTagFilter] = useState("");
   const [isLoading, setIsLoading] = useState(true);
   const [allTags, setAllTags] = useState<string[]>([]);
+  
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1);
+  const [hasMoreContacts, setHasMoreContacts] = useState(true);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
+  const [totalContacts, setTotalContacts] = useState(0);
+  const CONTACTS_PER_PAGE = 50;
   const [isMakeIntegrationOpen, setIsMakeIntegrationOpen] = useState(false);
   
   // Bulk operations state
@@ -126,19 +133,39 @@ export const SimpleContactManager = () => {
       .trim();
   };
 
-  const loadContacts = async () => {
+  const loadContacts = async (page: number = 1, reset: boolean = true) => {
     try {
-      console.log('🔄 Loading contacts from database...');
-      
+      if (reset) {
+        setIsLoading(true);
+        setCurrentPage(1);
+      } else {
+        setIsLoadingMore(true);
+      }
 
+      console.log(`🔄 Loading contacts page ${page}...`);
+
+      const from = (page - 1) * CONTACTS_PER_PAGE;
+      const to = from + CONTACTS_PER_PAGE - 1;
+
+      // Get total count first
+      const { count: totalCount } = await supabase
+        .from('contacts')
+        .select('*', { count: 'exact', head: true })
+        .eq('user_id', user?.id)
+        .eq('status', 'subscribed');
+
+      setTotalContacts(totalCount || 0);
+
+      // Load contacts with pagination
       const { data, error } = await supabase
         .from('contacts')
         .select('id, user_id, created_at, updated_at, email, first_name, last_name, status, tags')
         .eq('user_id', user?.id)
-        .eq('status', 'subscribed') // Only load subscribed contacts
-        .order('created_at', { ascending: false });
+        .eq('status', 'subscribed')
+        .order('created_at', { ascending: false })
+        .range(from, to);
 
-      console.log('📊 Contacts query result:', { data, error, count: data?.length });
+      console.log('📊 Contacts query result:', { data, error, count: data?.length, total: totalCount });
 
       if (error) {
         console.error('Error loading contacts:', error);
@@ -166,20 +193,61 @@ export const SimpleContactManager = () => {
       });
 
       const filteredUiContacts = uiContacts.filter(c => !(c.tags || []).some(t => (t || '').trim().toLowerCase() === 'unsub'));
-      setContacts(filteredUiContacts);
-      console.log(`✅ Loaded ${uiContacts.length} contacts successfully`);
       
-      // Extract all unique tags from DB rows
-      const tags = new Set<string>();
-      dbContacts.forEach(contact => {
-        contact.tags?.forEach((tag: string) => tags.add(tag));
-      });
-      setAllTags(Array.from(tags));
+      if (reset) {
+        setContacts(filteredUiContacts);
+      } else {
+        setContacts(prev => [...prev, ...filteredUiContacts]);
+      }
+      
+      setHasMoreContacts(filteredUiContacts.length === CONTACTS_PER_PAGE);
+      setCurrentPage(page);
+      
+      console.log(`✅ Loaded ${filteredUiContacts.length} contacts for page ${page}`);
+      
+      // Load all tags separately for filter suggestions
+      if (reset) {
+        await loadAllTags();
+      }
     } catch (error) {
       console.error('Error loading contacts:', error);
       toast.error("Failed to load contacts");
     } finally {
       setIsLoading(false);
+      setIsLoadingMore(false);
+    }
+  };
+
+  const loadAllTags = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('contacts')
+        .select('tags')
+        .eq('user_id', user?.id)
+        .eq('status', 'subscribed');
+
+      if (error) {
+        console.error('Error loading tags:', error);
+        return;
+      }
+
+      const tags = new Set<string>();
+      data?.forEach(contact => {
+        contact.tags?.forEach((tag: string) => {
+          if (tag && tag.trim()) {
+            tags.add(tag.trim());
+          }
+        });
+      });
+      setAllTags(Array.from(tags).sort());
+    } catch (error) {
+      console.error('Error loading tags:', error);
+    }
+  };
+
+  const loadMoreContacts = () => {
+    if (!isLoadingMore && hasMoreContacts) {
+      loadContacts(currentPage + 1, false);
     }
   };
 
@@ -294,7 +362,76 @@ export const SimpleContactManager = () => {
     }
   };
 
+  const searchContacts = async (searchQuery: string = searchTerm, tagQuery: string = tagFilter) => {
+    try {
+      setIsLoading(true);
+      console.log(`🔍 Searching contacts: "${searchQuery}", tag: "${tagQuery}"`);
+
+      let query = supabase
+        .from('contacts')
+        .select('id, user_id, created_at, updated_at, email, first_name, last_name, status, tags')
+        .eq('user_id', user?.id)
+        .eq('status', 'subscribed')
+        .order('created_at', { ascending: false })
+        .limit(100); // Limit search results to 100
+
+      // Add search filters
+      if (searchQuery.trim()) {
+        query = query.or(`email.ilike.%${searchQuery}%,first_name.ilike.%${searchQuery}%,last_name.ilike.%${searchQuery}%`);
+      }
+
+      if (tagQuery.trim()) {
+        const filterTags = tagQuery.split(',').map(tag => tag.trim()).filter(Boolean);
+        query = query.contains('tags', filterTags);
+      }
+
+      const { data, error } = await query;
+
+      if (error) {
+        console.error('Error searching contacts:', error);
+        toast.error("Failed to search contacts");
+        return;
+      }
+
+      const dbContacts: DbContact[] = data || [];
+      const uiContacts: Contact[] = dbContacts.map(c => {
+        let name = [c.first_name, c.last_name].filter(Boolean).join(' ').trim();
+        if (!name && c.email) {
+          name = generateNameFromEmail(c.email);
+        }
+        
+        return {
+          id: c.id,
+          name: name || 'Unknown',
+          email: c.email,
+          phone: "",
+          tags: c.tags ?? [],
+          created_at: c.created_at,
+        };
+      });
+
+      const filteredUiContacts = uiContacts.filter(c => !(c.tags || []).some(t => (t || '').trim().toLowerCase() === 'unsub'));
+      setContacts(filteredUiContacts);
+      setFilteredContacts(filteredUiContacts);
+      setHasMoreContacts(false); // Disable pagination for search results
+      
+      console.log(`✅ Found ${filteredUiContacts.length} contacts matching search`);
+    } catch (error) {
+      console.error('Error searching contacts:', error);
+      toast.error("Failed to search contacts");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const filterContacts = () => {
+    // If we have search terms, use dynamic search
+    if (searchTerm.trim() || tagFilter.trim()) {
+      searchContacts();
+      return;
+    }
+
+    // Otherwise, use local filtering for loaded contacts
     let filtered = contacts;
 
     if (searchTerm) {
@@ -1229,6 +1366,24 @@ export const SimpleContactManager = () => {
                   />
                 </div>
               </div>
+              
+              {/* Clear Search Button */}
+              {(searchTerm || tagFilter) && (
+                <div className="flex justify-center">
+                  <Button
+                    onClick={() => {
+                      setSearchTerm('');
+                      setTagFilter('');
+                      loadContacts(1, true); // Reset to first page
+                    }}
+                    variant="outline"
+                    size="sm"
+                    className="border-email-secondary text-email-secondary hover:bg-email-secondary/10"
+                  >
+                    Clear Search & Show All
+                  </Button>
+                </div>
+              )}
             </div>
           </div>
 
@@ -1330,6 +1485,38 @@ export const SimpleContactManager = () => {
                 ) : (
                   "No contacts match your filters"
                 )}
+              </div>
+            )}
+            
+            {/* Pagination Info and Load More Button */}
+            {!searchTerm && !tagFilter && (
+              <div className="mt-6 pt-4 border-t border-email-primary/10">
+                <div className="flex items-center justify-between mb-4">
+                  <div className="text-sm text-email-muted">
+                    Showing {contacts.length} of {totalContacts} contacts
+                  </div>
+                  {hasMoreContacts && (
+                    <Button
+                      onClick={loadMoreContacts}
+                      disabled={isLoadingMore}
+                      variant="outline"
+                      size="sm"
+                      className="border-email-primary text-email-primary hover:bg-email-primary/10"
+                    >
+                      {isLoadingMore ? (
+                        <>
+                          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-email-primary mr-2"></div>
+                          Loading...
+                        </>
+                      ) : (
+                        <>
+                          <Plus className="h-4 w-4 mr-2" />
+                          Load More ({CONTACTS_PER_PAGE} more)
+                        </>
+                      )}
+                    </Button>
+                  )}
+                </div>
               </div>
             )}
           </div>
