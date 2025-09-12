@@ -328,75 +328,69 @@ export const SmartListManager = () => {
 
   const populateDynamicList = async (listId: string, ruleConfig: any) => {
     try {
-      // Fetch fresh contacts from database instead of using stale state
-      const { data: freshContacts, error: contactsError } = await supabase
-        .from('contacts')
-        .select('id, first_name, last_name, email, tags')
-        .eq('user_id', user?.id)
-        .eq('status', 'subscribed');
-
-      if (contactsError) {
-        console.error('Error fetching contacts for dynamic list:', contactsError);
-        throw contactsError;
+      console.log(`🔄 Populating dynamic list ${listId} with rule:`, ruleConfig);
+      
+      // Extract tags from rule configuration
+      let tagsToMatch: string[] = [];
+      
+      if (ruleConfig.rules && Array.isArray(ruleConfig.rules)) {
+        // New rule format
+        for (const rule of ruleConfig.rules) {
+          if (rule.type === 'has_any_tags' && rule.values) {
+            tagsToMatch = [...tagsToMatch, ...rule.values];
+          }
+        }
+      } else if (ruleConfig.requiredTags && Array.isArray(ruleConfig.requiredTags)) {
+        // Legacy format
+        tagsToMatch = ruleConfig.requiredTags;
+      }
+      
+      console.log(`📋 Tags to match:`, tagsToMatch);
+      
+      if (tagsToMatch.length === 0) {
+        console.log('❌ No tags found in rule configuration');
+        return;
       }
 
-      // Enhanced rule evaluation logic
-      const matchingContacts = (freshContacts || []).filter(contact => {
-        if (!ruleConfig.rules || !Array.isArray(ruleConfig.rules)) {
-          // Legacy support for simple tag rules
-          if (ruleConfig.requiredTags && Array.isArray(ruleConfig.requiredTags)) {
-            return ruleConfig.requiredTags.some((tag: string) => 
-              contact.tags?.includes(tag)
-            );
-          }
-          return false;
-        }
-
-        const ruleResults = ruleConfig.rules.map((rule: any) => {
-          switch (rule.type) {
-            case 'has_any_tags':
-              return rule.values.some((tag: string) => contact.tags?.includes(tag));
-            case 'has_all_tags':
-              return rule.values.every((tag: string) => contact.tags?.includes(tag));
-            case 'not_has_tags':
-              return !rule.values.some((tag: string) => contact.tags?.includes(tag));
-            // List-based rules would need contact-list membership data
-            default:
-              return false;
-          }
-        });
-
-        // Apply global operator
-        if (ruleConfig.globalOperator === 'and') {
-          return ruleResults.every(result => result);
-        } else {
-          return ruleResults.some(result => result);
-        }
-      });
-
-      // Clear existing memberships first (for dynamic lists, we want to refresh completely)
+      // Clear existing memberships first
       await supabase
         .from('contact_lists')
         .delete()
         .eq('list_id', listId);
 
-      // Add matching contacts to the list
-      if (matchingContacts.length > 0) {
-        const memberships = matchingContacts.map(contact => ({
-          contact_id: contact.id,
-          list_id: listId
-        }));
+      // Add contacts that match any of the tags using PostgreSQL array operations
+      for (const tag of tagsToMatch) {
+        const { data: matchingContacts, error: contactsError } = await supabase
+          .from('contacts')
+          .select('id')
+          .eq('user_id', user?.id)
+          .eq('status', 'subscribed')
+          .contains('tags', [tag]);
 
-        const { error } = await supabase
-          .from('contact_lists')
-          .insert(memberships);
+        if (contactsError) {
+          console.error('Error fetching contacts for tag:', tag, contactsError);
+          continue;
+        }
 
-        if (error) {
-          console.error('Error populating dynamic list:', error);
-        } else {
-          console.log(`Added ${matchingContacts.length} contacts to dynamic list`);
+        if (matchingContacts && matchingContacts.length > 0) {
+          const memberships = matchingContacts.map(contact => ({
+            contact_id: contact.id,
+            list_id: listId
+          }));
+
+          const { error: insertError } = await supabase
+            .from('contact_lists')
+            .upsert(memberships, { onConflict: 'contact_id,list_id' });
+
+          if (insertError) {
+            console.error('Error inserting contacts for tag:', tag, insertError);
+          } else {
+            console.log(`✅ Added ${matchingContacts.length} contacts for tag: ${tag}`);
+          }
         }
       }
+      
+      console.log(`✅ Finished populating dynamic list ${listId}`);
     } catch (error) {
       console.error('Error populating dynamic list:', error);
     }
