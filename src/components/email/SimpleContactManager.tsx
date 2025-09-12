@@ -483,11 +483,19 @@ export const SimpleContactManager = () => {
   // CSV Import Functions
   const handleCsvFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
-    if (file && file.type === 'text/csv') {
-      setCsvFile(file);
-      previewCsv(file);
-    } else {
-      toast.error('Please select a valid CSV file');
+    if (file) {
+      // Check if it's a CSV file by extension or MIME type
+      const isCsv = file.name.toLowerCase().endsWith('.csv') || 
+                   file.type === 'text/csv' || 
+                   file.type === 'application/csv' ||
+                   file.type === 'text/plain';
+      
+      if (isCsv) {
+        setCsvFile(file);
+        previewCsv(file);
+      } else {
+        toast.error('Please select a valid CSV file');
+      }
     }
   };
 
@@ -520,8 +528,29 @@ export const SimpleContactManager = () => {
         
         // Skip header row if exists
         const dataLines = lines.slice(1);
+        // First, fetch all existing contacts in one query to avoid individual lookups
+        const { data: existingContacts, error: fetchError } = await supabase
+          .from('contacts')
+          .select('id, email, tags, first_name, last_name')
+          .eq('user_id', user?.id);
+
+        if (fetchError) {
+          console.error('Error fetching existing contacts:', fetchError);
+          toast.error('Failed to fetch existing contacts');
+          setIsImporting(false);
+          return;
+        }
+
+        // Create a map for quick lookup
+        const existingContactsMap = new Map();
+        existingContacts?.forEach(contact => {
+          existingContactsMap.set(contact.email.toLowerCase(), contact);
+        });
+
         let successCount = 0;
         let failureCount = 0;
+        const contactsToInsert = [];
+        const contactsToUpdate = [];
 
         for (const line of dataLines) {
           try {
@@ -551,56 +580,66 @@ export const SimpleContactManager = () => {
             const [firstName, ...rest] = name.split(/\s+/);
             const lastName = rest.join(" ");
 
-            // Check if contact already exists
-            const { data: existingContact } = await supabase
-              .from('contacts')
-              .select('id, tags, first_name, last_name')
-              .eq('user_id', user?.id)
-              .eq('email', email)
-              .single();
+            // Check if contact already exists using our map
+            const existingContact = existingContactsMap.get(email.toLowerCase());
 
             if (existingContact) {
-              // Contact exists - merge tags
+              // Contact exists - prepare for update
               const existingTags = existingContact.tags || [];
               const newTags = [...new Set([...existingTags, ...tags])]; // Remove duplicates
               
-              const { error } = await supabase
-                .from('contacts')
-                .update({
-                  first_name: firstName || existingContact.first_name || null,
-                  last_name: lastName || existingContact.last_name || null,
-                  tags: newTags.length ? newTags : null
-                })
-                .eq('id', existingContact.id);
-
-              if (error) {
-                console.error('Error updating existing contact:', error);
-                failureCount++;
-              } else {
-                successCount++;
-              }
+              contactsToUpdate.push({
+                id: existingContact.id,
+                first_name: firstName || existingContact.first_name || null,
+                last_name: lastName || existingContact.last_name || null,
+                tags: newTags.length ? newTags : null
+              });
             } else {
-              // Contact doesn't exist - create new
-              const { error } = await supabase
-                .from('contacts')
-                .insert({
-                  user_id: user?.id,
-                  email: email,
-                  first_name: firstName || null,
-                  last_name: lastName || null,
-                  tags: tags.length ? tags : null
-                });
-
-              if (error) {
-                console.error('Error importing contact:', error);
-                failureCount++;
-              } else {
-                successCount++;
-              }
+              // Contact doesn't exist - prepare for insert
+              contactsToInsert.push({
+                user_id: user?.id,
+                email: email,
+                first_name: firstName || null,
+                last_name: lastName || null,
+                tags: tags.length ? tags : null
+              });
             }
           } catch (error) {
             console.error('Error processing line:', error);
             failureCount++;
+          }
+        }
+
+        // Batch insert new contacts
+        if (contactsToInsert.length > 0) {
+          const { error: insertError } = await supabase
+            .from('contacts')
+            .insert(contactsToInsert);
+
+          if (insertError) {
+            console.error('Error inserting contacts:', insertError);
+            failureCount += contactsToInsert.length;
+          } else {
+            successCount += contactsToInsert.length;
+          }
+        }
+
+        // Batch update existing contacts
+        for (const contactUpdate of contactsToUpdate) {
+          const { error: updateError } = await supabase
+            .from('contacts')
+            .update({
+              first_name: contactUpdate.first_name,
+              last_name: contactUpdate.last_name,
+              tags: contactUpdate.tags
+            })
+            .eq('id', contactUpdate.id);
+
+          if (updateError) {
+            console.error('Error updating contact:', updateError);
+            failureCount++;
+          } else {
+            successCount++;
           }
         }
 
