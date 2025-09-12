@@ -121,9 +121,9 @@
 </head>
 <body class="bg-stone-100 text-gray-800 font-sans">
 
-<div id="component-wrapper" class="w-full max-w-6xl mx-auto relative">
+<div id="component-wrapper" class="w-full relative">
     <!-- Loading Skeletons -->
-    <div id="loading-skeletons" class="flex gap-4 py-8 px-4">
+    <div id="loading-skeletons" class="flex gap-4 py-8 px-2">
         <div class="skeleton-card w-64 h-96 rounded-2xl flex-shrink-0"></div>
         <div class="skeleton-card w-64 h-96 rounded-2xl flex-shrink-0"></div>
         <div class="skeleton-card w-64 h-96 rounded-2xl flex-shrink-0"></div>
@@ -132,8 +132,8 @@
     </div>
     
     <!-- Main Carousel - Hidden initially -->
-    <div id="carousel-wrapper" class="no-scrollbar w-full overflow-x-scroll scroll-smooth grab px-4 hidden">
-        <div id="carousel" class="flex gap-4 py-8 px-4">
+    <div id="carousel-wrapper" class="no-scrollbar w-full overflow-x-scroll scroll-smooth grab hidden">
+        <div id="carousel" class="flex gap-4 py-8 px-2">
         </div>
     </div>
 </div>
@@ -226,11 +226,6 @@
                                 <span class="font-medium text-white group-hover:text-blue-300 transition-colors">${review.user_instagram_handle}</span>
                             </a>
                         </div>
-                        ${review.tags && review.tags.length > 0 ? `
-                        <div class="flex flex-wrap gap-1 mt-2">
-                            ${review.tags.map(tag => `<span class="inline-block px-2 py-1 text-xs bg-white/20 text-white/90 rounded-full backdrop-blur-sm">${tag}</span>`).join('')}
-                        </div>
-                        ` : ''}
                     </div>
                 </div>
             </div>`;
@@ -291,7 +286,7 @@
                 .from('reviews')
                 .select('*')
                 .eq('is_active', true)
-                .contains('tags', ['lazy motion']) // Only load reviews with "lazy motion" tag
+                .filter('tags', 'cs', '{lazy motion}') // Only load reviews with "lazy motion" tag
                 .order('sort_order', { ascending: true })
                 .order('created_at', { ascending: false })
                 .limit(20); // Limit to 20 reviews for better performance
@@ -381,6 +376,11 @@
         if (reviewsToAdd.length > 0) {
             document.getElementById('loading-skeletons').classList.add('hidden');
             document.getElementById('carousel-wrapper').classList.remove('hidden');
+            
+            // Set initial scroll position after carousel is visible
+            setTimeout(() => {
+                setInitialScrollPosition();
+            }, 100);
         } else {
             // No data - keep skeletons visible to maintain space
             document.getElementById('loading-skeletons').classList.remove('hidden');
@@ -390,6 +390,15 @@
         isLoading = false;
     }
     
+
+    function setInitialScrollPosition() {
+        const carouselWrapper = document.getElementById('carousel-wrapper');
+        if (!carouselWrapper || isMobile) return;
+        
+        // Start at the very beginning - first card at the edge
+        const initialScrollPosition = 0;
+        carouselWrapper.scrollLeft = initialScrollPosition;
+    }
 
     function initializeCarousel() {
         const carouselWrapper = document.getElementById('carousel-wrapper');

@@ -551,21 +551,52 @@ export const SimpleContactManager = () => {
             const [firstName, ...rest] = name.split(/\s+/);
             const lastName = rest.join(" ");
 
-            const { error } = await supabase
+            // Check if contact already exists
+            const { data: existingContact } = await supabase
               .from('contacts')
-              .insert({
-                user_id: user?.id,
-                email: email,
-                first_name: firstName || null,
-                last_name: lastName || null,
-                tags: tags.length ? tags : null
-              });
+              .select('id, tags, first_name, last_name')
+              .eq('user_id', user?.id)
+              .eq('email', email)
+              .single();
 
-            if (error) {
-              console.error('Error importing contact:', error);
-              failureCount++;
+            if (existingContact) {
+              // Contact exists - merge tags
+              const existingTags = existingContact.tags || [];
+              const newTags = [...new Set([...existingTags, ...tags])]; // Remove duplicates
+              
+              const { error } = await supabase
+                .from('contacts')
+                .update({
+                  first_name: firstName || existingContact.first_name || null,
+                  last_name: lastName || existingContact.last_name || null,
+                  tags: newTags.length ? newTags : null
+                })
+                .eq('id', existingContact.id);
+
+              if (error) {
+                console.error('Error updating existing contact:', error);
+                failureCount++;
+              } else {
+                successCount++;
+              }
             } else {
-              successCount++;
+              // Contact doesn't exist - create new
+              const { error } = await supabase
+                .from('contacts')
+                .insert({
+                  user_id: user?.id,
+                  email: email,
+                  first_name: firstName || null,
+                  last_name: lastName || null,
+                  tags: tags.length ? tags : null
+                });
+
+              if (error) {
+                console.error('Error importing contact:', error);
+                failureCount++;
+              } else {
+                successCount++;
+              }
             }
           } catch (error) {
             console.error('Error processing line:', error);
