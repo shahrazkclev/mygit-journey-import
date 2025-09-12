@@ -54,7 +54,7 @@ export const SmartListManager = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [hasMoreContacts, setHasMoreContacts] = useState(true);
   const [isLoadingMoreContacts, setIsLoadingMoreContacts] = useState(false);
-  const CONTACTS_PER_PAGE = 50;
+  const CONTACTS_PER_PAGE = 1000;
   
   // Edit list state
   const [showEditListDialog, setShowEditListDialog] = useState(false);

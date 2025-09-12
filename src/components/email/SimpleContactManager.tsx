@@ -50,7 +50,7 @@ export const SimpleContactManager = () => {
   const [hasMoreContacts, setHasMoreContacts] = useState(true);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [totalContacts, setTotalContacts] = useState(0);
-  const CONTACTS_PER_PAGE = 50;
+  const CONTACTS_PER_PAGE = 1000;
   const [isMakeIntegrationOpen, setIsMakeIntegrationOpen] = useState(false);
   
   // Bulk operations state
