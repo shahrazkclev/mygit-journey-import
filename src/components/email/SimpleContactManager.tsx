@@ -299,68 +299,6 @@ export const SimpleContactManager = () => {
     }
   };
 
-  const loadAllTags = async () => {
-    try {
-      // Get tags from contacts
-      const { data: contacts, error: contactsError } = await supabase
-        .from('contacts')
-        .select('tags')
-        .eq('user_id', user?.id);
-
-      if (contactsError) throw contactsError;
-
-      // Get tags from existing tag rules
-      const { data: tagRules, error: rulesError } = await supabase
-        .from('tag_rules')
-        .select('trigger_tags, add_tags, remove_tags')
-        .eq('user_id', user?.id);
-
-      if (rulesError) throw rulesError;
-
-      // Get products for tag suggestions
-      const { data: products, error: productsError } = await supabase
-        .from('products')
-        .select('name, category')
-        .eq('user_id', user?.id);
-
-      if (productsError) throw productsError;
-
-      // Combine all tags
-      const allTagsSet = new Set<string>();
-      
-      // Add tags from contacts
-      contacts?.forEach(contact => {
-        if (contact.tags) {
-          contact.tags.forEach((tag: string) => allTagsSet.add(tag.trim()));
-        }
-      });
-
-      // Add tags from rules
-      tagRules?.forEach(rule => {
-        if (rule.trigger_tags) {
-          rule.trigger_tags.forEach((tag: string) => allTagsSet.add(tag.trim()));
-        }
-        if (rule.add_tags) {
-          rule.add_tags.forEach((tag: string) => allTagsSet.add(tag.trim()));
-        }
-        if (rule.remove_tags) {
-          rule.remove_tags.forEach((tag: string) => allTagsSet.add(tag.trim()));
-        }
-      });
-
-      // Add product names as tag suggestions
-      products?.forEach(product => {
-        allTagsSet.add(product.name.trim());
-        if (product.category) {
-          allTagsSet.add(product.category.trim());
-        }
-      });
-
-      setAllTags(Array.from(allTagsSet).filter(Boolean).sort());
-    } catch (error) {
-      console.error('Error loading tags:', error);
-    }
-  };
 
   const searchContacts = async (searchQuery: string = searchTerm, tagQuery: string = tagFilter) => {
     try {

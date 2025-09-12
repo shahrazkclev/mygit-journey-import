@@ -9,7 +9,10 @@ export default defineConfig(({ mode }) => ({
     outDir: 'build',
     sourcemap: false,
     target: 'esnext',
-    minify: 'esbuild'
+    minify: 'esbuild',
+    rollupOptions: {
+      external: ['sharp']
+    }
   },
 
   // Server configuration
