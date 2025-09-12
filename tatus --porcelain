@@ -1,0 +1,11 @@
+[33mcommit f9f742836fbfa378a92fbbc2d2f9cfffebcdd9ac[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m)[m
+Author: shahraz <cleverpoly.store@gmail.com>
+Date:   Fri Sep 12 22:43:49 2025 +0500
+
+    Refactor data loading in ContactManager, EmailListManager, and SmartListManager to utilize parallel loading for improved performance. Implement error handling for individual data fetch failures and enhance logging for better monitoring. Introduce a new PerformanceMonitor utility for tracking loading times and optimize database queries with new indexes for frequently accessed columns.
+
+src/components/email/ContactManager.tsx
+src/components/email/EmailListManager.tsx
+src/components/email/SmartListManager.tsx
+src/utils/performance.ts
+supabase/migrations/20250115000001_add_performance_indexes.sql

@@ -133,7 +133,7 @@ export const ContactManager: React.FC = () => {
     }
   };
 
-  const loadContacts = async (page: number = 1, limit: number = 1000) => {
+  const loadContacts = async (page: number = 1, limit: number = 100) => {
     try {
       if (!user?.id) {
         console.log('❌ No user ID available');
