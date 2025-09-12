@@ -78,13 +78,10 @@ export const SmartListManager = () => {
 
   const loadData = async () => {
     try {
-      // Load lists with contact counts
+      // Load lists first
       const { data: listsData, error: listsError } = await supabase
         .from('email_lists')
-        .select(`
-          *,
-          contact_lists(count)
-        `)
+        .select('*')
         .eq('user_id', user?.id)
         .order('created_at', { ascending: false });
 
@@ -94,15 +91,22 @@ export const SmartListManager = () => {
         return;
       }
 
-      // Process lists with contact counts and narrow types
-      const processedLists: EmailList[] = (listsData || []).map((list: any) => ({
-        id: list.id,
-        name: list.name,
-        description: list.description || "",
-        list_type: list.list_type === 'dynamic' ? 'dynamic' : 'static',
-        rule_config: list.rule_config ?? null,
-        created_at: list.created_at,
-        contact_count: list.contact_lists?.[0]?.count || 0,
+      // Calculate contact count for each list by querying database directly
+      const processedLists: EmailList[] = await Promise.all((listsData || []).map(async (list: any) => {
+        const { count } = await supabase
+          .from('contact_lists')
+          .select('*', { count: 'exact', head: true })
+          .eq('list_id', list.id);
+        
+        return {
+          id: list.id,
+          name: list.name,
+          description: list.description || "",
+          list_type: list.list_type === 'dynamic' ? 'dynamic' : 'static',
+          rule_config: list.rule_config ?? null,
+          created_at: list.created_at,
+          contact_count: count || 0,
+        };
       }));
 
       setLists(processedLists);

@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -122,6 +122,15 @@ export const SimpleContactManager = () => {
   useEffect(() => {
     debouncedSearch(searchTerm, tagFilter);
   }, [searchTerm, tagFilter, debouncedSearch]);
+
+  // Cleanup timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (searchTimeoutRef.current) {
+        clearTimeout(searchTimeoutRef.current);
+      }
+    };
+  }, []);
 
   // Generate name from email if no name provided
   const generateNameFromEmail = (email: string): string => {
@@ -251,23 +260,22 @@ export const SimpleContactManager = () => {
     }
   };
 
-  // Debounced search function
-  const debouncedSearch = useCallback(
-    (() => {
-      let timeoutId: NodeJS.Timeout;
-      return (searchQuery: string, tagQuery: string) => {
-        clearTimeout(timeoutId);
-        timeoutId = setTimeout(() => {
-          if (searchQuery.trim() || tagQuery.trim()) {
-            searchContacts(searchQuery, tagQuery);
-          } else {
-            loadContacts(1, true); // Reset to first page if no search
-          }
-        }, 300); // 300ms delay
-      };
-    })(),
-    []
-  );
+  // Debounced search using ref
+  const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  
+  const debouncedSearch = useCallback((searchQuery: string, tagQuery: string) => {
+    if (searchTimeoutRef.current) {
+      clearTimeout(searchTimeoutRef.current);
+    }
+    
+    searchTimeoutRef.current = setTimeout(() => {
+      if (searchQuery.trim() || tagQuery.trim()) {
+        searchContacts(searchQuery, tagQuery);
+      } else {
+        loadContacts(1, true); // Reset to first page if no search
+      }
+    }, 300); // 300ms delay
+  }, []);
 
   const loadEmailLists = async () => {
     try {
