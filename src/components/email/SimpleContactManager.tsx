@@ -85,6 +85,7 @@ export const SimpleContactManager = () => {
     tags: 3
   });
   const [isImporting, setIsImporting] = useState(false);
+  const [importProgress, setImportProgress] = useState({ current: 0, total: 0 });
 
   // Make.com webhook URL
   const [webhookUrl] = useState(() => 
@@ -551,8 +552,15 @@ export const SimpleContactManager = () => {
         let failureCount = 0;
         const contactsToInsert = [];
         const contactsToUpdate = [];
+        
+        // Set total count for progress tracking
+        setImportProgress({ current: 0, total: dataLines.length });
 
-        for (const line of dataLines) {
+        for (let i = 0; i < dataLines.length; i++) {
+          const line = dataLines[i];
+          
+          // Update progress
+          setImportProgress({ current: i + 1, total: dataLines.length });
           try {
             const cells = line.split(',').map(cell => cell.replace(/"/g, '').trim());
             
@@ -643,11 +651,21 @@ export const SimpleContactManager = () => {
           }
         }
 
-        toast.success(`Imported ${successCount} contacts successfully! ${failureCount} failed.`);
+        // Show detailed success message
+        if (successCount > 0) {
+          toast.success(`✅ Import completed! ${successCount} contacts processed successfully${failureCount > 0 ? `, ${failureCount} failed` : ''}`);
+        } else {
+          toast.error(`❌ Import failed! ${failureCount} contacts failed to import`);
+        }
+        
+        // Close dialog and reset state
         setShowCsvImportDialog(false);
         setCsvFile(null);
         setCsvPreview([]);
-        loadContacts();
+        setImportProgress({ current: 0, total: 0 });
+        
+        // Reload contacts to show updated data
+        await loadContacts();
       };
 
       reader.readAsText(csvFile);
@@ -1066,7 +1084,11 @@ export const SimpleContactManager = () => {
                         {isImporting ? (
                           <>
                             <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                            Importing...
+                            {importProgress.total > 0 ? (
+                              `Processing ${importProgress.current}/${importProgress.total}...`
+                            ) : (
+                              'Importing...'
+                            )}
                           </>
                         ) : (
                           <>
