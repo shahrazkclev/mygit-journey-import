@@ -113,20 +113,34 @@ export const EmailListManager = () => {
       if (contactsError) throw contactsError;
       if (contactListsError) throw contactListsError;
 
-      // Use JOIN query to get contact counts efficiently
-      const { data: listsWithCountsData, error: listsWithCountsError } = await supabase
-        .from('email_lists')
-        .select(`
-          *,
-          contact_lists(count)
-        `)
-        .order('created_at', { ascending: false });
+      // Get accurate contact counts for each list using separate queries
+      const listsWithCounts = await Promise.all((listsData || []).map(async (list: any) => {
+        let contactCount = 0;
+        
+        if (list.list_type === 'dynamic' && list.rule_config) {
+          // For dynamic lists, count based on rules
+          const { count } = await supabase
+            .from('contacts')
+            .select('*', { count: 'exact', head: true })
+            .eq('user_id', user?.id)
+            .eq('status', 'subscribed')
+            .contains('tags', list.rule_config.requiredTags || []);
+          
+          contactCount = count || 0;
+        } else {
+          // For static lists, count from contact_lists table
+          const { count } = await supabase
+            .from('contact_lists')
+            .select('*', { count: 'exact', head: true })
+            .eq('list_id', list.id);
+          
+          contactCount = count || 0;
+        }
 
-      if (listsWithCountsError) throw listsWithCountsError;
-
-      const listsWithCounts = (listsWithCountsData || []).map((list: any) => ({
-        ...list,
-        contact_count: list.contact_lists?.[0]?.count || 0
+        return {
+          ...list,
+          contact_count: contactCount
+        };
       }));
 
       setLists(listsWithCounts);

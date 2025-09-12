@@ -54,7 +54,7 @@ export const SmartListManager = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [hasMoreContacts, setHasMoreContacts] = useState(true);
   const [isLoadingMoreContacts, setIsLoadingMoreContacts] = useState(false);
-  const CONTACTS_PER_PAGE = 1000;
+  const CONTACTS_PER_PAGE = 50;
   
   // Edit list state
   const [showEditListDialog, setShowEditListDialog] = useState(false);
@@ -98,13 +98,10 @@ export const SmartListManager = () => {
       console.log('🚀 Loading smart lists data...');
       const startTime = performance.now();
 
-      // Load lists with contact counts in a single query using JOIN
+      // Load lists first
       const { data: listsData, error: listsError } = await supabase
         .from('email_lists')
-        .select(`
-          *,
-          contact_lists(count)
-        `)
+        .select('*')
         .eq('user_id', user?.id)
         .order('created_at', { ascending: false });
 
@@ -114,15 +111,39 @@ export const SmartListManager = () => {
         return;
       }
 
-      // Process lists with contact counts from the JOIN query
-      const processedLists: EmailList[] = (listsData || []).map((list: any) => ({
-        id: list.id,
-        name: list.name,
-        description: list.description || "",
-        list_type: list.list_type === 'dynamic' ? 'dynamic' : 'static',
-        rule_config: list.rule_config ?? null,
-        created_at: list.created_at,
-        contact_count: list.contact_lists?.[0]?.count || 0,
+      // Get accurate contact counts for each list using separate queries
+      const processedLists: EmailList[] = await Promise.all((listsData || []).map(async (list: any) => {
+        let contactCount = 0;
+        
+        if (list.list_type === 'dynamic' && list.rule_config) {
+          // For dynamic lists, count based on rules
+          const { count } = await supabase
+            .from('contacts')
+            .select('*', { count: 'exact', head: true })
+            .eq('user_id', user?.id)
+            .eq('status', 'subscribed')
+            .contains('tags', list.rule_config.requiredTags || []);
+          
+          contactCount = count || 0;
+        } else {
+          // For static lists, count from contact_lists table
+          const { count } = await supabase
+            .from('contact_lists')
+            .select('*', { count: 'exact', head: true })
+            .eq('list_id', list.id);
+          
+          contactCount = count || 0;
+        }
+
+        return {
+          id: list.id,
+          name: list.name,
+          description: list.description || "",
+          list_type: list.list_type === 'dynamic' ? 'dynamic' : 'static',
+          rule_config: list.rule_config ?? null,
+          created_at: list.created_at,
+          contact_count: contactCount,
+        };
       }));
 
       setLists(processedLists);
