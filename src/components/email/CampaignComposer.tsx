@@ -817,7 +817,7 @@ export const CampaignComposer: React.FC<CampaignComposerProps> = ({ onSave }) =>
         .from('campaigns')
         .select('*')
         .eq('user_id', user?.id)
-        .eq('status', 'paused')
+        .in('status', ['paused', 'sending'])
         .order('created_at', { ascending: false });
 
       if (error) throw error;
@@ -845,18 +845,35 @@ export const CampaignComposer: React.FC<CampaignComposerProps> = ({ onSave }) =>
     }
   };
 
+  const pauseCampaign = async (campaignId: string) => {
+    try {
+      const response = await api.pauseCampaign(campaignId);
+      
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`Failed to pause campaign: ${errorText}`);
+      }
+
+      toast.success('Campaign paused successfully');
+      loadPausedCampaigns(); // Refresh the list
+    } catch (error) {
+      console.error('Error pausing campaign:', error);
+      toast.error('Failed to pause campaign');
+    }
+  };
+
   return (
     <div className="space-y-6">
-      {/* Paused Campaigns Section */}
+      {/* Active Campaigns Section */}
       {pausedCampaigns.length > 0 && (
         <Card className="shadow-soft bg-gradient-to-br from-orange-50 to-red-50 border-orange-200">
           <CardHeader>
             <CardTitle className="text-orange-700 flex items-center gap-2">
               <Pause className="h-5 w-5" />
-              Paused Campaigns
+              Active Campaigns
             </CardTitle>
             <CardDescription>
-              You have {pausedCampaigns.length} paused campaign{pausedCampaigns.length > 1 ? 's' : ''} that can be resumed
+              You have {pausedCampaigns.length} active campaign{pausedCampaigns.length > 1 ? 's' : ''} that can be managed
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -864,21 +881,40 @@ export const CampaignComposer: React.FC<CampaignComposerProps> = ({ onSave }) =>
               {pausedCampaigns.map((campaign) => (
                 <div key={campaign.id} className="flex items-center justify-between p-3 bg-white rounded-lg border border-orange-200">
                   <div className="flex-1">
-                    <h4 className="font-medium text-gray-900">{campaign.name}</h4>
+                    <div className="flex items-center gap-2 mb-1">
+                      <h4 className="font-medium text-gray-900">{campaign.name}</h4>
+                      <Badge variant={campaign.status === 'sending' ? 'default' : 'secondary'}>
+                        {campaign.status === 'sending' ? 'Sending' : 'Paused'}
+                      </Badge>
+                    </div>
                     <p className="text-sm text-gray-600">{campaign.subject}</p>
                     <div className="flex items-center gap-4 mt-1 text-xs text-gray-500">
                       <span>Sent: {campaign.sent_count || 0}/{campaign.total_recipients || 0}</span>
                       <span>Created: {new Date(campaign.created_at).toLocaleDateString()}</span>
                     </div>
                   </div>
-                  <Button
-                    size="sm"
-                    onClick={() => resumeCampaign(campaign.id)}
-                    className="bg-orange-600 hover:bg-orange-700 text-white"
-                  >
-                    <Play className="h-4 w-4 mr-1" />
-                    Resume
-                  </Button>
+                  <div className="flex gap-2">
+                    {campaign.status === 'paused' && (
+                      <Button
+                        size="sm"
+                        onClick={() => resumeCampaign(campaign.id)}
+                        className="bg-green-600 hover:bg-green-700 text-white"
+                      >
+                        <Play className="h-4 w-4 mr-1" />
+                        Resume
+                      </Button>
+                    )}
+                    {campaign.status === 'sending' && (
+                      <Button
+                        size="sm"
+                        onClick={() => pauseCampaign(campaign.id)}
+                        className="bg-orange-600 hover:bg-orange-700 text-white"
+                      >
+                        <Pause className="h-4 w-4 mr-1" />
+                        Pause
+                      </Button>
+                    )}
+                  </div>
                 </div>
               ))}
             </div>

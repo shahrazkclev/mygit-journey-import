@@ -181,6 +181,23 @@ export const CampaignHistory: React.FC = () => {
     }
   };
 
+  const pauseCampaign = async (campaignId: string) => {
+    try {
+      const response = await api.pauseCampaign(campaignId);
+      
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`Failed to pause campaign: ${errorText}`);
+      }
+
+      toast.success('Campaign paused successfully');
+      loadCampaigns();
+    } catch (error) {
+      console.error('Error pausing campaign:', error);
+      toast.error('Failed to pause campaign');
+    }
+  };
+
   const bulkDeleteCampaigns = async () => {
     if (selectedCampaigns.size === 0) return;
     
@@ -684,6 +701,21 @@ export const CampaignHistory: React.FC = () => {
                               title="Resume Campaign"
                             >
                               <Play className="h-4 w-4" />
+                            </Button>
+                          )}
+
+                          {campaign.status === 'sending' && (
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                pauseCampaign(campaign.id);
+                              }}
+                              className="h-8 w-8 p-0 text-orange-600 hover:text-orange-700"
+                              title="Pause Campaign"
+                            >
+                              <Pause className="h-4 w-4" />
                             </Button>
                           )}
                           
