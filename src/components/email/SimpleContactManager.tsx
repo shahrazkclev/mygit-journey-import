@@ -121,7 +121,7 @@ export const SimpleContactManager = () => {
 
   useEffect(() => {
     debouncedSearch(searchTerm, tagFilter);
-  }, [searchTerm, tagFilter, debouncedSearch]);
+  }, [searchTerm, tagFilter]);
 
   // Cleanup timeout on unmount
   useEffect(() => {

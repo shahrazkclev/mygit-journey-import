@@ -260,8 +260,20 @@ export const SmartListManager = () => {
 
   const populateDynamicList = async (listId: string, ruleConfig: any) => {
     try {
+      // Fetch fresh contacts from database instead of using stale state
+      const { data: freshContacts, error: contactsError } = await supabase
+        .from('contacts')
+        .select('id, first_name, last_name, email, tags')
+        .eq('user_id', user?.id)
+        .eq('status', 'subscribed');
+
+      if (contactsError) {
+        console.error('Error fetching contacts for dynamic list:', contactsError);
+        throw contactsError;
+      }
+
       // Enhanced rule evaluation logic
-      const matchingContacts = contacts.filter(contact => {
+      const matchingContacts = (freshContacts || []).filter(contact => {
         if (!ruleConfig.rules || !Array.isArray(ruleConfig.rules)) {
           // Legacy support for simple tag rules
           if (ruleConfig.requiredTags && Array.isArray(ruleConfig.requiredTags)) {
