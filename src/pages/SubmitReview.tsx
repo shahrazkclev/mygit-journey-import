@@ -268,7 +268,10 @@ const SubmitReview = () => {
         return formData.mediaUrl;
       case 3:
         const wordCount = formData.description.split(' ').filter(word => word.length > 0).length;
-        return formData.rating > 0 && wordCount >= 3 && wordCount <= 8;
+        // Allow longer text for image media (up to 50 words), shorter for video (3-8 words)
+        const maxWords = formData.mediaType === 'image' ? 50 : 8;
+        const minWords = formData.mediaType === 'image' ? 5 : 3;
+        return formData.rating > 0 && wordCount >= minWords && wordCount <= maxWords;
       default:
         return false;
     }
@@ -322,7 +325,7 @@ const SubmitReview = () => {
                 </svg>
               ))}
             </div>
-            <p className={`${isMobile ? 'text-xs' : 'text-sm'} text-white/90 line-clamp-2`}>
+            <p className={`${isMobile ? 'text-xs' : 'text-sm'} text-white/90 ${description && description.split(' ').length > 15 ? 'line-clamp-3' : 'line-clamp-2'}`}>
               "{description || 'Your review will appear here...'}"
             </p>
             <div className={`flex items-center space-x-2 ${isMobile ? 'text-xs' : 'text-sm'}`}>
@@ -580,17 +583,21 @@ const SubmitReview = () => {
               <div>
                 <label className="block text-sm font-medium mb-2">Review Text *</label>
                 <div className="mb-2 text-xs text-muted-foreground">
-                  {formData.description.split(' ').filter(word => word.length > 0).length}/8 words
+                  {formData.description.split(' ').filter(word => word.length > 0).length}/{formData.mediaType === 'image' ? '50' : '8'} words
+                  {formData.mediaType === 'image' && (
+                    <span className="text-green-600 ml-2">✓ Longer text allowed for images</span>
+                  )}
                 </div>
                 <Textarea
                   value={formData.description}
                   onChange={(e) => {
                     const words = e.target.value.split(' ').filter(word => word.length > 0);
-                    if (words.length <= 8) {
+                    const maxWords = formData.mediaType === 'image' ? 50 : 8;
+                    if (words.length <= maxWords) {
                       setFormData({ ...formData, description: e.target.value });
                     }
                   }}
-                  placeholder="Write your review (3-8 words)..."
+                  placeholder={formData.mediaType === 'image' ? "Write your detailed review (5-50 words)..." : "Write your review (3-8 words)..."}
                   rows={isMobile ? 6 : 8}
                   className="resize-none text-base"
                 />
