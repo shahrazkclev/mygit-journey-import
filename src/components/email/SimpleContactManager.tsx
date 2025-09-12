@@ -684,6 +684,8 @@ export const SimpleContactManager = () => {
         existingContacts?.forEach(contact => {
           existingContactsMap.set(contact.email.toLowerCase(), contact);
         });
+        
+        console.log(`📋 Found ${existingContacts?.length || 0} existing contacts for lookup`);
 
         let successCount = 0;
         let failureCount = 0;
@@ -727,11 +729,18 @@ export const SimpleContactManager = () => {
 
             // Check if contact already exists using our map
             const existingContact = existingContactsMap.get(email.toLowerCase());
+            console.log(`🔍 Checking for existing contact: ${email} -> ${existingContact ? 'FOUND' : 'NOT FOUND'}`);
 
             if (existingContact) {
               // Contact exists - prepare for update
               const existingTags = existingContact.tags || [];
               const newTags = [...new Set([...existingTags, ...tags])]; // Remove duplicates
+              
+              console.log(`🔄 Updating existing contact ${email}:`, {
+                existingTags,
+                newTagsFromCSV: tags,
+                mergedTags: newTags
+              });
               
               contactsToUpdate.push({
                 id: existingContact.id,
@@ -771,6 +780,8 @@ export const SimpleContactManager = () => {
 
         // Batch update existing contacts
         for (const contactUpdate of contactsToUpdate) {
+          console.log(`📝 Updating contact ${contactUpdate.id} with tags:`, contactUpdate.tags);
+          
           const { error: updateError } = await supabase
             .from('contacts')
             .update({
@@ -781,9 +792,10 @@ export const SimpleContactManager = () => {
             .eq('id', contactUpdate.id);
 
           if (updateError) {
-            console.error('Error updating contact:', updateError);
+            console.error('❌ Error updating contact:', updateError);
             failureCount++;
           } else {
+            console.log(`✅ Successfully updated contact ${contactUpdate.id}`);
             successCount++;
           }
         }
