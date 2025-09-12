@@ -119,12 +119,21 @@ export const SimpleContactManager = () => {
     return () => window.removeEventListener('contactsUpdated', handleContactsUpdated);
   }, []);
 
-  useEffect(() => {
-    // Only trigger search if there are actual search terms
+  // Manual search function
+  const handleManualSearch = () => {
     if (searchTerm.trim() || tagFilter.trim()) {
-      debouncedSearch(searchTerm, tagFilter);
+      searchContacts(searchTerm, tagFilter);
+    } else {
+      loadContacts(1, true); // Reset to show all contacts
     }
-  }, [searchTerm, tagFilter]);
+  };
+
+  // Handle Enter key press
+  const handleKeyPress = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      handleManualSearch();
+    }
+  };
 
   // Cleanup timeout on unmount
   useEffect(() => {
@@ -1355,6 +1364,7 @@ export const SimpleContactManager = () => {
                     placeholder="Search by name or email..."
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
+                    onKeyPress={handleKeyPress}
                     className="border-email-primary/30 focus:border-email-primary focus:ring-2 focus:ring-email-primary/20 bg-white/80 backdrop-blur-sm shadow-sm hover:shadow-md transition-all duration-200"
                   />
                 </div>
@@ -1363,19 +1373,27 @@ export const SimpleContactManager = () => {
                     <div className="w-2 h-2 bg-email-accent rounded-full"></div>
                     <span>Filter by Tag</span>
                   </Label>
-                  <Input
-                    id="filter-tags"
-                    placeholder="Enter tag to filter..."
+                  <TagInput
                     value={tagFilter}
-                    onChange={(e) => setTagFilter(e.target.value)}
+                    onChange={(value) => setTagFilter(value)}
+                    suggestions={allTags}
+                    placeholder="Enter tag to filter..."
+                    onKeyPress={handleKeyPress}
                     className="border-email-primary/30 focus:border-email-primary focus:ring-2 focus:ring-email-primary/20 bg-white/80 backdrop-blur-sm shadow-sm hover:shadow-md transition-all duration-200"
                   />
                 </div>
               </div>
               
-              {/* Clear Search Button */}
-              {(searchTerm || tagFilter) && (
-                <div className="flex justify-center">
+              {/* Search and Clear Buttons */}
+              <div className="flex justify-center gap-3">
+                <Button
+                  onClick={handleManualSearch}
+                  size="sm"
+                  className="bg-email-primary hover:bg-email-primary/90 text-white shadow-sm"
+                >
+                  Search
+                </Button>
+                {(searchTerm || tagFilter) && (
                   <Button
                     onClick={() => {
                       setSearchTerm('');
@@ -1386,10 +1404,10 @@ export const SimpleContactManager = () => {
                     size="sm"
                     className="border-email-secondary text-email-secondary hover:bg-email-secondary/10"
                   >
-                    Clear Search & Show All
+                    Clear & Show All
                   </Button>
-                </div>
-              )}
+                )}
+              </div>
             </div>
           </div>
 

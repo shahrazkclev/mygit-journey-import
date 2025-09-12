@@ -50,6 +50,12 @@ export const SmartListManager = () => {
   const [contactSearchTerm, setContactSearchTerm] = useState('');
   const [filteredContactIds, setFilteredContactIds] = useState<string[]>([]);
   
+  // Pagination for manage contacts
+  const [currentPage, setCurrentPage] = useState(1);
+  const [hasMoreContacts, setHasMoreContacts] = useState(true);
+  const [isLoadingMoreContacts, setIsLoadingMoreContacts] = useState(false);
+  const CONTACTS_PER_PAGE = 50;
+  
   // Edit list state
   const [showEditListDialog, setShowEditListDialog] = useState(false);
   const [editingList, setEditingList] = useState<EmailList | null>(null);
@@ -121,6 +127,28 @@ export const SmartListManager = () => {
       }));
 
       setLists(processedLists);
+
+      // Populate dynamic lists with current contacts
+      for (const list of processedLists) {
+        if (list.list_type === 'dynamic' && list.rule_config) {
+          await populateDynamicList(list.id, list.rule_config);
+        }
+      }
+
+      // Get updated counts after populating dynamic lists
+      const updatedLists: EmailList[] = await Promise.all(processedLists.map(async (list: any) => {
+        const { count } = await supabase
+          .from('contact_lists')
+          .select('*', { count: 'exact', head: true })
+          .eq('list_id', list.id);
+        
+        return {
+          ...list,
+          contact_count: count || 0,
+        };
+      }));
+
+      setLists(updatedLists);
 
       // Load contacts for tag suggestions
       const { data: contactsData, error: contactsError } = await supabase
@@ -422,57 +450,107 @@ export const SmartListManager = () => {
     }
   };
 
-  const handleManageContacts = async (list: EmailList) => {
-    setSelectedListForManagement(list);
-    setShowManageContactsDialog(true);
-    
-    // Load all contacts
-    const { data: allContactsData, error: contactsError } = await supabase
-      .from('contacts')
-      .select('id, first_name, last_name, email, tags')
-      .eq('user_id', user?.id);
+  const loadContactsForList = async (list: EmailList, page: number = 1, searchTerm: string = '', reset: boolean = true) => {
+    try {
+      if (reset) {
+        setCurrentPage(1);
+        setIsLoadingMoreContacts(false);
+      } else {
+        setIsLoadingMoreContacts(true);
+      }
 
-    if (contactsError) {
-      console.error('Error loading contacts:', contactsError);
-      return;
-    }
+      const from = (page - 1) * CONTACTS_PER_PAGE;
+      const to = from + CONTACTS_PER_PAGE - 1;
 
-    // Load contacts already in this list
-    const { data: listMemberships, error: membershipError } = await supabase
-      .from('contact_lists')
-      .select(`
-        contact_id,
-        contacts(id, first_name, last_name, email, tags)
-      `)
-      .eq('list_id', list.id);
+      // Build query with search
+      let query = supabase
+        .from('contacts')
+        .select('id, first_name, last_name, email, tags')
+        .eq('user_id', user?.id)
+        .eq('status', 'subscribed')
+        .order('created_at', { ascending: false })
+        .range(from, to);
 
-    if (membershipError) {
-      console.error('Error loading list memberships:', membershipError);
-      return;
-    }
+      if (searchTerm.trim()) {
+        query = query.or(`email.ilike.%${searchTerm}%,first_name.ilike.%${searchTerm}%,last_name.ilike.%${searchTerm}%`);
+      }
 
-    const processedContacts: Contact[] = (allContactsData || []).map((c: any) => ({
-      id: c.id,
-      name: [c.first_name, c.last_name].filter(Boolean).join(' ').trim(),
-      email: c.email,
-      tags: c.tags ?? [],
-    }));
+      const { data: contactsData, error: contactsError } = await query;
 
-    const contactsInList = (listMemberships || [])
-      .map((membership: any) => membership.contacts)
-      .filter(Boolean)
-      .map((c: any) => ({
+      if (contactsError) {
+        console.error('Error loading contacts:', contactsError);
+        return;
+      }
+
+      // Load contacts already in this list
+      const { data: listMemberships, error: membershipError } = await supabase
+        .from('contact_lists')
+        .select(`
+          contact_id,
+          contacts(id, first_name, last_name, email, tags)
+        `)
+        .eq('list_id', list.id);
+
+      if (membershipError) {
+        console.error('Error loading list memberships:', membershipError);
+        return;
+      }
+
+      const processedContacts: Contact[] = (contactsData || []).map((c: any) => ({
         id: c.id,
         name: [c.first_name, c.last_name].filter(Boolean).join(' ').trim(),
         email: c.email,
         tags: c.tags ?? [],
       }));
 
-    const contactsInListIds = new Set(contactsInList.map(c => c.id));
-    const availableForAddition = processedContacts.filter(c => !contactsInListIds.has(c.id));
+      const contactsInList = (listMemberships || [])
+        .map((membership: any) => membership.contacts)
+        .filter(Boolean)
+        .map((c: any) => ({
+          id: c.id,
+          name: [c.first_name, c.last_name].filter(Boolean).join(' ').trim(),
+          email: c.email,
+          tags: c.tags ?? [],
+        }));
 
-    setAvailableContacts(availableForAddition);
-    setListContacts(contactsInList);
+      const contactsInListIds = new Set(contactsInList.map(c => c.id));
+      const availableForAddition = processedContacts.filter(c => !contactsInListIds.has(c.id));
+
+      if (reset) {
+        setAvailableContacts(availableForAddition);
+        setListContacts(contactsInList);
+      } else {
+        setAvailableContacts(prev => [...prev, ...availableForAddition]);
+      }
+
+      setHasMoreContacts(availableForAddition.length === CONTACTS_PER_PAGE);
+      setCurrentPage(page);
+    } catch (error) {
+      console.error('Error loading contacts for list:', error);
+    } finally {
+      setIsLoadingMoreContacts(false);
+    }
+  };
+
+  const handleManageContacts = async (list: EmailList) => {
+    setSelectedListForManagement(list);
+    setShowManageContactsDialog(true);
+    setContactSearchTerm('');
+    setFilteredContactIds([]);
+    setSelectedContactsToAdd(new Set());
+    
+    // Load first page of contacts
+    await loadContactsForList(list, 1, '', true);
+  };
+
+  const handleSearchContacts = async () => {
+    if (!selectedListForManagement) return;
+    await loadContactsForList(selectedListForManagement, 1, contactSearchTerm, true);
+  };
+
+  const handleLoadMoreContacts = async () => {
+    if (!selectedListForManagement || !hasMoreContacts || isLoadingMoreContacts) return;
+    await loadContactsForList(selectedListForManagement, currentPage + 1, contactSearchTerm, false);
   };
 
   const handleAddContactsToList = async () => {
@@ -874,14 +952,24 @@ export const SmartListManager = () => {
               
               {/* Search and Filter Controls */}
               <div className="space-y-2">
-                <div className="relative">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-                  <Input
-                    value={contactSearchTerm}
-                    onChange={(e) => setContactSearchTerm(e.target.value)}
-                    placeholder="Search contacts by name, email, or tags..."
-                    className="pl-10"
-                  />
+                <div className="flex gap-2">
+                  <div className="relative flex-1">
+                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                    <Input
+                      value={contactSearchTerm}
+                      onChange={(e) => setContactSearchTerm(e.target.value)}
+                      onKeyPress={(e) => e.key === 'Enter' && handleSearchContacts()}
+                      placeholder="Search contacts by name, email, or tags..."
+                      className="pl-10"
+                    />
+                  </div>
+                  <Button
+                    onClick={handleSearchContacts}
+                    size="sm"
+                    className="bg-email-primary hover:bg-email-primary/90"
+                  >
+                    Search
+                  </Button>
                 </div>
                 <ContactFilter
                   onFilterChange={setFilteredContactIds}
@@ -941,6 +1029,26 @@ export const SmartListManager = () => {
                   </div>
                 )}
               </div>
+
+              {/* Load More Button */}
+              {hasMoreContacts && (
+                <Button
+                  onClick={handleLoadMoreContacts}
+                  disabled={isLoadingMoreContacts}
+                  variant="outline"
+                  size="sm"
+                  className="w-full border-email-primary text-email-primary hover:bg-email-primary/10"
+                >
+                  {isLoadingMoreContacts ? (
+                    <>
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-email-primary mr-2"></div>
+                      Loading...
+                    </>
+                  ) : (
+                    `Load More (${CONTACTS_PER_PAGE} more)`
+                  )}
+                </Button>
+              )}
 
               {selectedContactsToAdd.size > 0 && (
                 <Button 
