@@ -92,54 +92,52 @@ export const EmailListManager = () => {
 
   const loadData = async () => {
     try {
-      // Load products
-      const { data: productsData, error: productsError } = await supabase
-        .from('products')
-        .select('*')
-        .order('name');
+      console.log('🚀 Loading data in parallel...');
+      const startTime = performance.now();
+
+      // Load all data in parallel for better performance
+      const [
+        { data: productsData, error: productsError },
+        { data: listsData, error: listsError },
+        { data: contactsData, error: contactsError },
+        { data: contactListsData, error: contactListsError }
+      ] = await Promise.all([
+        supabase.from('products').select('*').order('name'),
+        supabase.from('email_lists').select('*').order('created_at', { ascending: false }),
+        supabase.from('contacts').select('*').order('created_at', { ascending: false }),
+        supabase.from('contact_lists').select('*')
+      ]);
 
       if (productsError) throw productsError;
-      // Load email lists
-      const { data: listsData, error: listsError } = await supabase
-        .from('email_lists')
-        .select('*')
-        .order('created_at', { ascending: false });
-
       if (listsError) throw listsError;
-
-      // Load contacts
-      const { data: contactsData, error: contactsError } = await supabase
-        .from('contacts')
-        .select('*')
-        .order('created_at', { ascending: false });
-
       if (contactsError) throw contactsError;
-
-      // Load contact-list relationships
-      const { data: contactListsData, error: contactListsError } = await supabase
-        .from('contact_lists')
-        .select('*');
-
       if (contactListsError) throw contactListsError;
 
-      // Calculate contact count for each list by querying database directly
-      const listsWithCounts = await Promise.all((listsData || []).map(async (list) => {
-        const { count } = await supabase
-          .from('contact_lists')
-          .select('*', { count: 'exact', head: true })
-          .eq('list_id', list.id);
-        
-        return {
-          ...list,
-          contact_count: count || 0
-        };
+      // Use JOIN query to get contact counts efficiently
+      const { data: listsWithCountsData, error: listsWithCountsError } = await supabase
+        .from('email_lists')
+        .select(`
+          *,
+          contact_lists(count)
+        `)
+        .order('created_at', { ascending: false });
+
+      if (listsWithCountsError) throw listsWithCountsError;
+
+      const listsWithCounts = (listsWithCountsData || []).map((list: any) => ({
+        ...list,
+        contact_count: list.contact_lists?.[0]?.count || 0
       }));
 
       setLists(listsWithCounts);
       setContacts(contactsData || []);
       setContactLists(contactListsData || []);
       setProducts(productsData || []);
+
+      const endTime = performance.now();
+      console.log(`✅ Data loaded in ${Math.round(endTime - startTime)}ms`);
     } catch (error: any) {
+      console.error('Error loading data:', error);
       toast({
         title: "Error loading data",
         description: error.message,

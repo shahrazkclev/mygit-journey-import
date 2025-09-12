@@ -95,10 +95,16 @@ export const SmartListManager = () => {
 
   const loadData = async () => {
     try {
-      // Load lists first
+      console.log('🚀 Loading smart lists data...');
+      const startTime = performance.now();
+
+      // Load lists with contact counts in a single query using JOIN
       const { data: listsData, error: listsError } = await supabase
         .from('email_lists')
-        .select('*')
+        .select(`
+          *,
+          contact_lists(count)
+        `)
         .eq('user_id', user?.id)
         .order('created_at', { ascending: false });
 
@@ -108,47 +114,54 @@ export const SmartListManager = () => {
         return;
       }
 
-      // Calculate contact count for each list by querying database directly
-      const processedLists: EmailList[] = await Promise.all((listsData || []).map(async (list: any) => {
-        const { count } = await supabase
-          .from('contact_lists')
-          .select('*', { count: 'exact', head: true })
-          .eq('list_id', list.id);
-        
-        return {
+      // Process lists with contact counts from the JOIN query
+      const processedLists: EmailList[] = (listsData || []).map((list: any) => ({
+        id: list.id,
+        name: list.name,
+        description: list.description || "",
+        list_type: list.list_type === 'dynamic' ? 'dynamic' : 'static',
+        rule_config: list.rule_config ?? null,
+        created_at: list.created_at,
+        contact_count: list.contact_lists?.[0]?.count || 0,
+      }));
+
+      setLists(processedLists);
+
+      // Populate dynamic lists with current contacts in parallel
+      const dynamicListPromises = processedLists
+        .filter(list => list.list_type === 'dynamic' && list.rule_config)
+        .map(list => populateDynamicList(list.id, list.rule_config!));
+
+      if (dynamicListPromises.length > 0) {
+        await Promise.allSettled(dynamicListPromises);
+      }
+
+      // Get updated counts after populating dynamic lists - use single query again
+      const { data: updatedListsData, error: updatedListsError } = await supabase
+        .from('email_lists')
+        .select(`
+          *,
+          contact_lists(count)
+        `)
+        .eq('user_id', user?.id)
+        .order('created_at', { ascending: false });
+
+      if (!updatedListsError && updatedListsData) {
+        const updatedLists: EmailList[] = updatedListsData.map((list: any) => ({
           id: list.id,
           name: list.name,
           description: list.description || "",
           list_type: list.list_type === 'dynamic' ? 'dynamic' : 'static',
           rule_config: list.rule_config ?? null,
           created_at: list.created_at,
-          contact_count: count || 0,
-        };
-      }));
+          contact_count: list.contact_lists?.[0]?.count || 0,
+        }));
 
-      setLists(processedLists);
-
-      // Populate dynamic lists with current contacts
-      for (const list of processedLists) {
-        if (list.list_type === 'dynamic' && list.rule_config) {
-          await populateDynamicList(list.id, list.rule_config);
-        }
+        setLists(updatedLists);
       }
 
-      // Get updated counts after populating dynamic lists
-      const updatedLists: EmailList[] = await Promise.all(processedLists.map(async (list: any) => {
-        const { count } = await supabase
-          .from('contact_lists')
-          .select('*', { count: 'exact', head: true })
-          .eq('list_id', list.id);
-        
-        return {
-          ...list,
-          contact_count: count || 0,
-        };
-      }));
-
-      setLists(updatedLists);
+      const endTime = performance.now();
+      console.log(`✅ Smart lists loaded in ${Math.round(endTime - startTime)}ms`);
 
       // Load contacts for tag suggestions
       const { data: contactsData, error: contactsError } = await supabase

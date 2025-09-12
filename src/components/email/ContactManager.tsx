@@ -97,37 +97,76 @@ export const ContactManager: React.FC = () => {
     console.log('🔄 useEffect triggered, user:', user?.id);
     if (user?.id) {
       console.log('✅ User authenticated, loading data...');
-      loadContacts();
-      loadProducts();
-      loadEmailLists();
-      loadAllContactProducts();
-      loadAllContactLists();
-      loadAllTags();
+      loadAllData();
     }
   }, [user?.id]); // Re-run when user.id changes
 
-  const loadContacts = async () => {
+  // Load all data in parallel for better performance
+  const loadAllData = async () => {
+    try {
+      console.log('🚀 Loading all data in parallel...');
+      const startTime = performance.now();
+      
+      // Use Promise.allSettled to handle individual failures gracefully
+      const results = await Promise.allSettled([
+        loadContacts(),
+        loadProducts(),
+        loadEmailLists(),
+        loadAllContactProducts(),
+        loadAllContactLists(),
+        loadAllTags()
+      ]);
+      
+      // Log any failures but don't stop the entire process
+      results.forEach((result, index) => {
+        if (result.status === 'rejected') {
+          const functionNames = ['loadContacts', 'loadProducts', 'loadEmailLists', 'loadAllContactProducts', 'loadAllContactLists', 'loadAllTags'];
+          console.error(`❌ ${functionNames[index]} failed:`, result.reason);
+        }
+      });
+      
+      const endTime = performance.now();
+      console.log(`✅ All data loaded in ${Math.round(endTime - startTime)}ms`);
+    } catch (error) {
+      console.error('Error loading data in parallel:', error);
+      toast.error('Failed to load some data. Please refresh the page.');
+    }
+  };
+
+  const loadContacts = async (page: number = 1, limit: number = 100) => {
     try {
       if (!user?.id) {
         console.log('❌ No user ID available');
         return;
       }
 
-      console.log('🔍 Loading contacts for user:', user.id);
+      console.log(`🔍 Loading contacts page ${page} for user:`, user.id);
 
+      const from = (page - 1) * limit;
+      const to = from + limit - 1;
+
+      // Get total count first
+      const { count: totalCount } = await supabase
+        .from('contacts')
+        .select('*', { count: 'exact', head: true })
+        .eq('user_id', user.id)
+        .eq('status', 'subscribed');
+
+      // Load contacts with pagination
       const { data, error } = await supabase
         .from('contacts')
         .select('*')
         .eq('user_id', user.id)
         .eq('status', 'subscribed')
-        .order('created_at', { ascending: false });
+        .order('created_at', { ascending: false })
+        .range(from, to);
 
       if (error) {
         console.error('❌ Error loading contacts:', error);
         throw error;
       }
 
-      console.log('✅ Loaded contacts:', data?.length || 0);
+      console.log(`✅ Loaded ${data?.length || 0} contacts (page ${page}/${Math.ceil((totalCount || 0) / limit)})`);
       setContacts(data || []);
     } catch (error) {
       console.error('Error loading contacts:', error);
