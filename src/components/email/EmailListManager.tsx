@@ -122,10 +122,17 @@ export const EmailListManager = () => {
 
       if (contactListsError) throw contactListsError;
 
-      // Calculate contact count for each list
-      const listsWithCounts = (listsData || []).map(list => ({
-        ...list,
-        contact_count: (contactListsData || []).filter(cl => cl.list_id === list.id).length
+      // Calculate contact count for each list by querying database directly
+      const listsWithCounts = await Promise.all((listsData || []).map(async (list) => {
+        const { count } = await supabase
+          .from('contact_lists')
+          .select('*', { count: 'exact', head: true })
+          .eq('list_id', list.id);
+        
+        return {
+          ...list,
+          contact_count: count || 0
+        };
       }));
 
       setLists(listsWithCounts);

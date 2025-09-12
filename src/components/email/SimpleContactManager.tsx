@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -8,7 +8,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Checkbox } from "@/components/ui/checkbox";
 import { TagInput } from "@/components/ui/tag-input";
-import { Trash2, Plus, Tag, Users, Link, ChevronDown, ChevronRight, Edit, Upload, FileSpreadsheet, User } from "lucide-react";
+import { Trash2, Plus, Tag, Users, Link, ChevronDown, ChevronRight, Edit, Upload, FileSpreadsheet, User, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -120,8 +120,8 @@ export const SimpleContactManager = () => {
   }, []);
 
   useEffect(() => {
-    filterContacts();
-  }, [contacts, searchTerm, tagFilter]);
+    debouncedSearch(searchTerm, tagFilter);
+  }, [searchTerm, tagFilter, debouncedSearch]);
 
   // Generate name from email if no name provided
   const generateNameFromEmail = (email: string): string => {
@@ -250,6 +250,24 @@ export const SimpleContactManager = () => {
       loadContacts(currentPage + 1, false);
     }
   };
+
+  // Debounced search function
+  const debouncedSearch = useCallback(
+    (() => {
+      let timeoutId: NodeJS.Timeout;
+      return (searchQuery: string, tagQuery: string) => {
+        clearTimeout(timeoutId);
+        timeoutId = setTimeout(() => {
+          if (searchQuery.trim() || tagQuery.trim()) {
+            searchContacts(searchQuery, tagQuery);
+          } else {
+            loadContacts(1, true); // Reset to first page if no search
+          }
+        }, 300); // 300ms delay
+      };
+    })(),
+    []
+  );
 
   const loadEmailLists = async () => {
     try {
@@ -670,14 +688,15 @@ export const SimpleContactManager = () => {
             console.log(`🔍 Checking for existing contact: ${email} -> ${existingContact ? 'FOUND' : 'NOT FOUND'}`);
 
             if (existingContact) {
-              // Contact exists - prepare for update
+              // Contact exists - prepare for update (always update, even if same data)
               const existingTags = existingContact.tags || [];
               const newTags = [...new Set([...existingTags, ...tags])]; // Remove duplicates
               
               console.log(`🔄 Updating existing contact ${email}:`, {
                 existingTags,
                 newTagsFromCSV: tags,
-                mergedTags: newTags
+                mergedTags: newTags,
+                willUpdate: true // Always update, even if data is the same
               });
               
               contactsToUpdate.push({
@@ -739,8 +758,11 @@ export const SimpleContactManager = () => {
         }
 
         // Show detailed success message
-        if (successCount > 0) {
-          toast.success(`✅ Import completed! ${successCount} contacts processed successfully${failureCount > 0 ? `, ${failureCount} failed` : ''}`);
+        const totalProcessed = contactsToInsert.length + contactsToUpdate.length;
+        if (totalProcessed > 0) {
+          const insertCount = contactsToInsert.length;
+          const updateCount = contactsToUpdate.length;
+          toast.success(`✅ Import completed! ${insertCount} new contacts added, ${updateCount} existing contacts updated${failureCount > 0 ? `, ${failureCount} failed` : ''}`);
         } else {
           toast.error(`❌ Import failed! ${failureCount} contacts failed to import`);
         }
@@ -1000,7 +1022,9 @@ export const SimpleContactManager = () => {
                 <div className="p-2 bg-gradient-to-br from-email-primary to-email-accent rounded-lg shadow-sm">
                   <Users className="h-5 w-5 text-white" />
                 </div>
-                <span className="text-email-secondary font-semibold">Contacts ({filteredContacts.length})</span>
+                <span className="text-email-secondary font-semibold">
+                  Contacts ({filteredContacts.length} loaded, {totalContacts} total)
+                </span>
                 {selectedContacts.size > 0 && (
                   <Badge variant="secondary" className="bg-gradient-to-r from-email-accent to-email-primary text-white shadow-sm">
                     {selectedContacts.size} selected
@@ -1012,6 +1036,19 @@ export const SimpleContactManager = () => {
               </CardDescription>
             </div>
             <div className="flex flex-wrap gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  setSearchTerm('');
+                  setTagFilter('');
+                  loadContacts(1, true);
+                }}
+                className="border-email-primary text-email-primary hover:bg-email-primary/10"
+              >
+                <RefreshCw className="h-4 w-4 mr-1" />
+                Refresh
+              </Button>
               {selectedContacts.size > 0 && (
                 <>
                   <Button
