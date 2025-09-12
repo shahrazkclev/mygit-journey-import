@@ -120,7 +120,10 @@ export const SimpleContactManager = () => {
   }, []);
 
   useEffect(() => {
-    debouncedSearch(searchTerm, tagFilter);
+    // Only trigger search if there are actual search terms
+    if (searchTerm.trim() || tagFilter.trim()) {
+      debouncedSearch(searchTerm, tagFilter);
+    }
   }, [searchTerm, tagFilter]);
 
   // Cleanup timeout on unmount
@@ -205,8 +208,11 @@ export const SimpleContactManager = () => {
       
       if (reset) {
         setContacts(filteredUiContacts);
+        setFilteredContacts(filteredUiContacts);
       } else {
-        setContacts(prev => [...prev, ...filteredUiContacts]);
+        const updatedContacts = [...contacts, ...filteredUiContacts];
+        setContacts(updatedContacts);
+        setFilteredContacts(updatedContacts);
       }
       
       setHasMoreContacts(filteredUiContacts.length === CONTACTS_PER_PAGE);
@@ -271,9 +277,8 @@ export const SimpleContactManager = () => {
     searchTimeoutRef.current = setTimeout(() => {
       if (searchQuery.trim() || tagQuery.trim()) {
         searchContacts(searchQuery, tagQuery);
-      } else {
-        loadContacts(1, true); // Reset to first page if no search
       }
+      // Don't reset contacts when search is empty - let them stay as they are
     }, 300); // 300ms delay
   }, []);
 
@@ -530,6 +535,9 @@ export const SimpleContactManager = () => {
       setNewContact({ name: "", email: "", phone: "", tags: "" });
       setIsAddDialogOpen(false);
       loadContacts();
+      
+      // Trigger dynamic list refresh
+      window.dispatchEvent(new CustomEvent('contactsUpdated'));
     } catch (error) {
       console.error('Error handling contact:', error);
       toast.error("Failed to process contact");
@@ -783,6 +791,9 @@ export const SimpleContactManager = () => {
         
         // Reload contacts to show updated data
         await loadContacts();
+        
+        // Trigger dynamic list refresh by dispatching a custom event
+        window.dispatchEvent(new CustomEvent('contactsUpdated'));
       };
 
       reader.readAsText(csvFile);

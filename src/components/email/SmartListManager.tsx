@@ -76,6 +76,17 @@ export const SmartListManager = () => {
     }
   }, [user?.id]);
 
+  // Listen for contact updates to refresh dynamic lists
+  useEffect(() => {
+    const handleContactsUpdated = () => {
+      console.log('🔄 Contacts updated, refreshing dynamic lists...');
+      refreshAllDynamicLists();
+    };
+
+    window.addEventListener('contactsUpdated', handleContactsUpdated);
+    return () => window.removeEventListener('contactsUpdated', handleContactsUpdated);
+  }, []);
+
   const loadData = async () => {
     try {
       // Load lists first
@@ -258,6 +269,35 @@ export const SmartListManager = () => {
     }
   };
 
+  const refreshAllDynamicLists = async () => {
+    try {
+      console.log('🔄 Refreshing all dynamic lists...');
+      
+      // Get all dynamic lists
+      const { data: dynamicLists, error: listsError } = await supabase
+        .from('email_lists')
+        .select('id, name, rule_config')
+        .eq('user_id', user?.id)
+        .eq('list_type', 'dynamic');
+
+      if (listsError) {
+        console.error('Error fetching dynamic lists:', listsError);
+        return;
+      }
+
+      // Refresh each dynamic list
+      for (const list of dynamicLists || []) {
+        if (list.rule_config) {
+          await populateDynamicList(list.id, list.rule_config);
+        }
+      }
+      
+      console.log(`✅ Refreshed ${dynamicLists?.length || 0} dynamic lists`);
+    } catch (error) {
+      console.error('Error refreshing dynamic lists:', error);
+    }
+  };
+
   const populateDynamicList = async (listId: string, ruleConfig: any) => {
     try {
       // Fetch fresh contacts from database instead of using stale state
@@ -306,6 +346,12 @@ export const SmartListManager = () => {
         }
       });
 
+      // Clear existing memberships first (for dynamic lists, we want to refresh completely)
+      await supabase
+        .from('contact_lists')
+        .delete()
+        .eq('list_id', listId);
+
       // Add matching contacts to the list
       if (matchingContacts.length > 0) {
         const memberships = matchingContacts.map(contact => ({
@@ -315,7 +361,7 @@ export const SmartListManager = () => {
 
         const { error } = await supabase
           .from('contact_lists')
-          .upsert(memberships, { onConflict: 'contact_id,list_id' });
+          .insert(memberships);
 
         if (error) {
           console.error('Error populating dynamic list:', error);
