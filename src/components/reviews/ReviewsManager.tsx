@@ -591,9 +591,49 @@ export const ReviewsManager = () => {
   // Media management functions
   const downloadMedia = async (mediaUrl: string, fileName?: string) => {
     try {
-      // Fetch the file as a blob to ensure proper download
-      const response = await fetch(mediaUrl);
-      if (!response.ok) throw new Error('Failed to fetch media file');
+      // For R2 URLs, try direct download first, then fallback to fetch
+      if (mediaUrl.includes('r2.dev') || mediaUrl.includes('cloudflare')) {
+        // Try direct download approach for R2 URLs
+        const link = document.createElement('a');
+        link.href = mediaUrl;
+        link.download = fileName || `review-media-${Date.now()}`;
+        link.target = '_blank';
+        link.rel = 'noopener noreferrer';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        
+        // Show success message
+        toast({
+          title: "Download Started",
+          description: "Your download should start shortly",
+        });
+        return;
+      }
+      
+      // For other URLs, use the blob approach
+      const response = await fetch(mediaUrl, {
+        mode: 'cors',
+        credentials: 'omit'
+      });
+      
+      if (!response.ok) {
+        // If fetch fails, try direct download as fallback
+        const link = document.createElement('a');
+        link.href = mediaUrl;
+        link.download = fileName || `review-media-${Date.now()}`;
+        link.target = '_blank';
+        link.rel = 'noopener noreferrer';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        
+        toast({
+          title: "Download Started",
+          description: "Your download should start shortly",
+        });
+        return;
+      }
       
       const blob = await response.blob();
       const url = window.URL.createObjectURL(blob);
@@ -608,13 +648,37 @@ export const ReviewsManager = () => {
       // Cleanup
       document.body.removeChild(link);
       window.URL.revokeObjectURL(url);
+      
+      toast({
+        title: "Download Complete",
+        description: "Media file downloaded successfully",
+      });
     } catch (error) {
       console.error('Error downloading media:', error);
-      toast({
-        title: "Download Failed",
-        description: "Could not download the media file",
-        variant: "destructive",
-      });
+      
+      // Final fallback - try direct download
+      try {
+        const link = document.createElement('a');
+        link.href = mediaUrl;
+        link.download = fileName || `review-media-${Date.now()}`;
+        link.target = '_blank';
+        link.rel = 'noopener noreferrer';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        
+        toast({
+          title: "Download Started",
+          description: "Your download should start shortly",
+        });
+      } catch (fallbackError) {
+        console.error('Fallback download also failed:', fallbackError);
+        toast({
+          title: "Download Failed",
+          description: "Could not download the media file. Please try right-clicking the media and selecting 'Save as'",
+          variant: "destructive",
+        });
+      }
     }
   };
 
