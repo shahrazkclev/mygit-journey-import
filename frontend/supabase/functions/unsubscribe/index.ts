@@ -31,7 +31,7 @@ Deno.serve(async (req) => {
     // Validate and consume the unsubscribe token
     const { data: tokenData, error: tokenError } = await supabase
       .from('unsubscribe_tokens')
-      .select('*')
+      .select('*, contact_id')
       .eq('token', token)
       .gt('expires_at', new Date().toISOString())
       .eq('is_used', false)

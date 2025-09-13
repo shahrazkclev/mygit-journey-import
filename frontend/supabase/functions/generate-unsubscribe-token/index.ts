@@ -30,28 +30,10 @@ Deno.serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     );
 
-    // Get contact email from contact_id
-    const { data: contact, error: contactError } = await supabase
-      .from('contacts')
-      .select('email')
-      .eq('id', contact_id)
-      .eq('user_id', user_id)
-      .single();
-
-    if (contactError || !contact) {
-      return new Response(
-        JSON.stringify({ error: 'Contact not found' }),
-        { 
-          status: 404,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-        }
-      );
-    }
-
-    // Generate unsubscribe token using the database function
+    // Generate unsubscribe token using the database function with contact_id
     const { data: token, error } = await supabase
       .rpc('generate_unsubscribe_token', {
-        p_email: contact.email,
+        p_contact_id: contact_id,
         p_campaign_id: campaign_id,
         p_user_id: user_id
       });
