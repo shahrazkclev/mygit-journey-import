@@ -546,88 +546,74 @@ export const ReviewsManager = () => {
   // Media management functions
   const downloadMedia = async (mediaUrl: string, fileName?: string) => {
     try {
-      // For R2 URLs, try direct download first, then fallback to fetch
-      if (mediaUrl.includes('r2.dev') || mediaUrl.includes('cloudflare')) {
-        // Try direct download approach for R2 URLs
-        const link = document.createElement('a');
-        link.href = mediaUrl;
-        link.download = fileName || `review-media-${Date.now()}`;
-        link.target = '_blank';
-        link.rel = 'noopener noreferrer';
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        
-        // Show success message
-        toast({
-          title: "Download Started",
-          description: "Your download should start shortly",
-        });
-        return;
-      }
-      
-      // For other URLs, use the blob approach
+      // Show loading toast
+      toast({
+        title: "Preparing Download",
+        description: "Fetching media file...",
+      });
+
+      // Always try to fetch the file first to ensure proper download
       const response = await fetch(mediaUrl, {
         mode: 'cors',
-        credentials: 'omit'
+        credentials: 'omit',
+        headers: {
+          'Accept': '*/*',
+        }
       });
       
       if (!response.ok) {
-        // If fetch fails, try direct download as fallback
-        const link = document.createElement('a');
-        link.href = mediaUrl;
-        link.download = fileName || `review-media-${Date.now()}`;
-        link.target = '_blank';
-        link.rel = 'noopener noreferrer';
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        
-        toast({
-          title: "Download Started",
-          description: "Your download should start shortly",
-        });
-        return;
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
       }
       
+      // Get the blob data
       const blob = await response.blob();
-      const url = window.URL.createObjectURL(blob);
       
-      // Create download link with blob URL
+      // Create a proper filename with extension
+      const urlParts = mediaUrl.split('/');
+      const originalFileName = urlParts[urlParts.length - 1];
+      const fileExtension = originalFileName.includes('.') ? originalFileName.split('.').pop() : '';
+      const finalFileName = fileName || `review-media-${Date.now()}${fileExtension ? '.' + fileExtension : ''}`;
+      
+      // Create blob URL and download
+      const blobUrl = window.URL.createObjectURL(blob);
       const link = document.createElement('a');
-      link.href = url;
-      link.download = fileName || `review-media-${Date.now()}`;
+      link.href = blobUrl;
+      link.download = finalFileName;
+      link.style.display = 'none';
+      
+      // Add to DOM, click, and remove
       document.body.appendChild(link);
       link.click();
-      
-      // Cleanup
       document.body.removeChild(link);
-      window.URL.revokeObjectURL(url);
+      
+      // Cleanup blob URL
+      window.URL.revokeObjectURL(blobUrl);
       
       toast({
         title: "Download Complete",
-        description: "Media file downloaded successfully",
+        description: `Media file "${finalFileName}" downloaded successfully`,
       });
+      
     } catch (error) {
       console.error('Error downloading media:', error);
       
-      // Final fallback - try direct download
+      // Fallback: Try to open in new tab with download hint
       try {
+        toast({
+          title: "Download Method Changed",
+          description: "Opening media in new tab. Right-click and 'Save as' to download.",
+        });
+        
         const link = document.createElement('a');
         link.href = mediaUrl;
-        link.download = fileName || `review-media-${Date.now()}`;
         link.target = '_blank';
         link.rel = 'noopener noreferrer';
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
         
-        toast({
-          title: "Download Started",
-          description: "Your download should start shortly",
-        });
       } catch (fallbackError) {
-        console.error('Fallback download also failed:', fallbackError);
+        console.error('Fallback also failed:', fallbackError);
         toast({
           title: "Download Failed",
           description: "Could not download the media file. Please try right-clicking the media and selecting 'Save as'",
