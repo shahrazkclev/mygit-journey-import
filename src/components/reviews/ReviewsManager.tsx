@@ -599,10 +599,12 @@ export const ReviewsManager = () => {
 
       // Always try to fetch the file first to ensure proper download
       const response = await fetch(mediaUrl, {
+        method: 'GET',
         mode: 'cors',
         credentials: 'omit',
         headers: {
           'Accept': '*/*',
+          'Cache-Control': 'no-cache',
         }
       });
       
@@ -614,10 +616,26 @@ export const ReviewsManager = () => {
       const blob = await response.blob();
       
       // Create a proper filename with extension
-      const urlParts = mediaUrl.split('/');
-      const originalFileName = urlParts[urlParts.length - 1];
-      const fileExtension = originalFileName.includes('.') ? originalFileName.split('.').pop() : '';
-      const finalFileName = fileName || `review-media-${Date.now()}${fileExtension ? '.' + fileExtension : ''}`;
+      let finalFileName = fileName;
+      
+      if (!finalFileName) {
+        // Try to get filename from Content-Disposition header
+        const contentDisposition = response.headers.get('Content-Disposition');
+        if (contentDisposition) {
+          const fileNameMatch = contentDisposition.match(/filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/);
+          if (fileNameMatch && fileNameMatch[1]) {
+            finalFileName = fileNameMatch[1].replace(/['"]/g, '');
+          }
+        }
+        
+        // Fallback to URL-based filename
+        if (!finalFileName) {
+          const urlParts = mediaUrl.split('/');
+          const originalFileName = urlParts[urlParts.length - 1].split('?')[0]; // Remove query params
+          const fileExtension = originalFileName.includes('.') ? originalFileName.split('.').pop() : '';
+          finalFileName = `review-media-${Date.now()}${fileExtension ? '.' + fileExtension : ''}`;
+        }
+      }
       
       // Create blob URL and download
       const blobUrl = window.URL.createObjectURL(blob);
@@ -809,13 +827,39 @@ export const ReviewsManager = () => {
       return;
     }
 
+    // Ensure video is loaded and ready
     if (video.readyState < 2) {
       toast({
-        title: "Error",
-        description: "Video is not ready. Please wait for it to load.",
-        variant: "destructive",
+        title: "Loading Video",
+        description: "Please wait for the video to load completely...",
       });
-      return;
+      
+      // Wait for video to load
+      await new Promise<void>((resolve, reject) => {
+        const timeout = setTimeout(() => {
+          reject(new Error('Video loading timeout - please check the video URL'));
+        }, 15000); // 15 second timeout
+
+        const onLoadedData = () => {
+          clearTimeout(timeout);
+          video.removeEventListener('loadeddata', onLoadedData);
+          video.removeEventListener('error', onError);
+          resolve();
+        };
+
+        const onError = (e: Event) => {
+          clearTimeout(timeout);
+          video.removeEventListener('loadeddata', onLoadedData);
+          video.removeEventListener('error', onError);
+          reject(new Error('Video failed to load - check CORS settings or video URL'));
+        };
+
+        video.addEventListener('loadeddata', onLoadedData);
+        video.addEventListener('error', onError);
+        
+        // Try to load the video
+        video.load();
+      });
     }
 
     try {
@@ -1962,16 +2006,88 @@ export const ReviewsManager = () => {
                         </div>
                         
                         <div className="space-y-3">
-                          <video 
-                            src={editingReview.media_url} 
-                            className="max-w-xs rounded-lg"
-                            controls
-                            muted
-                            crossOrigin="anonymous"
-                            id="video-frame-extractor"
-                          />
+                          <div className="relative">
+                            <video 
+                              className="max-w-xs rounded-lg"
+                              controls
+                              muted
+                              preload="metadata"
+                              id="video-frame-extractor"
+                              onLoadStart={() => console.log('Video loading started')}
+                              onLoadedData={() => console.log('Video data loaded')}
+                              onError={(e) => {
+                                console.error('Video load error:', e);
+                                const video = e.target as HTMLVideoElement;
+                                console.error('Video error details:', {
+                                  error: video.error,
+                                  networkState: video.networkState,
+                                  readyState: video.readyState,
+                                  src: video.src
+                                });
+                              }}
+                              onCanPlay={() => console.log('Video can play')}
+                              onLoadedMetadata={() => console.log('Video metadata loaded')}
+                            >
+                              <source src={editingReview.media_url} type="video/mp4" />
+                              <source src={editingReview.media_url} type="video/webm" />
+                              <source src={editingReview.media_url} type="video/ogg" />
+                              Your browser does not support the video tag.
+                            </video>
+                            <div className="mt-2 text-xs text-gray-500">
+                              Video URL: {editingReview.media_url}
+                            </div>
+                            <div className="mt-2 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+                              <div className="text-sm text-yellow-800">
+                                <strong>Video not loading?</strong>
+                                <ul className="mt-1 text-xs space-y-1">
+                                  <li>• Click "Reload Video" to try different formats</li>
+                                  <li>• Click "Check Video Access" to diagnose the issue</li>
+                                  <li>• The video might have CORS restrictions</li>
+                                  <li>• Try opening the video URL directly in a new tab</li>
+                                </ul>
+                              </div>
+                            </div>
+                          </div>
                           
                           <div className="flex gap-2">
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => {
+                                const video = document.getElementById('video-frame-extractor') as HTMLVideoElement;
+                                if (video) {
+                                  // Clear current sources
+                                  video.innerHTML = '';
+                                  
+                                  // Add sources with different approaches
+                                  const sources = [
+                                    { src: editingReview.media_url, type: 'video/mp4' },
+                                    { src: editingReview.media_url, type: 'video/webm' },
+                                    { src: editingReview.media_url, type: 'video/ogg' },
+                                    { src: editingReview.media_url, type: 'video/quicktime' }
+                                  ];
+                                  
+                                  sources.forEach(source => {
+                                    const sourceElement = document.createElement('source');
+                                    sourceElement.src = source.src;
+                                    sourceElement.type = source.type;
+                                    video.appendChild(sourceElement);
+                                  });
+                                  
+                                  // Try different crossOrigin settings
+                                  video.crossOrigin = 'anonymous';
+                                  video.load();
+                                  
+                                  toast({
+                                    title: "Reloading Video",
+                                    description: "Trying different video formats and settings...",
+                                  });
+                                }
+                              }}
+                            >
+                              <RefreshCw className="h-4 w-4 mr-1" />
+                              Reload Video
+                            </Button>
                             <Button
                               size="sm"
                               variant="outline"
@@ -1980,6 +2096,48 @@ export const ReviewsManager = () => {
                             >
                               <Image className="h-4 w-4 mr-1" />
                               Extract Current Frame
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={async () => {
+                                try {
+                                  setThumbnailUploading(true);
+                                  toast({
+                                    title: "Alternative Method",
+                                    description: "Trying to extract frame using server-side method...",
+                                  });
+                                  
+                                  // Try to fetch the video and create a thumbnail using a different approach
+                                  const response = await fetch(editingReview.media_url, {
+                                    method: 'HEAD',
+                                    mode: 'cors'
+                                  });
+                                  
+                                  if (response.ok) {
+                                    toast({
+                                      title: "Video Accessible",
+                                      description: "Video is accessible. The issue might be browser CORS policy. Try using a different browser or check the video URL.",
+                                      variant: "destructive",
+                                    });
+                                  } else {
+                                    throw new Error(`Video not accessible: ${response.status}`);
+                                  }
+                                } catch (error) {
+                                  console.error('Alternative method failed:', error);
+                                  toast({
+                                    title: "Video Access Issue",
+                                    description: "Cannot access video. This might be due to CORS restrictions or the video URL being invalid.",
+                                    variant: "destructive",
+                                  });
+                                } finally {
+                                  setThumbnailUploading(false);
+                                }
+                              }}
+                              disabled={thumbnailUploading}
+                            >
+                              <Video className="h-4 w-4 mr-1" />
+                              Check Video Access
                             </Button>
                           </div>
                         </div>
