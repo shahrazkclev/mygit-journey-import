@@ -215,8 +215,7 @@ const SubmitReview = () => {
       case 2:
         return formData.mediaUrl;
       case 3:
-        const wordCount = formData.description.trim().split(/\s+/).filter(word => word.length > 0).length;
-        return formData.rating > 0 && wordCount >= 3 && wordCount <= (formData.mediaType === 'image' ? 20 : 15);
+        return formData.rating > 0 && formData.description.trim().length > 0;
       default:
         return false;
     }
@@ -279,21 +278,24 @@ const SubmitReview = () => {
                   className="text-xs text-white/70 hover:text-white/90 mt-1 transition-colors duration-200 flex items-center gap-1"
                   onClick={(e) => {
                     e.preventDefault();
-                    const textElement = e.target.closest('.relative').querySelector('p');
-                    const button = e.target.closest('button');
-                    const span = button.querySelector('span');
-                    const icon = button.querySelector('svg');
+                    const target = e.target as HTMLElement;
+                    const textElement = target.closest('.relative')?.querySelector('p');
+                    const button = target.closest('button');
+                    const span = button?.querySelector('span');
+                    const icon = button?.querySelector('svg');
                     
-                    if (textElement.classList.contains('line-clamp-none')) {
-                      textElement.classList.remove('line-clamp-none');
-                      textElement.classList.add('line-clamp-2');
-                      span.textContent = 'more';
-                      icon.style.transform = 'rotate(0deg)';
-                    } else {
-                      textElement.classList.remove('line-clamp-2');
-                      textElement.classList.add('line-clamp-none');
-                      span.textContent = 'less';
-                      icon.style.transform = 'rotate(180deg)';
+                    if (textElement && span && icon) {
+                      if (textElement.classList.contains('line-clamp-none')) {
+                        textElement.classList.remove('line-clamp-none');
+                        textElement.classList.add('line-clamp-2');
+                        span.textContent = 'more';
+                        icon.style.transform = 'rotate(0deg)';
+                      } else {
+                        textElement.classList.remove('line-clamp-2');
+                        textElement.classList.add('line-clamp-none');
+                        span.textContent = 'less';
+                        icon.style.transform = 'rotate(180deg)';
+                      }
                     }
                   }}
                 >
@@ -525,31 +527,16 @@ const SubmitReview = () => {
               )}
 
               <div>
-                <div className="flex justify-between items-center mb-2">
-                  <label className="block text-sm font-medium">Review Text *</label>
-                  <span className={`text-xs ${formData.description.trim().split(/\s+/).filter(word => word.length > 0).length > (formData.mediaType === 'image' ? 20 : 15) ? 'text-red-500' : 'text-gray-500'}`}>
-                    {formData.description.trim().split(/\s+/).filter(word => word.length > 0).length}/{formData.mediaType === 'image' ? '20' : '15'} words
-                  </span>
-                </div>
+                <label className="block text-sm font-medium mb-2">Review Text *</label>
                 <Textarea
                   value={formData.description}
                   onChange={(e) => {
-                    const words = e.target.value.trim().split(/\s+/).filter(word => word.length > 0);
-                    const maxWords = formData.mediaType === 'image' ? 20 : 15;
-                    if (words.length <= maxWords) {
-                      setFormData({ ...formData, description: e.target.value });
-                    }
+                    setFormData({ ...formData, description: e.target.value });
                   }}
-                  placeholder={formData.mediaType === 'image' ? "Share your experience in 3-20 words..." : "Share your experience in 3-15 words..."}
+                  placeholder="Write your review..."
                   rows={isMobile ? 4 : 6}
                   className="resize-none text-base"
                 />
-                <p className="text-xs text-gray-500 mt-1">
-                  {formData.mediaType === 'image' 
-                    ? "Keep it concise! 3-20 words maximum for images." 
-                    : "Keep it short and sweet! 3-15 words maximum for videos."
-                  }
-                </p>
               </div>
             </div>
           </div>

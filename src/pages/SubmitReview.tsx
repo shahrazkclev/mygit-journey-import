@@ -267,11 +267,7 @@ const SubmitReview = () => {
       case 2:
         return formData.mediaUrl;
       case 3:
-        const wordCount = formData.description.split(' ').filter(word => word.length > 0).length;
-        // Allow longer text for image media (up to 50 words), shorter for video (3-8 words)
-        const maxWords = formData.mediaType === 'image' ? 50 : 8;
-        const minWords = formData.mediaType === 'image' ? 5 : 3;
-        return formData.rating > 0 && wordCount >= minWords && wordCount <= maxWords;
+        return formData.rating > 0 && formData.description.trim().length > 0;
       default:
         return false;
     }
@@ -334,21 +330,24 @@ const SubmitReview = () => {
                   className="text-xs text-white/70 hover:text-white/90 mt-1 transition-colors duration-200 flex items-center gap-1"
                   onClick={(e) => {
                     e.preventDefault();
-                    const textElement = e.target.closest('.relative').querySelector('p');
-                    const button = e.target.closest('button');
-                    const span = button.querySelector('span');
-                    const icon = button.querySelector('svg');
+                    const target = e.target as HTMLElement;
+                    const textElement = target.closest('.relative')?.querySelector('p');
+                    const button = target.closest('button');
+                    const span = button?.querySelector('span');
+                    const icon = button?.querySelector('svg');
                     
-                    if (textElement.classList.contains('line-clamp-none')) {
-                      textElement.classList.remove('line-clamp-none');
-                      textElement.classList.add('line-clamp-2');
-                      span.textContent = 'more';
-                      icon.style.transform = 'rotate(0deg)';
-                    } else {
-                      textElement.classList.remove('line-clamp-2');
-                      textElement.classList.add('line-clamp-none');
-                      span.textContent = 'less';
-                      icon.style.transform = 'rotate(180deg)';
+                    if (textElement && span && icon) {
+                      if (textElement.classList.contains('line-clamp-none')) {
+                        textElement.classList.remove('line-clamp-none');
+                        textElement.classList.add('line-clamp-2');
+                        span.textContent = 'more';
+                        icon.style.transform = 'rotate(0deg)';
+                      } else {
+                        textElement.classList.remove('line-clamp-2');
+                        textElement.classList.add('line-clamp-none');
+                        span.textContent = 'less';
+                        icon.style.transform = 'rotate(180deg)';
+                      }
                     }
                   }}
                 >
@@ -613,22 +612,12 @@ const SubmitReview = () => {
 
               <div>
                 <label className="block text-sm font-medium mb-2">Review Text *</label>
-                <div className="mb-2 text-xs text-muted-foreground">
-                  {formData.description.split(' ').filter(word => word.length > 0).length}/{formData.mediaType === 'image' ? '20' : '15'} words
-                  {formData.mediaType === 'image' && (
-                    <span className="text-green-600 ml-2">✓ Longer text allowed for images</span>
-                  )}
-                </div>
                 <Textarea
                   value={formData.description}
                   onChange={(e) => {
-                    const words = e.target.value.split(' ').filter(word => word.length > 0);
-                    const maxWords = formData.mediaType === 'image' ? 20 : 15;
-                    if (words.length <= maxWords) {
-                      setFormData({ ...formData, description: e.target.value });
-                    }
+                    setFormData({ ...formData, description: e.target.value });
                   }}
-                  placeholder={formData.mediaType === 'image' ? "Write your detailed review (5-20 words)..." : "Write your review (3-15 words)..."}
+                  placeholder="Write your review..."
                   rows={isMobile ? 6 : 8}
                   className="resize-none text-base"
                 />
