@@ -325,9 +325,40 @@ const SubmitReview = () => {
                 </svg>
               ))}
             </div>
-            <p className={`${isMobile ? 'text-xs' : 'text-sm'} text-white/90 ${description && description.split(' ').length > 15 ? 'line-clamp-3' : 'line-clamp-2'}`}>
-              "{description || 'Your review will appear here...'}"
-            </p>
+            <div className="relative">
+              <p className={`${isMobile ? 'text-xs' : 'text-sm'} text-white/90 line-clamp-2 transition-all duration-300`}>
+                "{description || 'Your review will appear here...'}"
+              </p>
+              {description && description.split(' ').length > 8 && (
+                <button 
+                  className="text-xs text-white/70 hover:text-white/90 mt-1 transition-colors duration-200 flex items-center gap-1"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    const textElement = e.target.closest('.relative').querySelector('p');
+                    const button = e.target.closest('button');
+                    const span = button.querySelector('span');
+                    const icon = button.querySelector('svg');
+                    
+                    if (textElement.classList.contains('line-clamp-none')) {
+                      textElement.classList.remove('line-clamp-none');
+                      textElement.classList.add('line-clamp-2');
+                      span.textContent = 'more';
+                      icon.style.transform = 'rotate(0deg)';
+                    } else {
+                      textElement.classList.remove('line-clamp-2');
+                      textElement.classList.add('line-clamp-none');
+                      span.textContent = 'less';
+                      icon.style.transform = 'rotate(180deg)';
+                    }
+                  }}
+                >
+                  <span>more</span>
+                  <svg className="w-3 h-3 transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path>
+                  </svg>
+                </button>
+              )}
+            </div>
             <div className={`flex items-center space-x-2 ${isMobile ? 'text-xs' : 'text-sm'}`}>
               <div className={`${isMobile ? 'w-5 h-5' : 'w-10 h-10'} rounded-full overflow-hidden bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center font-bold text-white`}>
                 {profilePictureUrl ? (
@@ -583,7 +614,7 @@ const SubmitReview = () => {
               <div>
                 <label className="block text-sm font-medium mb-2">Review Text *</label>
                 <div className="mb-2 text-xs text-muted-foreground">
-                  {formData.description.split(' ').filter(word => word.length > 0).length}/{formData.mediaType === 'image' ? '50' : '8'} words
+                  {formData.description.split(' ').filter(word => word.length > 0).length}/{formData.mediaType === 'image' ? '20' : '15'} words
                   {formData.mediaType === 'image' && (
                     <span className="text-green-600 ml-2">✓ Longer text allowed for images</span>
                   )}
@@ -592,12 +623,12 @@ const SubmitReview = () => {
                   value={formData.description}
                   onChange={(e) => {
                     const words = e.target.value.split(' ').filter(word => word.length > 0);
-                    const maxWords = formData.mediaType === 'image' ? 50 : 8;
+                    const maxWords = formData.mediaType === 'image' ? 20 : 15;
                     if (words.length <= maxWords) {
                       setFormData({ ...formData, description: e.target.value });
                     }
                   }}
-                  placeholder={formData.mediaType === 'image' ? "Write your detailed review (5-50 words)..." : "Write your review (3-8 words)..."}
+                  placeholder={formData.mediaType === 'image' ? "Write your detailed review (5-20 words)..." : "Write your review (3-15 words)..."}
                   rows={isMobile ? 6 : 8}
                   className="resize-none text-base"
                 />

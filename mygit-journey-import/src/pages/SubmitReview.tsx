@@ -216,7 +216,7 @@ const SubmitReview = () => {
         return formData.mediaUrl;
       case 3:
         const wordCount = formData.description.trim().split(/\s+/).filter(word => word.length > 0).length;
-        return formData.rating > 0 && wordCount >= 3 && wordCount <= 8;
+        return formData.rating > 0 && wordCount >= 3 && wordCount <= (formData.mediaType === 'image' ? 20 : 15);
       default:
         return false;
     }
@@ -270,9 +270,40 @@ const SubmitReview = () => {
                 </svg>
               ))}
             </div>
-            <p className={`${isMobile ? 'text-xs' : 'text-sm'} text-white/90 line-clamp-2`}>
-              "{description || 'Your review will appear here...'}"
-            </p>
+            <div className="relative">
+              <p className={`${isMobile ? 'text-xs' : 'text-sm'} text-white/90 line-clamp-2 transition-all duration-300`}>
+                "{description || 'Your review will appear here...'}"
+              </p>
+              {description && description.split(' ').length > 8 && (
+                <button 
+                  className="text-xs text-white/70 hover:text-white/90 mt-1 transition-colors duration-200 flex items-center gap-1"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    const textElement = e.target.closest('.relative').querySelector('p');
+                    const button = e.target.closest('button');
+                    const span = button.querySelector('span');
+                    const icon = button.querySelector('svg');
+                    
+                    if (textElement.classList.contains('line-clamp-none')) {
+                      textElement.classList.remove('line-clamp-none');
+                      textElement.classList.add('line-clamp-2');
+                      span.textContent = 'more';
+                      icon.style.transform = 'rotate(0deg)';
+                    } else {
+                      textElement.classList.remove('line-clamp-2');
+                      textElement.classList.add('line-clamp-none');
+                      span.textContent = 'less';
+                      icon.style.transform = 'rotate(180deg)';
+                    }
+                  }}
+                >
+                  <span>more</span>
+                  <svg className="w-3 h-3 transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path>
+                  </svg>
+                </button>
+              )}
+            </div>
             <div className={`flex items-center space-x-2 ${isMobile ? 'text-xs' : 'text-sm'}`}>
               <div className={`${isMobile ? 'w-5 h-5' : 'w-10 h-10'} rounded-full overflow-hidden bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center font-bold text-white`}>
                 {profilePictureUrl ? (
@@ -496,25 +527,28 @@ const SubmitReview = () => {
               <div>
                 <div className="flex justify-between items-center mb-2">
                   <label className="block text-sm font-medium">Review Text *</label>
-                  <span className={`text-xs ${formData.description.trim().split(/\s+/).filter(word => word.length > 0).length > 8 ? 'text-red-500' : 'text-gray-500'}`}>
-                    {formData.description.trim().split(/\s+/).filter(word => word.length > 0).length}/8 words
+                  <span className={`text-xs ${formData.description.trim().split(/\s+/).filter(word => word.length > 0).length > (formData.mediaType === 'image' ? 20 : 15) ? 'text-red-500' : 'text-gray-500'}`}>
+                    {formData.description.trim().split(/\s+/).filter(word => word.length > 0).length}/{formData.mediaType === 'image' ? '20' : '15'} words
                   </span>
                 </div>
                 <Textarea
                   value={formData.description}
                   onChange={(e) => {
                     const words = e.target.value.trim().split(/\s+/).filter(word => word.length > 0);
-                    // Limit to 8 words maximum
-                    if (words.length <= 8) {
+                    const maxWords = formData.mediaType === 'image' ? 20 : 15;
+                    if (words.length <= maxWords) {
                       setFormData({ ...formData, description: e.target.value });
                     }
                   }}
-                  placeholder="Share your experience in 3-8 words..."
+                  placeholder={formData.mediaType === 'image' ? "Share your experience in 3-20 words..." : "Share your experience in 3-15 words..."}
                   rows={isMobile ? 4 : 6}
                   className="resize-none text-base"
                 />
                 <p className="text-xs text-gray-500 mt-1">
-                  Keep it short and sweet! 3-8 words maximum to ensure it displays properly.
+                  {formData.mediaType === 'image' 
+                    ? "Keep it concise! 3-20 words maximum for images." 
+                    : "Keep it short and sweet! 3-15 words maximum for videos."
+                  }
                 </p>
               </div>
             </div>
