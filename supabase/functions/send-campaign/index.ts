@@ -184,16 +184,16 @@ async function getUserSettings(supabase: SupabaseClient, userId: string) {
   if (error) {
     console.warn('⚠️ Could not load user settings, using defaults:', error);
     return {
-      delay_between_emails: 2,
-      batch_size: 10,
-      delay_between_batches: 5
+      delay_between_emails: 1, // Reduced from 2 to 1 second
+      batch_size: 50, // Increased from 10 to 50 for better throughput
+      delay_between_batches: 1 // Reduced from 5 to 1 minute
     };
   }
 
   return {
-    delay_between_emails: settings?.delay_between_emails || 2,
-    batch_size: settings?.batch_size || 10,
-    delay_between_batches: settings?.delay_between_batches || 5
+    delay_between_emails: settings?.delay_between_emails || 1, // Reduced default
+    batch_size: settings?.batch_size || 50, // Increased default
+    delay_between_batches: settings?.delay_between_batches || 1 // Reduced default
   };
 }
 
@@ -210,12 +210,41 @@ async function processSends(supabase: SupabaseClient, campaign: any, contacts: C
   let currentSenderSequence = campaign.sender_sequence_number || 1;
   
   try {
+    // Get already sent emails to resume from where we left off
+    const { data: sentEmails } = await supabase
+      .from('campaign_sends')
+      .select('contact_email')
+      .eq('campaign_id', campaign.id)
+      .eq('status', 'sent');
+    
+    const sentEmailSet = new Set(sentEmails?.map(s => s.contact_email) || []);
+    console.log(`📋 Found ${sentEmailSet.size} already sent emails, resuming campaign...`);
+    
     // Process contacts one by one for proper timing and sequence tracking
     for (let i = 0; i < contacts.length; i++) {
       const contact = contacts[i];
       
+      // Skip if already sent
+      if (sentEmailSet.has(contact.email)) {
+        sentCount++;
+        console.log(`⏭️ Skipping already sent: ${contact.email}`);
+        continue;
+      }
+      
       try {
         console.log(`📧 Sending to: ${contact.email} (${i + 1}/${contacts.length}) - Sender #${currentSenderSequence}`);
+        
+        // Check if campaign was paused
+        const { data: campaignStatus } = await supabase
+          .from('campaigns')
+          .select('status')
+          .eq('id', campaign.id)
+          .single();
+        
+        if (campaignStatus?.status === 'paused') {
+          console.log('⏸️ Campaign paused, stopping send process');
+          break;
+        }
         
         // Update current progress before sending
         await updateCampaign(supabase, campaign.id, {
@@ -279,6 +308,14 @@ async function processSends(supabase: SupabaseClient, campaign: any, contacts: C
           await new Promise(resolve => setTimeout(resolve, settings.delay_between_emails * 1000));
         }
         
+        // Check if we're approaching timeout (process in smaller chunks)
+        if (sentCount % 25 === 0) {
+          console.log(`🔄 Processed ${sentCount} emails, scheduling next batch...`);
+          // Schedule next batch to continue processing
+          await scheduleNextBatch(supabase, campaign.id, contacts.slice(i + 1), emailsPerSequence, maxSenderSequences, currentSenderSequence);
+          break;
+        }
+        
       } catch (error: any) {
         console.error(`❌ Failed to send to ${contact.email}:`, error);
         failedCount++;
@@ -296,15 +333,33 @@ async function processSends(supabase: SupabaseClient, campaign: any, contacts: C
       }
     }
     
-    // Campaign completed
-    await updateCampaign(supabase, campaign.id, {
-      status: 'sent',
-      sent_count: sentCount,
-      sent_at: new Date().toISOString(),
-      sender_sequence_number: currentSenderSequence
-    });
+    // Check if campaign is complete
+    const { data: finalStatus } = await supabase
+      .from('campaign_sends')
+      .select('status')
+      .eq('campaign_id', campaign.id);
     
-    console.log(`🎉 Campaign completed! Sent: ${sentCount}, Failed: ${failedCount}`);
+    const totalSends = finalStatus?.length || 0;
+    const completedSends = finalStatus?.filter(s => s.status === 'sent').length || 0;
+    
+    if (completedSends >= totalSends && totalSends > 0) {
+      // Campaign completed
+      await updateCampaign(supabase, campaign.id, {
+        status: 'sent',
+        sent_count: completedSends,
+        sent_at: new Date().toISOString(),
+        sender_sequence_number: currentSenderSequence
+      });
+      console.log(`🎉 Campaign completed! Sent: ${completedSends}, Failed: ${totalSends - completedSends}`);
+    } else {
+      // Campaign still in progress
+      await updateCampaign(supabase, campaign.id, {
+        status: 'sending',
+        sent_count: completedSends,
+        sender_sequence_number: currentSenderSequence
+      });
+      console.log(`⏳ Campaign in progress: ${completedSends}/${totalSends} sent`);
+    }
     
   } catch (error: any) {
     console.error('❌ Fatal error in send process:', error);
@@ -313,6 +368,26 @@ async function processSends(supabase: SupabaseClient, campaign: any, contacts: C
       status: 'failed',
       error_message: error.message
     });
+  }
+}
+
+async function scheduleNextBatch(supabase: SupabaseClient, campaignId: string, remainingContacts: Contact[], emailsPerSequence: number, maxSenderSequences: number, currentSenderSequence: number) {
+  try {
+    // Schedule the next batch by calling the function again with remaining contacts
+    const { data: campaign } = await supabase
+      .from('campaigns')
+      .select('*')
+      .eq('id', campaignId)
+      .single();
+    
+    if (campaign && remainingContacts.length > 0) {
+      console.log(`📅 Scheduling next batch with ${remainingContacts.length} remaining contacts...`);
+      
+      // Use EdgeRuntime.waitUntil to schedule the next batch
+      EdgeRuntime.waitUntil(processSends(supabase, campaign, remainingContacts, emailsPerSequence, maxSenderSequences));
+    }
+  } catch (error) {
+    console.error('❌ Failed to schedule next batch:', error);
   }
 }
 

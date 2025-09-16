@@ -115,9 +115,9 @@ async function getUserSettings(supabase: SupabaseClient, userId: string) {
     .maybeSingle();
   
   return {
-    delayBetweenEmails: (data?.delay_between_emails || 2) * 1000, // Convert to ms
-    batchSize: data?.batch_size || 10,
-    delayBetweenBatches: (data?.delay_between_batches || 5) * 60 * 1000, // Convert to ms
+    delayBetweenEmails: (data?.delay_between_emails || 1) * 1000, // Convert to ms, reduced default
+    batchSize: data?.batch_size || 50, // Increased default for better throughput
+    delayBetweenBatches: (data?.delay_between_batches || 1) * 60 * 1000, // Convert to ms, reduced default
   };
 }
 
@@ -134,6 +134,16 @@ async function processSends(
   let sentCount = 0;
   const settings = await getUserSettings(supabase, '550e8400-e29b-41d4-a716-446655440000');
 
+  // Get already sent emails to resume from where we left off
+  const { data: sentEmails } = await supabase
+    .from('campaign_sends')
+    .select('contact_email')
+    .eq('campaign_id', campaignId)
+    .eq('status', 'sent');
+  
+  const sentEmailSet = new Set(sentEmails?.map(s => s.contact_email) || []);
+  console.log(`📋 Found ${sentEmailSet.size} already sent emails, resuming campaign...`);
+
   for (let i = 0; i < contacts.length; i += settings.batchSize) {
     const { data: c } = await supabase.from('campaigns').select('status').eq('id', campaignId).maybeSingle();
     if (c?.status === 'paused') break;
@@ -142,6 +152,13 @@ async function processSends(
     
     // Process emails one by one with individual delays
     for (const contact of batch) {
+      // Skip if already sent
+      if (sentEmailSet.has(contact.email)) {
+        sentCount++;
+        console.log(`⏭️ Skipping already sent: ${contact.email}`);
+        continue;
+      }
+
       try {
         // Generate unsubscribe token for this contact
         const { data: tokenData } = await supabase.functions.invoke('generate-unsubscribe-token', {
@@ -179,6 +196,14 @@ async function processSends(
         if (contact !== batch[batch.length - 1]) {
           await sleep(settings.delayBetweenEmails);
         }
+
+        // Check if we're approaching timeout (process in smaller chunks)
+        if (sentCount % 25 === 0) {
+          console.log(`🔄 Processed ${sentCount} emails, scheduling next batch...`);
+          // Schedule next batch to continue processing
+          await scheduleNextBatch(supabase, campaignId, webhookUrl, title, html, name, senderSequenceNumber, contacts.slice(i + 1));
+          break;
+        }
       } catch (e: any) {
         await markSend(supabase, campaignId, contact.email, { status: 'failed', error_message: e?.message || String(e) });
       }
@@ -190,8 +215,35 @@ async function processSends(
     }
   }
 
-  const finalStatus = sentCount === contacts.length ? 'sent' : (contacts.length === 0 ? 'sent' : 'failed');
-  await updateCampaign(supabase, campaignId, { status: finalStatus, sent_count: sentCount });
+  // Check if campaign is complete
+  const { data: finalStatus } = await supabase
+    .from('campaign_sends')
+    .select('status')
+    .eq('campaign_id', campaignId);
+  
+  const totalSends = finalStatus?.length || 0;
+  const completedSends = finalStatus?.filter(s => s.status === 'sent').length || 0;
+  
+  if (completedSends >= totalSends && totalSends > 0) {
+    await updateCampaign(supabase, campaignId, { status: 'sent', sent_count: completedSends });
+    console.log(`🎉 Campaign completed! Sent: ${completedSends}, Failed: ${totalSends - completedSends}`);
+  } else {
+    await updateCampaign(supabase, campaignId, { status: 'sending', sent_count: completedSends });
+    console.log(`⏳ Campaign in progress: ${completedSends}/${totalSends} sent`);
+  }
+}
+
+async function scheduleNextBatch(supabase: SupabaseClient, campaignId: string, webhookUrl: string, title: string, html: string, name: string, senderSequenceNumber: number, remainingContacts: Contact[]) {
+  try {
+    if (remainingContacts.length > 0) {
+      console.log(`📅 Scheduling next batch with ${remainingContacts.length} remaining contacts...`);
+      
+      // Use EdgeRuntime.waitUntil to schedule the next batch
+      EdgeRuntime.waitUntil(processSends(supabase, campaignId, webhookUrl, title, html, name, senderSequenceNumber, remainingContacts));
+    }
+  } catch (error) {
+    console.error('❌ Failed to schedule next batch:', error);
+  }
 }
 
 serve(handler);
