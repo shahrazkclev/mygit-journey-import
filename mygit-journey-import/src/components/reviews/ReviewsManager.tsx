@@ -102,6 +102,8 @@ export const ReviewsManager = () => {
   const [mediaUploadProgress, setMediaUploadProgress] = useState(0);
   const [thumbnailUploading, setThumbnailUploading] = useState(false);
   const [thumbnailUploadProgress, setThumbnailUploadProgress] = useState(0);
+  const [avatarUploading, setAvatarUploading] = useState(false);
+  const [avatarUploadProgress, setAvatarUploadProgress] = useState(0);
   const [addCustomerDialogOpen, setAddCustomerDialogOpen] = useState(false);
   const [newCustomerData, setNewCustomerData] = useState({
     email: '',
@@ -702,6 +704,42 @@ export const ReviewsManager = () => {
     } finally {
       setMediaUploading(false);
       setMediaUploadProgress(0);
+    }
+  };
+
+  const handleAvatarUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    setAvatarUploading(true);
+    try {
+      console.log('Uploading avatar:', file.name);
+      
+      const url = await uploadToR2(file, (progress) => {
+        setAvatarUploadProgress(progress);
+      });
+      
+      console.log('Avatar upload successful, URL:', url);
+      
+      setEditingReview(prev => ({
+        ...prev,
+        user_avatar: url
+      }));
+      
+      toast({
+        title: "Success",
+        description: "Avatar uploaded successfully",
+      });
+    } catch (error) {
+      console.error('Avatar upload failed:', error);
+      toast({
+        title: "Upload Failed",
+        description: error instanceof Error ? error.message : "Failed to upload avatar. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setAvatarUploading(false);
+      setAvatarUploadProgress(0);
     }
   };
 
@@ -1631,6 +1669,48 @@ export const ReviewsManager = () => {
                       id="user_instagram_handle"
                       value={editingReview.user_instagram_handle || ''}
                       onChange={(e) => setEditingReview(prev => ({ ...prev, user_instagram_handle: e.target.value }))}
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Profile Picture */}
+              <div className="space-y-4">
+                <h3 className="text-sm font-medium">Profile Picture</h3>
+                <div className="flex items-center gap-4">
+                  <div className="relative">
+                    <img 
+                      src={editingReview.user_avatar || '/placeholder-avatar.png'} 
+                      alt="Profile picture"
+                      className="w-16 h-16 rounded-full object-cover border-2 border-gray-200"
+                    />
+                  </div>
+                  <div className="flex-1">
+                    <Label htmlFor="profile-picture-upload" className="cursor-pointer">
+                      <div className="border-2 border-dashed border-muted-foreground/25 rounded-lg p-3 hover:border-muted-foreground/50 transition-colors">
+                        {avatarUploading ? (
+                          <div className="flex items-center gap-2">
+                            <RefreshCw className="h-4 w-4 animate-spin text-muted-foreground" />
+                            <span className="text-sm text-muted-foreground">
+                              Uploading... {avatarUploadProgress}%
+                            </span>
+                          </div>
+                        ) : (
+                          <div className="flex items-center gap-2">
+                            <Upload className="h-4 w-4 text-muted-foreground" />
+                            <span className="text-sm text-muted-foreground">
+                              Click to change profile picture
+                            </span>
+                          </div>
+                        )}
+                      </div>
+                    </Label>
+                    <input
+                      id="profile-picture-upload"
+                      type="file"
+                      accept="image/*"
+                      onChange={handleAvatarUpload}
+                      className="hidden"
                     />
                   </div>
                 </div>
