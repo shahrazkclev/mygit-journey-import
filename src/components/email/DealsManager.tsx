@@ -182,7 +182,7 @@ export const DealsManager: React.FC = () => {
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
-        <h2 className="text-2xl font-bold text-email-primary">Deals Management</h2>
+        <h2 className="text-xl font-bold text-email-primary">Deals Management</h2>
         <Dialog open={showAddDeal} onOpenChange={setShowAddDeal}>
           <DialogTrigger asChild>
             <Button className="bg-email-primary hover:bg-email-primary/80">

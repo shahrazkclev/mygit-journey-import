@@ -5,10 +5,11 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { Plus, Package, Edit, Trash2, Link, Video, Percent, ExternalLink, ChevronDown, ChevronRight, RefreshCw } from 'lucide-react';
+import { Plus, Package, Edit, Trash2, Link, Video, Percent, ExternalLink, Tag } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
+import { DealsManager } from './DealsManager';
 
 interface Product {
   id: string;
@@ -65,7 +66,6 @@ export const ProductManager: React.FC = () => {
     videoGuideUrl: ''
   });
   const [loadingLinks, setLoadingLinks] = useState(false);
-  const [showDebugLinks, setShowDebugLinks] = useState(false);
 
   useEffect(() => {
     loadProducts();
@@ -327,9 +327,6 @@ export const ProductManager: React.FC = () => {
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <h2 className="text-2xl font-bold text-email-primary">Product Management</h2>
-        <div className="text-sm text-muted-foreground">
-          {productLinks.length} product links loaded
-        </div>
         <Dialog open={showAddProduct} onOpenChange={setShowAddProduct}>
           <DialogTrigger asChild>
             <Button className="bg-email-primary hover:bg-email-primary/80">
@@ -414,65 +411,6 @@ export const ProductManager: React.FC = () => {
         </Dialog>
       </div>
 
-      {/* Debug Section - Product Links */}
-      <Card className="shadow-lg border border-blue-200 bg-blue-50/50">
-        <CardHeader className="pb-3">
-          <div 
-            className="flex items-center justify-between cursor-pointer"
-            onClick={() => setShowDebugLinks(!showDebugLinks)}
-          >
-            <CardTitle className="text-sm text-blue-800 flex items-center gap-2">
-              {showDebugLinks ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
-              Debug: Product Links ({productLinks.length} total)
-            </CardTitle>
-            <div className="flex gap-2">
-              <Button 
-                variant="ghost" 
-                size="sm" 
-                onClick={(e) => {
-                  e.stopPropagation();
-                  loadProductLinks();
-                  toast.success('Product links refreshed');
-                }}
-                className="text-blue-600 hover:text-blue-800"
-              >
-                <RefreshCw className="h-3 w-3 mr-1" />
-                Refresh
-              </Button>
-              <Button variant="ghost" size="sm" className="text-blue-600 hover:text-blue-800">
-                {showDebugLinks ? 'Hide' : 'Show'}
-              </Button>
-            </div>
-          </div>
-        </CardHeader>
-        {showDebugLinks && (
-          <CardContent className="pt-0">
-            <div className="space-y-2 max-h-60 overflow-y-auto">
-              {productLinks.length === 0 ? (
-                <p className="text-sm text-muted-foreground">No product links found</p>
-              ) : (
-                productLinks.map((link) => (
-                  <div key={link.id} className="p-2 bg-white rounded border text-xs">
-                    <div className="font-medium text-gray-900">{link.tag_name}</div>
-                    <div className="text-gray-600">
-                      Download: {link.download_url ? '✅ Set' : '❌ Not set'}
-                    </div>
-                    <div className="text-gray-600">
-                      Video: {link.video_guide_url ? '✅ Set' : '❌ Not set'}
-                    </div>
-                    {link.download_url && (
-                      <div className="text-blue-600 truncate">📥 {link.download_url}</div>
-                    )}
-                    {link.video_guide_url && (
-                      <div className="text-red-600 truncate">🎥 {link.video_guide_url}</div>
-                    )}
-                  </div>
-                ))
-              )}
-            </div>
-          </CardContent>
-        )}
-      </Card>
 
       <Card className="shadow-xl shadow-email-primary/10 bg-gradient-to-br from-email-background via-white to-email-muted/20 border border-email-primary/20">
         <CardHeader className="bg-gradient-to-r from-email-primary/5 via-email-accent/5 to-email-primary/5 border-b border-email-primary/20">
@@ -586,6 +524,11 @@ export const ProductManager: React.FC = () => {
           </div>
         </CardContent>
       </Card>
+
+      {/* Deals Management Section */}
+      <div className="mt-8">
+        <DealsManager />
+      </div>
 
       {/* Edit Product Dialog */}
       <Dialog open={editingProduct !== null} onOpenChange={() => setEditingProduct(null)}>
