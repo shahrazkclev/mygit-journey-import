@@ -5,7 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { Plus, Package, Edit, Trash2, Link, Video } from 'lucide-react';
+import { Plus, Package, Edit, Trash2, Link, Video, Percent, ExternalLink, ChevronDown, ChevronRight, RefreshCw } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -29,6 +29,22 @@ interface ProductLink {
   description: string | null;
 }
 
+interface Deal {
+  id: string;
+  user_id: string;
+  title: string;
+  description: string | null;
+  discount_percent: number | null;
+  original_price: number | null;
+  discounted_price: number | null;
+  buy_link: string | null;
+  ad_image_url: string | null;
+  is_active: boolean;
+  expires_at: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
 export const ProductManager: React.FC = () => {
   const { user } = useAuth();
   const [products, setProducts] = useState<Product[]>([]);
@@ -43,14 +59,18 @@ export const ProductManager: React.FC = () => {
   const [showAddProduct, setShowAddProduct] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [productLinks, setProductLinks] = useState<ProductLink[]>([]);
+  const [deals, setDeals] = useState<Deal[]>([]);
   const [editingLinks, setEditingLinks] = useState({
     downloadUrl: '',
     videoGuideUrl: ''
   });
+  const [loadingLinks, setLoadingLinks] = useState(false);
+  const [showDebugLinks, setShowDebugLinks] = useState(false);
 
   useEffect(() => {
     loadProducts();
     loadProductLinks();
+    loadDeals();
   }, []);
 
   const loadProducts = async () => {
@@ -81,6 +101,23 @@ export const ProductManager: React.FC = () => {
     } catch (error) {
       console.error('Error loading product links:', error);
       toast.error('Failed to load product links');
+    }
+  };
+
+  const loadDeals = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('deals')
+        .select('*')
+        .eq('user_id', user?.id)
+        .eq('is_active', true)
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      setDeals(data || []);
+    } catch (error) {
+      console.error('Error loading deals:', error);
+      toast.error('Failed to load deals');
     }
   };
 
@@ -215,22 +252,63 @@ export const ProductManager: React.FC = () => {
     }
   };
 
-  const loadExistingLinks = (tagName: string) => {
-    const existingLink = productLinks.find(link => link.tag_name === tagName);
-    if (existingLink) {
-      setEditingLinks({
-        downloadUrl: existingLink.download_url || '',
-        videoGuideUrl: existingLink.video_guide_url || ''
-      });
-    } else {
+  const loadExistingLinks = async (tagName: string) => {
+    try {
+      setLoadingLinks(true);
+      // Fetch the latest link data from database
+      const { data: existingLink, error } = await supabase
+        .from('product_links')
+        .select('*')
+        .eq('tag_name', tagName)
+        .single();
+
+      if (error && error.code !== 'PGRST116') { // PGRST116 is "not found" error
+        console.error('Error loading existing links:', error);
+        toast.error('Failed to load existing links');
+        return;
+      }
+
+      if (existingLink) {
+        console.log('Found existing link for tag:', tagName, existingLink);
+        setEditingLinks({
+          downloadUrl: existingLink.download_url || '',
+          videoGuideUrl: existingLink.video_guide_url || ''
+        });
+      } else {
+        console.log('No existing link found for tag:', tagName);
+        setEditingLinks({ downloadUrl: '', videoGuideUrl: '' });
+      }
+    } catch (error) {
+      console.error('Error loading existing links:', error);
       setEditingLinks({ downloadUrl: '', videoGuideUrl: '' });
+    } finally {
+      setLoadingLinks(false);
     }
+  };
+
+  const getDealsForProduct = (product: Product) => {
+    if (!product.tag) return [];
+    
+    // Find deals that match the product tag or are general deals
+    return deals.filter(deal => {
+      // Check if deal title contains the product tag or vice versa
+      const dealTitleLower = deal.title.toLowerCase();
+      const productTagLower = product.tag.toLowerCase();
+      
+      return dealTitleLower.includes(productTagLower) || 
+             productTagLower.includes(dealTitleLower) ||
+             dealTitleLower.includes(product.name.toLowerCase()) ||
+             product.name.toLowerCase().includes(dealTitleLower);
+    });
   };
 
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <h2 className="text-2xl font-bold text-email-primary">Product Management</h2>
+        <div className="text-sm text-muted-foreground">
+          {productLinks.length} product links loaded
+        </div>
         <Dialog open={showAddProduct} onOpenChange={setShowAddProduct}>
           <DialogTrigger asChild>
             <Button className="bg-email-primary hover:bg-email-primary/80">
@@ -315,6 +393,66 @@ export const ProductManager: React.FC = () => {
         </Dialog>
       </div>
 
+      {/* Debug Section - Product Links */}
+      <Card className="shadow-lg border border-blue-200 bg-blue-50/50">
+        <CardHeader className="pb-3">
+          <div 
+            className="flex items-center justify-between cursor-pointer"
+            onClick={() => setShowDebugLinks(!showDebugLinks)}
+          >
+            <CardTitle className="text-sm text-blue-800 flex items-center gap-2">
+              {showDebugLinks ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+              Debug: Product Links ({productLinks.length} total)
+            </CardTitle>
+            <div className="flex gap-2">
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                onClick={(e) => {
+                  e.stopPropagation();
+                  loadProductLinks();
+                  toast.success('Product links refreshed');
+                }}
+                className="text-blue-600 hover:text-blue-800"
+              >
+                <RefreshCw className="h-3 w-3 mr-1" />
+                Refresh
+              </Button>
+              <Button variant="ghost" size="sm" className="text-blue-600 hover:text-blue-800">
+                {showDebugLinks ? 'Hide' : 'Show'}
+              </Button>
+            </div>
+          </div>
+        </CardHeader>
+        {showDebugLinks && (
+          <CardContent className="pt-0">
+            <div className="space-y-2 max-h-60 overflow-y-auto">
+              {productLinks.length === 0 ? (
+                <p className="text-sm text-muted-foreground">No product links found</p>
+              ) : (
+                productLinks.map((link) => (
+                  <div key={link.id} className="p-2 bg-white rounded border text-xs">
+                    <div className="font-medium text-gray-900">{link.tag_name}</div>
+                    <div className="text-gray-600">
+                      Download: {link.download_url ? '✅ Set' : '❌ Not set'}
+                    </div>
+                    <div className="text-gray-600">
+                      Video: {link.video_guide_url ? '✅ Set' : '❌ Not set'}
+                    </div>
+                    {link.download_url && (
+                      <div className="text-blue-600 truncate">📥 {link.download_url}</div>
+                    )}
+                    {link.video_guide_url && (
+                      <div className="text-red-600 truncate">🎥 {link.video_guide_url}</div>
+                    )}
+                  </div>
+                ))
+              )}
+            </div>
+          </CardContent>
+        )}
+      </Card>
+
       <Card className="shadow-xl shadow-email-primary/10 bg-gradient-to-br from-email-background via-white to-email-muted/20 border border-email-primary/20">
         <CardHeader className="bg-gradient-to-r from-email-primary/5 via-email-accent/5 to-email-primary/5 border-b border-email-primary/20">
           <CardTitle className="flex items-center space-x-3">
@@ -331,52 +469,98 @@ export const ProductManager: React.FC = () => {
                 No products found. Add your first product above.
               </p>
             ) : (
-              products.map((product) => (
-                <div key={product.id} className="flex items-center justify-between p-4 border rounded-lg hover:bg-email-muted/20 transition-colors border-email-primary/10">
-                  <div className="flex items-center space-x-3">
-                    <div className="w-10 h-10 bg-email-accent/20 rounded-full flex items-center justify-center">
-                      <Package className="h-5 w-5 text-email-accent" />
-                    </div>
-                    <div>
-                      <div className="font-medium text-email-primary">{product.name}</div>
-                      <div className="text-sm text-muted-foreground">
-                        {product.category && `${product.category} • `}
-                        {product.sku && `SKU: ${product.sku} • `}
-                        {product.tag && `Tag: ${product.tag} • `}
-                        {product.price ? `$${product.price}` : 'No price set'}
-                      </div>
-                      {product.description && (
-                        <div className="text-sm text-muted-foreground mt-1">
-                          {product.description}
+              products.map((product) => {
+                const productDeals = getDealsForProduct(product);
+                return (
+                  <div key={product.id} className="p-4 border rounded-lg hover:bg-email-muted/20 transition-colors border-email-primary/10">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center space-x-3">
+                        <div className="w-10 h-10 bg-email-accent/20 rounded-full flex items-center justify-center">
+                          <Package className="h-5 w-5 text-email-accent" />
                         </div>
-                      )}
-                    </div>
-                  </div>
-                  <div className="flex space-x-2">
+                        <div>
+                          <div className="font-medium text-email-primary">{product.name}</div>
+                          <div className="text-sm text-muted-foreground">
+                            {product.category && `${product.category} • `}
+                            {product.sku && `SKU: ${product.sku} • `}
+                            {product.tag && `Tag: ${product.tag} • `}
+                            {product.price ? `$${product.price}` : 'No price set'}
+                          </div>
+                          {product.description && (
+                            <div className="text-sm text-muted-foreground mt-1">
+                              {product.description}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                      <div className="flex space-x-2">
                     <Button
                       variant="outline"
                       size="sm"
-                      onClick={() => {
+                      onClick={async () => {
                         setEditingProduct(product);
                         if (product.tag) {
-                          loadExistingLinks(product.tag);
+                          await loadExistingLinks(product.tag);
                         }
                       }}
                       className="border-email-secondary text-email-secondary hover:bg-email-secondary/10"
                     >
-                      <Edit className="h-4 w-4" />
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => deleteProduct(product.id)}
-                      className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
+                          <Edit className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => deleteProduct(product.id)}
+                          className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </div>
+                    
+                    {/* Deals Section */}
+                    {productDeals.length > 0 && (
+                      <div className="mt-3 pt-3 border-t border-email-primary/10">
+                        <div className="flex items-center gap-2 mb-2">
+                          <Percent className="h-4 w-4 text-green-600" />
+                          <span className="text-sm font-medium text-green-600">Active Deals</span>
+                        </div>
+                        <div className="space-y-2">
+                          {productDeals.map((deal) => (
+                            <div key={deal.id} className="flex items-center justify-between p-2 bg-green-50 rounded-lg border border-green-200">
+                              <div className="flex items-center space-x-2">
+                                <div className="w-6 h-6 bg-green-100 rounded-full flex items-center justify-center">
+                                  <Percent className="h-3 w-3 text-green-600" />
+                                </div>
+                                <div>
+                                  <div className="text-sm font-medium text-green-800">{deal.title}</div>
+                                  <div className="text-xs text-green-600">
+                                    {deal.discount_percent && `${deal.discount_percent}% off • `}
+                                    {deal.original_price && `$${deal.original_price} → `}
+                                    {deal.discounted_price && `$${deal.discounted_price}`}
+                                    {deal.expires_at && ` • Expires: ${new Date(deal.expires_at).toLocaleDateString()}`}
+                                  </div>
+                                </div>
+                              </div>
+                              {deal.buy_link && (
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => window.open(deal.buy_link!, '_blank')}
+                                  className="border-green-500 text-green-600 hover:bg-green-50"
+                                >
+                                  <ExternalLink className="h-3 w-3 mr-1" />
+                                  Buy
+                                </Button>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
                   </div>
-                </div>
-              ))
+                );
+              })
             )}
           </div>
         </CardContent>
@@ -445,10 +629,10 @@ export const ProductManager: React.FC = () => {
                 <Input
                   id="edit-tag"
                   value={editingProduct.tag || ''}
-                  onChange={(e) => {
+                  onChange={async (e) => {
                     setEditingProduct(prev => prev ? { ...prev, tag: e.target.value } : null);
                     if (e.target.value) {
-                      loadExistingLinks(e.target.value);
+                      await loadExistingLinks(e.target.value);
                     }
                   }}
                   placeholder="product-tag"
@@ -456,7 +640,12 @@ export const ProductManager: React.FC = () => {
               </div>
               {editingProduct.tag && (
                 <div className="space-y-4 p-4 bg-gray-50 rounded-lg">
-                  <h4 className="font-medium text-gray-900">Product Links</h4>
+                  <h4 className="font-medium text-gray-900 flex items-center gap-2">
+                    Product Links
+                    {loadingLinks && (
+                      <div className="w-4 h-4 border-2 border-gray-300 border-t-blue-600 rounded-full animate-spin"></div>
+                    )}
+                  </h4>
                   <div className="space-y-2">
                     <Label htmlFor="edit-download-url" className="flex items-center gap-2">
                       <Link className="h-4 w-4" />
