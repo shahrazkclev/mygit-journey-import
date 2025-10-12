@@ -213,34 +213,36 @@ export const ProductManager: React.FC = () => {
 
       if (existingLink) {
         // Update existing link - use the actual values provided, not the || fallback
-        const { error } = await supabase
+        const { data: updateData, error } = await supabase
           .from('product_links')
           .update({
             download_url: downloadUrl || null, // Use null if empty string
             video_guide_url: videoGuideUrl || null // Use null if empty string
           })
-          .eq('id', existingLink.id);
+          .eq('id', existingLink.id)
+          .select();
 
         if (error) {
           console.error('Error updating existing link:', error);
           throw error;
         }
-        console.log('Successfully updated existing link');
+        console.log('Successfully updated existing link:', updateData);
       } else {
         // Create new link
-        const { error } = await supabase
+        const { data: insertData, error } = await supabase
           .from('product_links')
           .insert([{
             tag_name: tagName,
             download_url: downloadUrl || null,
             video_guide_url: videoGuideUrl || null
-          }]);
+          }])
+          .select();
 
         if (error) {
           console.error('Error creating new link:', error);
           throw error;
         }
-        console.log('Successfully created new link');
+        console.log('Successfully created new link:', insertData);
       }
 
       // Reload product links
