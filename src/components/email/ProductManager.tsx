@@ -177,15 +177,18 @@ export const ProductManager: React.FC = () => {
 
       if (error) throw error;
 
-      // Update product links if tag is provided and links are set
-      if (editingProduct.tag && (editingLinks.downloadUrl || editingLinks.videoGuideUrl)) {
+      // Update product links if tag is provided
+      if (editingProduct.tag) {
+        console.log('Product has tag, updating links:', editingProduct.tag, editingLinks);
         await updateProductLinks(editingProduct.tag, editingLinks.downloadUrl, editingLinks.videoGuideUrl);
+      } else {
+        console.log('Product has no tag, skipping link update');
       }
 
       setProducts(prev => prev.map(p => p.id === editingProduct.id ? data : p));
       setEditingProduct(null);
       setEditingLinks({ downloadUrl: '', videoGuideUrl: '' });
-      toast.success('Product updated successfully');
+      toast.success('Product and links updated successfully');
     } catch (error) {
       console.error('Error updating product:', error);
       toast.error('Failed to update product');
@@ -194,39 +197,55 @@ export const ProductManager: React.FC = () => {
 
   const updateProductLinks = async (tagName: string, downloadUrl: string, videoGuideUrl: string) => {
     try {
+      console.log('Updating product links for tag:', tagName, 'downloadUrl:', downloadUrl, 'videoGuideUrl:', videoGuideUrl);
+      
       // Check if link already exists for this tag
-      const { data: existingLink } = await supabase
+      const { data: existingLink, error: fetchError } = await supabase
         .from('product_links')
         .select('*')
         .eq('tag_name', tagName)
         .single();
 
+      if (fetchError && fetchError.code !== 'PGRST116') {
+        console.error('Error fetching existing link:', fetchError);
+        throw fetchError;
+      }
+
       if (existingLink) {
-        // Update existing link
+        // Update existing link - use the actual values provided, not the || fallback
         const { error } = await supabase
           .from('product_links')
           .update({
-            download_url: downloadUrl || existingLink.download_url,
-            video_guide_url: videoGuideUrl || existingLink.video_guide_url
+            download_url: downloadUrl || null, // Use null if empty string
+            video_guide_url: videoGuideUrl || null // Use null if empty string
           })
           .eq('id', existingLink.id);
 
-        if (error) throw error;
-      } else if (downloadUrl || videoGuideUrl) {
+        if (error) {
+          console.error('Error updating existing link:', error);
+          throw error;
+        }
+        console.log('Successfully updated existing link');
+      } else {
         // Create new link
         const { error } = await supabase
           .from('product_links')
           .insert([{
             tag_name: tagName,
-            download_url: downloadUrl || '',
+            download_url: downloadUrl || null,
             video_guide_url: videoGuideUrl || null
           }]);
 
-        if (error) throw error;
+        if (error) {
+          console.error('Error creating new link:', error);
+          throw error;
+        }
+        console.log('Successfully created new link');
       }
 
       // Reload product links
-      loadProductLinks();
+      await loadProductLinks();
+      console.log('Product links reloaded');
     } catch (error) {
       console.error('Error updating product links:', error);
       toast.error('Failed to update product links');
