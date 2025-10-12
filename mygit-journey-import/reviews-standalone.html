@@ -7,50 +7,113 @@
 <script src="https://cdn.tailwindcss.com"></script>
 <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
 <style>
-    #carousel svg {
-        width: 1rem;
-        height: 1rem;
-    }
-    .no-scrollbar::-webkit-scrollbar { display: none; }
-    .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
-    .grabbing { cursor: grabbing; }
-    .grab { cursor: grab; }
+    /* Reset and base styles */
+    * { box-sizing: border-box; }
     
-    /* Loading states removed - no more skeletons */
-    
-    .fade-in {
-        animation: fadeIn 0.3s ease-in;
-    }
-    @keyframes fadeIn {
-        from { opacity: 0; transform: translateY(10px); }
-        to { opacity: 1; transform: translateY(0); }
+    /* Container - compact height */
+    .reviews-container {
+        width: 100%;
+        max-width: 100%;
+        overflow: hidden;
+        position: relative;
+        height: auto;
+        min-height: auto;
     }
     
-    .error-state {
-        background: #fef2f2;
-        border: 1px solid #fecaca;
-        color: #dc2626;
+    /* Carousel - compact */
+    .reviews-carousel {
+        display: flex;
+        gap: 1rem;
+        padding: 0.5rem;
+        overflow-x: auto; /* Enable scroll on desktop */
+        scroll-behavior: smooth;
+        scrollbar-width: none;
+        -ms-overflow-style: none;
+        cursor: default; /* No grab cursor on desktop */
+        flex-wrap: nowrap; /* Keep cards in a row */
     }
     
-    /* Prevent layout shifts */
-    #component-wrapper {
-        contain: layout style;
-        will-change: auto;
+    .reviews-carousel:active {
+        cursor: grabbing;
     }
     
-    /* Media loading states */
-    .media-placeholder {
-        background: linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%);
+    .reviews-carousel::-webkit-scrollbar {
+        display: none;
+    }
+    
+    /* Cards */
+    .review-card {
+        flex: 0 0 16rem;
+        height: 24rem;
+        border-radius: 1rem;
+        overflow: hidden;
+        position: relative;
+        background: #f3f4f6;
+        transition: transform 0.3s ease, opacity 0.3s ease;
+        opacity: 1;
+    }
+    
+    .review-card.fade-in {
+        animation: fadeInCard 0.5s ease-in-out;
+    }
+    
+    @keyframes fadeInCard {
+        from {
+            opacity: 0;
+            transform: translateY(20px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+    
+    .review-card:hover {
+        transform: scale(1.02);
+    }
+    
+    /* Media */
+    .media-container {
+        position: absolute;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+    }
+    
+    .media-thumbnail,
+    .media-video {
+        position: absolute;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+    
+    .media-video {
+        opacity: 0;
         transition: opacity 0.3s ease;
     }
     
-    .media-content {
-        transition: opacity 0.3s ease;
+    .review-card:hover .media-video {
+        opacity: 1;
     }
     
-    /* Skeleton loading */
-    .skeleton-card {
-        background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+    /* Content overlay */
+    .content-overlay {
+        position: absolute;
+        inset: 0;
+        background: linear-gradient(to top, rgba(0,0,0,0.8) 0%, transparent 50%);
+        display: flex;
+        flex-direction: column;
+        justify-content: flex-end;
+        padding: 1rem;
+        color: white;
+    }
+    
+    
+    /* Loading states */
+    .loading-skeleton {
+        background: linear-gradient(90deg, #c2c2b1 25%, #a8a896 50%, #c2c2b1 75%);
         background-size: 200% 100%;
         animation: skeleton-loading 1.5s infinite;
     }
@@ -60,614 +123,654 @@
         100% { background-position: -200% 0; }
     }
     
-    /* When skeletons are the permanent state (no data), make them more subtle */
-    #loading-skeletons:not(.hidden) .skeleton-card {
-        animation-duration: 3s; /* Slower animation when permanent */
-        opacity: 0.7; /* Slightly transparent */
-    }
-    
-    /* Thumbnail and video states */
-    .thumbnail-layer {
+    .loading-dots {
+        position: absolute;
+        top: 1rem;
+        right: 1rem;
+        display: flex;
+        gap: 0.25rem;
+        opacity: 0;
         transition: opacity 0.3s ease;
     }
     
-    .video-layer {
-        transition: opacity 0.3s ease;
+    .loading-dots.visible {
+        opacity: 1;
     }
     
-    .video-layer.hidden {
-        opacity: 0;
+    .loading-dot {
+        width: 0.5rem;
+        height: 0.5rem;
+        background: rgba(255,255,255,0.8);
+        border-radius: 50%;
+        animation: dot-pulse 1.4s infinite;
     }
     
-    .thumbnail-layer.hidden {
-        opacity: 0;
+    .loading-dot:nth-child(1) { animation-delay: 0s; }
+    .loading-dot:nth-child(2) { animation-delay: 0.2s; }
+    .loading-dot:nth-child(3) { animation-delay: 0.4s; }
+    
+    @keyframes dot-pulse {
+        0%, 80%, 100% { transform: scale(0.8); opacity: 0.5; }
+        40% { transform: scale(1.2); opacity: 1; }
     }
     
-    /* Prevent glitches and maintain horizontal layout */
-    .video-card {
-        flex-shrink: 0;
-        contain: layout style paint;
-    }
-    
-    /* Prevent layout shifts during loading */
-    #component-wrapper {
-        min-height: 24rem; /* h-96 */
-    }
-    
-    /* Smooth transitions to prevent glitches */
-    .video-card * {
-        transition: opacity 0.2s ease-in-out, transform 0.3s ease-in-out;
-    }
-    
-    /* Ensure proper stacking context */
-    .video-card {
-        position: relative;
-        z-index: 1;
-    }
-    
-    .video-card:hover {
-        z-index: 2;
-    }
-    
-    /* Mute button hover states */
-    .video-card:hover .mute-btn {
-        opacity: 1 !important;
-    }
-    
+    /* Controls */
     .mute-btn {
-        transition: opacity 0.3s ease-in-out;
+        position: absolute;
+        top: 1rem;
+        right: 1rem;
+        background: rgba(0,0,0,0.3);
+        border: none;
+        border-radius: 50%;
+        color: white;
+        padding: 0.5rem;
+        cursor: pointer;
+        opacity: 0;
+        transition: opacity 0.3s ease;
     }
     
-    /* Ensure smooth text expansion */
-    .line-clamp-2 {
+    .review-card:hover .mute-btn {
+        opacity: 1;
+    }
+    
+    .play-btn {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        background: rgba(255,255,255,0.15);
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(255,255,255,0.2);
+        border-radius: 50%;
+        color: white;
+        cursor: pointer;
+        opacity: 0;
+        transition: all 0.3s ease;
+        z-index: 20;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 2.5rem;
+        height: 2.5rem;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+    }
+    
+    .play-btn svg {
+        margin-left: 10px;
+        margin-top: 1px;
+    }
+    
+    .play-btn.visible {
+        opacity: 1;
+    }
+    
+    /* Hide play button on desktop */
+    @media (min-width: 769px) {
+        .play-btn {
+            display: none !important;
+        }
+    }
+    
+    /* Show play button on mobile */
+    @media (max-width: 768px) {
+        .play-btn {
+            display: block !important;
+            opacity: 0.8; /* Subtle visibility on mobile */
+        }
+        
+        .play-btn:hover {
+            opacity: 1;
+            transform: translate(-50%, -50%) scale(1.05);
+        }
+    }
+    
+    /* Text */
+    .review-text-container {
+        margin-bottom: 0.25rem;
+        margin-top: 0;
+    }
+    
+    .review-text {
         display: -webkit-box;
         -webkit-line-clamp: 2;
         line-clamp: 2;
         -webkit-box-orient: vertical;
         overflow: hidden;
+        line-height: 1.4;
+        margin-bottom: 0;
     }
     
-    .line-clamp-none {
+    .review-text.expanded {
         -webkit-line-clamp: unset;
         line-clamp: unset;
+        font-size: 0.875rem; /* Scale down from base size */
+        line-height: 1.3; /* Tighter line height for more text */
+        max-height: none; /* No height limit on desktop */
+        overflow-y: visible; /* No scrolling on desktop */
+    }
+    
+    .expand-btn {
+        background: none;
+        border: none;
+        color: rgba(255,255,255,0.7);
+        font-size: 0.75rem;
+        cursor: pointer;
+        padding: 0;
+        margin-top: 0.25rem;
         display: block;
+        text-align: left;
+    }
+    
+    .expand-btn:hover {
+        color: white;
+    }
+    
+    /* Improved visibility when expanded */
+    .review-card.expanded .content-overlay {
+        background: linear-gradient(to top, rgba(0,0,0,0.9) 0%, rgba(0,0,0,0.7) 30%, transparent 70%);
+    }
+    
+    .review-card.expanded .review-text {
+        background: rgba(0,0,0,0.3);
+        padding: 0.5rem;
+        border-radius: 0.5rem;
+        backdrop-filter: blur(4px);
+    }
+    
+    
+    /* Profile picture fixes */
+    .review-card img[alt="Profile"] {
+        object-fit: cover !important;
+        object-position: center !important;
+        width: 100% !important;
+        height: 100% !important;
+        max-width: 100% !important;
+        max-height: 100% !important;
+        min-width: 0 !important;
+        min-height: 0 !important;
+        border-radius: 50% !important;
+        display: block !important;
+    }
+    
+    /* Mobile optimizations */
+    @media (max-width: 768px) {
+        .review-card {
+            flex: 0 0 14rem;
+            height: 20rem;
+        }
+        
+        .reviews-carousel {
+            padding: 0.5rem 0.25rem;
+            overflow-x: auto; /* Enable scroll on mobile */
+            cursor: grab; /* Grab cursor on mobile */
+        }
+        
+        .reviews-carousel:active {
+            cursor: grabbing;
+        }
+        
+        /* Mobile: Allow scrolling for expanded text */
+        .review-text.expanded {
+            max-height: 6rem; /* Limit height on mobile */
+            overflow-y: auto; /* Allow scrolling on mobile */
+        }
     }
 </style>
 </head>
-<body class="bg-stone-100 text-gray-800 font-sans">
-
-<div id="component-wrapper" class="w-full relative">
-    <!-- Loading Skeletons -->
-    <div id="loading-skeletons" class="flex gap-4 py-8 px-2">
-        <div class="skeleton-card w-64 h-96 rounded-2xl flex-shrink-0"></div>
-        <div class="skeleton-card w-64 h-96 rounded-2xl flex-shrink-0"></div>
-        <div class="skeleton-card w-64 h-96 rounded-2xl flex-shrink-0"></div>
-        <div class="skeleton-card w-64 h-96 rounded-2xl flex-shrink-0"></div>
-        <div class="skeleton-card w-64 h-96 rounded-2xl flex-shrink-0"></div>
+<body>
+<div class="reviews-container">
+    <!-- Reviews Content with Skeletons -->
+    <div id="reviews-content" class="reviews-carousel">
+        <!-- Skeleton cards - always visible initially -->
+        <div class="review-card loading-skeleton"></div>
+        <div class="review-card loading-skeleton"></div>
+        <div class="review-card loading-skeleton"></div>
+        <div class="review-card loading-skeleton"></div>
+        <div class="review-card loading-skeleton"></div>
     </div>
     
-    <!-- Main Carousel - Hidden initially -->
-    <div id="carousel-wrapper" class="no-scrollbar w-full overflow-x-scroll scroll-smooth grab hidden">
-        <div id="carousel" class="flex gap-4 py-8 px-2">
-        </div>
-    </div>
 </div>
 
 <script>
-    // Supabase Configuration
-    const SUPABASE_URL = "https://mixifcnokcmxarpzwfiy.supabase.co";
-    const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1peGlmY25va2NteGFycHp3Zml5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTM0NjYwNTEsImV4cCI6MjA2OTA0MjA1MX0.-4uIuzcHcDGS20-dtKbjVFOtpBSmwYhT9Bgt6KA-dXI";
-    const { createClient } = supabase;
-    const supabaseClient = createClient(SUPABASE_URL, SUPABASE_KEY);
+    // Configuration
+    const CONFIG = {
+        supabaseUrl: "https://mixifcnokcmxarpzwfiy.supabase.co",
+        supabaseKey: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1peGlmY25va2NteGFycHp3Zml5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTM0NjYwNTEsImV4cCI6MjA2OTA0MjA1MX0.-4uIuzcHcDGS20-dtKbjVFOtpBSmwYhT9Bgt6KA-dXI",
+        timeout: 10000,
+        maxReviews: 20
+    };
 
-    // Global state
-    let isUnmutedGlobally = false;
-    let reviews = [];
-    let isLoading = true;
-    let hasError = false;
-    const isMobile = window.matchMedia("(pointer: coarse)").matches;
+    // State
+    let supabaseClient = null;
+    let isUnmuted = false;
+    let loadedVideos = new Set();
+    let isLoading = false;
     
-    // Performance optimizations
-    const LOADING_TIMEOUT = 5000; // 5 second timeout (reduced for embedded scenarios)
-    
-    // Preload critical resources
-    function preloadCriticalResources() {
-        // Preload sample images for faster fallback
-        const sampleImages = [
-            'https://images.unsplash.com/photo-1494790108755-2616b612b786?w=100&h=100&fit=crop&crop=face',
-            'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&h=100&fit=crop&crop=face',
-            'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=100&h=100&fit=crop&crop=face'
-        ];
-        
-        sampleImages.forEach(src => {
-            const img = new Image();
-            img.src = src;
-        });
+    // Initialize Supabase
+    function initSupabase() {
+        try {
+            const { createClient } = supabase;
+            supabaseClient = createClient(CONFIG.supabaseUrl, CONFIG.supabaseKey);
+            return true;
+        } catch (error) {
+            console.error('Failed to initialize Supabase:', error);
+            return false;
+        }
     }
 
     // Utility functions
-    function generateAvatarInitial(name) { return name ? name.charAt(0).toUpperCase() : 'U'; }
-    function generateAvatarGradient(name) {
-        const colors = ['from-purple-500 to-pink-500', 'from-blue-500 to-teal-500', 'from-green-500 to-emerald-500', 'from-orange-500 to-red-500', 'from-indigo-500 to-purple-500', 'from-pink-500 to-rose-500', 'from-cyan-500 to-blue-500', 'from-yellow-500 to-orange-500'];
+    function getInitials(name) {
+        return name ? name.charAt(0).toUpperCase() : 'U';
+    }
+    
+    function getGradient(name) {
+        const colors = [
+            'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+            'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
+            'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)',
+            'linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)',
+            'linear-gradient(135deg, #fa709a 0%, #fee140 100%)'
+        ];
         const hash = name ? name.split('').reduce((a, b) => a + b.charCodeAt(0), 0) : 0;
         return colors[hash % colors.length];
     }
+    
     function renderStars(rating) {
-        return Array.from({ length: 5 }, (_, i) => `<svg class="w-4 h-4 ${i < rating ? 'text-yellow-400' : 'text-gray-300'}" fill="currentColor" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.286 3.957a1 1 0 00.95.69h4.162c.969 0 1.371 1.24.588 1.81l-3.367 2.445a1 1 0 00-.364 1.118l1.287 3.957c.3.921-.755 1.688-1.54 1.118l-3.367-2.445a1 1 0 00-1.175 0l-3.367 2.445c-.784.57-1.838-.197-1.54-1.118l1.287-3.957a1 1 0 00-.364-1.118L2.05 9.384c-.783-.57-.38-1.81.588-1.81h4.162a1 1 0 00.95-.69L9.049 2.927z"></path></svg>`).join('');
+        return Array.from({ length: 5 }, (_, i) => 
+            `<span class="text-yellow-400">${i < rating ? '★' : '☆'}</span>`
+        ).join('');
     }
 
+    // Create review card HTML
     function createReviewCard(review) {
-        const avatarInitial = generateAvatarInitial(review.user_name);
-        const avatarGradient = generateAvatarGradient(review.user_name);
+        const initials = getInitials(review.user_name);
+        const gradient = getGradient(review.user_name);
         const stars = renderStars(review.rating);
         const mediaUrl = review.media_url_optimized || review.media_url;
-        const thumbnailUrl = review.thumbnail_url || review.media_url; // Use thumbnail if available, fallback to media
-        const profilePictureUrl = review.user_avatar;
+        const thumbnailUrl = review.thumbnail_url || review.media_url;
+        const isVideo = review.media_type === 'video';
         
-        // Debug logging for profile pictures
-        if (profilePictureUrl) {
-            console.log(`Profile picture URL for review ${review.id}:`, profilePictureUrl);
-        } else {
-            console.log(`No profile picture for review ${review.id}, using initial: ${avatarInitial}`);
-        }
-
-        // Create card with thumbnail immediately visible, video loads in background
+        // Debug: Log description length and content
+        const description = review.description || review.text || review.content || '';
+        console.log(`Review ${review.id}:`, {
+            description: description,
+            length: description.length,
+            hasMoreButton: description.length > 80,
+            allFields: Object.keys(review)
+        });
+        
         return `
-            <div class="video-card relative w-64 h-96 aspect-[2/3] flex-shrink-0 rounded-2xl overflow-hidden transition-transform duration-500 ease-in-out md:hover:scale-105 shadow-lg group bg-gray-200" data-review-id="${review.id}" data-media-url="${mediaUrl}" data-media-type="${review.media_type}" data-thumbnail-url="${thumbnailUrl}" data-has-played="false">
-                <!-- Thumbnail layer - shows immediately -->
-                <div class="thumbnail-layer absolute inset-0 pointer-events-none">
-                    <img src="${thumbnailUrl}" alt="Review thumbnail" class="absolute inset-0 w-full h-full object-cover transition-transform duration-500 ease-in-out md:group-hover:scale-110" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
-                    <div class="absolute inset-0 bg-gray-200 flex items-center justify-center" style="display: none;">
-                        <div class="text-gray-400 text-sm">No thumbnail</div>
+            <div class="review-card" data-review-id="${review.id}" data-media-url="${mediaUrl}" data-media-type="${review.media_type}">
+                <div class="media-container">
+                    <img src="${thumbnailUrl}" alt="Review thumbnail" class="media-thumbnail" onerror="this.style.display='none'">
+                    ${isVideo ? `<video class="media-video" muted loop playsinline preload="none"><source src="${mediaUrl}" type="video/mp4"></video>` : ''}
+                </div>
+                
+                <div class="content-overlay">
+                    <div class="review-text-container">
+                        <p class="review-text">"${description}"</p>
+                        ${description.length > 80 ? '<button class="expand-btn">more</button>' : ''}
+                    </div>
+                    <div class="flex items-center gap-1 mb-1">${stars}</div>
+                    <div class="flex items-center gap-2" style="min-width: 0;">
+                        <div class="w-8 h-8 rounded-full flex items-center justify-center text-white font-bold overflow-hidden flex-shrink-0" style="background: ${gradient}">
+                            ${review.user_avatar ? `<img src="${review.user_avatar}" alt="Profile" style="width: 32px; height: 32px; object-fit: cover; object-position: center; border-radius: 50%; display: block;" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';"><span style="display: none;">${initials}</span>` : initials}
+                        </div>
+                        <a href="https://instagram.com/${review.user_instagram_handle.replace('@', '')}" target="_blank" class="text-white hover:text-blue-300 transition-colors truncate" style="font-size: 0.75rem; line-height: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100px;">
+                            ${review.user_instagram_handle}
+                        </a>
                     </div>
                 </div>
                 
-                <!-- Video layer - hidden initially, shows on hover -->
-                <div class="video-layer absolute inset-0 hidden pointer-events-none">
-                    <div class="video-container absolute inset-0"></div>
-                </div>
-                
-                <div class="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent pointer-events-none"></div>
-                
-                <!-- Mute button - will be added when video loads -->
-                <div class="mute-button-container"></div>
-                
-                <!-- Play button - will be added when video loads -->
-                <div class="play-button-container"></div>
-                
-                <div class="absolute inset-0 p-4 flex flex-col justify-end h-full text-white pointer-events-none">
-                    <div class="space-y-3">
-                        <div class="flex items-center space-x-1">${stars}</div>
-                        <div class="relative">
-                            <p class="text-sm text-white/90 select-none line-clamp-2 transition-all duration-300" id="review-text-${review.id}">"${review.description}"</p>
-                            ${review.description.split(' ').length > 8 ? `
-                                <button class="text-xs text-white/70 hover:text-white/90 mt-1 transition-colors duration-200 flex items-center gap-1 pointer-events-auto" onclick="toggleReviewText('${review.id}')">
-                                    <span class="expand-text-${review.id}">more</span>
-                                    <svg class="w-3 h-3 expand-icon-${review.id} transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                ${isVideo ? `
+                    <div class="loading-dots">
+                        <div class="loading-dot"></div>
+                        <div class="loading-dot"></div>
+                        <div class="loading-dot"></div>
+                    </div>
+                    <button class="play-btn">
+                        <svg width="16" height="16" fill="currentColor" viewBox="0 0 24 24">
+                            <path d="M8 5v14l11-7z"/>
+                        </svg>
+                    </button>
+                    <button class="mute-btn" style="display: none;">
+                        <svg class="mute-icon" width="20" height="20" fill="currentColor" viewBox="0 0 24 24">
+                            <path d="M16.5 12c0-1.77-1.02-3.29-2.5-4.03v2.21l2.45 2.45c.03-.2.05-.41.05-.63zm2.5 0c0 .94-.2 1.82-.54 2.64l1.51 1.51C20.63 14.91 21 13.5 21 12c0-4.28-2.99-7.86-7-8.77v2.06c2.89.86 5 3.54 5 6.71zM4.27 3L3 4.27 7.73 9H3v6h4l5 5v-6.73l4.25 4.25c-.67.52-1.42.93-2.25 1.18v2.06c1.38-.31 2.63-.95 3.69-1.81L19.73 21 21 19.73l-9-9L4.27 3zM12 4L9.91 6.09 12 8.18V4z"/>
+                        </svg>
+                        <svg class="unmute-icon" width="20" height="20" fill="currentColor" viewBox="0 0 24 24" style="display: none;">
+                            <path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/>
                                     </svg>
                                 </button>
                             ` : ''}
                         </div>
-                        <div class="flex items-center space-x-2 text-sm">
-                            <div class="w-8 h-8 rounded-full overflow-hidden bg-gradient-to-br ${avatarGradient} flex items-center justify-center font-bold text-white">
-                                ${profilePictureUrl ? `<img src="${profilePictureUrl}" alt="Profile" class="w-full h-full object-cover" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';"><span style="display: none;">${avatarInitial}</span>` : `<span>${avatarInitial}</span>`}
-                            </div>
-                            <a href="https://instagram.com/${review.user_instagram_handle.replace('@', '')}" target="_blank" rel="noopener noreferrer" class="flex items-center space-x-1.5 group pointer-events-auto">
-                                <svg class="w-4 h-4 text-white/80 group-hover:text-blue-300" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.85s-.011 3.585-.069 4.85c-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.85-.07-3.252-.148-4.771-1.691-4.919-4.919-.058-1.265-.069-1.645-.069-4.85s.011-3.585.069-4.85c.149-3.225 1.664-4.771 4.919-4.919 1.266-.057 1.644-.07 4.85-.07zM12 5.838a6.162 6.162 0 100 12.324 6.162 6.162 0 000-12.324zM12 16a4 4 0 110-8 4 4 0 010 8zm6.406-11.845a1.44 1.44 0 100 2.88 1.44 1.44 0 000-2.88z"/></svg>
-                                <span class="font-medium text-white group-hover:text-blue-300 transition-colors">${review.user_instagram_handle}</span>
-                            </a>
-                        </div>
-                    </div>
-                </div>
-            </div>`;
+        `;
     }
 
-    function updateCardState(card) {
-        const video = card.querySelector('video');
-        const muteBtn = card.querySelector('.mute-btn');
-        if (!video || !muteBtn) return;
-
-        const unmutedIcon = card.querySelector('.mute-icon-unmuted');
-        const mutedIcon = card.querySelector('.mute-icon-muted');
-        const hasPlayed = card.dataset.hasPlayed === 'true';
-        
-        video.muted = !isUnmutedGlobally;
-
-        unmutedIcon.classList.toggle('hidden', video.muted);
-        mutedIcon.classList.toggle('hidden', !video.muted);
-
-        if (isMobile) {
-            // On mobile, only show mute button after video has been played
-            if (hasPlayed) {
-                muteBtn.style.cssText = 'top: 1rem; right: 1rem; padding: 0.375rem; opacity: 1;';
-            } else {
-                muteBtn.style.cssText = 'opacity: 0; pointer-events: none;';
-            }
-        } else {
-            // On desktop, show button with proper positioning
-            if (video.muted) { 
-                muteBtn.style.cssText = 'top: 50%; left: 50%; transform: translate(-50%, -50%); padding: 1rem; opacity: 0;';
-                unmutedIcon.classList.remove('w-5', 'h-5'); unmutedIcon.classList.add('w-10', 'h-10');
-                mutedIcon.classList.remove('w-5', 'h-5'); mutedIcon.classList.add('w-10', 'h-10');
-            } else { 
-                muteBtn.style.cssText = 'top: 1rem; right: 1rem; padding: 0.375rem; opacity: 0;';
-                unmutedIcon.classList.remove('w-10', 'h-10'); unmutedIcon.classList.add('w-5', 'h-5');
-                mutedIcon.classList.remove('w-10', 'h-10'); mutedIcon.classList.add('w-5', 'h-5');
-            }
-        }
-    }
-    
+    // Load reviews from Supabase
     async function loadReviews() {
-        // Set up timeout to prevent hanging
-        const timeoutId = setTimeout(() => {
-            if (isLoading) {
-                console.warn('Loading timeout reached, hiding component');
-                hideComponent();
-            }
-        }, LOADING_TIMEOUT);
+        if (isLoading) return;
+        isLoading = true;
         
         try {
-            // Test Supabase connection first
-            console.log('Attempting to connect to Supabase...');
-            console.log('Supabase URL:', SUPABASE_URL);
-            console.log('Supabase Key:', SUPABASE_KEY.substring(0, 20) + '...');
+            if (!supabaseClient) {
+                throw new Error('Supabase not initialized');
+            }
             
-            // Use Promise.race to handle both the API call and timeout
-            const apiPromise = supabaseClient
+            const { data, error } = await supabaseClient
                 .from('reviews')
                 .select('*')
                 .eq('is_active', true)
-                .filter('tags', 'cs', '{lazy motion}') // Only load reviews with "lazy motion" tag
-                .order('sort_order', { ascending: true })
+                .order('sort_order', { ascending: true, nullsFirst: true })
                 .order('created_at', { ascending: false })
-                .limit(20); // Limit to 20 reviews for better performance
+                .limit(CONFIG.maxReviews);
             
+            if (error) throw error;
             
-            console.log('API call initiated...');
-            const { data, error } = await apiPromise;
-            
-            clearTimeout(timeoutId);
-            
-            if (error) { 
-                console.error('Supabase API error:', error);
-                console.error('Error details:', JSON.stringify(error, null, 2));
-                throw error; 
+            if (!data || data.length === 0) {
+                showError();
+                return;
             }
             
-            reviews = data || [];
-            console.log('Loaded reviews from Supabase:', reviews.length);
-            console.log('Sample review data:', reviews[0]);
+            // Filter for lazy motion tag client-side (since server-side filtering might not work)
+            const filteredData = data.filter(review => 
+                review.tags && review.tags.includes('lazy motion')
+            );
             
-            // Reviews already have tags from database, no need to add them
+            // Debug: Log the data before sorting
+            console.log('Raw data from Supabase:', data.map(r => ({
+                user_name: r.user_name,
+                sort_order: r.sort_order,
+                created_at: r.created_at,
+                tags: r.tags
+            })));
             
-            if (reviews.length === 0) { 
-                console.log('No reviews found, hiding component');
-                hideComponent();
-                return; 
-            }
+            console.log('Filtered data (lazy motion only):', filteredData.map(r => ({
+                user_name: r.user_name,
+                sort_order: r.sort_order,
+                created_at: r.created_at
+            })));
             
-            addReviewsProgressively(reviews);
+            // Sort client-side: sort_order represents POSITION (1st, 2nd, 3rd, etc.)
+            filteredData.sort((a, b) => {
+                const aSort = a.sort_order ?? 999999; // No sort_order = appears last
+                const bSort = b.sort_order ?? 999999;
+                
+                // Sort by position number (1, 2, 3, 4, 5...)
+                if (aSort !== bSort) return aSort - bSort;
+                
+                // Same sort_order, sort by created_at (newest first)
+                return new Date(b.created_at) - new Date(a.created_at);
+            });
+            
+            // Debug: Log the data after sorting
+            console.log('Data after sorting:', filteredData.map(r => ({
+                user_name: r.user_name,
+                sort_order: r.sort_order,
+                created_at: r.created_at
+            })));
+            
+            displayReviews(filteredData);
             
         } catch (error) {
-            clearTimeout(timeoutId);
-            console.error('Error loading reviews from Supabase:', error);
-            console.error('Error stack:', error.stack);
-            
-            // Hide component instead of showing sample data
-            console.log('Hiding component due to API error');
-            hideComponent();
+            console.error('Failed to load reviews:', error);
+            showError();
+        } finally {
+            isLoading = false;
         }
     }
-
-    // Loading state functions removed - no more loading skeletons
     
-    function hideComponent() {
-        // Instead of hiding the entire component, keep skeletons visible to maintain space
-        // This prevents layout shifts when no data is available
-        const skeletons = document.getElementById('loading-skeletons');
-        const carousel = document.getElementById('carousel-wrapper');
+    // Display reviews
+    function displayReviews(reviews) {
+        const container = document.getElementById('reviews-content');
         
-        if (skeletons) {
-            skeletons.classList.remove('hidden'); // Keep skeletons visible
-        }
+        // Replace skeleton cards with actual review cards
+        container.innerHTML = reviews.map(createReviewCard).join('');
+        
+        // Add fade-in animation to new cards
+        setTimeout(() => {
+            const cards = container.querySelectorAll('.review-card');
+            cards.forEach((card, index) => {
+                setTimeout(() => {
+                    card.classList.add('fade-in');
+                }, index * 100); // Stagger the animation
+            });
+        }, 50);
+        
+        // Initialize interactions
+        initializeInteractions();
+    }
+    
+    // Show error state - just keep skeleton cards
+    function showError() {
+        const container = document.getElementById('reviews-content');
+        
+        // Keep skeleton cards visible
+        container.innerHTML = `
+            <div class="review-card loading-skeleton"></div>
+            <div class="review-card loading-skeleton"></div>
+            <div class="review-card loading-skeleton"></div>
+            <div class="review-card loading-skeleton"></div>
+            <div class="review-card loading-skeleton"></div>
+        `;
+    }
+    
+    // Initialize card interactions
+    function initializeInteractions() {
+        const cards = document.querySelectorAll('.review-card');
+        const carousel = document.getElementById('reviews-content');
+        
+        // Enable wheel scrolling on both desktop and mobile
         if (carousel) {
-            carousel.classList.add('hidden'); // Hide empty carousel
+            carousel.addEventListener('wheel', (e) => {
+                if (e.deltaY !== 0) {
+                    e.preventDefault();
+                    carousel.scrollLeft += e.deltaY * 2; // 2x faster scroll
+                }
+            });
         }
         
-        isLoading = false;
-        hasError = true;
-    }
-    
-    // Global variable to store all reviews for infinite scroll
-    let allReviews = [];
-    
-    function addReviewsProgressively(reviewsToAdd) {
-        const carousel = document.getElementById('carousel');
-        if (!carousel) return;
+        // Only enable drag scrolling on mobile
+        const isMobile = window.innerWidth <= 768;
         
-        // Clear carousel
-        carousel.innerHTML = '';
-        
-        // Add all reviews to carousel
-        reviewsToAdd.forEach((review, index) => {
-            const cardHTML = createReviewCard(review);
-            carousel.insertAdjacentHTML('beforeend', cardHTML);
-            const newCard = carousel.lastElementChild;
-            if (newCard) {
-                newCard.classList.add('fade-in');
-                newCard.dataset.originalIndex = index; // Store original index
-                initializeSingleCard(newCard);
-            }
-        });
-        
-        // Initialize carousel interactions
-        initializeCarousel();
-        
-        // Only hide skeletons if we have actual data to show
-        if (reviewsToAdd.length > 0) {
-            document.getElementById('loading-skeletons').classList.add('hidden');
-            document.getElementById('carousel-wrapper').classList.remove('hidden');
+        if (carousel && isMobile) {
+            // Add drag scrolling
+            let isDown = false;
+            let startX;
+            let scrollLeft;
             
-            // Set initial scroll position after carousel is visible
-            setTimeout(() => {
-                setInitialScrollPosition();
-            }, 100);
-        } else {
-            // No data - keep skeletons visible to maintain space
-            document.getElementById('loading-skeletons').classList.remove('hidden');
-            document.getElementById('carousel-wrapper').classList.add('hidden');
-        }
-        
-        isLoading = false;
-    }
-    
-
-    function setInitialScrollPosition() {
-        const carouselWrapper = document.getElementById('carousel-wrapper');
-        if (!carouselWrapper || isMobile) return;
-        
-        // Start at the very beginning - first card at the edge
-        const initialScrollPosition = 0;
-        carouselWrapper.scrollLeft = initialScrollPosition;
-    }
-
-    function initializeCarousel() {
-        const carouselWrapper = document.getElementById('carousel-wrapper');
-        let isDown = false, startX, scrollLeft;
-        
-        carouselWrapper.addEventListener('mousedown', (e) => { 
+            carousel.addEventListener('mousedown', (e) => {
             isDown = true; 
-            carouselWrapper.classList.add('grabbing'); 
-            startX = e.pageX - carouselWrapper.offsetLeft; 
-            scrollLeft = carouselWrapper.scrollLeft; 
-        });
-        
-        carouselWrapper.addEventListener('mouseleave', () => { 
+                carousel.style.cursor = 'grabbing';
+                startX = e.pageX - carousel.offsetLeft;
+                scrollLeft = carousel.scrollLeft;
+            });
+            
+            carousel.addEventListener('mouseleave', () => {
             isDown = false; 
-            carouselWrapper.classList.remove('grabbing'); 
+                carousel.style.cursor = 'grab';
         });
         
-        carouselWrapper.addEventListener('mouseup', () => { 
+            carousel.addEventListener('mouseup', () => {
             isDown = false; 
-            carouselWrapper.classList.remove('grabbing'); 
+                carousel.style.cursor = 'grab';
         });
         
-        carouselWrapper.addEventListener('mousemove', (e) => { 
+            carousel.addEventListener('mousemove', (e) => {
             if (!isDown) return; 
             e.preventDefault(); 
-            const x = e.pageX - carouselWrapper.offsetLeft; 
-            const walk = (x - startX) * 3; 
-            carouselWrapper.scrollLeft = scrollLeft - walk; 
-        });
-        
-        carouselWrapper.addEventListener('wheel', (e) => { 
-            if (e.deltaY !== 0) { 
-                e.preventDefault(); 
-                carouselWrapper.scrollLeft += e.deltaY * 2; // 2x faster scroll speed
-            }
-        });
-    }
-
-    function loadVideoAsync(card) {
-        const mediaUrl = card.dataset.mediaUrl;
-        const mediaType = card.dataset.mediaType;
-        const videoContainer = card.querySelector('.video-container');
-        const muteButtonContainer = card.querySelector('.mute-button-container');
-        const playButtonContainer = card.querySelector('.play-button-container');
-
-        if (!mediaUrl || mediaType !== 'video') {
-            return; // Only load videos
-        }
-
-        // Create video element
-        const video = document.createElement('video');
-        video.className = 'absolute inset-0 w-full h-full object-cover transition-transform duration-500 ease-in-out md:group-hover:scale-110 pointer-events-none';
-        video.muted = true;
-        video.loop = true;
-        video.playsInline = true;
-        video.preload = 'metadata';
-        video.src = mediaUrl;
-
-        // Add mute button for video
-        const muteButton = document.createElement('button');
-        muteButton.className = 'mute-btn absolute z-20 bg-black/30 rounded-full backdrop-blur-sm transition-all duration-300 opacity-0 hover:bg-black/50';
-        // Set initial position to center (muted state) and hide until video loads
-        muteButton.style.cssText = 'top: 50%; left: 50%; transform: translate(-50%, -50%); padding: 1rem; opacity: 0;';
-        muteButton.innerHTML = `
-            <svg class="w-10 h-10 text-white hidden mute-icon-unmuted" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z"></path></svg>
-            <svg class="w-10 h-10 text-white mute-icon-muted" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15zM17 14l4-4m0 4l-4-4"></path></svg>
-        `;
-
-        // Add play button for mobile
-        const playButton = document.createElement('button');
-        playButton.className = 'play-btn md:hidden absolute z-20 top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-black/30 rounded-full backdrop-blur-sm p-4 transition-opacity duration-300';
-        playButton.innerHTML = '<svg class="w-10 h-10 text-white" fill="currentColor" viewBox="0 0 20 20"><path d="M6.3 2.841A1.5 1.5 0 004 4.11V15.89a1.5 1.5 0 002.3 1.269l9.344-5.89a1.5 1.5 0 000-2.538L6.3 2.84z"></path></svg>';
-
-        muteButtonContainer.appendChild(muteButton);
-        playButtonContainer.appendChild(playButton);
-        videoContainer.appendChild(video);
-
-        // When video loads, initialize it but keep it hidden
-        video.addEventListener('loadeddata', () => {
-            initializeVideoCard(card, video, muteButton, playButton);
-        });
-
-        video.addEventListener('error', () => {
-            console.warn('Video failed to load:', mediaUrl);
-        });
-    }
-
-    function initializeVideoCard(card, video, muteBtn, playBtn) {
-        updateCardState(card);
-        
-        if (!isMobile) {
-            card.addEventListener('mouseenter', () => {
-                // Show video layer and hide thumbnail
-                const thumbnailLayer = card.querySelector('.thumbnail-layer');
-                const videoLayer = card.querySelector('.video-layer');
-                
-                if (thumbnailLayer && videoLayer) {
-                    thumbnailLayer.classList.add('hidden');
-                    videoLayer.classList.remove('hidden');
-                }
-                
-                video.play().catch(e => console.error("Autoplay failed", e));
+                const x = e.pageX - carousel.offsetLeft;
+                const walk = (x - startX) * 2; // 2x faster drag
+                carousel.scrollLeft = scrollLeft - walk;
             });
+        }
+        
+        cards.forEach(card => {
+            const video = card.querySelector('video');
+            const muteBtn = card.querySelector('.mute-btn');
+            const playBtn = card.querySelector('.play-btn');
+            const loadingDots = card.querySelector('.loading-dots');
+            const expandBtn = card.querySelector('.expand-btn');
+            const reviewText = card.querySelector('.review-text');
+            const isMobile = window.innerWidth <= 768;
             
-            card.addEventListener('mouseleave', () => {
-                const hasPlayed = card.dataset.hasPlayed === 'true';
-                
-                if (!hasPlayed) {
-                    // If video hasn't been played yet, show thumbnail again
-                    const thumbnailLayer = card.querySelector('.thumbnail-layer');
-                    const videoLayer = card.querySelector('.video-layer');
+            // Video interactions
+            if (video) {
+                // Desktop hover interactions
+                if (!isMobile) {
+                    card.addEventListener('mouseenter', () => {
+                        if (!loadedVideos.has(card.dataset.reviewId)) {
+                            loadingDots.classList.add('visible');
+                            video.load();
+        video.addEventListener('loadeddata', () => {
+                                loadingDots.classList.remove('visible');
+                                muteBtn.style.display = 'block';
+                                loadedVideos.add(card.dataset.reviewId);
+                            }, { once: true });
+                        }
+                        video.play().catch(() => {});
+                    });
                     
-                    if (thumbnailLayer && videoLayer) {
-                        videoLayer.classList.add('hidden');
-                        thumbnailLayer.classList.remove('hidden');
-                    }
+                    card.addEventListener('mouseleave', () => {
+                        video.pause();
+                    });
                 }
                 
-                video.pause();
-            });
-        }
-
+                // Mobile click interactions
+                if (isMobile) {
+                    card.addEventListener('click', (e) => {
+                        // Don't trigger if clicking on links
+                        if (e.target.closest('a')) return;
+                        
+                        if (video.paused) {
+                            // Load video if not loaded
+                            if (!loadedVideos.has(card.dataset.reviewId)) {
+                                loadingDots.classList.add('visible');
+                                playBtn.style.opacity = '0'; // Hide play button while loading
+                                video.load();
+                                video.addEventListener('loadeddata', () => {
+                                    loadingDots.classList.remove('visible');
+                                    playBtn.style.opacity = '0'; // Keep hidden when playing
+                                    loadedVideos.add(card.dataset.reviewId);
+                                }, { once: true });
+                            } else {
+                                playBtn.style.opacity = '0'; // Hide play button when playing
+                            }
+                            
+                            // Unmute and play
+                            isUnmuted = true;
+                            video.muted = false;
+                            updateMuteButtons();
+                            
+                            // Pause other videos and show their play buttons
+                            document.querySelectorAll('.review-card video').forEach(otherVideo => {
+                                if (otherVideo !== video) {
+                                    otherVideo.pause();
+                                    const otherPlayBtn = otherVideo.closest('.review-card').querySelector('.play-btn');
+                                    if (otherPlayBtn) otherPlayBtn.style.opacity = '0.8';
+                                }
+                            });
+                            
+                            video.play().catch(() => {});
+                        } else {
+                            video.pause();
+                            playBtn.style.opacity = '0.8'; // Show play button when paused
+                        }
+                    });
+                }
+                
+                // Mute button
         if (muteBtn) {
             muteBtn.addEventListener('click', (e) => {
                 e.stopPropagation();
-                isUnmutedGlobally = !isUnmutedGlobally;
-                document.querySelectorAll('.video-card').forEach(updateCardState);
-            });
-        }
-        
-        if (isMobile) {
-            card.addEventListener('click', (event) => {
-                if (event.target.closest('a')) return;
-
-                if (video.paused) {
-                    document.querySelectorAll('.video-card video').forEach(otherVideo => {
-                        if (otherVideo !== video) otherVideo.pause();
+                        isUnmuted = !isUnmuted;
+                        video.muted = !isUnmuted;
+                        updateMuteButtons();
                     });
-                    
-                    isUnmutedGlobally = true;
-                    document.querySelectorAll('.video-card').forEach(updateCardState);
-                    
-                    // Show video layer and hide thumbnail on mobile play
-                    const thumbnailLayer = card.querySelector('.thumbnail-layer');
-                    const videoLayer = card.querySelector('.video-layer');
-                    
-                    if (thumbnailLayer && videoLayer) {
-                        thumbnailLayer.classList.add('hidden');
-                        videoLayer.classList.remove('hidden');
-                    }
-                    
-                    video.play().catch(e => console.error("Play failed", e));
-                } else {
-                    video.pause();
                 }
-            });
+            }
             
-            video.addEventListener('play', () => { 
-                if(playBtn) playBtn.style.opacity = '0';
-                // Mark that this video has been played
-                card.dataset.hasPlayed = 'true';
-                // Update card state to show mute button on mobile
-                updateCardState(card);
-            });
-            video.addEventListener('pause', () => { if(playBtn) playBtn.style.opacity = '1'; });
+            // Text expansion
+            if (expandBtn && reviewText) {
+                expandBtn.addEventListener('click', () => {
+                    const isExpanded = reviewText.classList.contains('expanded');
+                    reviewText.classList.toggle('expanded');
+                    card.classList.toggle('expanded');
+                    expandBtn.textContent = isExpanded ? 'more' : 'less';
+                    
+                    // Adjust font size for expanded text to fit within card bounds
+                    if (!isExpanded) {
+                        adjustExpandedTextSize(reviewText);
+                    }
+                });
+            }
+        });
+    }
+    
+    // Adjust expanded text size to fit within card bounds (mobile only)
+    function adjustExpandedTextSize(textElement) {
+        const isMobile = window.innerWidth <= 768;
+        
+        // Only adjust on mobile
+        if (!isMobile) return;
+        
+        const card = textElement.closest('.review-card');
+        const cardHeight = card.offsetHeight;
+        const availableHeight = cardHeight - 120; // Reserve space for stars and profile
+        
+        // Reset font size to base
+        textElement.style.fontSize = '';
+        
+        // Check if text overflows
+        if (textElement.scrollHeight > availableHeight) {
+            let fontSize = 0.875; // Start with 0.875rem
+            
+            // Gradually reduce font size until it fits
+            while (textElement.scrollHeight > availableHeight && fontSize > 0.6) {
+                fontSize -= 0.05;
+                textElement.style.fontSize = `${fontSize}rem`;
+            }
         }
+    }
+    
+    // Update all mute buttons
+    function updateMuteButtons() {
+        document.querySelectorAll('.mute-btn').forEach(btn => {
+            const video = btn.closest('.review-card').querySelector('video');
+            const muteIcon = btn.querySelector('.mute-icon');
+            const unmuteIcon = btn.querySelector('.unmute-icon');
+            
+            if (video) {
+                video.muted = !isUnmuted;
+                
+                // Update icon visibility
+                if (isUnmuted) {
+                    muteIcon.style.display = 'none';
+                    unmuteIcon.style.display = 'block';
+    } else {
+                    muteIcon.style.display = 'block';
+                    unmuteIcon.style.display = 'none';
+                }
+            }
+        });
+    }
+    
+    // Initialize everything
+    function init() {
+        if (!initSupabase()) {
+            showError();
+            return;
+        }
+        
+        loadReviews();
+    }
+    
+    // Start when DOM is ready
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', init);
+        } else {
+        init();
     }
 
-    function initializeSingleCard(card) {
-        // Start loading video in background (thumbnails are already visible)
-        loadVideoAsync(card);
-    }
-    
-    // Sample reviews removed - component will hide if no real data is available
-    
-    // Retry functionality - removed since we're hiding component on error
-    
-    // Robust initialization function
-    function initializeComponent() {
-        console.log('Initializing reviews component...');
-        
-        try {
-            preloadCriticalResources();
-            
-            // Start loading immediately - no delay needed
-            loadReviews();
-            
-        } catch (error) {
-            console.error('Error during initialization:', error);
-            // Hide component if initialization fails
-            hideComponent();
-        }
-    }
-    
-    // Initialize when DOM is ready
-    document.addEventListener('DOMContentLoaded', initializeComponent);
-    
-    // Also initialize if script loads after DOM is ready (for embedded scenarios)
-    if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', initializeComponent);
-    } else {
-        // DOM is already ready, initialize immediately
-        initializeComponent();
-    }
-    
-    // Fallback initialization after a delay (for very slow loading scenarios)
-    setTimeout(() => {
-        if (isLoading && !hasError) {
-            console.log('Fallback initialization triggered');
-            initializeComponent();
-        }
-    }, 1000); // Reduced from 2000ms to 1000ms
-    
-    // Function to toggle review text expansion
-    function toggleReviewText(reviewId) {
-        const textElement = document.getElementById(`review-text-${reviewId}`);
-        const expandText = document.querySelector(`.expand-text-${reviewId}`);
-        const expandIcon = document.querySelector(`.expand-icon-${reviewId}`);
-        
-        if (!textElement || !expandText || !expandIcon) return;
-        
-        const isExpanded = textElement.classList.contains('line-clamp-none');
-        
-        if (isExpanded) {
-            // Collapse
-            textElement.classList.remove('line-clamp-none');
-            textElement.classList.add('line-clamp-2');
-            expandText.textContent = 'more';
-            expandIcon.style.transform = 'rotate(0deg)';
-        } else {
-            // Expand
-            textElement.classList.remove('line-clamp-2');
-            textElement.classList.add('line-clamp-none');
-            expandText.textContent = 'less';
-            expandIcon.style.transform = 'rotate(180deg)';
-        }
-    }
 </script>
 </body>
 </html>

@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <style>
+        .test-container {
+            display: flex;
+            gap: 2rem;
+            padding: 2rem;
+            background: #f0f0f0;
+        }
+        
+        .play-btn {
+            position: relative;
+            background: rgba(255,255,255,0.15);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255,255,255,0.2);
+            border-radius: 50%;
+            color: white;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 2.5rem;
+            height: 2.5rem;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+        
+        .test-card {
+            width: 200px;
+            height: 300px;
+            background: linear-gradient(45deg, #ff6b6b, #4ecdc4);
+            border-radius: 1rem;
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .centered {
+            background: rgba(0,0,0,0.3);
+        }
+    </style>
+</head>
+<body>
+    <div class="test-container">
+        <div class="test-card">
+            <button class="play-btn">
+                <svg width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+                    <polygon points="5,4 5,12 11,8"/>
+                </svg>
+            </button>
+        </div>
+        
+        <div class="test-card centered">
+            <button class="play-btn">
+                <svg width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+                    <polygon points="6,4 6,12 12,8"/>
+                </svg>
+            </button>
+        </div>
+        
+        <div class="test-card">
+            <button class="play-btn">
+                <svg width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+                    <polygon points="5,3 5,13 13,8"/>
+                </svg>
+            </button>
+        </div>
+    </div>
+    
+    <p style="padding: 2rem; text-align: center;">
+        Test the play button centering. The triangle should be perfectly centered in each circle.
+    </p>
+</body>
+</html>

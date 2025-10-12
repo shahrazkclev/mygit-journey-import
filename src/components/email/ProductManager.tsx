@@ -5,7 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { Plus, Package, Edit, Trash2 } from 'lucide-react';
+import { Plus, Package, Edit, Trash2, Link, Video } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -17,7 +17,16 @@ interface Product {
   price: number | null;
   category: string | null;
   sku: string | null;
+  tag: string | null;
   created_at: string;
+}
+
+interface ProductLink {
+  id: string;
+  tag_name: string;
+  download_url: string;
+  video_guide_url: string | null;
+  description: string | null;
 }
 
 export const ProductManager: React.FC = () => {
@@ -28,13 +37,20 @@ export const ProductManager: React.FC = () => {
     description: '',
     price: '',
     category: '',
-    sku: ''
+    sku: '',
+    tag: ''
   });
   const [showAddProduct, setShowAddProduct] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
+  const [productLinks, setProductLinks] = useState<ProductLink[]>([]);
+  const [editingLinks, setEditingLinks] = useState({
+    downloadUrl: '',
+    videoGuideUrl: ''
+  });
 
   useEffect(() => {
     loadProducts();
+    loadProductLinks();
   }, []);
 
   const loadProducts = async () => {
@@ -53,6 +69,21 @@ export const ProductManager: React.FC = () => {
     }
   };
 
+  const loadProductLinks = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('product_links')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      setProductLinks(data || []);
+    } catch (error) {
+      console.error('Error loading product links:', error);
+      toast.error('Failed to load product links');
+    }
+  };
+
   const addProduct = async () => {
     if (!newProduct.name) {
       toast.error('Product name is required');
@@ -68,7 +99,8 @@ export const ProductManager: React.FC = () => {
           description: newProduct.description || null,
           price: newProduct.price ? parseFloat(newProduct.price) : null,
           category: newProduct.category || null,
-          sku: newProduct.sku || null
+          sku: newProduct.sku || null,
+          tag: newProduct.tag || null
         }])
         .select()
         .single();
@@ -76,7 +108,7 @@ export const ProductManager: React.FC = () => {
       if (error) throw error;
 
       setProducts(prev => [data, ...prev]);
-      setNewProduct({ name: '', description: '', price: '', category: '', sku: '' });
+      setNewProduct({ name: '', description: '', price: '', category: '', sku: '', tag: '' });
       setShowAddProduct(false);
       toast.success('Product added successfully');
     } catch (error) {
@@ -99,7 +131,8 @@ export const ProductManager: React.FC = () => {
           description: editingProduct.description || null,
           price: editingProduct.price,
           category: editingProduct.category || null,
-          sku: editingProduct.sku || null
+          sku: editingProduct.sku || null,
+          tag: editingProduct.tag || null
         })
         .eq('id', editingProduct.id)
         .select()
@@ -107,12 +140,59 @@ export const ProductManager: React.FC = () => {
 
       if (error) throw error;
 
+      // Update product links if tag is provided and links are set
+      if (editingProduct.tag && (editingLinks.downloadUrl || editingLinks.videoGuideUrl)) {
+        await updateProductLinks(editingProduct.tag, editingLinks.downloadUrl, editingLinks.videoGuideUrl);
+      }
+
       setProducts(prev => prev.map(p => p.id === editingProduct.id ? data : p));
       setEditingProduct(null);
+      setEditingLinks({ downloadUrl: '', videoGuideUrl: '' });
       toast.success('Product updated successfully');
     } catch (error) {
       console.error('Error updating product:', error);
       toast.error('Failed to update product');
+    }
+  };
+
+  const updateProductLinks = async (tagName: string, downloadUrl: string, videoGuideUrl: string) => {
+    try {
+      // Check if link already exists for this tag
+      const { data: existingLink } = await supabase
+        .from('product_links')
+        .select('*')
+        .eq('tag_name', tagName)
+        .single();
+
+      if (existingLink) {
+        // Update existing link
+        const { error } = await supabase
+          .from('product_links')
+          .update({
+            download_url: downloadUrl || existingLink.download_url,
+            video_guide_url: videoGuideUrl || existingLink.video_guide_url
+          })
+          .eq('id', existingLink.id);
+
+        if (error) throw error;
+      } else if (downloadUrl || videoGuideUrl) {
+        // Create new link
+        const { error } = await supabase
+          .from('product_links')
+          .insert([{
+            tag_name: tagName,
+            download_url: downloadUrl || '',
+            video_guide_url: videoGuideUrl || null
+          }]);
+
+        if (error) throw error;
+      }
+
+      // Reload product links
+      loadProductLinks();
+    } catch (error) {
+      console.error('Error updating product links:', error);
+      toast.error('Failed to update product links');
     }
   };
 
@@ -132,6 +212,18 @@ export const ProductManager: React.FC = () => {
     } catch (error) {
       console.error('Error deleting product:', error);
       toast.error('Failed to delete product');
+    }
+  };
+
+  const loadExistingLinks = (tagName: string) => {
+    const existingLink = productLinks.find(link => link.tag_name === tagName);
+    if (existingLink) {
+      setEditingLinks({
+        downloadUrl: existingLink.download_url || '',
+        videoGuideUrl: existingLink.video_guide_url || ''
+      });
+    } else {
+      setEditingLinks({ downloadUrl: '', videoGuideUrl: '' });
     }
   };
 
@@ -201,6 +293,15 @@ export const ProductManager: React.FC = () => {
                   placeholder="Electronics"
                 />
               </div>
+              <div className="space-y-2">
+                <Label htmlFor="tag">Tag</Label>
+                <Input
+                  id="tag"
+                  value={newProduct.tag}
+                  onChange={(e) => setNewProduct(prev => ({ ...prev, tag: e.target.value }))}
+                  placeholder="product-tag"
+                />
+              </div>
               <div className="flex justify-end space-x-2">
                 <Button variant="outline" onClick={() => setShowAddProduct(false)}>
                   Cancel
@@ -241,6 +342,7 @@ export const ProductManager: React.FC = () => {
                       <div className="text-sm text-muted-foreground">
                         {product.category && `${product.category} • `}
                         {product.sku && `SKU: ${product.sku} • `}
+                        {product.tag && `Tag: ${product.tag} • `}
                         {product.price ? `$${product.price}` : 'No price set'}
                       </div>
                       {product.description && (
@@ -254,7 +356,12 @@ export const ProductManager: React.FC = () => {
                     <Button
                       variant="outline"
                       size="sm"
-                      onClick={() => setEditingProduct(product)}
+                      onClick={() => {
+                        setEditingProduct(product);
+                        if (product.tag) {
+                          loadExistingLinks(product.tag);
+                        }
+                      }}
                       className="border-email-secondary text-email-secondary hover:bg-email-secondary/10"
                     >
                       <Edit className="h-4 w-4" />
@@ -333,6 +440,49 @@ export const ProductManager: React.FC = () => {
                   placeholder="Electronics"
                 />
               </div>
+              <div className="space-y-2">
+                <Label htmlFor="edit-tag">Tag</Label>
+                <Input
+                  id="edit-tag"
+                  value={editingProduct.tag || ''}
+                  onChange={(e) => {
+                    setEditingProduct(prev => prev ? { ...prev, tag: e.target.value } : null);
+                    if (e.target.value) {
+                      loadExistingLinks(e.target.value);
+                    }
+                  }}
+                  placeholder="product-tag"
+                />
+              </div>
+              {editingProduct.tag && (
+                <div className="space-y-4 p-4 bg-gray-50 rounded-lg">
+                  <h4 className="font-medium text-gray-900">Product Links</h4>
+                  <div className="space-y-2">
+                    <Label htmlFor="edit-download-url" className="flex items-center gap-2">
+                      <Link className="h-4 w-4" />
+                      Download Link
+                    </Label>
+                    <Input
+                      id="edit-download-url"
+                      value={editingLinks.downloadUrl}
+                      onChange={(e) => setEditingLinks(prev => ({ ...prev, downloadUrl: e.target.value }))}
+                      placeholder="https://example.com/download"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="edit-video-guide-url" className="flex items-center gap-2">
+                      <Video className="h-4 w-4" />
+                      Video Guide Link
+                    </Label>
+                    <Input
+                      id="edit-video-guide-url"
+                      value={editingLinks.videoGuideUrl}
+                      onChange={(e) => setEditingLinks(prev => ({ ...prev, videoGuideUrl: e.target.value }))}
+                      placeholder="https://youtube.com/watch?v=..."
+                    />
+                  </div>
+                </div>
+              )}
               <div className="flex justify-end space-x-2">
                 <Button variant="outline" onClick={() => setEditingProduct(null)}>
                   Cancel
