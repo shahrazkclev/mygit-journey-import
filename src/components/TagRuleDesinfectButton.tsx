@@ -44,6 +44,7 @@ export function TagRuleDesinfectButton({
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
   const [confirmText, setConfirmText] = useState('');
   const [result, setResult] = useState<any>(null);
+  const [daysBack, setDaysBack] = useState(7);
 
   const loadStats = async () => {
     try {
@@ -74,7 +75,8 @@ export function TagRuleDesinfectButton({
       const { data, error } = await supabase.functions.invoke('desinfect-tag-rule', {
         body: { 
           rule_id: ruleId,
-          confirm: true 
+          confirm: true,
+          days_back: daysBack
         }
       });
 
@@ -188,17 +190,41 @@ export function TagRuleDesinfectButton({
                 </ul>
               </div>
               
-              <div className="space-y-2">
-                <label className="text-sm font-medium">
-                  Type <code className="bg-muted px-1 rounded">DESINFECT</code> to confirm:
-                </label>
-                <input
-                  type="text"
-                  value={confirmText}
-                  onChange={(e) => setConfirmText(e.target.value)}
-                  placeholder="Type DESINFECT here"
-                  className="w-full px-3 py-2 border rounded-md text-sm"
-                />
+              <div className="space-y-3">
+                <div>
+                  <label className="text-sm font-medium mb-2 block">
+                    Desinfect infections from the last:
+                  </label>
+                  <select
+                    value={daysBack}
+                    onChange={(e) => setDaysBack(Number(e.target.value))}
+                    className="w-full px-3 py-2 border rounded-md text-sm"
+                  >
+                    <option value={1}>Last 1 day</option>
+                    <option value={2}>Last 2 days</option>
+                    <option value={7}>Last 7 days</option>
+                    <option value={14}>Last 14 days</option>
+                    <option value={30}>Last 30 days</option>
+                    <option value={90}>Last 90 days</option>
+                    <option value={365}>All time</option>
+                  </select>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Only infections from the selected time period will be reversed
+                  </p>
+                </div>
+                
+                <div>
+                  <label className="text-sm font-medium">
+                    Type <code className="bg-muted px-1 rounded">DESINFECT</code> to confirm:
+                  </label>
+                  <input
+                    type="text"
+                    value={confirmText}
+                    onChange={(e) => setConfirmText(e.target.value)}
+                    placeholder="Type DESINFECT here"
+                    className="w-full px-3 py-2 border rounded-md text-sm"
+                  />
+                </div>
               </div>
             </AlertDialogDescription>
           </AlertDialogHeader>
