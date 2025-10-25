@@ -9,9 +9,21 @@ import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { TagInput } from "@/components/ui/tag-input";
-import { Trash2, Plus, Settings, Edit, RefreshCw } from "lucide-react";
+import { Trash2, Plus, Settings, Edit, RefreshCw, RotateCcw, AlertTriangle, Shield } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
+import { TagRuleDesinfectButton } from "../TagRuleDesinfectButton";
+import { TagRuleSafetyWrapper } from "../TagRuleSafetyWrapper";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 interface TagRule {
   id: string;
@@ -33,6 +45,9 @@ export const TagRulesManager = () => {
   const [editingRule, setEditingRule] = useState<string | null>(null);
   const [allTags, setAllTags] = useState<string[]>([]);
   const [isReapplying, setIsReapplying] = useState(false);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [ruleToDelete, setRuleToDelete] = useState<string | null>(null);
+  const [confirmText, setConfirmText] = useState('');
     const [newRule, setNewRule] = useState({
     name: "",
     description: "",
@@ -273,8 +288,6 @@ export const TagRulesManager = () => {
   };
 
   const deleteRule = async (ruleId: string) => {
-    if (!confirm('Are you sure you want to delete this rule?')) return;
-
     try {
       const { error } = await supabase
         .from('tag_rules')
@@ -285,9 +298,27 @@ export const TagRulesManager = () => {
       
       setRules(rules.filter(rule => rule.id !== ruleId));
       toast.success('Rule deleted successfully');
+      setShowDeleteDialog(false);
+      setRuleToDelete(null);
+      setConfirmText('');
     } catch (error) {
       console.error('Error deleting rule:', error);
       toast.error('Failed to delete rule');
+    }
+  };
+
+  const handleDeleteClick = (ruleId: string) => {
+    setRuleToDelete(ruleId);
+    setShowDeleteDialog(true);
+  };
+
+  const handleDeleteConfirm = () => {
+    if (confirmText !== 'DELETE') {
+      toast.error('Please type "DELETE" to confirm');
+      return;
+    }
+    if (ruleToDelete) {
+      deleteRule(ruleToDelete);
     }
   };
 
@@ -486,10 +517,16 @@ export const TagRulesManager = () => {
                     )}
                   </div>
                   <div className="flex items-center gap-2">
-                    <Switch
-                      checked={rule.enabled}
-                      onCheckedChange={(enabled) => toggleRule(rule.id, enabled)}
-                    />
+                    <TagRuleSafetyWrapper
+                      action={rule.enabled ? "disable" : "enable"}
+                      ruleName={rule.name}
+                      onConfirm={() => toggleRule(rule.id, !rule.enabled)}
+                    >
+                      <Switch
+                        checked={rule.enabled}
+                        onCheckedChange={() => {}} // Handled by safety wrapper
+                      />
+                    </TagRuleSafetyWrapper>
                     <Button
                       variant="outline"
                       size="sm"
@@ -497,14 +534,27 @@ export const TagRulesManager = () => {
                     >
                       <Edit className="h-4 w-4" />
                     </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => deleteRule(rule.id)}
-                      className="text-destructive hover:text-destructive"
+                    <TagRuleDesinfectButton
+                      ruleId={rule.id}
+                      ruleName={rule.name}
+                      onDesinfectComplete={(result) => {
+                        console.log('Desinfect completed:', result);
+                        toast.success(`Desinfect completed: ${result.updated_contacts} contacts updated`);
+                      }}
+                    />
+                    <TagRuleSafetyWrapper
+                      action="delete"
+                      ruleName={rule.name}
+                      onConfirm={() => deleteRule(rule.id)}
                     >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="text-destructive hover:text-destructive"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </TagRuleSafetyWrapper>
                   </div>
                 </div>
               </CardHeader>
