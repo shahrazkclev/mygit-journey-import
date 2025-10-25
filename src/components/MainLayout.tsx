@@ -4,7 +4,8 @@ import { useGlobalTheme } from "@/hooks/useGlobalTheme";
 import { useAuth } from "@/contexts/AuthContext";
 import { EmailCampaignApp } from "./EmailCampaignApp";
 import { ReviewsManager } from "./reviews/ReviewsManager";
-import { Users, Star, Menu, X, LogOut } from "lucide-react";
+import { DatabaseManager } from "./DatabaseManager";
+import { Users, Star, Menu, X, LogOut, Database } from "lucide-react";
 
 
 export const MainLayout = () => {
@@ -31,6 +32,12 @@ export const MainLayout = () => {
       name: "Reviews Manager",
       icon: Star,
       component: ReviewsManager
+    },
+    {
+      id: "database",
+      name: "Database Manager",
+      icon: Database,
+      component: DatabaseManager
     }
   ];
 
