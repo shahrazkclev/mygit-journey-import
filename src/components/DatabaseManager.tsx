@@ -7,7 +7,6 @@ import {
   Database, 
   Download, 
   Upload, 
-  Trash2, 
   RefreshCw, 
   AlertTriangle,
   CheckCircle,
@@ -63,16 +62,33 @@ export function DatabaseManager() {
         p.table === tableName ? { ...p, status: 'exporting' } : p
       ));
 
-      const { data, error } = await supabase
-        .from(tableName)
-        .select('*');
+      // Use pagination to handle large datasets
+      const pageSize = 1000;
+      let allData: any[] = [];
+      let page = 0;
+      let hasMore = true;
 
-      if (error) throw error;
+      while (hasMore) {
+        const { data, error } = await supabase
+          .from(tableName)
+          .select('*')
+          .range(page * pageSize, (page + 1) * pageSize - 1);
+
+        if (error) throw error;
+
+        if (data && data.length > 0) {
+          allData = [...allData, ...data];
+          page++;
+          hasMore = data.length === pageSize;
+        } else {
+          hasMore = false;
+        }
+      }
 
       return {
         table: tableName,
         status: 'completed',
-        records: data?.length || 0
+        records: allData.length
       };
     } catch (error) {
       return {
@@ -96,7 +112,7 @@ export function DatabaseManager() {
     const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
 
     try {
-      // Export each table
+      // Export each table with pagination
       for (const table of tables) {
         const result = await exportTable(table);
         setExportProgress(prev => prev.map(p => 
@@ -104,8 +120,30 @@ export function DatabaseManager() {
         ));
         
         if (result.status === 'completed') {
-          const { data } = await supabase.from(table).select('*');
-          exportResults[table] = data || [];
+          // Get the actual data using pagination
+          const pageSize = 1000;
+          let allData: any[] = [];
+          let page = 0;
+          let hasMore = true;
+
+          while (hasMore) {
+            const { data, error } = await supabase
+              .from(table)
+              .select('*')
+              .range(page * pageSize, (page + 1) * pageSize - 1);
+
+            if (error) throw error;
+
+            if (data && data.length > 0) {
+              allData = [...allData, ...data];
+              page++;
+              hasMore = data.length === pageSize;
+            } else {
+              hasMore = false;
+            }
+          }
+          
+          exportResults[table] = allData;
         }
       }
 
@@ -233,36 +271,6 @@ export function DatabaseManager() {
     }
   };
 
-  const clearAllData = async () => {
-    if (!confirm('⚠️ This will DELETE ALL DATA from your database. Are you sure?')) {
-      return;
-    }
-
-    if (!confirm('This action cannot be undone. Type "DELETE ALL" to confirm:')) {
-      return;
-    }
-
-    try {
-      // Clear all tables in reverse order (to handle foreign keys)
-      const tablesToClear = [...tables].reverse();
-      
-      for (const table of tablesToClear) {
-        const { error } = await supabase
-          .from(table)
-          .delete()
-          .neq('id', '00000000-0000-0000-0000-000000000000');
-        
-        if (error) {
-          console.warn(`Failed to clear ${table}:`, error);
-        }
-      }
-
-      toast.success('All data cleared successfully');
-    } catch (error) {
-      console.error('Clear failed:', error);
-      toast.error('Clear failed: ' + error.message);
-    }
-  };
 
   const getStatusIcon = (status: string) => {
     switch (status) {
@@ -429,34 +437,6 @@ export function DatabaseManager() {
               </div>
             </div>
           )}
-        </CardContent>
-      </Card>
-
-      {/* Danger Zone */}
-      <Card className="border-red-200">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-red-600">
-            <Trash2 className="h-5 w-5" />
-            Danger Zone
-          </CardTitle>
-          <CardDescription>
-            Irreversible actions that will permanently delete data
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="flex items-center gap-4">
-            <Button 
-              variant="destructive"
-              onClick={clearAllData}
-              className="flex items-center gap-2"
-            >
-              <Trash2 className="h-4 w-4" />
-              Clear All Data
-            </Button>
-            <p className="text-sm text-muted-foreground">
-              This will delete all data from all tables
-            </p>
-          </div>
         </CardContent>
       </Card>
 
