@@ -700,6 +700,7 @@ export const SimpleContactManager = () => {
         let failureCount = 0;
         const contactsToInsert = [];
         const contactsToUpdate = [];
+        const seenEmailsInCsv = new Set<string>();
         
         // Set total count for progress tracking
         setImportProgress({ current: 0, total: dataLines.length });
@@ -715,6 +716,12 @@ export const SimpleContactManager = () => {
             const getCell = (idx: number) => (typeof idx === 'number' && idx >= 0 && idx < cells.length ? cells[idx] : '');
             const rawEmail = getCell(csvMapping.email);
             const email = (rawEmail || '').trim();
+            // Skip duplicate emails within the same CSV run
+            const emailKey = email.toLowerCase();
+            if (seenEmailsInCsv.has(emailKey)) {
+              continue;
+            }
+            seenEmailsInCsv.add(emailKey);
             let name = getCell(csvMapping.name) || '';
             const phone = getCell(csvMapping.phone) || '';
             const tagsString = getCell(csvMapping.tags) || '';
@@ -739,7 +746,7 @@ export const SimpleContactManager = () => {
             const lastName = rest.join(" ");
 
             // Check if contact already exists using our map
-            const existingContact = existingContactsMap.get(email.toLowerCase());
+            const existingContact = existingContactsMap.get(emailKey);
             console.log(`🔍 Checking for existing contact: ${email} -> ${existingContact ? 'FOUND' : 'NOT FOUND'}`);
 
             if (existingContact) {
@@ -779,11 +786,11 @@ export const SimpleContactManager = () => {
           }
         }
 
-        // Batch insert new contacts
+        // Batch insert new contacts with upsert to avoid duplicate key conflicts
         if (contactsToInsert.length > 0) {
           const { error: insertError } = await supabase
             .from('contacts')
-            .insert(contactsToInsert);
+            .upsert(contactsToInsert, { onConflict: 'user_id,email', ignoreDuplicates: true });
 
           if (insertError) {
             console.error('Error inserting contacts:', insertError);
