@@ -673,8 +673,11 @@ export const SimpleContactManager = () => {
         const text = e.target?.result as string;
         const lines = text.replace(/\r\n/g, '\n').replace(/\r/g, '\n').split('\n').filter(line => line.trim());
         
-        // Skip header row if exists
-        const dataLines = lines.slice(1);
+        // Detect header: if the first parsed row's email field does not look like an email, treat it as header
+        const [firstRowCells] = parseCsvLines([lines[0] || '']);
+        const firstRowEmail = (firstRowCells?.[csvMapping.email] || '').toString();
+        const looksLikeEmail = /.+@.+\..+/.test(firstRowEmail);
+        const dataLines = looksLikeEmail ? lines : lines.slice(1);
         // First, fetch all existing contacts in one query to avoid individual lookups
         const { data: existingContacts, error: fetchError } = await supabase
           .from('contacts')
@@ -691,7 +694,8 @@ export const SimpleContactManager = () => {
         // Create a map for quick lookup
         const existingContactsMap = new Map();
         existingContacts?.forEach(contact => {
-          existingContactsMap.set(contact.email.toLowerCase(), contact);
+          const key = (contact.email || '').toString().trim().toLowerCase();
+          if (key) existingContactsMap.set(key, contact);
         });
         
         console.log(`📋 Found ${existingContacts?.length || 0} existing contacts for lookup`);
@@ -715,9 +719,9 @@ export const SimpleContactManager = () => {
             
             const getCell = (idx: number) => (typeof idx === 'number' && idx >= 0 && idx < cells.length ? cells[idx] : '');
             const rawEmail = getCell(csvMapping.email);
-            const email = (rawEmail || '').trim();
+            const email = (rawEmail || '').toString().trim().toLowerCase();
             // Skip duplicate emails within the same CSV run
-            const emailKey = email.toLowerCase();
+            const emailKey = email;
             if (seenEmailsInCsv.has(emailKey)) {
               continue;
             }
@@ -786,17 +790,20 @@ export const SimpleContactManager = () => {
           }
         }
 
-        // Batch insert new contacts with upsert to avoid duplicate key conflicts
+        // Insert new contacts: per-row upsert for reliability (avoids silent misses)
         if (contactsToInsert.length > 0) {
-          const { error: insertError } = await supabase
-            .from('contacts')
-            .upsert(contactsToInsert, { onConflict: 'user_id,email', ignoreDuplicates: true });
+          for (const row of contactsToInsert) {
+            const { error: insertError } = await supabase
+              .from('contacts')
+              .upsert(row, { onConflict: 'user_id,email', ignoreDuplicates: true });
 
-          if (insertError) {
-            console.error('Error inserting contacts:', insertError);
-            failureCount += contactsToInsert.length;
-          } else {
-            successCount += contactsToInsert.length;
+            if (insertError) {
+              console.error('❌ Insert/upsert error for', row.email, insertError);
+              failureCount++;
+            } else {
+              console.log('✅ Inserted/Upserted', row.email);
+              successCount++;
+            }
           }
         }
 
