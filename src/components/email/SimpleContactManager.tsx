@@ -600,6 +600,36 @@ export const SimpleContactManager = () => {
   };
 
   // CSV Import Functions
+  // Minimal CSV parser supporting quoted fields and commas inside quotes
+  const parseCsvLines = (lines: string[]): string[][] => {
+    const rows: string[][] = [];
+    for (const line of lines) {
+      const result: string[] = [];
+      let current = '';
+      let inQuotes = false;
+      for (let i = 0; i < line.length; i++) {
+        const char = line[i];
+        if (char === '"') {
+          if (inQuotes && line[i + 1] === '"') {
+            // Escaped quote
+            current += '"';
+            i++;
+          } else {
+            inQuotes = !inQuotes;
+          }
+        } else if (char === ',' && !inQuotes) {
+          result.push(current.trim());
+          current = '';
+        } else {
+          current += char;
+        }
+      }
+      result.push(current.trim());
+      rows.push(result.map(cell => cell.replace(/^"|"$/g, '').trim()))
+    }
+    return rows;
+  };
+
   const handleCsvFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
@@ -622,10 +652,8 @@ export const SimpleContactManager = () => {
     const reader = new FileReader();
     reader.onload = (e) => {
       const text = e.target?.result as string;
-      const lines = text.split('\n').filter(line => line.trim());
-      const preview = lines.slice(0, 6).map(line => 
-        line.split(',').map(cell => cell.replace(/"/g, '').trim())
-      );
+      const lines = text.replace(/\r\n/g, '\n').replace(/\r/g, '\n').split('\n').filter(line => line.trim());
+      const preview = parseCsvLines(lines.slice(0, 6));
       setCsvPreview(preview);
     };
     reader.readAsText(file);
@@ -643,7 +671,7 @@ export const SimpleContactManager = () => {
       const reader = new FileReader();
       reader.onload = async (e) => {
         const text = e.target?.result as string;
-        const lines = text.split('\n').filter(line => line.trim());
+        const lines = text.replace(/\r\n/g, '\n').replace(/\r/g, '\n').split('\n').filter(line => line.trim());
         
         // Skip header row if exists
         const dataLines = lines.slice(1);
@@ -682,12 +710,14 @@ export const SimpleContactManager = () => {
           // Update progress
           setImportProgress({ current: i + 1, total: dataLines.length });
           try {
-            const cells = line.split(',').map(cell => cell.replace(/"/g, '').trim());
+            const [cells] = parseCsvLines([line]);
             
-            const email = cells[csvMapping.email] || '';
-            let name = cells[csvMapping.name] || '';
-            const phone = cells[csvMapping.phone] || '';
-            const tagsString = cells[csvMapping.tags] || '';
+            const getCell = (idx: number) => (typeof idx === 'number' && idx >= 0 && idx < cells.length ? cells[idx] : '');
+            const rawEmail = getCell(csvMapping.email);
+            const email = (rawEmail || '').trim();
+            let name = getCell(csvMapping.name) || '';
+            const phone = getCell(csvMapping.phone) || '';
+            const tagsString = getCell(csvMapping.tags) || '';
 
             if (!email) {
               failureCount++;
@@ -699,10 +729,10 @@ export const SimpleContactManager = () => {
               name = generateNameFromEmail(email);
             }
 
-            const tags = tagsString
-              .split(',')
+            const tags = (typeof tagsString === 'string' ? tagsString : '')
+              .split(/[,;\n]/)
               .map(tag => tag.trim())
-              .filter(tag => tag.length > 0);
+              .filter(tag => tag.length > 0 && tag.toLowerCase() !== email.toLowerCase());
 
             // Split name into first_name and last_name
             const [firstName, ...rest] = name.split(/\s+/);
@@ -713,23 +743,26 @@ export const SimpleContactManager = () => {
             console.log(`🔍 Checking for existing contact: ${email} -> ${existingContact ? 'FOUND' : 'NOT FOUND'}`);
 
             if (existingContact) {
-              // Contact exists - prepare for update (always update, even if same data)
-              const existingTags = existingContact.tags || [];
-              const newTags = [...new Set([...existingTags, ...tags])]; // Remove duplicates
-              
-              console.log(`🔄 Updating existing contact ${email}:`, {
-                existingTags,
-                newTagsFromCSV: tags,
-                mergedTags: newTags,
-                willUpdate: true // Always update, even if data is the same
-              });
-              
-              contactsToUpdate.push({
-                id: existingContact.id,
-                first_name: firstName || existingContact.first_name || null,
-                last_name: lastName || existingContact.last_name || null,
-                tags: newTags.length ? newTags : null
-              });
+              // Contact exists - prepare for update only if something changes
+              const existingTags = (existingContact.tags || []).map((t: string) => t.trim());
+              const mergedTags = [...new Set([...existingTags, ...tags])];
+
+              const nextFirst = firstName || existingContact.first_name || null;
+              const nextLast = lastName || existingContact.last_name || null;
+
+              const namesChanged = (existingContact.first_name || null) !== nextFirst || (existingContact.last_name || null) !== nextLast;
+              const tagsChanged = JSON.stringify(existingTags) !== JSON.stringify(mergedTags);
+
+              console.log(`🔄 Evaluating update for ${email}:`, { namesChanged, tagsChanged });
+
+              if (namesChanged || tagsChanged) {
+                contactsToUpdate.push({
+                  id: existingContact.id,
+                  first_name: nextFirst,
+                  last_name: nextLast,
+                  tags: mergedTags.length ? mergedTags : null
+                });
+              }
             } else {
               // Contact doesn't exist - prepare for insert
               contactsToInsert.push({
