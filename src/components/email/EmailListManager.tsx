@@ -687,7 +687,7 @@ export const EmailListManager = () => {
   const uniqueTags = Array.from(new Set(contacts.flatMap(c => c.tags || [])));
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       <Tabs defaultValue="contacts" className="space-y-4">
         <TabsList className="grid w-full grid-cols-2">
           <TabsTrigger value="contacts" className="flex items-center space-x-2">
@@ -700,7 +700,7 @@ export const EmailListManager = () => {
           </TabsTrigger>
         </TabsList>
 
-        <TabsContent value="contacts" className="space-y-6">
+        <TabsContent value="contacts" className="space-y-4">
           <Card className="shadow-xl shadow-email-primary/10 bg-gradient-to-br from-email-background via-white to-email-muted/20 border border-email-primary/20">
             <CardHeader className="bg-gradient-to-r from-email-primary/5 via-email-accent/5 to-email-primary/5 border-b border-email-primary/20">
               <div className="flex justify-between items-center">
@@ -807,7 +807,7 @@ export const EmailListManager = () => {
                 </div>
               </div>
             </CardHeader>
-            <CardContent className="space-y-6 pt-6">
+            <CardContent className="space-y-4 pt-4">
               {/* Bulk Operations */}
               {selectedContacts.length > 0 && (
                 <div className="bg-gradient-to-r from-blue-50 via-blue-100/50 to-blue-50 rounded-xl p-4 border border-blue-200 shadow-sm">
@@ -1012,7 +1012,7 @@ export const EmailListManager = () => {
         </TabsContent>
 
 
-        <TabsContent value="lists" className="space-y-6">
+        <TabsContent value="lists" className="space-y-4">
           <Card className="shadow-xl shadow-email-primary/10 bg-gradient-to-br from-email-background via-white to-email-muted/20 border border-email-primary/20">
             <CardHeader className="bg-gradient-to-r from-email-primary/5 via-email-accent/5 to-email-primary/5 border-b border-email-primary/20">
               <div className="flex justify-between items-center">

@@ -65,27 +65,27 @@ export const MainLayout = () => {
       `}>
         <div className="flex flex-col h-full">
           {/* Sidebar Header */}
-          <div className="p-6 border-b border-email-primary/20 bg-gradient-to-r from-email-primary/5 via-email-accent/5 to-email-primary/5">
-            <h2 className="text-xl font-bold text-email-secondary flex items-center space-x-2">
+          <div className="p-4 border-b border-email-primary/20 bg-gradient-to-r from-email-primary/5 via-email-accent/5 to-email-primary/5">
+            <h2 className="text-lg font-bold text-email-secondary flex items-center space-x-2">
               <div className="p-1.5 bg-gradient-to-br from-email-primary to-email-accent rounded-lg shadow-sm">
                 <Users className="h-4 w-4 text-white" />
               </div>
               <span>Business Dashboard</span>
             </h2>
-            <p className="text-sm text-email-secondary/80 mt-2">
+            <p className="text-xs text-email-secondary/80 mt-1">
               Manage all aspects of your business
             </p>
           </div>
 
           {/* Navigation */}
-          <nav className="flex-1 p-4 space-y-3">
+          <nav className="flex-1 p-3 space-y-2">
             {panels.map((panel) => {
               const Icon = panel.icon;
               return (
                 <Button
                   key={panel.id}
                   variant={activePanel === panel.id ? "default" : "ghost"}
-                  className={`w-full justify-start gap-3 h-12 text-left transition-all duration-200 ${
+                  className={`w-full justify-start gap-2.5 h-10 text-left transition-all duration-200 ${
                     activePanel === panel.id 
                       ? "bg-gradient-to-r from-email-primary to-email-accent text-white shadow-lg hover:shadow-xl" 
                       : "hover:bg-email-primary/10 hover:text-email-primary border border-transparent hover:border-email-primary/20"
@@ -95,25 +95,25 @@ export const MainLayout = () => {
                     setSidebarOpen(false);
                   }}
                 >
-                  <Icon className="h-5 w-5" />
-                  <span className="font-medium">{panel.name}</span>
+                  <Icon className="h-4 w-4" />
+                  <span className="font-medium text-sm">{panel.name}</span>
                 </Button>
               );
             })}
           </nav>
 
           {/* Footer */}
-          <div className="p-4 border-t border-email-primary/20 space-y-3">
+          <div className="p-3 border-t border-email-primary/20 space-y-2">
             <Button
               variant="outline"
               size="sm"
-              className="w-full justify-start gap-3 h-10 border-email-primary/30 text-email-secondary hover:bg-red-50 hover:border-red-300 hover:text-red-700 transition-all duration-200"
+              className="w-full justify-start gap-2.5 h-9 border-email-primary/30 text-email-secondary hover:bg-red-50 hover:border-red-300 hover:text-red-700 transition-all duration-200"
               onClick={logout}
             >
               <LogOut className="h-4 w-4" />
-              <span className="font-medium">Sign Out</span>
+              <span className="font-medium text-sm">Sign Out</span>
             </Button>
-            <div className="bg-gradient-to-r from-email-primary/5 to-email-accent/5 rounded-lg p-3 border border-email-primary/20">
+            <div className="bg-gradient-to-r from-email-primary/5 to-email-accent/5 rounded-lg p-2 border border-email-primary/20">
               <p className="text-xs text-email-secondary/80 text-center font-medium">
                 Logged in as {user.email}
               </p>

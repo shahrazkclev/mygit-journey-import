@@ -953,13 +953,13 @@ export const ReviewsManager = () => {
     <div className="min-h-screen bg-background">
       {/* Header */}
       <div className="border-b bg-card/50 backdrop-blur-sm sticky top-0 z-50">
-        <div className="container mx-auto px-4 py-4">
+        <div className="container mx-auto px-4 py-2.5">
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-xl md:text-2xl lg:text-3xl font-bold text-foreground">
+              <h1 className="text-lg md:text-xl lg:text-2xl font-bold text-foreground">
                 Reviews Manager
               </h1>
-              <p className="text-xs md:text-sm lg:text-base text-muted-foreground">
+              <p className="text-xs text-muted-foreground">
                 Manage customer reviews and submissions
               </p>
             </div>
@@ -971,7 +971,7 @@ export const ReviewsManager = () => {
         </div>
       </div>
       
-      <div className="container mx-auto p-4 md:p-6">
+      <div className="container mx-auto p-3 md:p-4">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
           {/* Navigation Tabs */}
           <div className="bg-card rounded-lg border p-1 shadow-sm">
@@ -1438,7 +1438,7 @@ export const ReviewsManager = () => {
 
           {/* Analytics Tab */}
           <TabsContent value="analytics">
-            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
               <Card className="shadow-xl shadow-blue-500/10 bg-gradient-to-br from-blue-50 via-white to-blue-50/50 border border-blue-200">
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                   <CardTitle className="text-sm font-semibold text-blue-700">Total Submissions</CardTitle>
@@ -1669,7 +1669,7 @@ export const ReviewsManager = () => {
               </DialogDescription>
             </DialogHeader>
             
-            <div className="space-y-6">
+            <div className="space-y-4">
               {/* Basic Information */}
               <div className="space-y-4">
                 <h3 className="text-sm font-medium">Basic Information</h3>
@@ -1918,7 +1918,7 @@ export const ReviewsManager = () => {
                 ) : (
                   <div className="text-center">
                     <Label htmlFor="upload-media" className="cursor-pointer">
-                      <div className="border-2 border-dashed border-muted-foreground/25 rounded-lg p-6 hover:border-muted-foreground/50 transition-colors">
+                      <div className="border-2 border-dashed border-muted-foreground/25 rounded-lg p-4 hover:border-muted-foreground/50 transition-colors">
                         {mediaUploading ? (
                           <div className="flex flex-col items-center gap-2">
                             <RefreshCw className="h-8 w-8 animate-spin text-muted-foreground" />
@@ -2039,7 +2039,7 @@ export const ReviewsManager = () => {
                   <div className="space-y-3">
                     <div className="text-center">
                       <Label htmlFor="upload-thumbnail" className="cursor-pointer">
-                        <div className="border-2 border-dashed border-muted-foreground/25 rounded-lg p-6 hover:border-muted-foreground/50 transition-colors">
+                        <div className="border-2 border-dashed border-muted-foreground/25 rounded-lg p-4 hover:border-muted-foreground/50 transition-colors">
                           {thumbnailUploading ? (
                             <div className="flex flex-col items-center gap-2">
                               <RefreshCw className="h-8 w-8 animate-spin text-muted-foreground" />

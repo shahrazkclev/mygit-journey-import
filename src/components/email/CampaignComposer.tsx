@@ -863,7 +863,7 @@ export const CampaignComposer: React.FC<CampaignComposerProps> = ({ onSave }) =>
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       {/* Active Campaigns Section */}
       {pausedCampaigns.length > 0 && (
         <Card className="shadow-soft bg-gradient-to-br from-orange-50 to-red-50 border-orange-200">

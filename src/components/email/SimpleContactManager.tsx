@@ -1029,11 +1029,11 @@ export const SimpleContactManager = () => {
   };
 
   if (isLoading) {
-    return <div className="p-6">Loading contacts...</div>;
+    return <div className="p-4">Loading contacts...</div>;
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       {/* Make.com Integration Info */}
       <Card className="shadow-soft border-email-primary/20 bg-gradient-to-br from-email-background to-background">
         <Collapsible open={isMakeIntegrationOpen} onOpenChange={setIsMakeIntegrationOpen}>
@@ -1392,15 +1392,15 @@ export const SimpleContactManager = () => {
             </div>
           </div>
         </CardHeader>
-        <CardContent className="space-y-8 pt-6">
+        <CardContent className="space-y-4 pt-4">
           {/* Search and Filter Section */}
-          <div className="bg-gradient-to-br from-email-background via-white to-email-muted/30 rounded-xl p-6 border border-email-primary/20 shadow-lg shadow-email-primary/10 mt-4">
-            <div className="flex flex-col space-y-5">
+          <div className="bg-gradient-to-br from-email-background via-white to-email-muted/30 rounded-lg p-4 border border-email-primary/20 shadow-lg shadow-email-primary/10 mt-2">
+            <div className="flex flex-col space-y-3">
               <div className="flex items-center space-x-2">
-                <div className="w-1 h-6 bg-gradient-to-b from-email-primary to-email-accent rounded-full"></div>
-                <h3 className="text-lg font-semibold text-email-primary">Search & Filter</h3>
+                <div className="w-1 h-5 bg-gradient-to-b from-email-primary to-email-accent rounded-full"></div>
+                <h3 className="text-base font-semibold text-email-primary">Search & Filter</h3>
               </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-3">
                   <Label htmlFor="search-contacts" className="text-sm font-medium text-email-secondary flex items-center space-x-2">
                     <div className="w-2 h-2 bg-email-accent rounded-full"></div>
@@ -1462,7 +1462,7 @@ export const SimpleContactManager = () => {
           {/* Contacts List */}
           <div className="space-y-3">
             {filteredContacts.length > 0 && (
-              <div className="flex items-center p-4 bg-gradient-to-r from-email-primary/5 via-email-accent/5 to-email-primary/5 rounded-xl border border-email-primary/20 shadow-sm">
+              <div className="flex items-center p-3 bg-gradient-to-r from-email-primary/5 via-email-accent/5 to-email-primary/5 rounded-lg border border-email-primary/20 shadow-sm">
                 <input
                   type="checkbox"
                   checked={selectedContacts.size === filteredContacts.length && filteredContacts.length > 0}
@@ -1478,7 +1478,7 @@ export const SimpleContactManager = () => {
             {filteredContacts.map(contact => (
               <div
                 key={contact.id}
-                className={`group flex items-center justify-between p-5 border rounded-xl transition-all duration-200 hover:shadow-lg hover:scale-[1.02] ${
+                className={`group flex items-center justify-between p-4 border rounded-lg transition-all duration-200 hover:shadow-lg hover:scale-[1.01] ${
                   selectedContacts.has(contact.id) 
                     ? 'bg-gradient-to-r from-email-primary/10 via-email-accent/5 to-email-primary/10 border-email-primary/40 shadow-md' 
                     : 'bg-gradient-to-r from-white via-email-muted/20 to-white border-email-primary/20 shadow-sm hover:border-email-primary/30'
@@ -1547,7 +1547,7 @@ export const SimpleContactManager = () => {
               </div>
             ))}
             {filteredContacts.length === 0 && (
-              <div className="text-center py-8 text-gray-500">
+              <div className="text-center py-6 text-gray-500">
                 {contacts.length === 0 ? (
                   <div>
                     <Users className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />

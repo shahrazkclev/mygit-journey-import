@@ -310,11 +310,11 @@ export const UnsubscribeManager = () => {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       {/* Stats Overview */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <Card className="shadow-xl shadow-red-500/10 bg-gradient-to-br from-red-50 via-white to-red-50/50 border border-red-200">
-          <CardContent className="p-6">
+          <CardContent className="p-4">
             <div className="flex items-center space-x-3">
               <div className="p-2 bg-gradient-to-br from-red-500 to-red-600 rounded-lg shadow-sm">
                 <UserX className="h-5 w-5 text-white" />
@@ -328,7 +328,7 @@ export const UnsubscribeManager = () => {
         </Card>
         
         <Card className="shadow-xl shadow-yellow-500/10 bg-gradient-to-br from-yellow-50 via-white to-yellow-50/50 border border-yellow-200">
-          <CardContent className="p-6">
+          <CardContent className="p-4">
             <div className="flex items-center space-x-3">
               <div className="p-2 bg-gradient-to-br from-yellow-500 to-yellow-600 rounded-lg shadow-sm">
                 <Calendar className="h-5 w-5 text-white" />
@@ -347,7 +347,7 @@ export const UnsubscribeManager = () => {
         </Card>
         
         <Card className="shadow-xl shadow-email-accent/10 bg-gradient-to-br from-email-accent/10 via-white to-email-accent/5 border border-email-accent/20">
-          <CardContent className="p-6">
+          <CardContent className="p-4">
             <div className="flex items-center space-x-3">
               <div className="p-2 bg-gradient-to-br from-email-accent to-email-primary rounded-lg shadow-sm">
                 <Search className="h-5 w-5 text-white" />

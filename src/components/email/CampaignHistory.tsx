@@ -384,15 +384,15 @@ export const CampaignHistory: React.FC = () => {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       {/* Header */}
-      <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
+      <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-3">
         <div>
-          <h2 className="text-2xl lg:text-3xl font-bold text-email-primary flex items-center">
-            <BarChart3 className="h-6 w-6 lg:h-7 lg:w-7 mr-3" />
+          <h2 className="text-xl lg:text-2xl font-bold text-email-primary flex items-center">
+            <BarChart3 className="h-5 w-5 lg:h-6 lg:w-6 mr-2" />
             Campaign Dashboard
           </h2>
-          <p className="text-sm lg:text-base text-muted-foreground mt-1">
+          <p className="text-xs text-muted-foreground mt-1">
             Monitor and manage all your email campaigns
           </p>
         </div>
@@ -424,7 +424,7 @@ export const CampaignHistory: React.FC = () => {
       {/* Stats Cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <Card className="bg-gradient-to-br from-email-primary/10 to-email-primary/5 border-email-primary/20">
-          <CardContent className="p-4 lg:p-6">
+          <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-xs lg:text-sm font-medium text-muted-foreground">Total Campaigns</p>
@@ -436,7 +436,7 @@ export const CampaignHistory: React.FC = () => {
         </Card>
 
         <Card className="bg-gradient-to-br from-email-accent/10 to-email-accent/5 border-email-accent/20">
-          <CardContent className="p-4 lg:p-6">
+          <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-xs lg:text-sm font-medium text-muted-foreground">Active Campaigns</p>
@@ -448,7 +448,7 @@ export const CampaignHistory: React.FC = () => {
         </Card>
 
         <Card className="bg-gradient-to-br from-green-100 to-green-50 border-green-200">
-          <CardContent className="p-4 lg:p-6">
+          <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-xs lg:text-sm font-medium text-muted-foreground">Total Sent</p>
@@ -460,7 +460,7 @@ export const CampaignHistory: React.FC = () => {
         </Card>
 
         <Card className="bg-gradient-to-br from-email-secondary/10 to-email-secondary/5 border-email-secondary/20">
-          <CardContent className="p-4 lg:p-6">
+          <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-xs lg:text-sm font-medium text-muted-foreground">Success Rate</p>
@@ -778,8 +778,8 @@ export const CampaignHistory: React.FC = () => {
           </DialogHeader>
           
           {selectedCampaign && (
-            <div className="space-y-6">
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div className="space-y-4">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                 <div className="space-y-4">
                   <div>
                     <Label className="text-email-primary font-semibold">Subject</Label>
