@@ -6,7 +6,7 @@ export interface Env {
   MAX_RETRIES: string;
   BATCH_SIZE: string;
   DELAY_BETWEEN_EMAILS_MS: string;
-  email_send_queue: Queue;
+  EMAIL_SEND_QUEUE: Queue;
 }
 
 interface QueueMessage {
@@ -213,7 +213,7 @@ async function processQueueMessage(message: QueueMessage, env: Env): Promise<voi
       });
     } else {
       // Retry by re-queuing
-      await env.email_send_queue.send({
+      await env.EMAIL_SEND_QUEUE.send({
         ...message,
         attempt: message.attempt + 1,
       });
@@ -223,7 +223,7 @@ async function processQueueMessage(message: QueueMessage, env: Env): Promise<voi
 
 // Queue consumer
 export default {
-  async queue(batch: MessageBatch<QueueMessage>, env: Env): Promise<void> {
+  async queue(batch: MessageBatch<QueueMessage>, env: Env, ctx: ExecutionContext): Promise<void> {
     for (const message of batch.messages) {
       try {
         await processQueueMessage(message.body, env);
@@ -326,7 +326,7 @@ export default {
         // Queue all emails
         const maxRetries = parseInt(env.MAX_RETRIES || '3');
         for (const contact of validContacts) {
-          await env.email_send_queue.send({
+          await env.EMAIL_SEND_QUEUE.send({
             campaignId,
             contact: {
               id: contact.id,
@@ -409,7 +409,7 @@ export default {
         for (const send of pendingSends) {
           const contact = contactMap.get(send.contact_email);
           if (contact) {
-            await env.email_send_queue.send({
+            await env.EMAIL_SEND_QUEUE.send({
               campaignId,
               contact: {
                 id: contact.id,

@@ -2,9 +2,14 @@ name = "email-campaign"
 main = "index.ts"
 compatibility_date = "2024-01-01"
 
-[queues]
-producers = ["email-send-queue"]
-consumers = [{ queue = "email-send-queue", max_batch_size = 10, max_batch_timeout = 30 }]
+[[queues.producers]]
+queue = "email-send-queue"
+binding = "EMAIL_SEND_QUEUE"
+
+[[queues.consumers]]
+queue = "email-send-queue"
+max_batch_size = 10
+max_batch_timeout = 30
 
 [vars]
 MAX_RETRIES = "3"

@@ -369,88 +369,120 @@ export const StyleGuide = () => {
   };
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-2xl font-bold text-email-primary">Style Guide & Theme Control</h2>
-          <p className="text-muted-foreground">
-            Customize your brand identity and application theme
-          </p>
-        </div>
+    <div className="space-y-8">
+      <div>
+        <h2 className="text-2xl font-semibold mb-2">Style Guide & Branding</h2>
+        <p className="text-sm text-muted-foreground">
+          Customize your brand identity for emails and the application interface
+        </p>
       </div>
 
       {/* Page Theme Control */}
-      <Card className="shadow-soft bg-gradient-to-br from-email-background to-background border-email-primary/20">
-        <CardHeader>
-          <CardTitle className="flex items-center space-x-2">
-            <Settings className="h-5 w-5 text-email-primary" />
-            <span className="text-email-primary">Page Theme Control</span>
+      <Card className="border border-border/50 shadow-sm rounded-2xl">
+        <CardHeader className="p-6">
+          <CardTitle className="flex items-center gap-3 mb-2">
+            <div className="p-2 bg-primary/10 rounded-xl">
+              <Settings className="h-5 w-5 text-primary" />
+            </div>
+            <span className="text-xl font-semibold">Application Theme</span>
           </CardTitle>
-          <CardDescription>
-            Control the color theme of this application interface (separate from email brand colors)
+          <CardDescription className="text-sm">
+            Customize the interface colors for buttons, highlights, and active states
           </CardDescription>
         </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="space-y-2">
-              <Label>Primary Theme Color</Label>
-              <ColorPicker
-                value={pageThemeColors.primary}
-                onChange={(color) => {
-                  setPageThemeColors({ primary: color });
-                }}
-                label="Primary"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label>Secondary Theme Color</Label>
-              <ColorPicker
-                value={pageThemeColors.secondary}
-                onChange={(color) => {
-                  setPageThemeColors({ secondary: color });
-                }}
-                label="Secondary"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label>Accent Theme Color</Label>
-              <ColorPicker
-                value={pageThemeColors.accent}
-                onChange={(color) => {
-                  setPageThemeColors({ accent: color });
-                }}
-                label="Accent"
-              />
+        <CardContent className="p-6 space-y-6">
+          {/* Preset Themes */}
+          <div className="space-y-3">
+            <Label className="text-base font-semibold">Quick Themes</Label>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+              {[
+                { name: "Default", primary: "#3b82f6", secondary: "#f3f4f6", accent: "#10b981" },
+                { name: "Ocean", primary: "#0ea5e9", secondary: "#e0f2fe", accent: "#06b6d4" },
+                { name: "Forest", primary: "#059669", secondary: "#d1fae5", accent: "#10b981" },
+                { name: "Sunset", primary: "#f97316", secondary: "#fff7ed", accent: "#fb923c" },
+                { name: "Purple", primary: "#8b5cf6", secondary: "#f3e8ff", accent: "#a78bfa" },
+                { name: "Rose", primary: "#e11d48", secondary: "#fff1f2", accent: "#f43f5e" },
+                { name: "Slate", primary: "#475569", secondary: "#f1f5f9", accent: "#64748b" },
+                { name: "Amber", primary: "#d97706", secondary: "#fffbeb", accent: "#f59e0b" },
+              ].map((theme) => (
+                <button
+                  key={theme.name}
+                  onClick={() => {
+                    setPageThemeColors({
+                      primary: theme.primary,
+                      secondary: theme.secondary,
+                      accent: theme.accent,
+                    });
+                  }}
+                  className="p-4 rounded-xl border-2 border-border/50 hover:border-primary/50 transition-all text-left group"
+                >
+                  <div className="flex items-center gap-2 mb-2">
+                    <div className="w-4 h-4 rounded-full" style={{ backgroundColor: theme.primary }}></div>
+                    <div className="w-4 h-4 rounded-full" style={{ backgroundColor: theme.secondary }}></div>
+                    <div className="w-4 h-4 rounded-full" style={{ backgroundColor: theme.accent }}></div>
+                  </div>
+                  <span className="text-sm font-medium group-hover:text-primary">{theme.name}</span>
+                </button>
+              ))}
             </div>
           </div>
 
-          <div className="mt-4">
-            <Button onClick={handleSaveStyleGuide} size="sm" variant="outline" className="flex items-center space-x-2">
-              <Save className="h-4 w-4" />
-              <span>Save Theme</span>
-            </Button>
-            <p className="text-xs text-muted-foreground mt-2">
-              Changes are applied instantly. Click "Save Theme" to persist them.
-            </p>
+          {/* Custom Colors */}
+          <div className="space-y-4 pt-4 border-t border-border/50">
+            <Label className="text-base font-semibold">Custom Colors</Label>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+              <div className="space-y-2">
+                <Label className="text-sm">Primary (Buttons & Active States)</Label>
+                <ColorPicker
+                  value={pageThemeColors.primary}
+                  onChange={(color) => {
+                    setPageThemeColors({ primary: color });
+                  }}
+                  label="Primary"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label className="text-sm">Secondary (Backgrounds)</Label>
+                <ColorPicker
+                  value={pageThemeColors.secondary}
+                  onChange={(color) => {
+                    setPageThemeColors({ secondary: color });
+                  }}
+                  label="Secondary"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label className="text-sm">Accent (Highlights)</Label>
+                <ColorPicker
+                  value={pageThemeColors.accent}
+                  onChange={(color) => {
+                    setPageThemeColors({ accent: color });
+                  }}
+                  label="Accent"
+                />
+              </div>
+            </div>
           </div>
         </CardContent>
       </Card>
 
       {/* Brand Identity */}
-      <Card className="shadow-soft bg-gradient-to-br from-email-background to-background border-email-primary/20">
-        <CardHeader>
-          <CardTitle className="flex items-center space-x-2">
-            <Sparkles className="h-5 w-5 text-email-secondary" />
-            <span className="text-email-secondary">Brand Identity</span>
+      <Card className="border border-border/50 shadow-sm rounded-2xl">
+        <CardHeader className="p-6">
+          <CardTitle className="flex items-center gap-3 mb-2">
+            <div className="p-2 bg-primary/10 rounded-xl">
+              <Sparkles className="h-5 w-5 text-primary" />
+            </div>
+            <span className="text-xl font-semibold">Brand Identity</span>
           </CardTitle>
-          <CardDescription>
+          <CardDescription className="text-sm">
             Define your brand colors and identity for AI-generated emails
           </CardDescription>
         </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <CardContent className="p-6 space-y-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
             <div className="space-y-2">
-              <Label htmlFor="brandName">Brand Name</Label>
+              <Label htmlFor="brandName" className="text-sm font-medium">Brand Name</Label>
               <Input
                 id="brandName"
                 value={brandIdentity.name}
@@ -461,10 +493,11 @@ export const StyleGuide = () => {
                   setTimeout(() => saveBrandToSupabase(), 1000);
                 }}
                 placeholder="Your Brand Name"
+                className="rounded-lg"
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="logoUrl">Logo URL (optional)</Label>
+              <Label htmlFor="logoUrl" className="text-sm font-medium">Logo URL (optional)</Label>
               <Input
                 id="logoUrl"
                 value={brandIdentity.logo}
@@ -473,13 +506,14 @@ export const StyleGuide = () => {
                   setTimeout(() => saveBrandToSupabase(), 1000);
                 }}
                 placeholder="https://example.com/logo.png"
+                className="rounded-lg"
               />
             </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
             <div className="space-y-2">
-              <Label>Primary Brand Color</Label>
+              <Label className="text-sm font-medium">Primary Brand Color</Label>
               <ColorPicker
                 value={brandIdentity.primaryColor}
                 onChange={(color) => {
@@ -491,7 +525,7 @@ export const StyleGuide = () => {
               />
             </div>
             <div className="space-y-2">
-              <Label>Secondary Brand Color</Label>
+              <Label className="text-sm font-medium">Secondary Brand Color</Label>
               <ColorPicker
                 value={brandIdentity.secondaryColor}
                 onChange={(color) => {
@@ -503,7 +537,7 @@ export const StyleGuide = () => {
               />
             </div>
             <div className="space-y-2">
-              <Label>Accent Brand Color</Label>
+              <Label className="text-sm font-medium">Accent Brand Color</Label>
               <ColorPicker
                 value={brandIdentity.accentColor}
                 onChange={(color) => {
@@ -521,14 +555,14 @@ export const StyleGuide = () => {
 
 
       {/* Action Buttons */}
-      <div className="flex space-x-4">
-        <Button onClick={handlePreviewStyle} variant="outline" className="flex items-center space-x-2">
-          <Eye className="h-4 w-4" />
-          <span>Generate Test Email</span>
+      <div className="flex gap-3 pt-4">
+        <Button onClick={handlePreviewStyle} variant="outline" className="rounded-xl" size="default">
+          <Eye className="h-4 w-4 mr-2" />
+          Generate Test Email
         </Button>
-        <Button onClick={handleSaveStyleGuide} disabled={loading} className="flex items-center space-x-2">
-          <Save className="h-4 w-4" />
-          <span>Save Style Guide</span>
+        <Button onClick={handleSaveStyleGuide} disabled={loading} className="rounded-xl" size="default">
+          <Save className="h-4 w-4 mr-2" />
+          Save Style Guide
         </Button>
       </div>
     </div>

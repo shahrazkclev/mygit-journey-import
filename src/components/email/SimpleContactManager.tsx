@@ -5,10 +5,9 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Checkbox } from "@/components/ui/checkbox";
 import { TagInput } from "@/components/ui/tag-input";
-import { Trash2, Plus, Tag, Users, Link, ChevronDown, ChevronRight, Edit, Upload, FileSpreadsheet, User, RefreshCw } from "lucide-react";
+import { Trash2, Plus, Tag, Users, Edit, Upload, FileSpreadsheet, User, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -51,7 +50,6 @@ export const SimpleContactManager = () => {
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [totalContacts, setTotalContacts] = useState(0);
   const CONTACTS_PER_PAGE = 50;
-  const [isMakeIntegrationOpen, setIsMakeIntegrationOpen] = useState(false);
   
   // Bulk operations state
   const [selectedContacts, setSelectedContacts] = useState<Set<string>>(new Set());
@@ -94,10 +92,6 @@ export const SimpleContactManager = () => {
   const [isImporting, setIsImporting] = useState(false);
   const [importProgress, setImportProgress] = useState({ current: 0, total: 0 });
 
-  // Make.com webhook URL
-  const [webhookUrl] = useState(() => 
-    `https://mixifcnokcmxarpzwfiy.supabase.co/functions/v1/sync-contacts`
-  );
 
   useEffect(() => {
     if (user?.id) {
@@ -576,10 +570,6 @@ export const SimpleContactManager = () => {
     }
   };
 
-  const copyWebhookUrl = () => {
-    navigator.clipboard.writeText(webhookUrl);
-    toast.success("Webhook URL copied to clipboard!");
-  };
 
   const handleSelectContact = (contactId: string, isSelected: boolean) => {
     const newSelected = new Set(selectedContacts);
@@ -1033,63 +1023,7 @@ export const SimpleContactManager = () => {
   }
 
   return (
-    <div className="space-y-6">
-      {/* Make.com Integration Info */}
-      <Card className="border border-border/50 shadow-sm rounded-2xl">
-        <Collapsible open={isMakeIntegrationOpen} onOpenChange={setIsMakeIntegrationOpen}>
-          <CollapsibleTrigger asChild>
-            <CardHeader className="cursor-pointer hover:bg-muted/30 transition-colors p-6">
-              <CardTitle className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="p-2 bg-primary/10 rounded-xl">
-                    <Link className="h-5 w-5 text-primary" />
-                  </div>
-                  <span className="text-lg font-semibold">Make.com Integration</span>
-                </div>
-                {isMakeIntegrationOpen ? (
-                  <ChevronDown className="h-5 w-5 text-muted-foreground" />
-                ) : (
-                  <ChevronRight className="h-5 w-5 text-muted-foreground" />
-                )}
-              </CardTitle>
-              <CardDescription className="mt-2 text-sm">
-                Use this webhook URL in Make.com to automatically sync contacts from Google Sheets
-              </CardDescription>
-            </CardHeader>
-          </CollapsibleTrigger>
-          <CollapsibleContent>
-            <CardContent className="space-y-4 p-6 pt-0">
-              <div className="flex items-center space-x-2">
-                <Input
-                  value={webhookUrl}
-                  readOnly
-                  className="border-email-primary/30"
-                />
-                <Button
-                  onClick={copyWebhookUrl}
-                  variant="outline"
-                  className="border-email-primary hover:bg-email-primary/10 text-email-primary"
-                >
-                  Copy
-                </Button>
-              </div>
-              <div className="text-sm text-muted-foreground">
-                <p><strong>Expected JSON format:</strong></p>
-                <pre className="bg-email-muted/30 p-2 rounded text-xs mt-2 border border-email-primary/10">
-{`{
-  "email": "customer@example.com",
-  "name": "John Doe",
-  "phone": "+1234567890", 
-  "tags": ["customer", "premium", "lazy-motion-library"],
-  "action": "create"
-}`}
-                </pre>
-              </div>
-            </CardContent>
-          </CollapsibleContent>
-        </Collapsible>
-      </Card>
-
+    <div className="space-y-8">
       {/* Contacts Management */}
       <Card className="border border-border/50 shadow-sm rounded-2xl">
         <CardHeader className="border-b border-border/50 p-6">
@@ -1394,15 +1328,15 @@ export const SimpleContactManager = () => {
             </div>
           </div>
         </CardHeader>
-        <CardContent className="space-y-6 p-6">
+        <CardContent className="space-y-8 p-6">
           {/* Search and Filter Section */}
           <div className="bg-muted/30 rounded-xl p-6 border border-border/50">
-            <div className="flex flex-col space-y-4">
+            <div className="flex flex-col space-y-5">
               <div className="flex items-center gap-3">
                 <div className="w-1 h-6 bg-primary rounded-full"></div>
                 <h3 className="text-lg font-semibold">Search & Filter</h3>
               </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                 <div className="space-y-3">
                   <Label htmlFor="search-contacts" className="text-sm font-medium text-email-secondary flex items-center space-x-2">
                     <div className="w-2 h-2 bg-email-accent rounded-full"></div>
@@ -1462,7 +1396,7 @@ export const SimpleContactManager = () => {
 
 
           {/* Contacts List */}
-          <div className="space-y-4">
+          <div className="space-y-3">
             {filteredContacts.length > 0 && (
               <div className="flex items-center p-4 bg-muted/30 rounded-xl border border-border/50">
                 <input
