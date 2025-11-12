@@ -1,0 +1,1786 @@
+import { useState, useEffect, useCallback, useRef, useMemo } from "react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Checkbox } from "@/components/ui/checkbox";
+import { TagInput } from "@/components/ui/tag-input";
+import { Trash2, Plus, Tag, Users, Edit, Upload, FileSpreadsheet, User, RefreshCw, Search } from "lucide-react";
+import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
+import { EditContactDialog } from "./EditContactDialog";
+
+interface Contact {
+  id: string;
+  name: string;
+  email: string;
+  phone: string;
+  tags: string[];
+  created_at: string;
+  updated_at?: string;
+}
+
+// Match DB schema for contacts
+interface DbContact {
+  id: string;
+  user_id: string;
+  created_at: string;
+  updated_at: string;
+  email: string;
+  first_name: string | null;
+  last_name: string | null;
+  status: string;
+  tags: string[] | null;
+}
+
+export const SimpleContactManager = () => {
+  const { user } = useAuth();
+  const [contacts, setContacts] = useState<Contact[]>([]);
+  const [filteredContacts, setFilteredContacts] = useState<Contact[]>([]);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [tagFilter, setTagFilter] = useState("");
+  const [isLoading, setIsLoading] = useState(true);
+  const [allTags, setAllTags] = useState<string[]>([]);
+  
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1);
+  const [hasMoreContacts, setHasMoreContacts] = useState(true);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
+  const [totalContacts, setTotalContacts] = useState(0);
+  const CONTACTS_PER_PAGE = 50;
+  
+  // Bulk operations state
+  const [selectedContacts, setSelectedContacts] = useState<Set<string>>(new Set());
+  const [showBulkTagDialog, setShowBulkTagDialog] = useState(false);
+  const [showBulkListDialog, setShowBulkListDialog] = useState(false);
+  const [bulkTags, setBulkTags] = useState('');
+  const [bulkTagsToRemove, setBulkTagsToRemove] = useState('');
+  const [emailLists, setEmailLists] = useState<any[]>([]);
+  const [selectedBulkLists, setSelectedBulkLists] = useState<string[]>([]);
+  const [selectedBulkListsToRemove, setSelectedBulkListsToRemove] = useState<string[]>([]);
+  const [bulkTagOperation, setBulkTagOperation] = useState<'add' | 'remove'>('add');
+  const [bulkListOperation, setBulkListOperation] = useState<'add' | 'remove'>('add');
+
+  // Edit contact state
+  const [showEditContactDialog, setShowEditContactDialog] = useState(false);
+  const [editingContact, setEditingContact] = useState<Contact | null>(null);
+
+  // Contact lists tracking
+  const [contactLists, setContactLists] = useState<Record<string, any[]>>({});
+
+  // Add contact form state
+  const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
+  const [newContact, setNewContact] = useState({
+    name: "",
+    email: "",
+    phone: "",
+    tags: ""
+  });
+
+  // CSV import state
+  const [showCsvImportDialog, setShowCsvImportDialog] = useState(false);
+  const [csvFile, setCsvFile] = useState<File | null>(null);
+  const [csvPreview, setCsvPreview] = useState<any[]>([]);
+  const [csvMapping, setCsvMapping] = useState({
+    email: 0,
+    name: 1,
+    phone: 2,
+    tags: 3
+  });
+  const [isImporting, setIsImporting] = useState(false);
+  const [importProgress, setImportProgress] = useState({ current: 0, total: 0 });
+
+
+  useEffect(() => {
+    if (user?.id) {
+      loadContacts(1, true);
+      loadEmailLists();
+      loadContactLists();
+      loadAllTags();
+    }
+  }, [user?.id]);
+
+  // Listen for contact updates from other components
+  useEffect(() => {
+    const handleContactsUpdated = () => {
+      console.log('🔄 Reloading contacts due to external update...');
+      loadContacts();
+    };
+
+    window.addEventListener('contactsUpdated', handleContactsUpdated);
+    return () => window.removeEventListener('contactsUpdated', handleContactsUpdated);
+  }, []);
+
+  // Manual search function
+  const handleManualSearch = () => {
+    if (searchTerm.trim() || tagFilter.trim()) {
+      searchContacts(searchTerm, tagFilter);
+    } else {
+      loadContacts(1, true); // Reset to show all contacts
+    }
+  };
+
+  // Handle Enter key press
+  const handleKeyPress = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      handleManualSearch();
+    }
+  };
+
+  // Cleanup timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (searchTimeoutRef.current) {
+        clearTimeout(searchTimeoutRef.current);
+      }
+    };
+  }, []);
+
+  // Generate name from email if no name provided
+  const generateNameFromEmail = (email: string): string => {
+    const localPart = email.split('@')[0];
+    // Convert dots, dashes, underscores to spaces and capitalize
+    return localPart
+      .replace(/[._-]/g, ' ')
+      .replace(/\b\w/g, l => l.toUpperCase())
+      .trim();
+  };
+
+  const loadContacts = async (page: number = 1, reset: boolean = true) => {
+    try {
+      if (reset) {
+        setIsLoading(true);
+        setCurrentPage(1);
+      } else {
+        setIsLoadingMore(true);
+      }
+
+      console.log(`🔄 Loading contacts page ${page}...`);
+
+      const from = (page - 1) * CONTACTS_PER_PAGE;
+      const to = from + CONTACTS_PER_PAGE - 1;
+
+      // Get total count first
+      const { count: totalCount } = await supabase
+        .from('contacts')
+        .select('*', { count: 'exact', head: true })
+        .eq('user_id', user?.id)
+        .eq('status', 'subscribed');
+
+      setTotalContacts(totalCount || 0);
+
+      // Load contacts with pagination
+      const { data, error } = await supabase
+        .from('contacts')
+        .select('id, user_id, created_at, updated_at, email, first_name, last_name, status, tags')
+        .eq('user_id', user?.id)
+        .eq('status', 'subscribed')
+        .order('created_at', { ascending: false })
+        .range(from, to);
+
+      console.log('📊 Contacts query result:', { data, error, count: data?.length, total: totalCount });
+
+      if (error) {
+        console.error('Error loading contacts:', error);
+        toast.error("Failed to load contacts");
+        return;
+      }
+
+      const dbContacts: DbContact[] = data || [];
+      // Map DB rows to UI shape
+      const uiContacts: Contact[] = dbContacts.map(c => {
+        let name = [c.first_name, c.last_name].filter(Boolean).join(' ').trim();
+        // If no name, generate from email
+        if (!name && c.email) {
+          name = generateNameFromEmail(c.email);
+        }
+        
+        return {
+          id: c.id,
+          name: name || 'Unknown',
+          email: c.email,
+          phone: "", // No phone column in DB; keep UI consistent
+          tags: c.tags ?? [],
+          created_at: c.created_at,
+          updated_at: c.updated_at,
+        };
+      });
+
+      const filteredUiContacts = uiContacts.filter(c => !(c.tags || []).some(t => (t || '').trim().toLowerCase() === 'unsub'));
+      
+      if (reset) {
+        setContacts(filteredUiContacts);
+        setFilteredContacts(filteredUiContacts);
+      } else {
+        const updatedContacts = [...contacts, ...filteredUiContacts];
+        setContacts(updatedContacts);
+        setFilteredContacts(updatedContacts);
+      }
+      
+      setHasMoreContacts(filteredUiContacts.length === CONTACTS_PER_PAGE);
+      setCurrentPage(page);
+      
+      console.log(`✅ Loaded ${filteredUiContacts.length} contacts for page ${page}`);
+      
+      // Load all tags separately for filter suggestions
+      if (reset) {
+        await loadAllTags();
+      }
+    } catch (error) {
+      console.error('Error loading contacts:', error);
+      toast.error("Failed to load contacts");
+    } finally {
+      setIsLoading(false);
+      setIsLoadingMore(false);
+    }
+  };
+
+  const loadAllTags = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('contacts')
+        .select('tags')
+        .eq('user_id', user?.id)
+        .eq('status', 'subscribed');
+
+      if (error) {
+        console.error('Error loading tags:', error);
+        return;
+      }
+
+      const tags = new Set<string>();
+      data?.forEach(contact => {
+        contact.tags?.forEach((tag: string) => {
+          if (tag && tag.trim()) {
+            tags.add(tag.trim());
+          }
+        });
+      });
+      setAllTags(Array.from(tags).sort());
+    } catch (error) {
+      console.error('Error loading tags:', error);
+    }
+  };
+
+  const loadMoreContacts = () => {
+    if (!isLoadingMore && hasMoreContacts) {
+      loadContacts(currentPage + 1, false);
+    }
+  };
+
+  // Debounced search using ref
+  const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  
+  const debouncedSearch = useCallback((searchQuery: string, tagQuery: string) => {
+    if (searchTimeoutRef.current) {
+      clearTimeout(searchTimeoutRef.current);
+    }
+    
+    searchTimeoutRef.current = setTimeout(() => {
+      if (searchQuery.trim() || tagQuery.trim()) {
+        searchContacts(searchQuery, tagQuery);
+      }
+      // Don't reset contacts when search is empty - let them stay as they are
+    }, 300); // 300ms delay
+  }, []);
+
+  const loadEmailLists = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('email_lists')
+        .select('*')
+        .eq('user_id', user?.id)
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        console.error('Error loading email lists:', error);
+        return;
+      }
+
+      setEmailLists(data || []);
+    } catch (error) {
+      console.error('Error loading email lists:', error);
+    }
+  };
+
+  const loadContactLists = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('contact_lists')
+        .select(`
+          contact_id,
+          email_lists!inner(id, name, list_type)
+        `);
+
+      if (error) {
+        console.error('Error loading contact lists:', error);
+        return;
+      }
+
+      // Group lists by contact ID
+      const contactListsMap: Record<string, any[]> = {};
+      data?.forEach((item: any) => {
+        if (!contactListsMap[item.contact_id]) {
+          contactListsMap[item.contact_id] = [];
+        }
+        contactListsMap[item.contact_id].push(item.email_lists);
+      });
+
+      setContactLists(contactListsMap);
+    } catch (error) {
+      console.error('Error loading contact lists:', error);
+    }
+  };
+
+
+  const searchContacts = async (searchQuery: string = searchTerm, tagQuery: string = tagFilter) => {
+    try {
+      setIsLoading(true);
+      console.log(`🔍 Searching contacts: "${searchQuery}", tag: "${tagQuery}"`);
+
+      let query = supabase
+        .from('contacts')
+        .select('id, user_id, created_at, updated_at, email, first_name, last_name, status, tags')
+        .eq('user_id', user?.id)
+        .eq('status', 'subscribed')
+        .order('created_at', { ascending: false })
+        .limit(100); // Limit search results to 100
+
+      // Add search filters
+      if (searchQuery.trim()) {
+        query = query.or(`email.ilike.%${searchQuery}%,first_name.ilike.%${searchQuery}%,last_name.ilike.%${searchQuery}%`);
+      }
+
+      if (tagQuery.trim()) {
+        const filterTags = tagQuery.split(',').map(tag => tag.trim()).filter(Boolean);
+        query = query.contains('tags', filterTags);
+      }
+
+      const { data, error } = await query;
+
+      if (error) {
+        console.error('Error searching contacts:', error);
+        toast.error("Failed to search contacts");
+        return;
+      }
+
+      const dbContacts: DbContact[] = data || [];
+      const uiContacts: Contact[] = dbContacts.map(c => {
+        let name = [c.first_name, c.last_name].filter(Boolean).join(' ').trim();
+        if (!name && c.email) {
+          name = generateNameFromEmail(c.email);
+        }
+        
+        return {
+          id: c.id,
+          name: name || 'Unknown',
+          email: c.email,
+          phone: "",
+          tags: c.tags ?? [],
+          created_at: c.created_at,
+          updated_at: c.updated_at,
+        };
+      });
+
+      const filteredUiContacts = uiContacts.filter(c => !(c.tags || []).some(t => (t || '').trim().toLowerCase() === 'unsub'));
+      setContacts(filteredUiContacts);
+      setFilteredContacts(filteredUiContacts);
+      setHasMoreContacts(false); // Disable pagination for search results
+      
+      console.log(`✅ Found ${filteredUiContacts.length} contacts matching search`);
+    } catch (error) {
+      console.error('Error searching contacts:', error);
+      toast.error("Failed to search contacts");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const filterContacts = () => {
+    // If we have search terms, use dynamic search
+    if (searchTerm.trim() || tagFilter.trim()) {
+      searchContacts();
+      return;
+    }
+
+    // Otherwise, use local filtering for loaded contacts
+    let filtered = contacts;
+
+    if (searchTerm) {
+      const searchLower = searchTerm.toLowerCase();
+      filtered = filtered.filter(contact => {
+        // Optimize: Check most common fields first
+        const emailMatch = contact.email?.toLowerCase().includes(searchLower);
+        if (emailMatch) return true;
+        
+        const nameMatch = contact.name?.toLowerCase().includes(searchLower);
+        if (nameMatch) return true;
+        
+        const phoneMatch = contact.phone?.includes(searchTerm);
+        if (phoneMatch) return true;
+        
+        // Check tags only if other fields don't match
+        return contact.tags?.some(tag => {
+          const tagLower = tag.toLowerCase();
+          return tagLower.includes(searchLower);
+        }) || false;
+      });
+    }
+
+    if (tagFilter) {
+      // Parse comma-separated tags from TagInput
+      const filterTags = tagFilter.split(',').map(tag => tag.trim().toLowerCase()).filter(Boolean);
+      
+      filtered = filtered.filter(contact => {
+        if (!contact.tags || contact.tags.length === 0) return false;
+        const contactTagsLower = contact.tags.map(t => t.toLowerCase());
+        return filterTags.some(filterTag => 
+          contactTagsLower.some(contactTag => contactTag.includes(filterTag))
+        );
+      });
+    }
+
+    setFilteredContacts(filtered);
+  };
+
+  const handleAddContact = async () => {
+    if (!newContact.email) {
+      toast.error("Email is required");
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      const newTags = newContact.tags
+        .split(',')
+        .map(tag => tag.toLowerCase().trim())
+        .filter(tag => tag.length > 0);
+
+      // Split name into first_name and last_name, or generate from email if no name
+      let firstName = '';
+      let lastName = '';
+      
+      if (newContact.name.trim()) {
+        const nameTrimmed = newContact.name.trim();
+        const [first, ...rest] = nameTrimmed.split(/\s+/);
+        firstName = first;
+        lastName = rest.join(" ");
+      } else {
+        // Generate name from email if no name provided
+        const generatedName = generateNameFromEmail(newContact.email);
+        const [first, ...rest] = generatedName.split(/\s+/);
+        firstName = first;
+        lastName = rest.join(" ");
+      }
+
+      // Check if contact already exists
+      const { data: existingContact, error: selectError } = await supabase
+        .from('contacts')
+        .select('id, tags, first_name, last_name')
+        .eq('user_id', user?.id)
+        .eq('email', newContact.email)
+        .maybeSingle();
+
+      if (selectError) {
+        console.error('Error checking existing contact:', selectError);
+        toast.error("Failed to check existing contact");
+        return;
+      }
+
+      if (existingContact) {
+        // Contact exists - merge tags and update
+        const existingTags = existingContact.tags || [];
+        const mergedTags = [...new Set([...existingTags, ...newTags])]; // Remove duplicates
+        
+        // Update name if it was empty or if new name is provided
+        const updatedFirstName = existingContact.first_name || firstName;
+        const updatedLastName = existingContact.last_name || lastName;
+
+        const { error: updateError } = await supabase
+          .from('contacts')
+          .update({
+            first_name: updatedFirstName || null,
+            last_name: updatedLastName || null,
+            tags: mergedTags.length ? mergedTags : null,
+            status: 'subscribed' // Ensure they're subscribed if re-adding
+          })
+          .eq('id', existingContact.id);
+
+        if (updateError) {
+          console.error('Error updating existing contact:', updateError);
+          toast.error("Failed to update existing contact");
+          return;
+        }
+
+        toast.success(`Contact updated! Added ${newTags.length} new tag(s) to existing contact.`);
+      } else {
+        // Contact doesn't exist - create new one
+        const { error: insertError } = await supabase
+          .from('contacts')
+          .insert({
+            user_id: user?.id,
+            email: newContact.email,
+            first_name: firstName || null,
+            last_name: lastName || null,
+            status: 'subscribed',
+            tags: newTags.length ? newTags : null
+          });
+
+        if (insertError) {
+          console.error('Error adding new contact:', insertError);
+          toast.error("Failed to add new contact");
+          return;
+        }
+
+        toast.success("New contact added successfully!");
+      }
+
+      setNewContact({ name: "", email: "", phone: "", tags: "" });
+      setIsAddDialogOpen(false);
+      loadContacts();
+      
+      // Trigger dynamic list refresh
+      window.dispatchEvent(new CustomEvent('contactsUpdated'));
+    } catch (error) {
+      console.error('Error handling contact:', error);
+      toast.error("Failed to process contact");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleDeleteContact = async (contactId: string) => {
+    try {
+      const { error } = await supabase
+        .from('contacts')
+        .delete()
+        .eq('id', contactId);
+
+      if (error) {
+        console.error('Error deleting contact:', error);
+        toast.error("Failed to delete contact");
+        return;
+      }
+
+      toast.success("Contact deleted successfully!");
+      loadContacts();
+    } catch (error) {
+      console.error('Error deleting contact:', error);
+      toast.error("Failed to delete contact");
+    }
+  };
+
+
+  const handleSelectContact = (contactId: string, isSelected: boolean) => {
+    const newSelected = new Set(selectedContacts);
+    if (isSelected) {
+      newSelected.add(contactId);
+    } else {
+      newSelected.delete(contactId);
+    }
+    setSelectedContacts(newSelected);
+  };
+
+  const handleSelectAll = (isSelected: boolean) => {
+    if (isSelected) {
+      setSelectedContacts(new Set(filteredContacts.map(c => c.id)));
+    } else {
+      setSelectedContacts(new Set());
+    }
+  };
+
+  // CSV Import Functions
+  // Minimal CSV parser supporting quoted fields and commas inside quotes
+  const parseCsvLines = (lines: string[]): string[][] => {
+    const rows: string[][] = [];
+    for (const line of lines) {
+      const result: string[] = [];
+      let current = '';
+      let inQuotes = false;
+      for (let i = 0; i < line.length; i++) {
+        const char = line[i];
+        if (char === '"') {
+          if (inQuotes && line[i + 1] === '"') {
+            // Escaped quote
+            current += '"';
+            i++;
+          } else {
+            inQuotes = !inQuotes;
+          }
+        } else if (char === ',' && !inQuotes) {
+          result.push(current.trim());
+          current = '';
+        } else {
+          current += char;
+        }
+      }
+      result.push(current.trim());
+      rows.push(result.map(cell => cell.replace(/^"|"$/g, '').trim()))
+    }
+    return rows;
+  };
+
+  const handleCsvFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      // Check if it's a CSV file by extension or MIME type
+      const isCsv = file.name.toLowerCase().endsWith('.csv') || 
+                   file.type === 'text/csv' || 
+                   file.type === 'application/csv' ||
+                   file.type === 'text/plain';
+      
+      if (isCsv) {
+        setCsvFile(file);
+        previewCsv(file);
+      } else {
+        toast.error('Please select a valid CSV file');
+      }
+    }
+  };
+
+  const previewCsv = (file: File) => {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const text = e.target?.result as string;
+      const lines = text.replace(/\r\n/g, '\n').replace(/\r/g, '\n').split('\n').filter(line => line.trim());
+      const preview = parseCsvLines(lines.slice(0, 6));
+      setCsvPreview(preview);
+    };
+    reader.readAsText(file);
+  };
+
+  const handleCsvImport = async () => {
+    if (!csvFile) {
+      toast.error('Please select a CSV file');
+      return;
+    }
+
+    setIsImporting(true);
+
+    try {
+      const reader = new FileReader();
+      reader.onload = async (e) => {
+        const text = e.target?.result as string;
+        const lines = text.replace(/\r\n/g, '\n').replace(/\r/g, '\n').split('\n').filter(line => line.trim());
+        
+        // Detect header: if the first parsed row's email field does not look like an email, treat it as header
+        const [firstRowCells] = parseCsvLines([lines[0] || '']);
+        const firstRowEmail = (firstRowCells?.[csvMapping.email] || '').toString();
+        const looksLikeEmail = /.+@.+\..+/.test(firstRowEmail);
+        const dataLines = looksLikeEmail ? lines : lines.slice(1);
+        // First, fetch all existing contacts in one query to avoid individual lookups
+        const { data: existingContacts, error: fetchError } = await supabase
+          .from('contacts')
+          .select('id, email, tags, first_name, last_name')
+          .eq('user_id', user?.id);
+
+        if (fetchError) {
+          console.error('Error fetching existing contacts:', fetchError);
+          toast.error('Failed to fetch existing contacts');
+          setIsImporting(false);
+          return;
+        }
+
+        // Create a map for quick lookup
+        const existingContactsMap = new Map();
+        existingContacts?.forEach(contact => {
+          const key = (contact.email || '').toString().trim().toLowerCase();
+          if (key) existingContactsMap.set(key, contact);
+        });
+        
+        console.log(`📋 Found ${existingContacts?.length || 0} existing contacts for lookup`);
+
+        let successCount = 0;
+        let failureCount = 0;
+        const contactsToInsert = [];
+        const contactsToUpdate = [];
+        const seenEmailsInCsv = new Set<string>();
+        
+        // Set total count for progress tracking
+        setImportProgress({ current: 0, total: dataLines.length });
+
+        for (let i = 0; i < dataLines.length; i++) {
+          const line = dataLines[i];
+          
+          // Update progress
+          setImportProgress({ current: i + 1, total: dataLines.length });
+          try {
+            const [cells] = parseCsvLines([line]);
+            
+            const getCell = (idx: number) => (typeof idx === 'number' && idx >= 0 && idx < cells.length ? cells[idx] : '');
+            const rawEmail = getCell(csvMapping.email);
+            const email = (rawEmail || '').toString().trim().toLowerCase();
+            // Skip duplicate emails within the same CSV run
+            const emailKey = email;
+            if (seenEmailsInCsv.has(emailKey)) {
+              continue;
+            }
+            seenEmailsInCsv.add(emailKey);
+            let name = getCell(csvMapping.name) || '';
+            const phone = getCell(csvMapping.phone) || '';
+            const tagsString = getCell(csvMapping.tags) || '';
+
+            if (!email) {
+              failureCount++;
+              continue;
+            }
+
+            // Generate name from email if no name provided
+            if (!name) {
+              name = generateNameFromEmail(email);
+            }
+
+            const tags = (typeof tagsString === 'string' ? tagsString : '')
+              .split(/[,;\n]/)
+              .map(tag => tag.trim())
+              .filter(tag => tag.length > 0 && tag.toLowerCase() !== email.toLowerCase());
+
+            // Split name into first_name and last_name
+            const [firstName, ...rest] = name.split(/\s+/);
+            const lastName = rest.join(" ");
+
+            // Check if contact already exists using our map
+            const existingContact = existingContactsMap.get(emailKey);
+            console.log(`🔍 Checking for existing contact: ${email} -> ${existingContact ? 'FOUND' : 'NOT FOUND'}`);
+
+            if (existingContact) {
+              // Contact exists - prepare for update only if something changes
+              const existingTags = (existingContact.tags || []).map((t: string) => t.trim());
+              const mergedTags = [...new Set([...existingTags, ...tags])];
+
+              const nextFirst = firstName || existingContact.first_name || null;
+              const nextLast = lastName || existingContact.last_name || null;
+
+              const namesChanged = (existingContact.first_name || null) !== nextFirst || (existingContact.last_name || null) !== nextLast;
+              const tagsChanged = JSON.stringify(existingTags) !== JSON.stringify(mergedTags);
+
+              console.log(`🔄 Evaluating update for ${email}:`, { namesChanged, tagsChanged });
+
+              if (namesChanged || tagsChanged) {
+                contactsToUpdate.push({
+                  id: existingContact.id,
+                  first_name: nextFirst,
+                  last_name: nextLast,
+                  tags: mergedTags.length ? mergedTags : null
+                });
+              }
+            } else {
+              // Contact doesn't exist - prepare for insert
+              contactsToInsert.push({
+                user_id: user?.id,
+                email: email,
+                first_name: firstName || null,
+                last_name: lastName || null,
+                tags: tags.length ? tags : null
+              });
+            }
+          } catch (error) {
+            console.error('Error processing line:', error);
+            failureCount++;
+          }
+        }
+
+        // Insert new contacts: per-row upsert for reliability (avoids silent misses)
+        if (contactsToInsert.length > 0) {
+          for (const row of contactsToInsert) {
+            const { error: insertError } = await supabase
+              .from('contacts')
+              .upsert(row, { onConflict: 'user_id,email', ignoreDuplicates: true });
+
+            if (insertError) {
+              console.error('❌ Insert/upsert error for', row.email, insertError);
+              failureCount++;
+            } else {
+              console.log('✅ Inserted/Upserted', row.email);
+              successCount++;
+            }
+          }
+        }
+
+        // Batch update existing contacts
+        for (const contactUpdate of contactsToUpdate) {
+          console.log(`📝 Updating contact ${contactUpdate.id} with tags:`, contactUpdate.tags);
+          
+          const { error: updateError } = await supabase
+            .from('contacts')
+            .update({
+              first_name: contactUpdate.first_name,
+              last_name: contactUpdate.last_name,
+              tags: contactUpdate.tags
+            })
+            .eq('id', contactUpdate.id);
+
+          if (updateError) {
+            console.error('❌ Error updating contact:', updateError);
+            failureCount++;
+          } else {
+            console.log(`✅ Successfully updated contact ${contactUpdate.id}`);
+            successCount++;
+          }
+        }
+
+        // Show detailed success message
+        const totalProcessed = contactsToInsert.length + contactsToUpdate.length;
+        if (totalProcessed > 0) {
+          const insertCount = contactsToInsert.length;
+          const updateCount = contactsToUpdate.length;
+          toast.success(`✅ Import completed! ${insertCount} new contacts added, ${updateCount} existing contacts updated${failureCount > 0 ? `, ${failureCount} failed` : ''}`);
+        } else {
+          toast.error(`❌ Import failed! ${failureCount} contacts failed to import`);
+        }
+        
+        // Close dialog and reset state
+        setShowCsvImportDialog(false);
+        setCsvFile(null);
+        setCsvPreview([]);
+        setImportProgress({ current: 0, total: 0 });
+        
+        // Reload contacts to show updated data
+        await loadContacts();
+        
+        // Trigger dynamic list refresh by dispatching a custom event
+        window.dispatchEvent(new CustomEvent('contactsUpdated'));
+      };
+
+      reader.readAsText(csvFile);
+    } catch (error) {
+      console.error('Error reading CSV file:', error);
+      toast.error('Failed to read CSV file');
+    } finally {
+      setIsImporting(false);
+    }
+  };
+
+  const handleBulkAddTags = async () => {
+    if (selectedContacts.size === 0) {
+      toast.error("Please select contacts");
+      return;
+    }
+
+    if (bulkTagOperation === 'add' && !bulkTags.trim()) {
+      toast.error("Please enter tags to add");
+      return;
+    }
+
+    if (bulkTagOperation === 'remove' && !bulkTagsToRemove.trim()) {
+      toast.error("Please enter tags to remove");
+      return;
+    }
+
+    try {
+      if (bulkTagOperation === 'add') {
+        const tagsToAdd = bulkTags.split(',').map(tag => tag.toLowerCase().trim()).filter(tag => tag.length > 0);
+        
+        for (const contactId of selectedContacts) {
+          const contact = contacts.find(c => c.id === contactId);
+          if (contact) {
+            const existingTags = contact.tags || [];
+            const newTags = [...new Set([...existingTags, ...tagsToAdd])];
+            
+            const { error } = await supabase
+              .from('contacts')
+              .update({ tags: newTags })
+              .eq('id', contactId);
+
+            if (error) throw error;
+          }
+        }
+        toast.success(`Added tags to ${selectedContacts.size} contacts`);
+      } else {
+        const tagsToRemove = bulkTagsToRemove.split(',').map(tag => tag.toLowerCase().trim()).filter(tag => tag.length > 0);
+        
+        for (const contactId of selectedContacts) {
+          const contact = contacts.find(c => c.id === contactId);
+          if (contact) {
+            const existingTags = contact.tags || [];
+            const newTags = existingTags.filter(tag => !tagsToRemove.includes(tag));
+            
+            const { error } = await supabase
+              .from('contacts')
+              .update({ tags: newTags })
+              .eq('id', contactId);
+
+            if (error) throw error;
+          }
+        }
+        toast.success(`Removed tags from ${selectedContacts.size} contacts`);
+      }
+
+      setBulkTags('');
+      setBulkTagsToRemove('');
+      setSelectedContacts(new Set());
+      setShowBulkTagDialog(false);
+      loadContacts();
+    } catch (error) {
+      console.error('Error managing bulk tags:', error);
+      toast.error("Failed to manage tags");
+    }
+  };
+
+  const handleBulkAddToLists = async () => {
+    if (selectedContacts.size === 0) {
+      toast.error("Please select contacts");
+      return;
+    }
+
+    const listsToProcess = bulkListOperation === 'add' ? selectedBulkLists : selectedBulkListsToRemove;
+    
+    if (listsToProcess.length === 0) {
+      toast.error(`Please select lists to ${bulkListOperation}`);
+      return;
+    }
+
+    try {
+      if (bulkListOperation === 'add') {
+        const memberships = [];
+        for (const contactId of selectedContacts) {
+          for (const listId of selectedBulkLists) {
+            memberships.push({
+              contact_id: contactId,
+              list_id: listId
+            });
+          }
+        }
+
+        const { error } = await supabase
+          .from('contact_lists')
+          .upsert(memberships, { onConflict: 'contact_id,list_id' });
+
+        if (error) throw error;
+        toast.success(`Added ${selectedContacts.size} contacts to ${selectedBulkLists.length} lists`);
+      } else {
+        // Remove from lists
+        for (const contactId of selectedContacts) {
+          for (const listId of selectedBulkListsToRemove) {
+            const { error } = await supabase
+              .from('contact_lists')
+              .delete()
+              .eq('contact_id', contactId)
+              .eq('list_id', listId);
+
+            if (error) throw error;
+          }
+        }
+        toast.success(`Removed ${selectedContacts.size} contacts from ${selectedBulkListsToRemove.length} lists`);
+      }
+
+      setSelectedBulkLists([]);
+      setSelectedBulkListsToRemove([]);
+      setSelectedContacts(new Set());
+      setShowBulkListDialog(false);
+      loadContactLists(); // Reload to show updated lists
+    } catch (error) {
+      console.error('Error managing contacts in lists:', error);
+      toast.error("Failed to manage contacts in lists");
+    }
+  };
+
+  const handleBulkDelete = async () => {
+    if (selectedContacts.size === 0) {
+      toast.error("Please select contacts to delete");
+      return;
+    }
+
+    const confirmMessage = `Are you sure you want to delete ${selectedContacts.size} contact(s)? This action cannot be undone.`;
+    if (!confirm(confirmMessage)) {
+      return;
+    }
+
+    try {
+      setIsLoading(true);
+      
+      // Delete contacts from the database
+      const { error } = await supabase
+        .from('contacts')
+        .delete()
+        .in('id', Array.from(selectedContacts));
+
+      if (error) {
+        console.error('Error deleting contacts:', error);
+        toast.error("Failed to delete contacts");
+        return;
+      }
+
+      // Also remove from contact_lists if they exist
+      await supabase
+        .from('contact_lists')
+        .delete()
+        .in('contact_id', Array.from(selectedContacts));
+
+      toast.success(`Successfully deleted ${selectedContacts.size} contact(s)`);
+      setSelectedContacts(new Set());
+      loadContacts();
+    } catch (error) {
+      console.error('Error deleting contacts:', error);
+      toast.error("Failed to delete contacts");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  if (isLoading) {
+    return <div className="p-4">Loading contacts...</div>;
+  }
+
+  return (
+    <>
+      <div className="w-full">
+        <div className="border-b-2 border-border bg-card/50 p-6 shadow-sm">
+          <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6">
+            <div>
+              <div className="flex items-center gap-3 mb-2">
+                <div className="p-2.5 bg-primary/15 rounded-xl shadow-sm">
+                  <Users className="h-5 w-5 text-primary" />
+                </div>
+                <h2 className="text-xl sm:text-2xl font-bold text-foreground">
+                  Contacts
+                </h2>
+                <Badge variant="secondary" className="bg-muted text-muted-foreground border-border/50 font-medium">
+                  {filteredContacts.length} / {totalContacts}
+                </Badge>
+                {selectedContacts.size > 0 && (
+                  <Badge variant="secondary" className="bg-primary/15 text-primary border-primary/30 font-semibold">
+                    {selectedContacts.size} selected
+                  </Badge>
+                )}
+              </div>
+              <p className="text-sm text-muted-foreground/90 ml-14">
+                Manage your contacts with tag-based organization. Names auto-generated from emails when missing.
+              </p>
+            </div>
+            <div className="flex flex-wrap items-center gap-3">
+              <Button
+                variant="outline"
+                size="default"
+                onClick={() => {
+                  setSearchTerm('');
+                  setTagFilter('');
+                  loadContacts(1, true);
+                }}
+              >
+                <RefreshCw className="h-4 w-4" />
+                Refresh
+              </Button>
+              
+              <Dialog open={showCsvImportDialog} onOpenChange={setShowCsvImportDialog}>
+                <DialogTrigger asChild>
+                  <Button
+                    variant="outline"
+                    size="default"
+                  >
+                    <FileSpreadsheet className="h-4 w-4" />
+                    Import CSV
+                  </Button>
+                </DialogTrigger>
+              
+              {selectedContacts.size > 0 && (
+                <div className="flex items-center gap-2 pl-3 border-l-2 border-border/50">
+                  <Button
+                    variant="outline"
+                    size="default"
+                    onClick={() => setShowBulkTagDialog(true)}
+                  >
+                    <Tag className="h-4 w-4" />
+                    Manage Tags
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="default"
+                    onClick={() => setShowBulkListDialog(true)}
+                  >
+                    <Users className="h-4 w-4" />
+                    Manage Lists
+                  </Button>
+                  <Button
+                    variant="destructive"
+                    size="default"
+                    onClick={handleBulkDelete}
+                  >
+                    <Trash2 className="h-4 w-4" />
+                    Delete Selected
+                  </Button>
+                </div>
+              )}
+              </Dialog>
+              
+              <Dialog open={showCsvImportDialog} onOpenChange={setShowCsvImportDialog}>
+                <DialogContent className="max-w-2xl">
+                  <DialogHeader>
+                    <DialogTitle>Import Contacts from CSV</DialogTitle>
+                    <DialogDescription>
+                      Upload a CSV file with contacts. Names will be auto-generated from emails if missing.
+                    </DialogDescription>
+                  </DialogHeader>
+                  <div className="space-y-4">
+                    <div>
+                      <Label htmlFor="csv-file">Select CSV File</Label>
+                      <Input
+                        id="csv-file"
+                        type="file"
+                        accept=".csv"
+                        onChange={handleCsvFileChange}
+                        className="border-email-primary/30 focus:border-email-primary"
+                      />
+                    </div>
+
+                    {csvPreview.length > 0 && (
+                      <div className="space-y-4">
+                        <h3 className="font-semibold text-email-primary">CSV Preview</h3>
+                        <div className="bg-email-muted/20 rounded-lg p-3 border border-email-primary/10 overflow-x-auto">
+                          <table className="w-full text-sm">
+                            <thead>
+                              <tr>
+                                {csvPreview[0]?.map((header, index) => (
+                                  <th key={index} className="text-left p-2 border-b border-email-primary/20">
+                                    Column {index + 1}
+                                  </th>
+                                ))}
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {csvPreview.slice(0, 5).map((row, rowIndex) => (
+                                <tr key={rowIndex}>
+                                  {row.map((cell, cellIndex) => (
+                                    <td key={cellIndex} className="p-2 border-b border-email-primary/10">
+                                      {cell || '-'}
+                                    </td>
+                                  ))}
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+
+                        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                          <div>
+                            <Label>Email Column</Label>
+                            <select
+                              value={csvMapping.email}
+                              onChange={(e) => setCsvMapping({...csvMapping, email: parseInt(e.target.value)})}
+                              className="w-full p-2 border border-email-primary/30 rounded-md focus:border-email-primary"
+                            >
+                              {csvPreview[0]?.map((_, index) => (
+                                <option key={index} value={index}>Column {index + 1}</option>
+                              ))}
+                            </select>
+                          </div>
+
+                          <div>
+                            <Label>Name Column (Optional)</Label>
+                            <select
+                              value={csvMapping.name}
+                              onChange={(e) => setCsvMapping({...csvMapping, name: parseInt(e.target.value)})}
+                              className="w-full p-2 border border-email-primary/30 rounded-md focus:border-email-primary"
+                            >
+                              <option value={-1}>Auto-generate from email</option>
+                              {csvPreview[0]?.map((_, index) => (
+                                <option key={index} value={index}>Column {index + 1}</option>
+                              ))}
+                            </select>
+                          </div>
+
+                          <div>
+                            <Label>Phone Column (Optional)</Label>
+                            <select
+                              value={csvMapping.phone}
+                              onChange={(e) => setCsvMapping({...csvMapping, phone: parseInt(e.target.value)})}
+                              className="w-full p-2 border border-email-primary/30 rounded-md focus:border-email-primary"
+                            >
+                              <option value={-1}>Skip</option>
+                              {csvPreview[0]?.map((_, index) => (
+                                <option key={index} value={index}>Column {index + 1}</option>
+                              ))}
+                            </select>
+                          </div>
+
+                          <div>
+                            <Label>Tags Column (Optional)</Label>
+                            <select
+                              value={csvMapping.tags}
+                              onChange={(e) => setCsvMapping({...csvMapping, tags: parseInt(e.target.value)})}
+                              className="w-full p-2 border border-email-primary/30 rounded-md focus:border-email-primary"
+                            >
+                              <option value={-1}>Skip</option>
+                              {csvPreview[0]?.map((_, index) => (
+                                <option key={index} value={index}>Column {index + 1}</option>
+                              ))}
+                            </select>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    <div className="flex gap-3 pt-2">
+                      <Button
+                        onClick={handleCsvImport}
+                        disabled={!csvFile || isImporting}
+                        size="default"
+                        className="flex-1"
+                      >
+                        {isImporting ? (
+                          <>
+                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                            {importProgress.total > 0 ? (
+                              `Processing ${importProgress.current}/${importProgress.total}...`
+                            ) : (
+                              'Importing...'
+                            )}
+                          </>
+                        ) : (
+                          <>
+                            <Upload className="h-4 w-4 mr-2" />
+                            Import Contacts
+                          </>
+                        )}
+                      </Button>
+                      <Button 
+                        variant="outline" 
+                        onClick={() => setShowCsvImportDialog(false)}
+                        size="default"
+                        className="flex-1"
+                        disabled={isImporting}
+                      >
+                        Cancel
+                      </Button>
+                    </div>
+                  </div>
+                </DialogContent>
+              </Dialog>
+
+              <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
+                <DialogTrigger asChild>
+                  <Button size="default" variant="default">
+                    <Plus className="h-4 w-4" />
+                    Add Contact
+                  </Button>
+                </DialogTrigger>
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle>Add New Contact</DialogTitle>
+                    <DialogDescription>
+                      Add a new contact with tags for better organization. Name will be auto-generated from email if not provided.
+                    </DialogDescription>
+                  </DialogHeader>
+                  <div className="space-y-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="name">Name (Optional)</Label>
+                      <Input
+                        id="name"
+                        value={newContact.name}
+                        onChange={(e) => setNewContact({...newContact, name: e.target.value})}
+                        placeholder="John Doe (auto-generated from email if empty)"
+                        className="border-email-primary/30 focus:border-email-primary"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="email">Email *</Label>
+                      <Input
+                        id="email"
+                        type="email"
+                        value={newContact.email}
+                        onChange={(e) => setNewContact({...newContact, email: e.target.value})}
+                        placeholder="john.doe@example.com"
+                        className="border-email-primary/30 focus:border-email-primary"
+                      />
+                      {newContact.email && !newContact.name && (
+                        <div className="text-xs text-muted-foreground flex items-center">
+                          <User className="h-3 w-3 mr-1" />
+                          Name will be: {generateNameFromEmail(newContact.email)}
+                        </div>
+                      )}
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="phone">Phone</Label>
+                      <Input
+                        id="phone"
+                        value={newContact.phone}
+                        onChange={(e) => setNewContact({...newContact, phone: e.target.value})}
+                        placeholder="+1234567890"
+                        className="border-email-primary/30 focus:border-email-primary"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="tags">Tags</Label>
+                      <TagInput
+                        value={newContact.tags}
+                        onChange={(value) => setNewContact({...newContact, tags: value})}
+                        suggestions={allTags}
+                        placeholder="customer, premium, lazy-motion-library"
+                      />
+                    </div>
+                    <div className="flex gap-3 pt-2">
+                      <Button 
+                        onClick={handleAddContact} 
+                        disabled={isLoading}
+                        className="flex-1"
+                      >
+                        {isLoading ? "Adding..." : "Add Contact"}
+                      </Button>
+                      <Button 
+                        variant="outline" 
+                        onClick={() => setIsAddDialogOpen(false)}
+                        className="flex-1"
+                      >
+                        Cancel
+                      </Button>
+                    </div>
+                  </div>
+                </DialogContent>
+              </Dialog>
+            </div>
+          </div>
+        </div>
+        <div className="space-y-6 p-6 w-full">
+          {/* Search and Filter Section */}
+          <div className="bg-muted/50 rounded-xl p-6 border-2 border-border/80 shadow-md">
+            <div className="flex items-center gap-3 mb-5">
+              <div className="w-1 h-6 bg-primary rounded-full"></div>
+              <h3 className="text-lg font-semibold">Search & Filter</h3>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="space-y-2.5">
+                <Label htmlFor="search-contacts" className="text-sm font-semibold text-foreground flex items-center gap-2.5">
+                  <div className="p-1.5 bg-primary/10 rounded-lg">
+                    <Search className="h-4 w-4 text-primary" />
+                  </div>
+                  <span>Search Contacts</span>
+                </Label>
+                <Input
+                  id="search-contacts"
+                  placeholder="Search by name or email..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  onKeyPress={handleKeyPress}
+                  className="w-full h-11 border-2 border-border focus:border-primary focus:ring-2 focus:ring-primary/20 bg-background rounded-xl shadow-sm hover:shadow-md transition-all duration-200"
+                />
+              </div>
+              <div className="space-y-2.5">
+                <Label htmlFor="filter-tags" className="text-sm font-semibold text-foreground flex items-center gap-2.5">
+                  <div className="p-1.5 bg-primary/10 rounded-lg">
+                    <Tag className="h-4 w-4 text-primary" />
+                  </div>
+                  <span>Filter by Tag</span>
+                </Label>
+                <TagInput
+                  value={tagFilter}
+                  onChange={(value) => setTagFilter(value)}
+                  suggestions={allTags}
+                  placeholder="Enter tag to filter..."
+                />
+              </div>
+            </div>
+              
+              {/* Search and Clear Buttons */}
+              <div className="flex justify-center gap-3 pt-2">
+                <Button
+                  onClick={handleManualSearch}
+                  size="default"
+                >
+                  Search
+                </Button>
+                {(searchTerm || tagFilter) && (
+                  <Button
+                    onClick={() => {
+                      setSearchTerm('');
+                      setTagFilter('');
+                      loadContacts(1, true);
+                    }}
+                    variant="outline"
+                    size="default"
+                  >
+                    Clear & Show All
+                  </Button>
+                )}
+              </div>
+            </div>
+
+          {/* Contacts List */}
+          <div className="space-y-3">
+            {filteredContacts.length > 0 && (
+              <div className="flex items-center p-4 bg-muted/30 rounded-xl border border-border/50">
+                <input
+                  type="checkbox"
+                  checked={selectedContacts.size === filteredContacts.length && filteredContacts.length > 0}
+                  onChange={(e) => handleSelectAll(e.target.checked)}
+                  className="h-4 w-4 text-email-primary focus:ring-2 focus:ring-email-primary/20 border-email-primary/30 rounded"
+                />
+                <Label className="ml-3 text-sm font-semibold text-email-primary cursor-pointer">
+                  Select All ({filteredContacts.length})
+                </Label>
+              </div>
+            )}
+            
+            {filteredContacts.map(contact => (
+              <div
+                key={contact.id}
+                className={`group flex items-center justify-between p-5 border-2 rounded-xl transition-all duration-200 hover:shadow-lg ${
+                  selectedContacts.has(contact.id) 
+                    ? 'bg-primary/10 border-primary/50 shadow-md' 
+                    : 'bg-card border-border/70 hover:border-border shadow-sm hover:shadow-md'
+                }`}
+              >
+                <div className="flex items-center space-x-3 flex-1">
+                  <input
+                    type="checkbox"
+                    checked={selectedContacts.has(contact.id)}
+                    onChange={(e) => handleSelectContact(contact.id, e.target.checked)}
+                    className="h-4 w-4 text-email-primary focus:ring-email-primary border-gray-300 rounded"
+                  />
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center space-x-4">
+                      <div>
+                        <p className="font-medium text-foreground">{contact.name}</p>
+                        <p className="text-sm text-muted-foreground break-all">{contact.email}</p>
+                        {contact.phone && (
+                          <p className="text-sm text-muted-foreground/80">{contact.phone}</p>
+                        )}
+                        <div className="flex items-center gap-2 mt-1.5">
+                          <p className="text-xs text-muted-foreground/70">
+                            Created: {new Date(contact.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                          </p>
+                          {contact.updated_at && contact.updated_at !== contact.created_at && (
+                            <>
+                              <span className="text-xs text-muted-foreground/50">•</span>
+                              <p className="text-xs text-muted-foreground/70">
+                                Updated: {new Date(contact.updated_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                              </p>
+                            </>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                    {contact.tags && contact.tags.length > 0 && (
+                      <div className="flex flex-wrap gap-1 mt-2">
+                        {contact.tags.map(tag => (
+                          <Badge key={tag} variant="secondary" className="text-xs bg-email-accent/20 text-email-accent">
+                            {tag}
+                          </Badge>
+                        ))}
+                      </div>
+                    )}
+                    {contactLists[contact.id] && contactLists[contact.id].length > 0 && (
+                      <div className="flex flex-wrap gap-1 mt-2">
+                        <span className="text-xs text-gray-500 mr-1">Lists:</span>
+                        {contactLists[contact.id].map(list => (
+                          <Badge key={list.id} variant="outline" className="text-xs border-email-secondary/30 text-email-secondary">
+                            <Users className="h-3 w-3 mr-1" />
+                            {list.name}
+                          </Badge>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
+                <div className="flex items-center gap-2 flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => {
+                      setEditingContact(contact);
+                      setShowEditContactDialog(true);
+                    }}
+                    className="hover:bg-primary/10 hover:text-primary"
+                  >
+                    <Edit className="h-4 w-4" />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => handleDeleteContact(contact.id)}
+                    className="hover:bg-destructive/10 hover:text-destructive"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
+            ))}
+            {filteredContacts.length === 0 && (
+              <div className="text-center py-12 text-muted-foreground">
+                {contacts.length === 0 ? (
+                  <div>
+                    <Users className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
+                    <p>No contacts yet. Add your first contact or import from CSV!</p>
+                  </div>
+                ) : (
+                  "No contacts match your filters"
+                )}
+              </div>
+            )}
+            
+            {/* Pagination Info and Load More Button */}
+            {!searchTerm && !tagFilter && (
+              <div className="mt-6 pt-4 border-t border-email-primary/10">
+                <div className="flex items-center justify-between mb-4">
+                  <div className="text-sm text-email-muted">
+                    Showing {contacts.length} of {totalContacts} contacts
+                  </div>
+                  {hasMoreContacts && (
+                    <Button
+                      onClick={loadMoreContacts}
+                      disabled={isLoadingMore}
+                      variant="outline"
+                      size="sm"
+                      className="border-email-primary text-email-primary hover:bg-email-primary/10"
+                    >
+                      {isLoadingMore ? (
+                        <>
+                          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-email-primary mr-2"></div>
+                          Loading...
+                        </>
+                      ) : (
+                        <>
+                          <Plus className="h-4 w-4 mr-2" />
+                          Load More ({CONTACTS_PER_PAGE} more)
+                        </>
+                      )}
+                    </Button>
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* Bulk Add Tags Dialog */}
+      <Dialog open={showBulkTagDialog} onOpenChange={setShowBulkTagDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Manage Tags for Selected Contacts</DialogTitle>
+            <DialogDescription>
+              Add or remove tags for {selectedContacts.size} selected contacts
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-3">
+              <Label>Operation</Label>
+              <div className="flex space-x-4">
+                <div className="flex items-center space-x-2">
+                  <input
+                    type="radio"
+                    id="add-tags"
+                    name="tagOperation"
+                    checked={bulkTagOperation === 'add'}
+                    onChange={() => setBulkTagOperation('add')}
+                  />
+                  <Label htmlFor="add-tags">Add Tags</Label>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <input
+                    type="radio"
+                    id="remove-tags"
+                    name="tagOperation"
+                    checked={bulkTagOperation === 'remove'}
+                    onChange={() => setBulkTagOperation('remove')}
+                  />
+                  <Label htmlFor="remove-tags">Remove Tags</Label>
+                </div>
+              </div>
+            </div>
+            
+            {bulkTagOperation === 'add' ? (
+              <div className="space-y-2">
+                <Label htmlFor="bulkTags">Tags to Add</Label>
+                <TagInput
+                  value={bulkTags}
+                  onChange={setBulkTags}
+                  suggestions={allTags}
+                  placeholder="premium, newsletter, product-customer"
+                />
+              </div>
+            ) : (
+              <div className="space-y-2">
+                <Label htmlFor="bulkTagsRemove">Tags to Remove</Label>
+                <TagInput
+                  value={bulkTagsToRemove}
+                  onChange={setBulkTagsToRemove}
+                  suggestions={allTags}
+                  placeholder="premium, newsletter, product-customer"
+                />
+              </div>
+            )}
+            
+            <div className="flex gap-3 pt-2">
+              <Button onClick={handleBulkAddTags} size="default" className="flex-1">
+                {bulkTagOperation === 'add' ? 'Add Tags' : 'Remove Tags'}
+              </Button>
+              <Button 
+                variant="outline" 
+                onClick={() => {
+                  setShowBulkTagDialog(false);
+                  setBulkTags('');
+                  setBulkTagsToRemove('');
+                }}
+                size="default"
+                className="flex-1"
+              >
+                Cancel
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Bulk Add to Lists Dialog */}
+      <Dialog open={showBulkListDialog} onOpenChange={setShowBulkListDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Manage Contacts in Lists</DialogTitle>
+            <DialogDescription>
+              Add or remove {selectedContacts.size} selected contacts from email lists
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-3">
+              <Label>Operation</Label>
+              <div className="flex space-x-4">
+                <div className="flex items-center space-x-2">
+                  <input
+                    type="radio"
+                    id="add-to-lists"
+                    name="listOperation"
+                    checked={bulkListOperation === 'add'}
+                    onChange={() => setBulkListOperation('add')}
+                  />
+                  <Label htmlFor="add-to-lists">Add to Lists</Label>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <input
+                    type="radio"
+                    id="remove-from-lists"
+                    name="listOperation"
+                    checked={bulkListOperation === 'remove'}
+                    onChange={() => setBulkListOperation('remove')}
+                  />
+                  <Label htmlFor="remove-from-lists">Remove from Lists</Label>
+                </div>
+              </div>
+            </div>
+            
+            <div className="space-y-2">
+              <Label>Select Lists:</Label>
+              <div className="space-y-2 max-h-48 overflow-y-auto border rounded-lg p-3">
+                {emailLists.length === 0 ? (
+                  <p className="text-muted-foreground text-center py-4">
+                    No email lists found. Create some lists first.
+                  </p>
+                ) : (
+                  emailLists
+                    .filter(list => {
+                      if (bulkListOperation === 'remove') {
+                        // For remove, only show lists that at least one selected contact is in
+                        return Array.from(selectedContacts).some(contactId => 
+                          contactLists[contactId]?.some(cl => cl.id === list.id)
+                        );
+                      }
+                      return true; // For add, show all lists
+                    })
+                    .map(list => {
+                      const isContactInList = Array.from(selectedContacts).some(contactId => 
+                        contactLists[contactId]?.some(cl => cl.id === list.id)
+                      );
+                      const isDisabled = bulkListOperation === 'add' && isContactInList;
+                      
+                      return (
+                        <div key={list.id} className={`flex items-center space-x-3 ${isDisabled ? 'opacity-50' : ''}`}>
+                          <input
+                            type="checkbox"
+                            id={`bulk-list-${bulkListOperation}-${list.id}`}
+                            disabled={isDisabled}
+                            checked={
+                              bulkListOperation === 'add' 
+                                ? selectedBulkLists.includes(list.id)
+                                : selectedBulkListsToRemove.includes(list.id)
+                            }
+                            onChange={(e) => {
+                              if (bulkListOperation === 'add') {
+                                if (e.target.checked) {
+                                  setSelectedBulkLists([...selectedBulkLists, list.id]);
+                                } else {
+                                  setSelectedBulkLists(selectedBulkLists.filter(id => id !== list.id));
+                                }
+                              } else {
+                                if (e.target.checked) {
+                                  setSelectedBulkListsToRemove([...selectedBulkListsToRemove, list.id]);
+                                } else {
+                                  setSelectedBulkListsToRemove(selectedBulkListsToRemove.filter(id => id !== list.id));
+                                }
+                              }
+                            }}
+                            className="h-4 w-4 text-email-primary focus:ring-email-primary border-gray-300 rounded"
+                          />
+                          <Label htmlFor={`bulk-list-${bulkListOperation}-${list.id}`} className="flex-1 cursor-pointer">
+                            <div className="font-medium">{list.name}</div>
+                            {list.description && (
+                              <div className="text-sm text-muted-foreground">{list.description}</div>
+                            )}
+                            <div className="text-xs text-email-secondary">
+                              {list.list_type === 'dynamic' ? 'Dynamic' : 'Static'} List
+                              {isDisabled && ' (Already added)'}
+                            </div>
+                          </Label>
+                        </div>
+                      );
+                    })
+                )}
+              </div>
+            </div>
+            <div className="flex gap-3 pt-2">
+              <Button 
+                onClick={handleBulkAddToLists} 
+                size="default"
+                className="flex-1"
+                disabled={
+                  (bulkListOperation === 'add' && selectedBulkLists.length === 0) || 
+                  (bulkListOperation === 'remove' && selectedBulkListsToRemove.length === 0) ||
+                  emailLists.length === 0
+                }
+              >
+                {bulkListOperation === 'add' ? 'Add to Lists' : 'Remove from Lists'}
+              </Button>
+              <Button 
+                variant="outline" 
+                onClick={() => {
+                  setShowBulkListDialog(false);
+                  setSelectedBulkLists([]);
+                  setSelectedBulkListsToRemove([]);
+                }}
+                size="default"
+                className="flex-1"
+              >
+                Cancel
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Contact Dialog */}
+      {editingContact && (
+        <EditContactDialog
+          contact={{
+            id: editingContact.id,
+            email: editingContact.email,
+            first_name: editingContact.name.split(' ')[0] || '',
+            last_name: editingContact.name.split(' ').slice(1).join(' ') || null,
+            status: 'subscribed', // default status
+            tags: editingContact.tags
+          }}
+          isOpen={showEditContactDialog}
+          onClose={() => {
+            setShowEditContactDialog(false);
+            setEditingContact(null);
+          }}
+          onContactUpdated={() => {
+            loadContacts();
+            setShowEditContactDialog(false);
+            setEditingContact(null);
+          }}
+        />
+      )}
+    </>
+  );
+};
