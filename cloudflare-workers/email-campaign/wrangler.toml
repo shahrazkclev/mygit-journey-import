@@ -1,0 +1,21 @@
+name = "email-campaign"
+main = "index.ts"
+compatibility_date = "2024-01-01"
+
+[queues]
+producers = ["email-send-queue"]
+consumers = [{ queue = "email-send-queue", max_batch_size = 10, max_batch_timeout = 30 }]
+
+[vars]
+MAX_RETRIES = "3"
+BATCH_SIZE = "10"
+DELAY_BETWEEN_EMAILS_MS = "1000"
+
+[[env.production]]
+name = "email-campaign-prod"
+
+[[env.production.vars]]
+MAX_RETRIES = "3"
+BATCH_SIZE = "10"
+DELAY_BETWEEN_EMAILS_MS = "1000"
+

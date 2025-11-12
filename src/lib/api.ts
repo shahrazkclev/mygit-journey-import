@@ -34,20 +34,18 @@ export const api = {
 
       if (campaignError || !campaign) throw campaignError || new Error('Failed to create campaign');
 
-      // 2) Start sending via edge function
-      const { error: sendError } = await supabase.functions.invoke('send-campaign', {
-        body: {
-          campaignId: campaign.id,
-          webhookUrl: params.webhook_url,
-          title: params.subject,
-          html: params.html_content,
-          name: params.title,
-          senderSequenceNumber: params.sender_sequence,
-          emailsPerSequence: params.emails_per_sequence || 10,
-          maxSenderSequences: params.max_sender_sequences || 3,
-        },
+      // 2) Start sending via Cloudflare Worker
+      const workerUrl = import.meta.env.VITE_CLOUDFLARE_WORKER_URL || 'https://email-campaign.your-subdomain.workers.dev';
+      const startResponse = await fetch(`${workerUrl}/campaign/start`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ campaignId: campaign.id }),
       });
-      if (sendError) throw sendError;
+      
+      if (!startResponse.ok) {
+        const errorText = await startResponse.text();
+        throw new Error(`Failed to start campaign: ${errorText}`);
+      }
 
       return { ok: true, json: async () => campaign } as const;
     } catch (error) {
@@ -82,11 +80,19 @@ export const api = {
 
   async pauseCampaign(id: string) {
     try {
-      const { error } = await supabase
-        .from('campaigns')
-        .update({ status: 'paused' })
-        .eq('id', id);
-      if (error) throw error;
+      // Call the Cloudflare Worker
+      const workerUrl = import.meta.env.VITE_CLOUDFLARE_WORKER_URL || 'https://email-campaign.your-subdomain.workers.dev';
+      const response = await fetch(`${workerUrl}/campaign/pause`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ campaignId: id }),
+      });
+      
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`Failed to pause campaign: ${errorText}`);
+      }
+      
       return { ok: true } as const;
     } catch (error) {
       console.error('Pause campaign error:', error);
@@ -96,13 +102,20 @@ export const api = {
 
   async resumeCampaign(id: string) {
     try {
-      // Call the resume-campaign edge function
-      const { data, error } = await supabase.functions.invoke('resume-campaign', {
-        body: { campaignId: id }
+      // Call the Cloudflare Worker
+      const workerUrl = import.meta.env.VITE_CLOUDFLARE_WORKER_URL || 'https://email-campaign.your-subdomain.workers.dev';
+      const response = await fetch(`${workerUrl}/campaign/resume`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ campaignId: id }),
       });
       
-      if (error) throw error;
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`Failed to resume campaign: ${errorText}`);
+      }
       
+      const data = await response.json();
       return { 
         ok: true, 
         json: async () => data 

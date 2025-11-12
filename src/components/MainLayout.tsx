@@ -60,61 +60,60 @@ export const MainLayout = () => {
       {/* Sidebar */}
       <div className={`
         fixed lg:relative lg:translate-x-0 inset-y-0 left-0 z-40
-        w-64 bg-gradient-to-br from-email-background via-white to-email-muted/20 border-r border-email-primary/20 shadow-xl shadow-email-primary/10 transition-transform duration-300 ease-in-out
+        w-72 bg-card border-r border-border/50 transition-transform duration-300 ease-in-out
         ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}
       `}>
         <div className="flex flex-col h-full">
           {/* Sidebar Header */}
-          <div className="p-4 border-b border-email-primary/20 bg-gradient-to-r from-email-primary/5 via-email-accent/5 to-email-primary/5">
-            <h2 className="text-lg font-bold text-email-secondary flex items-center space-x-2">
-              <div className="p-1.5 bg-gradient-to-br from-email-primary to-email-accent rounded-lg shadow-sm">
-                <Users className="h-4 w-4 text-white" />
+          <div className="p-6 border-b border-border/50">
+            <h2 className="text-xl font-semibold text-foreground flex items-center gap-3 mb-2">
+              <div className="p-2 bg-primary/10 rounded-xl">
+                <Users className="h-5 w-5 text-primary" />
               </div>
               <span>Business Dashboard</span>
             </h2>
-            <p className="text-xs text-email-secondary/80 mt-1">
+            <p className="text-sm text-muted-foreground">
               Manage all aspects of your business
             </p>
           </div>
 
           {/* Navigation */}
-          <nav className="flex-1 p-3 space-y-2">
+          <nav className="flex-1 p-4 space-y-1.5">
             {panels.map((panel) => {
               const Icon = panel.icon;
               return (
                 <Button
                   key={panel.id}
                   variant={activePanel === panel.id ? "default" : "ghost"}
-                  className={`w-full justify-start gap-2.5 h-10 text-left transition-all duration-200 ${
+                  className={`w-full justify-start gap-3 h-12 text-left transition-all duration-200 rounded-xl ${
                     activePanel === panel.id 
-                      ? "bg-gradient-to-r from-email-primary to-email-accent text-white shadow-lg hover:shadow-xl" 
-                      : "hover:bg-email-primary/10 hover:text-email-primary border border-transparent hover:border-email-primary/20"
+                      ? "bg-primary text-primary-foreground shadow-sm" 
+                      : "hover:bg-muted/50 text-muted-foreground hover:text-foreground"
                   }`}
                   onClick={() => {
                     setActivePanel(panel.id);
                     setSidebarOpen(false);
                   }}
                 >
-                  <Icon className="h-4 w-4" />
-                  <span className="font-medium text-sm">{panel.name}</span>
+                  <Icon className="h-5 w-5" />
+                  <span className="font-medium">{panel.name}</span>
                 </Button>
               );
             })}
           </nav>
 
           {/* Footer */}
-          <div className="p-3 border-t border-email-primary/20 space-y-2">
+          <div className="p-4 border-t border-border/50 space-y-3">
             <Button
-              variant="outline"
-              size="sm"
-              className="w-full justify-start gap-2.5 h-9 border-email-primary/30 text-email-secondary hover:bg-red-50 hover:border-red-300 hover:text-red-700 transition-all duration-200"
+              variant="ghost"
+              className="w-full justify-start gap-3 h-11 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-xl"
               onClick={logout}
             >
-              <LogOut className="h-4 w-4" />
-              <span className="font-medium text-sm">Sign Out</span>
+              <LogOut className="h-5 w-5" />
+              <span className="font-medium">Sign Out</span>
             </Button>
-            <div className="bg-gradient-to-r from-email-primary/5 to-email-accent/5 rounded-lg p-2 border border-email-primary/20">
-              <p className="text-xs text-email-secondary/80 text-center font-medium">
+            <div className="bg-muted/30 rounded-xl p-3 border border-border/50">
+              <p className="text-xs text-muted-foreground text-center">
                 Logged in as {user.email}
               </p>
             </div>

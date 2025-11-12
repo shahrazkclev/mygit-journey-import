@@ -1,0 +1,16 @@
+name = "automation-engine"
+main = "index.ts"
+compatibility_date = "2024-01-01"
+
+[triggers]
+crons = ["0 * * * *"]  # Run every hour
+
+[vars]
+DEFAULT_WEBHOOK_URL = ""
+
+[[env.production]]
+name = "automation-engine-prod"
+
+[[env.production.triggers]]
+crons = ["0 * * * *"]
+

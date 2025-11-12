@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Send Emails to Webhook (One per Line)</title>
+    <style>
+        body { font-family: system-ui, Arial, sans-serif; margin: 24px; line-height: 1.4; }
+        textarea { width: 100%; height: 240px; }
+        button { padding: 10px 16px; font-size: 14px; cursor: pointer; margin-right: 8px; margin-bottom: 8px; }
+        input[type="text"] { width: 100%; padding: 8px; font-size: 14px; }
+        .row { margin: 12px 0; }
+        .status { white-space: pre-wrap; background: #0b1020; color: #d6e2ff; padding: 12px; border-radius: 6px; max-height: 320px; overflow: auto; }
+        .muted { color: #666; font-size: 12px; }
+        label { display: block; font-weight: 600; margin-bottom: 6px; }
+        .stopBtn { background-color: #dc3545; color: white; border: none; }
+        .stopBtn:hover { background-color: #c82333; }
+        .stopBtn:disabled { background-color: #6c757d; cursor: not-allowed; }
+    </style>
+    <script>
+        const WEBHOOK_URL = "https://hook.us2.make.com/iea83yfvi0s0jd62qv72zmdthhs3qvul";
+        let isSending = false;
+        let shouldStop = false;
+
+        function parseEmailAndName(line) {
+            const trimmed = line.trim();
+            if (!trimmed) return null;
+            
+            // Split by comma, expecting format: "email, Name"
+            const parts = trimmed.split(',').map(p => p.trim());
+            
+            if (parts.length >= 2) {
+                return {
+                    email: parts[0],
+                    name: parts.slice(1).join(', ') // In case name contains commas
+                };
+            } else if (parts.length === 1) {
+                // If no comma, assume whole line is email
+                return {
+                    email: parts[0],
+                    name: ''
+                };
+            }
+            return null;
+        }
+
+        function getEmailsFromTextarea(text) {
+            return text
+                .split(/\r?\n/)
+                .map(parseEmailAndName)
+                .filter(e => e !== null && e.email.length > 0);
+        }
+
+        function logStatus(message) {
+            const el = document.getElementById("status");
+            el.textContent += message + "\n";
+            el.scrollTop = el.scrollHeight;
+        }
+
+        async function sendEmail(emailData, tag) {
+            // Send JSON payload with email, name, and tag
+            const payload = {
+                email: emailData.email,
+                name: emailData.name,
+                tag: tag
+            };
+
+            const options = {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(payload)
+            };
+
+            const res = await fetch(WEBHOOK_URL, options);
+            return res;
+        }
+
+        async function handleSend(mode = "cors") {
+            if (isSending) {
+                alert("Already sending emails. Please wait or use Force Stop.");
+                return;
+            }
+
+            const btn = document.getElementById("sendBtn");
+            const btnNoCors = document.getElementById("sendNoCorsBtn");
+            const stopBtn = document.getElementById("stopBtn");
+            const textarea = document.getElementById("emails");
+            const tagInput = document.getElementById("tag");
+            const emails = getEmailsFromTextarea(textarea.value);
+
+            if (emails.length === 0) {
+                alert("Please paste at least one email (format: email, Name).");
+                return;
+            }
+
+            const tag = tagInput.value.trim();
+
+            btn.disabled = true;
+            btnNoCors.disabled = true;
+            stopBtn.disabled = false;
+            document.getElementById("status").textContent = "";
+            isSending = true;
+            shouldStop = false;
+
+            logStatus(`Starting send for ${emails.length} email(s) using mode: ${mode}`);
+            if (tag) {
+                logStatus(`Tag: ${tag}`);
+            }
+
+            let successCount = 0;
+            let failCount = 0;
+
+            for (const emailData of emails) {
+                if (shouldStop) {
+                    logStatus("\n⚠ Force stop requested. Stopping...");
+                    break;
+                }
+
+                try {
+                    const res = await sendEmail(emailData, tag);
+                    if (mode === "no-cors") {
+                        successCount += 1;
+                        logStatus(`✔ Sent (no-cors): ${emailData.email}${emailData.name ? ' - ' + emailData.name : ''}`);
+                    } else {
+                        if (res.ok) {
+                            successCount += 1;
+                            logStatus(`✔ Sent: ${emailData.email}${emailData.name ? ' - ' + emailData.name : ''}`);
+                        } else {
+                            failCount += 1;
+                            logStatus(`✖ Failed (${res.status}): ${emailData.email}`);
+                        }
+                    }
+                } catch (err) {
+                    failCount += 1;
+                    logStatus(`✖ Error: ${emailData.email} → ${err}`);
+                }
+                
+                // Small delay to avoid flooding (adjust as needed)
+                await new Promise(r => setTimeout(r, 120));
+            }
+
+            logStatus("");
+            if (shouldStop) {
+                logStatus(`Stopped. Success: ${successCount}, Failed: ${failCount}`);
+            } else {
+                logStatus(`Done. Success: ${successCount}, Failed: ${failCount}`);
+            }
+            
+            btn.disabled = false;
+            btnNoCors.disabled = false;
+            stopBtn.disabled = true;
+            isSending = false;
+            shouldStop = false;
+        }
+
+        function handleStop() {
+            if (isSending) {
+                shouldStop = true;
+                logStatus("\n⚠ Stop requested...");
+            }
+        }
+    </script>
+    </head>
+<body>
+    <h2>Send Emails to Webhook</h2>
+    <div class="row muted">Webhook: <code>https://hook.us2.make.com/iea83yfvi0s0jd62qv72zmdthhs3qvul</code></div>
+
+    <div class="row">
+        <label for="tag">Set Tag (sent with all emails):</label>
+        <input type="text" id="tag" placeholder="Enter tag text (optional)" />
+    </div>
+
+    <div class="row">
+        <label for="emails">Paste emails and names here (format: email, Name - one per line):</label>
+        <textarea id="emails" placeholder="nader@peaksource.tn, Nader Loued&#10;markcristian0982@gmail.com, Tradv1&#10;..."></textarea>
+    </div>
+
+    <div class="row">
+        <button id="sendBtn" onclick="handleSend('cors')">Send (with CORS)</button>
+        <button id="sendNoCorsBtn" onclick="handleSend('no-cors')">Send (no-cors fallback)</button>
+        <button id="stopBtn" class="stopBtn" onclick="handleStop()" disabled>Force Stop</button>
+    </div>
+
+    <div class="row">
+        <label>Status</label>
+        <div id="status" class="status"></div>
+    </div>
+
+    <div class="row muted">
+        Notes:
+        <ul>
+            <li>Format: <code>email, Name</code> (one per line)</li>
+            <li>Each email is sent as JSON with <code>email</code>, <code>name</code>, and <code>tag</code> fields.</li>
+            <li>If your browser blocks CORS, try the no-cors button (fire-and-forget).</li>
+            <li>This page can be opened directly as a local file.</li>
+        </ul>
+    </div>
+</body>
+</html>

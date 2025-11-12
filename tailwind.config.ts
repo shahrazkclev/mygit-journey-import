@@ -13,11 +13,11 @@ export default {
 		container: {
 			center: true,
 			padding: {
-				DEFAULT: '1rem',
-				sm: '1rem',
-				lg: '1.5rem',
-				xl: '1.5rem',
-				'2xl': '2rem'
+				DEFAULT: '1.5rem',
+				sm: '1.5rem',
+				lg: '2rem',
+				xl: '2rem',
+				'2xl': '2.5rem'
 			},
 			screens: {
 				'2xl': '1400px'

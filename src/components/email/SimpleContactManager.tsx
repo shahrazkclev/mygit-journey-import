@@ -1033,30 +1033,32 @@ export const SimpleContactManager = () => {
   }
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
       {/* Make.com Integration Info */}
-      <Card className="shadow-soft border-email-primary/20 bg-gradient-to-br from-email-background to-background">
+      <Card className="border border-border/50 shadow-sm rounded-2xl">
         <Collapsible open={isMakeIntegrationOpen} onOpenChange={setIsMakeIntegrationOpen}>
           <CollapsibleTrigger asChild>
-            <CardHeader className="cursor-pointer hover:bg-email-muted/50 transition-colors">
+            <CardHeader className="cursor-pointer hover:bg-muted/30 transition-colors p-6">
               <CardTitle className="flex items-center justify-between">
-                <div className="flex items-center space-x-2">
-                  <Link className="h-5 w-5 text-email-primary" />
-                  <span className="text-email-primary">Make.com Integration</span>
+                <div className="flex items-center gap-3">
+                  <div className="p-2 bg-primary/10 rounded-xl">
+                    <Link className="h-5 w-5 text-primary" />
+                  </div>
+                  <span className="text-lg font-semibold">Make.com Integration</span>
                 </div>
                 {isMakeIntegrationOpen ? (
-                  <ChevronDown className="h-4 w-4 text-email-primary" />
+                  <ChevronDown className="h-5 w-5 text-muted-foreground" />
                 ) : (
-                  <ChevronRight className="h-4 w-4 text-email-primary" />
+                  <ChevronRight className="h-5 w-5 text-muted-foreground" />
                 )}
               </CardTitle>
-              <CardDescription>
+              <CardDescription className="mt-2 text-sm">
                 Use this webhook URL in Make.com to automatically sync contacts from Google Sheets
               </CardDescription>
             </CardHeader>
           </CollapsibleTrigger>
           <CollapsibleContent>
-            <CardContent className="space-y-4">
+            <CardContent className="space-y-4 p-6 pt-0">
               <div className="flex items-center space-x-2">
                 <Input
                   value={webhookUrl}
@@ -1089,39 +1091,39 @@ export const SimpleContactManager = () => {
       </Card>
 
       {/* Contacts Management */}
-      <Card className="shadow-xl shadow-email-primary/10 bg-gradient-to-br from-email-background via-white to-email-muted/20 border border-email-primary/20">
-        <CardHeader className="bg-gradient-to-r from-email-primary/5 via-email-accent/5 to-email-primary/5 border-b border-email-primary/20">
-          <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4">
+      <Card className="border border-border/50 shadow-sm rounded-2xl">
+        <CardHeader className="border-b border-border/50 p-6">
+          <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6">
             <div>
-              <CardTitle className="flex items-center space-x-3">
-                <div className="p-2 bg-gradient-to-br from-email-primary to-email-accent rounded-lg shadow-sm">
-                  <Users className="h-5 w-5 text-white" />
+              <CardTitle className="flex items-center gap-3 mb-2">
+                <div className="p-2.5 bg-primary/10 rounded-xl">
+                  <Users className="h-5 w-5 text-primary" />
                 </div>
-                <span className="text-email-secondary font-semibold">
+                <span className="text-xl font-semibold">
                   Contacts ({filteredContacts.length} loaded, {totalContacts} total)
                 </span>
                 {selectedContacts.size > 0 && (
-                  <Badge variant="secondary" className="bg-gradient-to-r from-email-accent to-email-primary text-white shadow-sm">
+                  <Badge variant="secondary" className="bg-primary/10 text-primary border-primary/20">
                     {selectedContacts.size} selected
                   </Badge>
                 )}
               </CardTitle>
-              <CardDescription className="text-email-secondary/80 mt-2">
+              <CardDescription className="text-sm text-muted-foreground">
                 Manage your contacts with tag-based organization. Names auto-generated from emails when missing.
               </CardDescription>
             </div>
-            <div className="flex flex-wrap gap-2">
+            <div className="flex flex-wrap gap-3">
               <Button
                 variant="outline"
-                size="sm"
+                size="default"
                 onClick={() => {
                   setSearchTerm('');
                   setTagFilter('');
                   loadContacts(1, true);
                 }}
-                className="border-email-primary text-email-primary hover:bg-email-primary/10"
+                className="rounded-xl"
               >
-                <RefreshCw className="h-4 w-4 mr-1" />
+                <RefreshCw className="h-4 w-4 mr-2" />
                 Refresh
               </Button>
               {selectedContacts.size > 0 && (
@@ -1392,15 +1394,15 @@ export const SimpleContactManager = () => {
             </div>
           </div>
         </CardHeader>
-        <CardContent className="space-y-4 pt-4">
+        <CardContent className="space-y-6 p-6">
           {/* Search and Filter Section */}
-          <div className="bg-gradient-to-br from-email-background via-white to-email-muted/30 rounded-lg p-4 border border-email-primary/20 shadow-lg shadow-email-primary/10 mt-2">
-            <div className="flex flex-col space-y-3">
-              <div className="flex items-center space-x-2">
-                <div className="w-1 h-5 bg-gradient-to-b from-email-primary to-email-accent rounded-full"></div>
-                <h3 className="text-base font-semibold text-email-primary">Search & Filter</h3>
+          <div className="bg-muted/30 rounded-xl p-6 border border-border/50">
+            <div className="flex flex-col space-y-4">
+              <div className="flex items-center gap-3">
+                <div className="w-1 h-6 bg-primary rounded-full"></div>
+                <h3 className="text-lg font-semibold">Search & Filter</h3>
               </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="space-y-3">
                   <Label htmlFor="search-contacts" className="text-sm font-medium text-email-secondary flex items-center space-x-2">
                     <div className="w-2 h-2 bg-email-accent rounded-full"></div>
@@ -1460,9 +1462,9 @@ export const SimpleContactManager = () => {
 
 
           {/* Contacts List */}
-          <div className="space-y-3">
+          <div className="space-y-4">
             {filteredContacts.length > 0 && (
-              <div className="flex items-center p-3 bg-gradient-to-r from-email-primary/5 via-email-accent/5 to-email-primary/5 rounded-lg border border-email-primary/20 shadow-sm">
+              <div className="flex items-center p-4 bg-muted/30 rounded-xl border border-border/50">
                 <input
                   type="checkbox"
                   checked={selectedContacts.size === filteredContacts.length && filteredContacts.length > 0}
@@ -1478,10 +1480,10 @@ export const SimpleContactManager = () => {
             {filteredContacts.map(contact => (
               <div
                 key={contact.id}
-                className={`group flex items-center justify-between p-4 border rounded-lg transition-all duration-200 hover:shadow-lg hover:scale-[1.01] ${
+                className={`group flex items-center justify-between p-5 border rounded-xl transition-all duration-200 hover:shadow-md ${
                   selectedContacts.has(contact.id) 
-                    ? 'bg-gradient-to-r from-email-primary/10 via-email-accent/5 to-email-primary/10 border-email-primary/40 shadow-md' 
-                    : 'bg-gradient-to-r from-white via-email-muted/20 to-white border-email-primary/20 shadow-sm hover:border-email-primary/30'
+                    ? 'bg-primary/5 border-primary/30 shadow-sm' 
+                    : 'bg-card border-border/50 hover:border-border shadow-sm'
                 }`}
               >
                 <div className="flex items-center space-x-3 flex-1">
@@ -1547,7 +1549,7 @@ export const SimpleContactManager = () => {
               </div>
             ))}
             {filteredContacts.length === 0 && (
-              <div className="text-center py-6 text-gray-500">
+              <div className="text-center py-12 text-muted-foreground">
                 {contacts.length === 0 ? (
                   <div>
                     <Users className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
