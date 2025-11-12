@@ -8,18 +8,15 @@ import { Slider } from "@/components/ui/slider";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { Settings, Clock, Zap, Link, AlertCircle, ChevronDown, ChevronRight, Bot } from "lucide-react";
+import { Settings, Clock, Zap, AlertCircle, ChevronDown, ChevronRight, Bot } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 
 export const CampaignSettings = () => {
   const { user } = useAuth();
-  const [webhookUrl, setWebhookUrl] = useState("");
   const [aiInstructions, setAiInstructions] = useState("");
   const [showFullPrompt, setShowFullPrompt] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
-  const [isTestingWebhook, setIsTestingWebhook] = useState(false);
   const [isSavingAi, setIsSavingAi] = useState(false);
 
   useEffect(() => {
@@ -30,7 +27,7 @@ export const CampaignSettings = () => {
     try {
       const { data, error } = await supabase
         .from('user_settings')
-        .select('webhook_url, ai_instructions')
+        .select('ai_instructions')
         .eq('user_id', user?.id)
         .single();
 
@@ -40,7 +37,6 @@ export const CampaignSettings = () => {
       }
 
       if (data) {
-        setWebhookUrl(data.webhook_url || "");
         setAiInstructions(data.ai_instructions || getDefaultAiInstructions());
       } else {
         setAiInstructions(getDefaultAiInstructions());
@@ -91,39 +87,6 @@ Your Name
 Return ONLY the clean email content.`;
   };
 
-  const handleSaveSettings = async () => {
-    if (!webhookUrl.trim()) {
-      toast.error("Please enter your Make.com webhook URL");
-      return;
-    }
-
-    setIsLoading(true);
-    try {
-      const settingsData = {
-        user_id: user?.id,
-        webhook_url: webhookUrl
-      };
-
-      const { error } = await supabase
-        .from('user_settings')
-        .upsert(settingsData, { 
-          onConflict: 'user_id' 
-        });
-
-      if (error) {
-        console.error('Error saving settings:', error);
-        toast.error("Failed to save settings. Please try again.");
-        return;
-      }
-
-      toast.success("Webhook URL saved successfully!");
-    } catch (error) {
-      console.error('Error saving settings:', error);
-      toast.error("Failed to save settings. Please try again.");
-    } finally {
-      setIsLoading(false);
-    }
-  };
 
   const handleSaveAiInstructions = async () => {
     if (!aiInstructions.trim()) {
@@ -174,100 +137,23 @@ CONTENT REQUIREMENTS:
 Return ONLY the email content following the instructions above.`;
   };
 
-  const handleTestWebhook = async () => {
-    if (!webhookUrl.trim()) {
-      toast.error('Please enter a webhook URL first');
-      return;
-    }
-
-    setIsTestingWebhook(true);
-
-    try {
-      const testPayload = {
-        to: "test@example.com",
-        name: "Test User",
-        subject: "Webhook Test Email",
-        html: "<h1>This is a test email from your Email Campaign Manager</h1><p>If you receive this, your webhook is working correctly!</p>",
-        timestamp: new Date().toISOString(),
-        test: true
-      };
-
-      const response = await fetch(webhookUrl, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(testPayload)
-      });
-
-      if (response.ok) {
-        toast.success(`Webhook test successful! Response: ${response.status}`);
-      } else {
-        toast.error(`Webhook test failed: ${response.status} - ${response.statusText}`);
-      }
-
-    } catch (error: any) {
-      console.error('Webhook test error:', error);
-      toast.error(`Webhook test failed: ${error.message}`);
-    } finally {
-      setIsTestingWebhook(false);
-    }
-  };
 
   return (
-    <div className="space-y-6">
-      {/* Make.com Integration */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center space-x-2">
-            <Link className="h-5 w-5" />
-            <span>Make.com Integration</span>
-          </CardTitle>
-          <CardDescription>
-            Connect your Make.com webhook to send emails through your preferred service
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="webhook">Webhook URL</Label>
-            <Input
-              id="webhook"
-              placeholder="https://hook.eu1.make.com/your-webhook-url"
-              value={webhookUrl}
-              onChange={(e) => setWebhookUrl(e.target.value)}
-            />
-          </div>
-          <div className="flex gap-3">
-            <Button 
-              onClick={handleTestWebhook}
-              disabled={isTestingWebhook}
-              variant="outline"
-            >
-              <Zap className="h-4 w-4 mr-2" />
-              {isTestingWebhook ? 'Testing...' : 'Test Connection'}
-            </Button>
-            <Button 
-              onClick={handleSaveSettings}
-              disabled={isLoading}
-            >
-              {isLoading ? "Saving..." : "Save Settings"}
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
-
+    <div className="space-y-8">
       {/* AI Instructions */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center space-x-2">
-            <Bot className="h-5 w-5" />
-            <span>AI Email Generation Instructions</span>
+      <Card className="border border-border/50 shadow-sm rounded-2xl">
+        <CardHeader className="p-6">
+          <CardTitle className="flex items-center gap-3 mb-2">
+            <div className="p-2 bg-primary/10 rounded-xl">
+              <Bot className="h-5 w-5 text-primary" />
+            </div>
+            <span className="text-xl font-semibold">AI Email Generation Instructions</span>
           </CardTitle>
-          <CardDescription>
+          <CardDescription className="text-sm">
             Customize how the AI generates email content. These instructions guide the AI's writing style and structure.
           </CardDescription>
         </CardHeader>
-        <CardContent className="space-y-4">
+        <CardContent className="p-6 space-y-6">
           <div className="space-y-2">
             <Label htmlFor="ai-instructions">AI Instructions</Label>
             <Textarea
@@ -307,16 +193,18 @@ Return ONLY the email content following the instructions above.`;
             </CollapsibleContent>
           </Collapsible>
 
-          <div className="flex gap-3">
+          <div className="flex gap-3 pt-2">
             <Button 
               onClick={resetToDefaults}
               variant="outline"
+              className="rounded-xl"
             >
               Reset to Defaults
             </Button>
             <Button 
               onClick={handleSaveAiInstructions}
               disabled={isSavingAi}
+              className="rounded-xl"
             >
               {isSavingAi ? "Saving..." : "Save AI Instructions"}
             </Button>
