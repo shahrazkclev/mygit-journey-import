@@ -325,10 +325,12 @@ All colors MUST be HSL.
   }
 
   /* Review carousel styles */
-  .no-scrollbar::-webkit-scrollbar {
+  .no-scrollbar::-webkit-scrollbar,
+  .scrollbar-hide::-webkit-scrollbar {
     display: none;
   }
-  .no-scrollbar {
+  .no-scrollbar,
+  .scrollbar-hide {
     -ms-overflow-style: none;
     scrollbar-width: none;
   }
@@ -386,20 +388,17 @@ All colors MUST be HSL.
     box-shadow: 0 25px 50px -12px hsl(var(--theme-text-primary) / 0.25);
   }
 
-  /* Hover elevation transitions */
+  /* Hover elevation transitions - shadow only, no movement */
   .hover-lift {
-    transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1),
-                box-shadow 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: box-shadow 0.2s cubic-bezier(0.4, 0, 0.2, 1);
   }
 
   .hover-lift:hover {
-    transform: translateY(-2px);
     box-shadow: 0 10px 20px -5px hsl(var(--theme-text-primary) / 0.15),
                 0 4px 8px -2px hsl(var(--theme-text-primary) / 0.1);
   }
 
   .hover-lift-lg:hover {
-    transform: translateY(-4px);
     box-shadow: 0 20px 30px -5px hsl(var(--theme-text-primary) / 0.2),
                 0 8px 12px -4px hsl(var(--theme-text-primary) / 0.15);
   }

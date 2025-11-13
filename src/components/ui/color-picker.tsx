@@ -64,7 +64,7 @@ export const ColorPicker: React.FC<ColorPickerProps> = ({
           <PopoverTrigger asChild>
             <Button
               variant="outline"
-              className="w-16 h-10 p-1 border-2 hover:scale-105 transition-transform"
+              className="w-16 h-10 p-1 border-2 transition-colors"
               style={{ backgroundColor: value }}
             >
               <div className="w-full h-full rounded-sm" style={{ backgroundColor: value }}>
@@ -114,7 +114,7 @@ export const ColorPicker: React.FC<ColorPickerProps> = ({
                           <button
                             key={index}
                             onClick={() => handleColorChange(color)}
-                            className="w-6 h-6 rounded border border-border hover:scale-110 transition-transform relative"
+                            className="w-6 h-6 rounded border border-border transition-colors relative"
                             style={{ backgroundColor: color }}
                           >
                             {value === color && (

@@ -27,13 +27,13 @@ export const EmailCampaignApp = () => {
     <div className="min-h-screen bg-gradient-to-br from-muted/30 via-background to-muted/20">
       {/* Header */}
       <div className="border-b-2 border-border/50 bg-card/98 backdrop-blur-md sticky top-0 z-50 theme-shadow-lg depth-20">
-        <div className="container-dynamic px-fluid-lg py-fluid-lg">
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-fluid-md">
+        <div className="container-dynamic px-4 sm:px-fluid-lg py-3 sm:py-fluid-lg">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 sm:gap-fluid-md">
             <div className="flex-1 min-w-0">
-              <h1 className="text-fluid-3xl font-extrabold text-foreground mb-fluid-xs leading-tight bg-gradient-to-r from-foreground to-foreground/80 bg-clip-text">
+              <h1 className="text-xl sm:text-fluid-3xl font-extrabold text-foreground mb-1 sm:mb-fluid-xs leading-tight">
                 Customer Management
               </h1>
-              <p className="text-fluid-sm text-muted-foreground font-medium">
+              <p className="text-xs sm:text-fluid-sm text-muted-foreground font-medium">
                 Create, manage, and act with customers
               </p>
             </div>
@@ -41,14 +41,14 @@ export const EmailCampaignApp = () => {
         </div>
       </div>
       
-      <div className="container-dynamic px-fluid-lg py-fluid-md">
+      <div className="container-dynamic px-3 sm:px-fluid-lg py-3 sm:py-fluid-md">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-fluid-lg">
           {/* Navigation Tabs */}
-          <div className="bg-card rounded-fluid border-2 border-border/60 p-fluid-sm theme-shadow-md hover:theme-shadow-lg transition-all duration-200">
-            <TabsList className="flex md:grid md:grid-cols-6 w-full bg-transparent gap-fluid-sm h-auto overflow-x-auto scrollbar-hide">
+          <div className="bg-card rounded-fluid border-2 border-border/60 p-2 sm:p-fluid-sm theme-shadow-md hover:theme-shadow-lg transition-shadow duration-200">
+            <TabsList className="flex md:grid md:grid-cols-6 w-full bg-transparent gap-1 sm:gap-fluid-sm h-auto overflow-x-auto scrollbar-hide -mx-1 px-1">
               <TabsTrigger
                 value="compose" 
-                className="flex items-center justify-center gap-fluid-sm text-fluid-sm font-semibold px-fluid-md py-fluid-md rounded-fluid touch-target min-w-[var(--tab-min-width)] data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:theme-shadow-md data-[state=active]:border-2 data-[state=active]:border-primary/50 hover:bg-muted/60 hover:theme-shadow-sm transition-all duration-200 flex-shrink-0 border-2 border-transparent"
+                className="flex items-center justify-center gap-1 sm:gap-fluid-sm text-xs sm:text-fluid-sm font-semibold px-2 sm:px-fluid-md py-2 sm:py-fluid-md rounded-fluid touch-target min-w-[60px] sm:min-w-[var(--tab-min-width)] data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:theme-shadow-md data-[state=active]:border-2 data-[state=active]:border-primary/50 hover:bg-muted/60 hover:theme-shadow-sm transition-colors duration-200 flex-shrink-0 border-2 border-transparent"
               >
                 <Mail className="icon-fluid" />
                 <span className="hidden sm:inline">Compose</span>
@@ -56,7 +56,7 @@ export const EmailCampaignApp = () => {
               
               <TabsTrigger 
                 value="contacts" 
-                className="flex items-center justify-center gap-fluid-sm text-fluid-sm font-semibold px-fluid-md py-fluid-md rounded-fluid touch-target min-w-[var(--tab-min-width)] data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:theme-shadow-md data-[state=active]:border-2 data-[state=active]:border-primary/50 hover:bg-muted/60 hover:theme-shadow-sm transition-all duration-200 flex-shrink-0 border-2 border-transparent"
+                className="flex items-center justify-center gap-1 sm:gap-fluid-sm text-xs sm:text-fluid-sm font-semibold px-2 sm:px-fluid-md py-2 sm:py-fluid-md rounded-fluid touch-target min-w-[60px] sm:min-w-[var(--tab-min-width)] data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:theme-shadow-md data-[state=active]:border-2 data-[state=active]:border-primary/50 hover:bg-muted/60 hover:theme-shadow-sm transition-colors duration-200 flex-shrink-0 border-2 border-transparent"
               >
                 <Users className="icon-fluid" />
                 <span className="hidden sm:inline">Contacts</span>
@@ -64,7 +64,7 @@ export const EmailCampaignApp = () => {
               
               <TabsTrigger 
                 value="lists" 
-                className="flex items-center justify-center gap-fluid-sm text-fluid-sm font-semibold px-fluid-md py-fluid-md rounded-fluid touch-target min-w-[var(--tab-min-width)] data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:theme-shadow-md data-[state=active]:border-2 data-[state=active]:border-primary/50 hover:bg-muted/60 hover:theme-shadow-sm transition-all duration-200 flex-shrink-0 border-2 border-transparent"
+                className="flex items-center justify-center gap-1 sm:gap-fluid-sm text-xs sm:text-fluid-sm font-semibold px-2 sm:px-fluid-md py-2 sm:py-fluid-md rounded-fluid touch-target min-w-[60px] sm:min-w-[var(--tab-min-width)] data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:theme-shadow-md data-[state=active]:border-2 data-[state=active]:border-primary/50 hover:bg-muted/60 hover:theme-shadow-sm transition-colors duration-200 flex-shrink-0 border-2 border-transparent"
               >
                 <List className="icon-fluid" />
                 <span className="hidden sm:inline">Lists</span>
@@ -72,7 +72,7 @@ export const EmailCampaignApp = () => {
               
               <TabsTrigger 
                 value="products" 
-                className="flex items-center justify-center gap-fluid-sm text-fluid-sm font-semibold px-fluid-md py-fluid-md rounded-fluid touch-target min-w-[var(--tab-min-width)] data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:theme-shadow-md data-[state=active]:border-2 data-[state=active]:border-primary/50 hover:bg-muted/60 hover:theme-shadow-sm transition-all duration-200 flex-shrink-0 border-2 border-transparent"
+                className="flex items-center justify-center gap-1 sm:gap-fluid-sm text-xs sm:text-fluid-sm font-semibold px-2 sm:px-fluid-md py-2 sm:py-fluid-md rounded-fluid touch-target min-w-[60px] sm:min-w-[var(--tab-min-width)] data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:theme-shadow-md data-[state=active]:border-2 data-[state=active]:border-primary/50 hover:bg-muted/60 hover:theme-shadow-sm transition-colors duration-200 flex-shrink-0 border-2 border-transparent"
               >
                 <Package className="icon-fluid" />
                 <span className="hidden sm:inline">Products</span>
@@ -80,7 +80,7 @@ export const EmailCampaignApp = () => {
               
               <TabsTrigger 
                 value="automation" 
-                className="flex items-center justify-center gap-fluid-sm text-fluid-sm font-semibold px-fluid-md py-fluid-md rounded-fluid touch-target min-w-[var(--tab-min-width)] data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:theme-shadow-md data-[state=active]:border-2 data-[state=active]:border-primary/50 hover:bg-muted/60 hover:theme-shadow-sm transition-all duration-200 flex-shrink-0 border-2 border-transparent"
+                className="flex items-center justify-center gap-1 sm:gap-fluid-sm text-xs sm:text-fluid-sm font-semibold px-2 sm:px-fluid-md py-2 sm:py-fluid-md rounded-fluid touch-target min-w-[60px] sm:min-w-[var(--tab-min-width)] data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:theme-shadow-md data-[state=active]:border-2 data-[state=active]:border-primary/50 hover:bg-muted/60 hover:theme-shadow-sm transition-colors duration-200 flex-shrink-0 border-2 border-transparent"
               >
                 <Zap className="icon-fluid" />
                 <span className="hidden sm:inline">Automation</span>
@@ -155,7 +155,7 @@ export const EmailCampaignApp = () => {
           </div>
 
           {/* Tab Contents */}
-          <TabsContent value="compose" className="space-y-0 bg-card rounded-fluid border-2 border-border/60 theme-shadow-lg p-fluid-xl">
+          <TabsContent value="compose" className="space-y-0 bg-card rounded-fluid border-2 border-border/60 theme-shadow-lg p-4 sm:p-fluid-xl">
             <CampaignComposer />
           </TabsContent>
 
@@ -178,12 +178,12 @@ export const EmailCampaignApp = () => {
           <TabsContent value="settings" className="space-y-0">
             <div className="bg-card rounded-fluid border-2 border-border/60 theme-shadow-lg">
               {/* Settings Sub-Navigation */}
-              <div className="border-b-2 border-border/40 bg-gradient-to-br from-muted/20 via-transparent to-muted/10 px-fluid-md md:px-fluid-xl py-fluid-md md:py-fluid-lg">
-                <div className="flex items-center gap-fluid-md mb-fluid-md md:mb-fluid-lg">
-                  <Settings className="icon-fluid text-muted-foreground flex-shrink-0" />
-                  <h2 className="text-fluid-xl md:text-fluid-2xl font-bold">Settings</h2>
+              <div className="border-b-2 border-border/40 bg-gradient-to-br from-muted/20 via-transparent to-muted/10 px-3 sm:px-fluid-md md:px-fluid-xl py-3 sm:py-fluid-md md:py-fluid-lg">
+                <div className="flex items-center gap-2 sm:gap-fluid-md mb-3 sm:mb-fluid-md md:mb-fluid-lg">
+                  <Settings className="h-5 w-5 sm:icon-fluid text-muted-foreground flex-shrink-0" />
+                  <h2 className="text-lg sm:text-fluid-xl md:text-fluid-2xl font-bold">Settings</h2>
                 </div>
-                <div className="flex flex-wrap gap-fluid-sm md:gap-fluid-md overflow-x-auto scrollbar-hide pb-1">
+                <div className="flex flex-wrap gap-2 sm:gap-fluid-sm md:gap-fluid-md overflow-x-auto scrollbar-hide pb-1">
                   <Button
                     variant={settingsSubTab === "integration" ? "default" : "outline"}
                     onClick={() => setSettingsSubTab("integration")}
@@ -233,7 +233,7 @@ export const EmailCampaignApp = () => {
               </div>
               
               {/* Settings Content */}
-              <div className="p-fluid-xl">
+              <div className="p-4 sm:p-fluid-xl">
                 {settingsSubTab === "integration" && <CampaignSettings />}
                 {settingsSubTab === "style" && <StyleGuide />}
                 {settingsSubTab === "tag-rules" && <TagRulesManager />}

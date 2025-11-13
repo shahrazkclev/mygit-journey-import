@@ -429,7 +429,7 @@ export const ProductManager: React.FC = () => {
 
       {/* Stats Cards - Varied solid colors with rhythm */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-fluid-lg">
-        <Card className="bg-blue-50 border-2 border-blue-200 theme-shadow-md hover:theme-shadow-lg transition-all duration-200 hover-lift hover:border-blue-300">
+        <Card className="bg-blue-50 border-2 border-blue-200 theme-shadow-md hover:theme-shadow-lg transition-shadow duration-200 hover:border-blue-300">
           <CardContent className="p-fluid-lg">
             <div className="flex items-center justify-between">
               <div>
@@ -443,7 +443,7 @@ export const ProductManager: React.FC = () => {
           </CardContent>
         </Card>
 
-        <Card className="bg-emerald-50 border-2 border-emerald-200 theme-shadow-md hover:theme-shadow-lg transition-all duration-200 hover-lift hover:border-emerald-300">
+        <Card className="bg-emerald-50 border-2 border-emerald-200 theme-shadow-md hover:theme-shadow-lg transition-shadow duration-200 hover:border-emerald-300">
           <CardContent className="p-fluid-lg">
             <div className="flex items-center justify-between">
               <div>
@@ -457,7 +457,7 @@ export const ProductManager: React.FC = () => {
           </CardContent>
         </Card>
 
-        <Card className="bg-purple-50 border-2 border-purple-200 theme-shadow-md hover:theme-shadow-lg transition-all duration-200 hover-lift hover:border-purple-300">
+        <Card className="bg-purple-50 border-2 border-purple-200 theme-shadow-md hover:theme-shadow-lg transition-shadow duration-200 hover:border-purple-300">
           <CardContent className="p-fluid-lg">
             <div className="flex items-center justify-between">
               <div>
@@ -471,7 +471,7 @@ export const ProductManager: React.FC = () => {
           </CardContent>
         </Card>
 
-        <Card className="bg-amber-50 border-2 border-amber-200 theme-shadow-md hover:theme-shadow-lg transition-all duration-200 hover-lift hover:border-amber-300">
+        <Card className="bg-amber-50 border-2 border-amber-200 theme-shadow-md hover:theme-shadow-lg transition-shadow duration-200 hover:border-amber-300">
           <CardContent className="p-fluid-lg">
             <div className="flex items-center justify-between">
               <div>
@@ -510,7 +510,7 @@ export const ProductManager: React.FC = () => {
               products.map((product) => {
                 const productDeals = getDealsForProduct(product);
                 return (
-                  <div key={product.id} className="p-fluid-lg border-2 rounded-fluid hover:bg-muted/30 transition-all duration-200 border-border/50 hover:border-primary/30 theme-shadow-sm hover:theme-shadow-md hover-lift bg-card">
+                  <div key={product.id} className="p-fluid-lg border-2 rounded-fluid hover:bg-muted/30 transition-colors duration-200 border-border/50 hover:border-primary/30 theme-shadow-sm hover:theme-shadow-md bg-card">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center space-x-3">
                         <div className="w-10 h-10 bg-email-accent/20 rounded-full flex items-center justify-center">

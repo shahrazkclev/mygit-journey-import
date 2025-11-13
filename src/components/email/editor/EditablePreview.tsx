@@ -591,7 +591,7 @@ export const EditablePreview: React.FC<EditablePreviewProps> = ({
                 {colors.map((color, index) => (
                   <button
                     key={index}
-                    className="w-12 h-12 rounded-lg border-2 border-gray-200 hover:border-gray-400 hover:scale-105 transition-all duration-200 shadow-sm"
+                    className="w-12 h-12 rounded-lg border-2 border-gray-200 hover:border-gray-400 transition-colors duration-200 shadow-sm"
                     style={{ backgroundColor: color }}
                     onClick={(e) => {
                       e.stopPropagation();
