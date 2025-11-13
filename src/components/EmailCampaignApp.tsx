@@ -178,10 +178,10 @@ export const EmailCampaignApp = () => {
           <TabsContent value="settings" className="space-y-0">
             <div className="bg-card rounded-fluid border-2 border-border/60 theme-shadow-lg">
               {/* Settings Sub-Navigation */}
-              <div className="border-b border-border/50 px-fluid-md md:px-fluid-xl py-fluid-md md:py-fluid-lg">
+              <div className="border-b-2 border-border/40 bg-gradient-to-br from-muted/20 via-transparent to-muted/10 px-fluid-md md:px-fluid-xl py-fluid-md md:py-fluid-lg">
                 <div className="flex items-center gap-fluid-md mb-fluid-md md:mb-fluid-lg">
                   <Settings className="icon-fluid text-muted-foreground flex-shrink-0" />
-                  <h2 className="text-fluid-xl md:text-fluid-2xl font-semibold">Settings</h2>
+                  <h2 className="text-fluid-xl md:text-fluid-2xl font-bold">Settings</h2>
                 </div>
                 <div className="flex flex-wrap gap-fluid-sm md:gap-fluid-md overflow-x-auto scrollbar-hide pb-1">
                   <Button
