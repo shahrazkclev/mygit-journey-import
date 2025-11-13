@@ -672,33 +672,38 @@ export const ContactManager: React.FC = () => {
                 {contacts.length === 0 ? 'No contacts found. Add your first contact above.' : 'No contacts match your current filters.'}
               </p>
             ) : (
-              filteredContacts.map((contact) => (
+              filteredContacts.map((contact) => {
+                const fullName = contact.first_name || contact.last_name 
+                  ? `${contact.first_name || ''} ${contact.last_name || ''}`.trim()
+                  : contact.email;
+                const initials = fullName
+                  .split(' ')
+                  .map(n => n[0])
+                  .join('')
+                  .toUpperCase()
+                  .slice(0, 2);
+                
+                return (
                 <div
                   key={contact.id}
-                  className="flex items-center justify-between p-4 border rounded-lg cursor-pointer hover:bg-gray-50"
+                  className="flex items-center justify-between p-fluid-md border rounded-fluid cursor-pointer hover:bg-gray-50 transition-all"
                   onClick={() => openContactDetails(contact)}
                 >
-                  <div className="flex items-center space-x-3">
-                    <div className="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center">
-                      <User className="h-5 w-5 text-primary" />
-                    </div>
+                  <div className="flex items-center gap-fluid-md">
                     <div>
-                      <div className="font-medium">
-                        {contact.first_name || contact.last_name 
-                          ? `${contact.first_name || ''} ${contact.last_name || ''}`.trim()
-                          : contact.email
-                        }
+                      <div className="font-medium text-fluid-base">
+                        {fullName}
                       </div>
-                      <div className="text-sm text-muted-foreground">{contact.email}</div>
+                      <div className="text-fluid-sm text-muted-foreground">{contact.email}</div>
                     </div>
                   </div>
-                  <div className="flex items-center space-x-2">
-                     <Badge variant={contact.status === 'subscribed' ? 'default' : 'secondary'}>
+                  <div className="flex items-center gap-fluid-sm flex-wrap">
+                     <Badge variant={contact.status === 'subscribed' ? 'default' : 'secondary'} className="rounded-fluid">
                        {contact.status}
                      </Badge>
                      {contact.tags && contact.tags.length > 0 && (
                        <Badge variant="outline">
-                         <Tag className="h-3 w-3 mr-1" />
+                         <Tag className="h-2.5 w-2.5 mr-0.5" />
                          {contact.tags.length}
                        </Badge>
                      )}

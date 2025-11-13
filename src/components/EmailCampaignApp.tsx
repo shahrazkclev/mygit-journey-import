@@ -24,16 +24,16 @@ export const EmailCampaignApp = () => {
   useGlobalTheme();
 
   return (
-    <div className="min-h-screen bg-muted/20">
+    <div className="min-h-screen bg-gradient-to-br from-muted/30 via-background to-muted/20">
       {/* Header */}
-      <div className="border-b bg-card sticky top-0 z-50">
-        <div className="container mx-auto px-6 py-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-2xl font-semibold text-foreground mb-1">
+      <div className="border-b-2 border-border/50 bg-card/98 backdrop-blur-md sticky top-0 z-50 theme-shadow-lg depth-20">
+        <div className="container-dynamic px-fluid-lg py-fluid-lg">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-fluid-md">
+            <div className="flex-1 min-w-0">
+              <h1 className="text-fluid-3xl font-extrabold text-foreground mb-fluid-xs leading-tight bg-gradient-to-r from-foreground to-foreground/80 bg-clip-text">
                 Customer Management
               </h1>
-              <p className="text-sm text-muted-foreground">
+              <p className="text-fluid-sm text-muted-foreground font-medium">
                 Create, manage, and act with customers
               </p>
             </div>
@@ -41,48 +41,48 @@ export const EmailCampaignApp = () => {
         </div>
       </div>
       
-      <div className="container mx-auto px-6 py-6">
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
+      <div className="container-dynamic px-fluid-lg py-fluid-md">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-fluid-lg">
           {/* Navigation Tabs */}
-          <div className="bg-card rounded-2xl border border-border/50 p-2 shadow-sm">
-            <TabsList className="grid grid-cols-3 md:grid-cols-6 w-full bg-transparent gap-2 h-auto">
+          <div className="bg-card rounded-fluid border-2 border-border/60 p-fluid-sm theme-shadow-md hover:theme-shadow-lg transition-all duration-200">
+            <TabsList className="flex md:grid md:grid-cols-6 w-full bg-transparent gap-fluid-sm h-auto overflow-x-auto scrollbar-hide">
               <TabsTrigger
                 value="compose" 
-                className="flex items-center justify-center gap-2 text-sm px-4 py-3 rounded-xl data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-sm hover:bg-muted/50 transition-all duration-200"
+                className="flex items-center justify-center gap-fluid-sm text-fluid-sm font-semibold px-fluid-md py-fluid-md rounded-fluid touch-target min-w-[var(--tab-min-width)] data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:theme-shadow-md data-[state=active]:border-2 data-[state=active]:border-primary/50 hover:bg-muted/60 hover:theme-shadow-sm transition-all duration-200 flex-shrink-0 border-2 border-transparent"
               >
-                <Mail className="h-4 w-4" />
+                <Mail className="icon-fluid" />
                 <span className="hidden sm:inline">Compose</span>
               </TabsTrigger>
               
               <TabsTrigger 
                 value="contacts" 
-                className="flex items-center justify-center gap-2 text-sm px-4 py-3 rounded-xl data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-sm hover:bg-muted/50 transition-all duration-200"
+                className="flex items-center justify-center gap-fluid-sm text-fluid-sm font-semibold px-fluid-md py-fluid-md rounded-fluid touch-target min-w-[var(--tab-min-width)] data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:theme-shadow-md data-[state=active]:border-2 data-[state=active]:border-primary/50 hover:bg-muted/60 hover:theme-shadow-sm transition-all duration-200 flex-shrink-0 border-2 border-transparent"
               >
-                <Users className="h-4 w-4" />
+                <Users className="icon-fluid" />
                 <span className="hidden sm:inline">Contacts</span>
               </TabsTrigger>
               
               <TabsTrigger 
                 value="lists" 
-                className="flex items-center justify-center gap-2 text-sm px-4 py-3 rounded-xl data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-sm hover:bg-muted/50 transition-all duration-200"
+                className="flex items-center justify-center gap-fluid-sm text-fluid-sm font-semibold px-fluid-md py-fluid-md rounded-fluid touch-target min-w-[var(--tab-min-width)] data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:theme-shadow-md data-[state=active]:border-2 data-[state=active]:border-primary/50 hover:bg-muted/60 hover:theme-shadow-sm transition-all duration-200 flex-shrink-0 border-2 border-transparent"
               >
-                <List className="h-4 w-4" />
+                <List className="icon-fluid" />
                 <span className="hidden sm:inline">Lists</span>
               </TabsTrigger>
               
               <TabsTrigger 
                 value="products" 
-                className="flex items-center justify-center gap-2 text-sm px-4 py-3 rounded-xl data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-sm hover:bg-muted/50 transition-all duration-200"
+                className="flex items-center justify-center gap-fluid-sm text-fluid-sm font-semibold px-fluid-md py-fluid-md rounded-fluid touch-target min-w-[var(--tab-min-width)] data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:theme-shadow-md data-[state=active]:border-2 data-[state=active]:border-primary/50 hover:bg-muted/60 hover:theme-shadow-sm transition-all duration-200 flex-shrink-0 border-2 border-transparent"
               >
-                <Package className="h-4 w-4" />
+                <Package className="icon-fluid" />
                 <span className="hidden sm:inline">Products</span>
               </TabsTrigger>
               
               <TabsTrigger 
                 value="automation" 
-                className="flex items-center justify-center gap-2 text-sm px-4 py-3 rounded-xl data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-sm hover:bg-muted/50 transition-all duration-200"
+                className="flex items-center justify-center gap-fluid-sm text-fluid-sm font-semibold px-fluid-md py-fluid-md rounded-fluid touch-target min-w-[var(--tab-min-width)] data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:theme-shadow-md data-[state=active]:border-2 data-[state=active]:border-primary/50 hover:bg-muted/60 hover:theme-shadow-sm transition-all duration-200 flex-shrink-0 border-2 border-transparent"
               >
-                <Zap className="h-4 w-4" />
+                <Zap className="icon-fluid" />
                 <span className="hidden sm:inline">Automation</span>
               </TabsTrigger>
 
@@ -91,63 +91,63 @@ export const EmailCampaignApp = () => {
                 <DropdownMenuTrigger asChild>
                   <Button 
                     variant={activeTab === "settings" ? "default" : "ghost"}
-                    className="flex items-center justify-center gap-2 text-sm px-4 py-3 rounded-xl w-full"
+                    className="flex items-center justify-center gap-fluid-sm text-fluid-sm px-fluid-md py-fluid-md rounded-fluid touch-target min-w-[var(--tab-min-width)] w-full md:w-auto flex-shrink-0"
                   >
-                    <Settings className="h-4 w-4" />
+                    <Settings className="icon-fluid" />
                     <span className="hidden sm:inline">Settings</span>
-                    <ChevronDown className="h-4 w-4" />
+                    <ChevronDown className="icon-fluid" />
                   </Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-48 bg-popover border shadow-lg">
+                <DropdownMenuContent align="end" className="w-56 md:w-48 bg-popover border shadow-lg">
                   <DropdownMenuItem 
                     onClick={() => {
                       setActiveTab("settings");
                       setSettingsSubTab("integration");
                     }}
-                    className="flex items-center gap-2 cursor-pointer"
+                    className="flex items-center gap-2 cursor-pointer touch-target"
                   >
-                    <Link className="h-4 w-4" />
-                    Integration
+                    <Link className="h-4 w-4 flex-shrink-0" />
+                    <span>Integration</span>
                   </DropdownMenuItem>
                   <DropdownMenuItem 
                     onClick={() => {
                       setActiveTab("settings");
                       setSettingsSubTab("style");
                     }}
-                    className="flex items-center gap-2 cursor-pointer"
+                    className="flex items-center gap-2 cursor-pointer touch-target"
                   >
-                    <Palette className="h-4 w-4" />
-                    Style & Branding
+                    <Palette className="h-4 w-4 flex-shrink-0" />
+                    <span>Style & Branding</span>
                   </DropdownMenuItem>
                   <DropdownMenuItem 
                     onClick={() => {
                       setActiveTab("settings");
                       setSettingsSubTab("tag-rules");
                     }}
-                    className="flex items-center gap-2 cursor-pointer"
+                    className="flex items-center gap-2 cursor-pointer touch-target"
                   >
-                    <Tags className="h-4 w-4" />
-                    Tag Rules
+                    <Tags className="h-4 w-4 flex-shrink-0" />
+                    <span>Tag Rules</span>
                   </DropdownMenuItem>
                   <DropdownMenuItem 
                     onClick={() => {
                       setActiveTab("settings");
                       setSettingsSubTab("lock-tags");
                     }}
-                    className="flex items-center gap-2 cursor-pointer"
+                    className="flex items-center gap-2 cursor-pointer touch-target"
                   >
-                    <Lock className="h-4 w-4" />
-                    Lock Tags
+                    <Lock className="h-4 w-4 flex-shrink-0" />
+                    <span>Lock Tags</span>
                   </DropdownMenuItem>
                   <DropdownMenuItem 
                     onClick={() => {
                       setActiveTab("settings");
                       setSettingsSubTab("unsubscribe");
                     }}
-                    className="flex items-center gap-2 cursor-pointer"
+                    className="flex items-center gap-2 cursor-pointer touch-target"
                   >
-                    <UserX className="h-4 w-4" />
-                    Unsubscribe
+                    <UserX className="h-4 w-4 flex-shrink-0" />
+                    <span>Unsubscribe</span>
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
@@ -155,85 +155,85 @@ export const EmailCampaignApp = () => {
           </div>
 
           {/* Tab Contents */}
-          <TabsContent value="compose" className="space-y-0 bg-card rounded-2xl border border-border/50 shadow-sm p-8">
+          <TabsContent value="compose" className="space-y-0 bg-card rounded-fluid border-2 border-border/60 theme-shadow-lg p-fluid-xl">
             <CampaignComposer />
           </TabsContent>
 
-          <TabsContent value="contacts" className="space-y-0 bg-card rounded-2xl border border-border/50 shadow-sm p-8">
+          <TabsContent value="contacts" className="space-y-0 bg-card rounded-fluid border-2 border-border/60 theme-shadow-lg p-fluid-xl">
             <SimpleContactManager />
           </TabsContent>
 
-          <TabsContent value="lists" className="space-y-0 bg-card rounded-2xl border border-border/50 shadow-sm p-8">
+          <TabsContent value="lists" className="space-y-0 bg-card rounded-fluid border-2 border-border/60 theme-shadow-lg p-fluid-xl">
             <SmartListManager />
           </TabsContent>
 
-          <TabsContent value="products" className="space-y-0 bg-card rounded-2xl border border-border/50 shadow-sm p-8">
+          <TabsContent value="products" className="space-y-0 bg-card rounded-fluid border-2 border-border/60 theme-shadow-lg p-fluid-xl">
             <ProductManager />
           </TabsContent>
 
-          <TabsContent value="automation" className="space-y-0 bg-card rounded-2xl border border-border/50 shadow-sm p-8">
+          <TabsContent value="automation" className="space-y-0 bg-card rounded-fluid border-2 border-border/60 theme-shadow-lg p-fluid-xl">
             <AutomationCampaigns />
           </TabsContent>
 
           <TabsContent value="settings" className="space-y-0">
-            <div className="bg-card rounded-2xl border border-border/50 shadow-sm">
+            <div className="bg-card rounded-fluid border-2 border-border/60 theme-shadow-lg">
               {/* Settings Sub-Navigation */}
-              <div className="border-b border-border/50 px-8 py-6">
-                <div className="flex items-center gap-3 mb-6">
-                  <Settings className="h-5 w-5 text-muted-foreground" />
-                  <h2 className="text-xl font-semibold">Settings</h2>
+              <div className="border-b border-border/50 px-fluid-md md:px-fluid-xl py-fluid-md md:py-fluid-lg">
+                <div className="flex items-center gap-fluid-md mb-fluid-md md:mb-fluid-lg">
+                  <Settings className="icon-fluid text-muted-foreground flex-shrink-0" />
+                  <h2 className="text-fluid-xl md:text-fluid-2xl font-semibold">Settings</h2>
                 </div>
-                <div className="flex gap-3">
+                <div className="flex flex-wrap gap-fluid-sm md:gap-fluid-md overflow-x-auto scrollbar-hide pb-1">
                   <Button
                     variant={settingsSubTab === "integration" ? "default" : "outline"}
                     onClick={() => setSettingsSubTab("integration")}
                     size="sm"
-                    className="flex items-center gap-2"
+                    className="flex items-center gap-fluid-xs md:gap-fluid-sm touch-target flex-shrink-0 text-fluid-xs md:text-fluid-sm"
                   >
-                    <Link className="h-4 w-4" />
-                    Integration
+                    <Link className="icon-fluid flex-shrink-0" />
+                    <span className="whitespace-nowrap">Integration</span>
                   </Button>
                   <Button
                     variant={settingsSubTab === "style" ? "default" : "outline"}
                     onClick={() => setSettingsSubTab("style")}
                     size="sm"
-                    className="flex items-center gap-2"
+                    className="flex items-center gap-fluid-xs md:gap-fluid-sm touch-target flex-shrink-0 text-fluid-xs md:text-fluid-sm"
                   >
-                    <Palette className="h-4 w-4" />
-                    Style & Branding
+                    <Palette className="icon-fluid flex-shrink-0" />
+                    <span className="whitespace-nowrap">Style & Branding</span>
                   </Button>
                   <Button
                     variant={settingsSubTab === "tag-rules" ? "default" : "outline"}
                     onClick={() => setSettingsSubTab("tag-rules")}
                     size="sm"
-                    className="flex items-center gap-2"
+                    className="flex items-center gap-fluid-xs md:gap-fluid-sm touch-target flex-shrink-0 text-fluid-xs md:text-fluid-sm"
                   >
-                    <Tags className="h-4 w-4" />
-                    Tag Rules
+                    <Tags className="icon-fluid flex-shrink-0" />
+                    <span className="whitespace-nowrap">Tag Rules</span>
                   </Button>
                   <Button
                     variant={settingsSubTab === "lock-tags" ? "default" : "outline"}
                     onClick={() => setSettingsSubTab("lock-tags")}
                     size="sm"
-                    className="flex items-center gap-2"
+                    className="flex items-center gap-fluid-xs md:gap-fluid-sm touch-target flex-shrink-0 text-fluid-xs md:text-fluid-sm"
                   >
-                    <Lock className="h-4 w-4" />
-                    Lock Tags
+                    <Lock className="icon-fluid flex-shrink-0" />
+                    <span className="whitespace-nowrap">Lock Tags</span>
                   </Button>
                   <Button
                     variant={settingsSubTab === "unsubscribe" ? "default" : "outline"}
                     onClick={() => setSettingsSubTab("unsubscribe")}
                     size="sm"
-                    className="flex items-center gap-2"
+                    className="flex items-center gap-fluid-xs md:gap-fluid-sm touch-target flex-shrink-0 text-fluid-xs md:text-fluid-sm"
                   >
-                    <UserX className="h-4 w-4" />
-                    Unsubscribe
+                    <UserX className="icon-fluid flex-shrink-0" />
+                    <span className="whitespace-nowrap">Unsubscribe</span>
                   </Button>
                 </div>
               </div>
               
               {/* Settings Content */}
-              <div className="p-8">
+              <div className="p-fluid-xl">
                 {settingsSubTab === "integration" && <CampaignSettings />}
                 {settingsSubTab === "style" && <StyleGuide />}
                 {settingsSubTab === "tag-rules" && <TagRulesManager />}

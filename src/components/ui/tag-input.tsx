@@ -100,22 +100,22 @@ export const TagInput = React.forwardRef<HTMLInputElement, TagInputProps>(
 
     return (
       <div className={cn("relative", className)}>
-        <div className="flex flex-wrap gap-1 mb-2">
-          {tags.map((tag, index) => (
-            <Badge key={index} variant="secondary" className="flex items-center gap-1">
-              {tag}
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                className="h-auto p-0 text-muted-foreground hover:text-foreground"
-                onClick={() => removeTag(index)}
-              >
-                <X className="h-3 w-3" />
-              </Button>
-            </Badge>
-          ))}
-        </div>
+        {tags.length > 0 && (
+          <div className="flex flex-wrap gap-1 mb-1.5 -mx-0.5">
+            {tags.map((tag, index) => (
+              <Badge key={index} variant="secondary" className="flex items-center gap-0.5 h-5 px-1.5 py-0 text-[10px] leading-tight whitespace-nowrap">
+                {tag}
+                <button
+                  type="button"
+                  className="h-3 w-3 flex items-center justify-center -mr-0.5 text-muted-foreground hover:text-foreground rounded-full hover:bg-muted transition-colors flex-shrink-0"
+                  onClick={() => removeTag(index)}
+                >
+                  <X className="h-2 w-2" />
+                </button>
+              </Badge>
+            ))}
+          </div>
+        )}
         
         <Input
           ref={ref || inputRef}
@@ -127,7 +127,7 @@ export const TagInput = React.forwardRef<HTMLInputElement, TagInputProps>(
         />
         
         {showSuggestions && (
-          <div className="absolute z-10 w-full mt-1 bg-popover border border-border rounded-md shadow-lg max-h-40 overflow-y-auto">
+          <div className="absolute z-10 w-full mt-1 bg-popover border border-border rounded-fluid shadow-lg max-h-40 overflow-y-auto">
             {filteredSuggestions.map((suggestion, index) => (
               <button
                 key={index}

@@ -1,3 +1,0 @@
-[33m3ffa94c[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m, [m[1;31morigin/main[m[33m, [m[1;31morigin/HEAD[m[33m)[m Force deployment update - ensure latest code is deployed
-[33m42bc9e6[m Implement optimized media URL handling in reviews display
-[33m102f763[m Refactor ReviewsManager for improved video upload handling and logging

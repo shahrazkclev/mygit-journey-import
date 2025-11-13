@@ -969,7 +969,7 @@ export const EmailListManager = () => {
                         <TableCell>
                           <div className="flex flex-wrap gap-1">
                             {(contact.tags || []).map((tag: string, index: number) => (
-                              <Badge key={index} variant="secondary" className="text-xs">
+                              <Badge key={index} variant="secondary">
                                 {tag}
                               </Badge>
                             ))}
@@ -982,7 +982,7 @@ export const EmailListManager = () => {
                             </Badge>
                             <div className="flex flex-wrap gap-1">
                               {getContactLists(contact.id).map(list => (
-                                <Badge key={list.id} variant="outline" className="text-xs">
+                                <Badge key={list.id} variant="outline">
                                   📋 {list.name}
                                 </Badge>
                               ))}
@@ -1111,7 +1111,7 @@ export const EmailListManager = () => {
                                           <TableCell>
                                             <div className="flex flex-wrap gap-1">
                                               {(contact.tags || []).map((tag: string, index: number) => (
-                                                <Badge key={index} variant="secondary" className="text-xs">
+                                                <Badge key={index} variant="secondary">
                                                   {tag}
                                                 </Badge>
                                               ))}

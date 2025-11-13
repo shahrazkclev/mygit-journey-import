@@ -886,7 +886,7 @@ export const SmartListManager = () => {
                     </span>
                     {list.list_type === 'dynamic' && list.rule_config?.rules && (
                       <div className="flex flex-wrap gap-1">
-                        <Badge variant="outline" className="text-xs border-email-accent/30 text-email-accent">
+                        <Badge variant="outline" className="border-email-accent/30 text-email-accent">
                           {list.rule_config.rules.length} rule{list.rule_config.rules.length !== 1 ? 's' : ''}
                         </Badge>
                       </div>
@@ -1040,12 +1040,12 @@ export const SmartListManager = () => {
                           {contact.tags && contact.tags.length > 0 && (
                             <div className="flex flex-wrap gap-1 mt-1">
                               {contact.tags.slice(0, 3).map(tag => (
-                                <Badge key={tag} variant="outline" className="text-xs">
+                                <Badge key={tag} variant="outline">
                                   {tag}
                                 </Badge>
                               ))}
                               {contact.tags.length > 3 && (
-                                <Badge variant="outline" className="text-xs">
+                                <Badge variant="outline">
                                   +{contact.tags.length - 3}
                                 </Badge>
                               )}
@@ -1107,12 +1107,12 @@ export const SmartListManager = () => {
                           {contact.tags && contact.tags.length > 0 && (
                             <div className="flex flex-wrap gap-1 mt-1">
                               {contact.tags.slice(0, 3).map(tag => (
-                                <Badge key={tag} variant="outline" className="text-xs">
+                                <Badge key={tag} variant="outline">
                                   {tag}
                                 </Badge>
                               ))}
                               {contact.tags.length > 3 && (
-                                <Badge variant="outline" className="text-xs">
+                                <Badge variant="outline">
                                   +{contact.tags.length - 3}
                                 </Badge>
                               )}

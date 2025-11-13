@@ -44,79 +44,93 @@ export const MainLayout = () => {
   const ActiveComponent = panels.find(p => p.id === activePanel)?.component || EmailCampaignApp;
 
   return (
-    <div className="min-h-screen bg-background flex">
+    <div className="min-h-screen bg-gradient-to-br from-background via-muted/20 to-background flex">
       {/* Mobile menu button */}
-      <div className="lg:hidden fixed top-4 left-4 z-50">
+      <div className="lg:hidden fixed top-4 right-4 z-50 depth-50">
         <Button
           variant="outline"
           size="sm"
           onClick={() => setSidebarOpen(!sidebarOpen)}
-          className="bg-gradient-to-r from-email-background via-white to-email-muted/20 backdrop-blur-sm border border-email-primary/20 shadow-xl shadow-email-primary/10 hover:shadow-2xl transition-all duration-200"
+          className="touch-target bg-gradient-to-r from-email-background via-white to-email-muted/20 backdrop-blur-sm border-2 border-email-primary/30 theme-shadow-lg hover:theme-shadow-xl transition-all duration-200 p-3"
         >
-          {sidebarOpen ? <X className="h-4 w-4" /> : <Menu className="h-4 w-4" />}
+          {sidebarOpen ? <X className="icon-fluid" /> : <Menu className="icon-fluid" />}
         </Button>
       </div>
 
       {/* Sidebar */}
       <div className={`
-        fixed lg:relative lg:translate-x-0 inset-y-0 left-0 z-40
-        w-72 bg-card border-r border-border/50 transition-transform duration-300 ease-in-out
+        fixed lg:relative lg:translate-x-0 inset-y-0 left-0 z-40 depth-40
+        sidebar-width bg-card/95 backdrop-blur-sm border-r-2 border-border/60 theme-shadow-lg transition-transform duration-300 ease-in-out
         ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}
+        max-w-[80vw] lg:max-w-none
       `}>
         <div className="flex flex-col h-full">
           {/* Sidebar Header */}
-          <div className="p-6 border-b border-border/50">
-            <h2 className="text-xl font-semibold text-foreground flex items-center gap-3 mb-2">
-              <div className="p-2 bg-primary/10 rounded-xl">
-                <Users className="h-5 w-5 text-primary" />
+          <div className="p-fluid-lg border-b-2 border-border/40 bg-gradient-to-br from-primary/5 via-transparent to-primary/5">
+            <h2 className="text-fluid-xl font-bold text-foreground flex items-center gap-fluid-md mb-fluid-sm">
+              <div className="p-fluid-sm bg-gradient-to-br from-primary/20 to-primary/10 rounded-fluid theme-shadow-sm border border-primary/20">
+                <Users className="icon-fluid text-primary" />
               </div>
               <span>Business Dashboard</span>
             </h2>
-            <p className="text-sm text-muted-foreground">
+            <p className="text-fluid-sm text-muted-foreground font-medium">
               Manage all aspects of your business
             </p>
           </div>
 
+          {/* Logged In Status - Above Navigation */}
+          <div className="px-fluid-md pt-fluid-md pb-fluid-sm">
+            <div className="bg-gradient-to-br from-primary/20 via-primary/15 to-primary/10 rounded-fluid p-fluid-md border-2 border-primary/40 theme-shadow-md backdrop-blur-sm hover:theme-shadow-lg transition-all duration-200">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center gap-fluid-sm mb-fluid-sm">
+                <div className="relative">
+                  <div className="h-2.5 w-2.5 rounded-full bg-emerald-500 animate-pulse shadow-lg shadow-emerald-500/60"></div>
+                  <div className="absolute inset-0 h-2.5 w-2.5 rounded-full bg-emerald-400 animate-ping opacity-75"></div>
+                </div>
+                <p className="text-fluid-xs font-bold text-foreground/90 uppercase tracking-wide">
+                  Logged in as
+                </p>
+              </div>
+              <p className="text-fluid-sm font-bold text-primary truncate bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">
+                {user.email}
+              </p>
+            </div>
+          </div>
+
           {/* Navigation */}
-          <nav className="flex-1 p-4 space-y-1.5">
+          <nav className="flex-1 p-fluid-md space-y-fluid-sm">
             {panels.map((panel) => {
               const Icon = panel.icon;
               return (
                 <Button
                   key={panel.id}
                   variant={activePanel === panel.id ? "default" : "ghost"}
-                  className={`w-full justify-start gap-3 h-12 text-left transition-all duration-200 rounded-xl ${
+                  className={`w-full justify-start gap-fluid-md touch-target text-left transition-all duration-300 rounded-fluid ${
                     activePanel === panel.id 
-                      ? "bg-primary text-primary-foreground shadow-sm" 
-                      : "hover:bg-muted/50 text-muted-foreground hover:text-foreground"
+                      ? "bg-gradient-to-r from-primary to-primary/90 text-primary-foreground theme-shadow-lg hover:theme-shadow-xl scale-[1.02] border-2 border-primary/50" 
+                      : "hover:bg-gradient-to-r hover:from-primary/10 hover:to-primary/5 text-muted-foreground hover:text-foreground hover:border-2 hover:border-primary/30 hover:theme-shadow-sm"
                   }`}
                   onClick={() => {
                     setActivePanel(panel.id);
                     setSidebarOpen(false);
                   }}
                 >
-                  <Icon className="h-5 w-5" />
-                  <span className="font-medium">{panel.name}</span>
+                  <Icon className={`icon-fluid ${activePanel === panel.id ? 'scale-110' : ''} transition-transform duration-300`} />
+                  <span className="font-bold">{panel.name}</span>
                 </Button>
               );
             })}
           </nav>
 
           {/* Footer */}
-          <div className="p-4 border-t border-border/50 space-y-3">
+          <div className="p-fluid-md border-t-2 border-border/40 bg-muted/10">
             <Button
               variant="ghost"
-              className="w-full justify-start gap-3 h-11 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-xl"
+              className="w-full justify-start gap-fluid-md touch-target text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-fluid transition-all duration-200 hover:border-2 hover:border-destructive/30 hover:theme-shadow-sm"
               onClick={logout}
             >
-              <LogOut className="h-5 w-5" />
-              <span className="font-medium">Sign Out</span>
+              <LogOut className="icon-fluid" />
+              <span className="font-semibold">Sign Out</span>
             </Button>
-            <div className="bg-muted/30 rounded-xl p-3 border border-border/50">
-              <p className="text-xs text-muted-foreground text-center">
-                Logged in as {user.email}
-              </p>
-            </div>
           </div>
         </div>
       </div>
@@ -124,13 +138,13 @@ export const MainLayout = () => {
       {/* Mobile overlay */}
       {sidebarOpen && (
         <div 
-          className="fixed inset-0 bg-black/50 z-30 lg:hidden"
+          className="fixed inset-0 bg-black/80 z-30 lg:hidden backdrop-blur-md depth-30"
           onClick={() => setSidebarOpen(false)}
         />
       )}
 
       {/* Main Content */}
-      <div className="flex-1">
+      <div className="flex-1 w-full lg:w-auto bg-gradient-to-br from-background via-muted/10 to-background">
         <ActiveComponent />
       </div>
     </div>

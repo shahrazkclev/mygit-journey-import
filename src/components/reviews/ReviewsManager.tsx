@@ -953,37 +953,38 @@ export const ReviewsManager = () => {
     <div className="min-h-screen bg-background">
       {/* Header */}
       <div className="border-b bg-card sticky top-0 z-50">
-        <div className="container mx-auto px-6 py-6">
-          <div className="flex items-center justify-between">
+        <div className="container-dynamic px-fluid-lg py-fluid-md">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-fluid-md">
             <div>
-              <h1 className="text-2xl font-semibold text-foreground mb-1">
+              <h1 className="text-fluid-3xl font-semibold text-foreground mb-fluid-xs">
                 Reviews Manager
               </h1>
-              <p className="text-sm text-muted-foreground">
+              <p className="text-fluid-sm text-muted-foreground">
                 Manage customer reviews and submissions
               </p>
             </div>
-            <Button onClick={copySubmissionLink} variant="outline" size="default" className="rounded-xl">
-              <Link className="h-4 w-4 mr-2" />
-              Copy Submission Link
+            <Button onClick={copySubmissionLink} variant="outline" size="default" className="rounded-fluid touch-target w-full sm:w-auto">
+              <Link className="icon-fluid mr-fluid-sm" />
+              <span className="hidden xs:inline">Copy Submission Link</span>
+              <span className="xs:hidden">Copy Link</span>
             </Button>
           </div>
         </div>
       </div>
       
-      <div className="container mx-auto px-6 py-6">
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
+      <div className="container-dynamic px-fluid-lg py-fluid-md">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-fluid-lg">
           {/* Navigation Tabs */}
-          <div className="bg-card rounded-2xl border border-border/50 p-2 shadow-sm">
-            <TabsList className="grid grid-cols-2 md:grid-cols-4 w-full bg-transparent gap-2 h-auto">
+          <div className="bg-card rounded-fluid border border-border/50 p-fluid-sm shadow-sm">
+            <TabsList className="flex md:grid md:grid-cols-4 w-full bg-transparent gap-fluid-sm h-auto overflow-x-auto scrollbar-hide">
               <TabsTrigger 
                 value="pending" 
-                className="flex items-center justify-center gap-2 text-sm px-4 py-3 rounded-xl data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-sm hover:bg-muted/50 transition-all"
+                className="flex items-center justify-center gap-fluid-sm text-fluid-sm px-fluid-md py-fluid-md rounded-fluid touch-target min-w-[var(--tab-min-width)] data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-sm hover:bg-muted/50 transition-all flex-shrink-0"
               >
-                <Clock className="h-4 w-4" />
+                <Clock className="icon-fluid" />
                 <span className="hidden sm:inline">Pending</span>
                 {stats.pending_count > 0 && (
-                  <div className="ml-1 bg-destructive text-destructive-foreground rounded-full min-w-[20px] h-5 flex items-center justify-center text-xs font-medium px-1">
+                  <div className="ml-fluid-xs bg-destructive text-destructive-foreground rounded-full min-w-[20px] h-5 flex items-center justify-center text-fluid-xs font-medium px-1">
                     {stats.pending_count}
                   </div>
                 )}
@@ -991,12 +992,12 @@ export const ReviewsManager = () => {
               
               <TabsTrigger 
                 value="published" 
-                className="flex items-center justify-center gap-2 text-sm px-4 py-3 rounded-xl data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-sm hover:bg-muted/50 transition-all"
+                className="flex items-center justify-center gap-fluid-sm text-fluid-sm px-fluid-md py-fluid-md rounded-fluid touch-target min-w-[var(--tab-min-width)] data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-sm hover:bg-muted/50 transition-all flex-shrink-0"
               >
-                <Star className="h-4 w-4" />
+                <Star className="icon-fluid" />
                 <span className="hidden sm:inline">Published</span>
                 {stats.approved_count > 0 && (
-                  <div className="ml-1 bg-green-500 text-white rounded-full min-w-[20px] h-5 flex items-center justify-center text-xs font-medium px-1">
+                  <div className="ml-fluid-xs bg-green-500 text-white rounded-full min-w-[20px] h-5 flex items-center justify-center text-fluid-xs font-medium px-1">
                     {stats.approved_count}
                   </div>
                 )}
@@ -1004,17 +1005,17 @@ export const ReviewsManager = () => {
               
               <TabsTrigger 
                 value="analytics" 
-                className="flex items-center justify-center gap-2 text-sm px-4 py-3 rounded-xl data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-sm hover:bg-muted/50 transition-all"
+                className="flex items-center justify-center gap-fluid-sm text-fluid-sm px-fluid-md py-fluid-md rounded-fluid touch-target min-w-[var(--tab-min-width)] data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-sm hover:bg-muted/50 transition-all flex-shrink-0"
               >
-                <TrendingUp className="h-4 w-4" />
+                <TrendingUp className="icon-fluid" />
                 <span className="hidden sm:inline">Analytics</span>
               </TabsTrigger>
               
               <TabsTrigger 
                 value="all" 
-                className="flex items-center justify-center gap-1.5 text-xs md:text-sm px-2 md:px-3 py-2.5 rounded-md data-[state=active]:bg-primary data-[state=active]:text-primary-foreground transition-all"
+                className="flex items-center justify-center gap-fluid-sm text-fluid-xs md:text-fluid-sm px-fluid-sm md:px-fluid-md py-fluid-md rounded-fluid touch-target min-w-[var(--tab-min-width)] data-[state=active]:bg-primary data-[state=active]:text-primary-foreground transition-all flex-shrink-0"
               >
-                <Users className="h-4 w-4" />
+                <Users className="icon-fluid" />
                 <span className="hidden sm:inline">All Reviews</span>
               </TabsTrigger>
             </TabsList>
@@ -1042,16 +1043,16 @@ export const ReviewsManager = () => {
                   </Button>
                 </div>
               </CardHeader>
-              <CardContent className="pt-6">
+              <CardContent className="pt-fluid-lg">
                 {/* Tag Filter Section */}
-                <div className="mb-6 p-4 bg-gradient-to-r from-email-primary/5 to-email-accent/5 rounded-lg border border-email-primary/20">
-                  <div className="flex items-center gap-4">
-                    <div className="flex items-center space-x-2">
-                      <div className="w-1 h-6 bg-gradient-to-b from-email-primary to-email-accent rounded-full"></div>
-                      <h3 className="text-sm font-semibold text-email-primary">Filter by Tags</h3>
+                <div className="mb-fluid-lg p-fluid-md bg-gradient-to-r from-email-primary/5 to-email-accent/5 rounded-fluid border border-email-primary/20">
+                  <div className="flex flex-col sm:flex-row items-start sm:items-center gap-fluid-md">
+                    <div className="flex items-center gap-fluid-sm">
+                      <div className="w-1 h-6 bg-gradient-to-b from-email-primary to-email-accent rounded-full flex-shrink-0"></div>
+                      <h3 className="text-fluid-sm font-semibold text-email-primary">Filter by Tags</h3>
                     </div>
                     <Select value={tagFilter} onValueChange={setTagFilter}>
-                      <SelectTrigger className="w-48 border-email-primary/30 focus:border-email-primary focus:ring-2 focus:ring-email-primary/20 bg-white/80 backdrop-blur-sm shadow-sm hover:shadow-md transition-all duration-200">
+                      <SelectTrigger className="w-full sm:w-48 border-email-primary/30 focus:border-email-primary focus:ring-2 focus:ring-email-primary/20 bg-white/80 backdrop-blur-sm shadow-sm hover:shadow-md transition-all duration-200">
                         <SelectValue placeholder="Filter by tag" />
                       </SelectTrigger>
                       <SelectContent>
@@ -1120,7 +1121,7 @@ export const ReviewsManager = () => {
                               <div className="flex items-center gap-2">
                                 <span className="font-medium">{review.user_name}</span>
                                 {review.isExistingCustomer && (
-                                  <Badge variant="outline" className="text-xs bg-green-50 text-green-700 border-green-200">
+                                  <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
                                     <UserPlus className="h-3 w-3 mr-1" />
                                     Customer
                                   </Badge>
@@ -1131,13 +1132,13 @@ export const ReviewsManager = () => {
                               {review.customer?.tags && review.customer.tags.length > 0 && (
                                 <div className="flex flex-wrap gap-1 mt-1">
                                   {review.customer.tags.slice(0, 3).map((tag, index) => (
-                                    <Badge key={index} variant="secondary" className="text-xs">
-                                      <Tag className="h-2 w-2 mr-1" />
+                                    <Badge key={index} variant="secondary">
+                                      <Tag className="h-2 w-2 mr-0.5" />
                                       {tag}
                                     </Badge>
                                   ))}
                                   {review.customer.tags.length > 3 && (
-                                    <Badge variant="secondary" className="text-xs">
+                                    <Badge variant="secondary">
                                       +{review.customer.tags.length - 3}
                                     </Badge>
                                   )}
@@ -1176,7 +1177,7 @@ export const ReviewsManager = () => {
                         {review.tags && review.tags.length > 0 && (
                           <div className="flex flex-wrap gap-1 mt-2">
                             {review.tags.map((tag, index) => (
-                              <Badge key={index} variant="secondary" className="text-xs">
+                              <Badge key={index} variant="secondary">
                                 {tag}
                               </Badge>
                             ))}
@@ -1263,16 +1264,16 @@ export const ReviewsManager = () => {
                   </Button>
                 </div>
               </CardHeader>
-              <CardContent className="pt-6">
+              <CardContent className="pt-fluid-lg">
                 {/* Tag Filter Section */}
-                <div className="mb-6 p-4 bg-gradient-to-r from-email-primary/5 to-email-accent/5 rounded-lg border border-email-primary/20">
-                  <div className="flex items-center gap-4">
-                    <div className="flex items-center space-x-2">
-                      <div className="w-1 h-6 bg-gradient-to-b from-email-primary to-email-accent rounded-full"></div>
-                      <h3 className="text-sm font-semibold text-email-primary">Filter by Tags</h3>
+                <div className="mb-fluid-lg p-fluid-md bg-gradient-to-r from-email-primary/5 to-email-accent/5 rounded-fluid border border-email-primary/20">
+                  <div className="flex flex-col sm:flex-row items-start sm:items-center gap-fluid-md">
+                    <div className="flex items-center gap-fluid-sm">
+                      <div className="w-1 h-6 bg-gradient-to-b from-email-primary to-email-accent rounded-full flex-shrink-0"></div>
+                      <h3 className="text-fluid-sm font-semibold text-email-primary">Filter by Tags</h3>
                     </div>
                     <Select value={tagFilter} onValueChange={setTagFilter}>
-                      <SelectTrigger className="w-48 border-email-primary/30 focus:border-email-primary focus:ring-2 focus:ring-email-primary/20 bg-white/80 backdrop-blur-sm shadow-sm hover:shadow-md transition-all duration-200">
+                      <SelectTrigger className="w-full sm:w-48 border-email-primary/30 focus:border-email-primary focus:ring-2 focus:ring-email-primary/20 bg-white/80 backdrop-blur-sm shadow-sm hover:shadow-md transition-all duration-200">
                         <SelectValue placeholder="Filter by tag" />
                       </SelectTrigger>
                       <SelectContent>
@@ -1316,7 +1317,7 @@ export const ReviewsManager = () => {
                               <div className="flex items-center gap-2">
                                 <span className="font-medium">{review.user_name}</span>
                                 {review.isExistingCustomer && (
-                                  <Badge variant="outline" className="text-xs bg-green-50 text-green-700 border-green-200">
+                                  <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
                                     <UserPlus className="h-3 w-3 mr-1" />
                                     Customer
                                   </Badge>
@@ -1326,13 +1327,13 @@ export const ReviewsManager = () => {
                               {review.customer?.tags && review.customer.tags.length > 0 && (
                                 <div className="flex flex-wrap gap-1 mt-1">
                                   {review.customer.tags.slice(0, 3).map((tag, index) => (
-                                    <Badge key={index} variant="secondary" className="text-xs">
-                                      <Tag className="h-2 w-2 mr-1" />
+                                    <Badge key={index} variant="secondary">
+                                      <Tag className="h-2 w-2 mr-0.5" />
                                       {tag}
                                     </Badge>
                                   ))}
                                   {review.customer.tags.length > 3 && (
-                                    <Badge variant="secondary" className="text-xs">
+                                    <Badge variant="secondary">
                                       +{review.customer.tags.length - 3}
                                     </Badge>
                                   )}
@@ -1371,7 +1372,7 @@ export const ReviewsManager = () => {
                         {review.tags && review.tags.length > 0 && (
                           <div className="flex flex-wrap gap-1 mt-2">
                             {review.tags.map((tag, index) => (
-                              <Badge key={index} variant="secondary" className="text-xs">
+                              <Badge key={index} variant="secondary">
                                 {tag}
                               </Badge>
                             ))}
@@ -1501,7 +1502,7 @@ export const ReviewsManager = () => {
                 </CardTitle>
                 <CardDescription className="text-email-secondary/80 mt-2">Complete overview of all review submissions</CardDescription>
               </CardHeader>
-              <CardContent className="pt-6">
+              <CardContent className="pt-fluid-lg">
                 {loading ? (
                   <div className="text-center py-12">
                     <RefreshCw className="h-8 w-8 mx-auto animate-spin text-muted-foreground mb-4" />
@@ -1528,7 +1529,7 @@ export const ReviewsManager = () => {
                               <div className="flex items-center gap-2">
                                 <span className="font-medium">{review.user_name}</span>
                                 {review.isExistingCustomer && (
-                                  <Badge variant="outline" className="text-xs bg-green-50 text-green-700 border-green-200">
+                                  <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
                                     <UserPlus className="h-3 w-3 mr-1" />
                                     Customer
                                   </Badge>
@@ -1539,13 +1540,13 @@ export const ReviewsManager = () => {
                               {review.customer?.tags && review.customer.tags.length > 0 && (
                                 <div className="flex flex-wrap gap-1 mt-1">
                                   {review.customer.tags.slice(0, 3).map((tag, index) => (
-                                    <Badge key={index} variant="secondary" className="text-xs">
-                                      <Tag className="h-2 w-2 mr-1" />
+                                    <Badge key={index} variant="secondary">
+                                      <Tag className="h-2 w-2 mr-0.5" />
                                       {tag}
                                     </Badge>
                                   ))}
                                   {review.customer.tags.length > 3 && (
-                                    <Badge variant="secondary" className="text-xs">
+                                    <Badge variant="secondary">
                                       +{review.customer.tags.length - 3}
                                     </Badge>
                                   )}
@@ -1584,7 +1585,7 @@ export const ReviewsManager = () => {
                         {review.tags && review.tags.length > 0 && (
                           <div className="flex flex-wrap gap-1 mt-2">
                             {review.tags.map((tag, index) => (
-                              <Badge key={index} variant="secondary" className="text-xs">
+                              <Badge key={index} variant="secondary">
                                 {tag}
                               </Badge>
                             ))}

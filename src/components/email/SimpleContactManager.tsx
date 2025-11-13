@@ -1023,17 +1023,17 @@ export const SimpleContactManager = () => {
   }
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-fluid-xl">
       {/* Contacts Management */}
-      <Card className="border border-border/50 shadow-sm rounded-2xl">
-        <CardHeader className="border-b border-border/50 p-6">
-          <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6">
+      <Card className="border border-border/50 shadow-sm rounded-fluid">
+        <CardHeader className="border-b border-border/50 p-fluid-lg">
+          <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-fluid-lg">
             <div>
-              <CardTitle className="flex items-center gap-3 mb-2">
-                <div className="p-2.5 bg-primary/10 rounded-xl">
-                  <Users className="h-5 w-5 text-primary" />
+              <CardTitle className="flex flex-col sm:flex-row items-start sm:items-center gap-fluid-md mb-fluid-sm">
+                <div className="p-fluid-sm bg-primary/10 rounded-fluid">
+                  <Users className="icon-fluid text-primary" />
                 </div>
-                <span className="text-xl font-semibold">
+                <span className="text-fluid-xl font-semibold">
                   Contacts ({filteredContacts.length} loaded, {totalContacts} total)
                 </span>
                 {selectedContacts.size > 0 && (
@@ -1046,7 +1046,7 @@ export const SimpleContactManager = () => {
                 Manage your contacts with tag-based organization. Names auto-generated from emails when missing.
               </CardDescription>
             </div>
-            <div className="flex flex-wrap gap-3">
+            <div className="flex flex-wrap gap-fluid-md w-full lg:w-auto">
               <Button
                 variant="outline"
                 size="default"
@@ -1151,7 +1151,7 @@ export const SimpleContactManager = () => {
                           </table>
                         </div>
 
-                        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-fluid-md">
                           <div>
                             <Label>Email Column</Label>
                             <select
@@ -1328,18 +1328,18 @@ export const SimpleContactManager = () => {
             </div>
           </div>
         </CardHeader>
-        <CardContent className="space-y-8 p-6">
+        <CardContent className="space-y-fluid-xl p-fluid-lg">
           {/* Search and Filter Section */}
-          <div className="bg-muted/30 rounded-xl p-6 border border-border/50">
-            <div className="flex flex-col space-y-5">
-              <div className="flex items-center gap-3">
+          <div className="bg-muted/30 rounded-fluid p-fluid-lg border border-border/50">
+            <div className="flex flex-col space-y-fluid-lg">
+              <div className="flex items-center gap-fluid-md">
                 <div className="w-1 h-6 bg-primary rounded-full"></div>
-                <h3 className="text-lg font-semibold">Search & Filter</h3>
+                <h3 className="text-fluid-lg font-semibold">Search & Filter</h3>
               </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                <div className="space-y-3">
-                  <Label htmlFor="search-contacts" className="text-sm font-medium text-email-secondary flex items-center space-x-2">
-                    <div className="w-2 h-2 bg-email-accent rounded-full"></div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-fluid-lg">
+                <div className="space-y-fluid-sm">
+                  <Label htmlFor="search-contacts" className="text-fluid-sm font-medium text-email-secondary flex items-center gap-fluid-sm">
+                    <div className="w-2 h-2 bg-email-accent rounded-full flex-shrink-0"></div>
                     <span>Search Contacts</span>
                   </Label>
                   <Input
@@ -1351,9 +1351,9 @@ export const SimpleContactManager = () => {
                     className="border-email-primary/30 focus:border-email-primary focus:ring-2 focus:ring-email-primary/20 bg-white/80 backdrop-blur-sm shadow-sm hover:shadow-md transition-all duration-200"
                   />
                 </div>
-                <div className="space-y-3">
-                  <Label htmlFor="filter-tags" className="text-sm font-medium text-email-secondary flex items-center space-x-2">
-                    <div className="w-2 h-2 bg-email-accent rounded-full"></div>
+                <div className="space-y-fluid-sm">
+                  <Label htmlFor="filter-tags" className="text-fluid-sm font-medium text-email-secondary flex items-center gap-fluid-sm">
+                    <div className="w-2 h-2 bg-email-accent rounded-full flex-shrink-0"></div>
                     <span>Filter by Tag</span>
                   </Label>
                   <TagInput
@@ -1398,14 +1398,14 @@ export const SimpleContactManager = () => {
           {/* Contacts List */}
           <div className="space-y-3">
             {filteredContacts.length > 0 && (
-              <div className="flex items-center p-4 bg-muted/30 rounded-xl border border-border/50">
+              <div className="flex items-center p-fluid-md bg-muted/30 rounded-fluid border border-border/50">
                 <input
                   type="checkbox"
                   checked={selectedContacts.size === filteredContacts.length && filteredContacts.length > 0}
                   onChange={(e) => handleSelectAll(e.target.checked)}
-                  className="h-4 w-4 text-email-primary focus:ring-2 focus:ring-email-primary/20 border-email-primary/30 rounded"
+                  className="h-4 w-4 text-email-primary focus:ring-2 focus:ring-email-primary/20 border-email-primary/30 rounded-fluid"
                 />
-                <Label className="ml-3 text-sm font-semibold text-email-primary cursor-pointer">
+                <Label className="ml-fluid-md text-fluid-sm font-semibold text-email-primary cursor-pointer">
                   Select All ({filteredContacts.length})
                 </Label>
               </div>
@@ -1414,44 +1414,44 @@ export const SimpleContactManager = () => {
             {filteredContacts.map(contact => (
               <div
                 key={contact.id}
-                className={`group flex items-center justify-between p-5 border rounded-xl transition-all duration-200 hover:shadow-md ${
+                className={`group flex flex-col sm:flex-row items-start sm:items-center justify-between p-fluid-lg border rounded-fluid transition-all duration-200 hover:shadow-md ${
                   selectedContacts.has(contact.id) 
                     ? 'bg-primary/5 border-primary/30 shadow-sm' 
                     : 'bg-card border-border/50 hover:border-border shadow-sm'
                 }`}
               >
-                <div className="flex items-center space-x-3 flex-1">
+                <div className="flex items-start sm:items-center gap-fluid-md flex-1 w-full sm:w-auto">
                   <input
                     type="checkbox"
                     checked={selectedContacts.has(contact.id)}
                     onChange={(e) => handleSelectContact(contact.id, e.target.checked)}
-                    className="h-4 w-4 text-email-primary focus:ring-email-primary border-gray-300 rounded"
+                    className="h-4 w-4 mt-1 sm:mt-0 text-email-primary focus:ring-email-primary border-gray-300 rounded flex-shrink-0"
                   />
                   <div className="flex-1 min-w-0">
-                    <div className="flex items-center space-x-4">
-                      <div>
-                        <p className="font-medium">{contact.name}</p>
-                        <p className="text-sm text-gray-600 break-all">{contact.email}</p>
+                    <div className="flex flex-col sm:flex-row sm:items-center space-y-fluid-xs sm:space-y-0 sm:space-x-fluid-md">
+                      <div className="flex-1">
+                        <p className="font-medium text-fluid-base">{contact.name}</p>
+                        <p className="text-fluid-sm text-gray-600 break-all">{contact.email}</p>
                         {contact.phone && (
-                          <p className="text-sm text-gray-500">{contact.phone}</p>
+                          <p className="text-fluid-sm text-gray-500">{contact.phone}</p>
                         )}
                       </div>
                     </div>
                     {contact.tags && contact.tags.length > 0 && (
-                      <div className="flex flex-wrap gap-1 mt-2">
+                      <div className="flex flex-wrap gap-1 mt-1.5">
                         {contact.tags.map(tag => (
-                          <Badge key={tag} variant="secondary" className="text-xs bg-email-accent/20 text-email-accent">
+                          <Badge key={tag} variant="secondary" className="bg-email-accent/20 text-email-accent">
                             {tag}
                           </Badge>
                         ))}
                       </div>
                     )}
                     {contactLists[contact.id] && contactLists[contact.id].length > 0 && (
-                      <div className="flex flex-wrap gap-1 mt-2">
-                        <span className="text-xs text-gray-500 mr-1">Lists:</span>
+                      <div className="flex flex-wrap gap-1 mt-1.5">
+                        <span className="text-[10px] md:text-xs text-gray-500 mr-1">Lists:</span>
                         {contactLists[contact.id].map(list => (
-                          <Badge key={list.id} variant="outline" className="text-xs border-email-secondary/30 text-email-secondary">
-                            <Users className="h-3 w-3 mr-1" />
+                          <Badge key={list.id} variant="outline" className="border-email-secondary/30 text-email-secondary">
+                            <Users className="h-2.5 w-2.5 mr-0.5" />
                             {list.name}
                           </Badge>
                         ))}
@@ -1459,7 +1459,7 @@ export const SimpleContactManager = () => {
                     )}
                   </div>
                 </div>
-                <div className="flex items-center space-x-2 flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                <div className="flex items-center space-x-fluid-sm flex-shrink-0 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity duration-200 mt-fluid-md sm:mt-0 w-full sm:w-auto justify-end sm:justify-start">
                   <Button
                     variant="ghost"
                     size="sm"
@@ -1467,17 +1467,17 @@ export const SimpleContactManager = () => {
                       setEditingContact(contact);
                       setShowEditContactDialog(true);
                     }}
-                    className="text-email-primary hover:text-white hover:bg-email-primary shadow-sm hover:shadow-md transition-all duration-200"
+                    className="text-email-primary hover:text-white hover:bg-email-primary shadow-sm hover:shadow-md transition-all duration-200 touch-target"
                   >
-                    <Edit className="h-4 w-4" />
+                    <Edit className="icon-fluid" />
                   </Button>
                   <Button
                     variant="ghost"
                     size="sm"
                     onClick={() => handleDeleteContact(contact.id)}
-                    className="text-red-600 hover:text-white hover:bg-red-500 shadow-sm hover:shadow-md transition-all duration-200"
+                    className="text-red-600 hover:text-white hover:bg-red-500 shadow-sm hover:shadow-md transition-all duration-200 touch-target"
                   >
-                    <Trash2 className="h-4 w-4" />
+                    <Trash2 className="icon-fluid" />
                   </Button>
                 </div>
               </div>
@@ -1669,7 +1669,7 @@ export const SimpleContactManager = () => {
                       const isDisabled = bulkListOperation === 'add' && isContactInList;
                       
                       return (
-                        <div key={list.id} className={`flex items-center space-x-3 ${isDisabled ? 'opacity-50' : ''}`}>
+                        <div key={list.id} className={`flex items-center gap-fluid-md ${isDisabled ? 'opacity-50' : ''}`}>
                           <input
                             type="checkbox"
                             id={`bulk-list-${bulkListOperation}-${list.id}`}

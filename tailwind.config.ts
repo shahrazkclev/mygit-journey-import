@@ -13,17 +13,43 @@ export default {
 		container: {
 			center: true,
 			padding: {
-				DEFAULT: '1.5rem',
-				sm: '1.5rem',
-				lg: '2rem',
-				xl: '2rem',
-				'2xl': '2.5rem'
+				DEFAULT: 'clamp(1rem, 2vw, 1.5rem)',
+				sm: 'clamp(1rem, 2vw, 1.5rem)',
+				lg: 'clamp(1.5rem, 3vw, 2rem)',
+				xl: 'clamp(1.5rem, 3vw, 2rem)',
+				'2xl': 'clamp(2rem, 4vw, 2.5rem)'
 			},
 			screens: {
-				'2xl': '1400px'
+				sm: '640px',
+				md: '768px',
+				lg: '1024px',
+				xl: '1280px',
+				'2xl': '1536px'
 			}
 		},
 		extend: {
+			fontSize: {
+				'fluid-xs': 'clamp(0.75rem, 1.5vw, 0.875rem)',
+				'fluid-sm': 'clamp(0.875rem, 2vw, 1rem)',
+				'fluid-base': 'clamp(0.875rem, 2vw, 1rem)',
+				'fluid-lg': 'clamp(1rem, 2.5vw, 1.125rem)',
+				'fluid-xl': 'clamp(1.125rem, 3vw, 1.25rem)',
+				'fluid-2xl': 'clamp(1.25rem, 3.5vw, 1.5rem)',
+				'fluid-3xl': 'clamp(1.5rem, 4vw, 1.875rem)',
+				'fluid-4xl': 'clamp(1.875rem, 5vw, 2.25rem)',
+				'fluid-5xl': 'clamp(2.25rem, 6vw, 3rem)',
+			},
+			spacing: {
+				'fluid-xs': 'clamp(0.25rem, 0.5vw, 0.5rem)',
+				'fluid-sm': 'clamp(0.5rem, 1vw, 0.75rem)',
+				'fluid-md': 'clamp(0.75rem, 1.5vw, 1rem)',
+				'fluid-lg': 'clamp(1rem, 2vw, 1.5rem)',
+				'fluid-xl': 'clamp(1.5rem, 3vw, 2rem)',
+				'fluid-2xl': 'clamp(2rem, 4vw, 3rem)',
+			},
+			screens: {
+				'xs': '320px',
+			},
 			colors: {
 				border: 'hsl(var(--border))',
 				input: 'hsl(var(--input))',
@@ -81,7 +107,8 @@ export default {
 			borderRadius: {
 				lg: 'var(--radius)',
 				md: 'calc(var(--radius) - 2px)',
-				sm: 'calc(var(--radius) - 4px)'
+				sm: 'calc(var(--radius) - 4px)',
+				'fluid': 'clamp(0.375rem, 0.5vw, 1rem)',
 			},
 			backgroundImage: {
 				'gradient-soft': 'var(--gradient-soft)',
@@ -90,6 +117,9 @@ export default {
 			boxShadow: {
 				'sm': 'var(--shadow-sm)',
 				'md': 'var(--shadow-md)',
+				'fluid-sm': '0 clamp(1px, 0.2vw, 2px) clamp(2px, 0.4vw, 4px) 0 hsl(var(--theme-text-primary) / 0.05)',
+				'fluid-md': '0 clamp(2px, 0.4vw, 4px) clamp(4px, 0.8vw, 6px) -1px hsl(var(--theme-text-primary) / 0.1), 0 clamp(1px, 0.2vw, 2px) clamp(2px, 0.4vw, 4px) -1px hsl(var(--theme-text-primary) / 0.06)',
+				'fluid-lg': '0 clamp(4px, 0.8vw, 10px) clamp(6px, 1.2vw, 15px) -2px hsl(var(--theme-text-primary) / 0.1), 0 clamp(2px, 0.4vw, 4px) clamp(4px, 0.8vw, 6px) -2px hsl(var(--theme-text-primary) / 0.06)',
 			},
 			keyframes: {
 				'accordion-down': {

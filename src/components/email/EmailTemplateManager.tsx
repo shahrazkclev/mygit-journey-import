@@ -241,7 +241,7 @@ export const EmailTemplateManager: React.FC<{ onClose?: () => void }> = ({ onClo
                     {template.placeholders && template.placeholders.length > 0 && (
                       <div className="flex flex-wrap gap-1 mt-2">
                         {template.placeholders.map(placeholder => (
-                          <Badge key={placeholder} variant="secondary" className="text-xs">
+                          <Badge key={placeholder} variant="secondary">
                             {`{{${placeholder}}}`}
                           </Badge>
                         ))}

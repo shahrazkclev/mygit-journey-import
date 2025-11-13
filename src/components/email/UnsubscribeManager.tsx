@@ -515,7 +515,7 @@ export const UnsubscribeManager = () => {
                               {user.contact?.tags && user.contact.tags.length > 0 && (
                                 <div className="flex flex-wrap gap-1">
                                   {user.contact.tags.map((tag, index) => (
-                                    <Badge key={index} variant="secondary" className="text-xs">
+                                    <Badge key={index} variant="secondary">
                                       {tag}
                                     </Badge>
                                   ))}

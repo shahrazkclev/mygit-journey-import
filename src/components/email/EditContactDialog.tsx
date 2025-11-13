@@ -317,13 +317,13 @@ export const EditContactDialog: React.FC<EditContactDialogProps> = ({
           </DialogDescription>
         </DialogHeader>
 
-        <div className="grid grid-cols-1 gap-6">
+        <div className="grid grid-cols-1 gap-4">
           {/* Contact Information */}
-          <div className="space-y-4">
-            <h3 className="text-lg font-semibold">Contact Information</h3>
+          <div className="space-y-3">
+            <h3 className="text-base font-semibold">Contact Information</h3>
             
-            <div>
-              <Label htmlFor="email">Email</Label>
+            <div className="space-y-1.5">
+              <Label htmlFor="email" className="text-sm">Email</Label>
               <Input
                 id="email"
                 type="email"
@@ -333,9 +333,9 @@ export const EditContactDialog: React.FC<EditContactDialogProps> = ({
               />
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <Label htmlFor="firstName">First Name</Label>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1.5">
+                <Label htmlFor="firstName" className="text-sm">First Name</Label>
                 <Input
                   id="firstName"
                   value={formData.firstName}
@@ -343,8 +343,8 @@ export const EditContactDialog: React.FC<EditContactDialogProps> = ({
                   placeholder="John"
                 />
               </div>
-              <div>
-                <Label htmlFor="lastName">Last Name</Label>
+              <div className="space-y-1.5">
+                <Label htmlFor="lastName" className="text-sm">Last Name</Label>
                 <Input
                   id="lastName"
                   value={formData.lastName}
@@ -354,8 +354,8 @@ export const EditContactDialog: React.FC<EditContactDialogProps> = ({
               </div>
             </div>
 
-            <div>
-              <Label htmlFor="tags">Tags</Label>
+            <div className="space-y-1.5">
+              <Label htmlFor="tags" className="text-sm">Tags</Label>
               <TagInput
                 value={formData.tags}
                 onChange={(value) => setFormData({ ...formData, tags: value })}
@@ -364,8 +364,8 @@ export const EditContactDialog: React.FC<EditContactDialogProps> = ({
               />
             </div>
 
-            <div>
-              <Label htmlFor="status">Status</Label>
+            <div className="space-y-1.5">
+              <Label htmlFor="status" className="text-sm">Status</Label>
               <Select 
                 value={formData.status} 
                 onValueChange={(value) => setFormData({ ...formData, status: value })}

@@ -662,12 +662,12 @@ const SubmitReview = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      <div className="max-w-6xl mx-auto p-4 pb-16">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+      <div className="container-dynamic px-fluid-md pb-16 pt-fluid-md">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-fluid-xl">
           {/* Mobile Preview */}
           <div className="lg:hidden order-first">
             <Card className="bg-gradient-to-br from-slate-50 to-white">
-              <CardContent className="p-4">
+              <CardContent className="p-fluid-md">
                 <div className="flex justify-center">
                   <div className="w-full max-w-sm">
                     <ReviewCard 
@@ -686,13 +686,13 @@ const SubmitReview = () => {
           </div>
 
           {/* Form */}
-          <div className="space-y-6">
+          <div className="space-y-fluid-lg">
             {/* Progress */}
-            <div className="flex justify-center space-x-2 mb-8">
+            <div className="flex justify-center space-x-fluid-sm mb-fluid-xl overflow-x-auto scrollbar-hide">
               {[1, 2, 3].map((step) => (
                 <div
                   key={step}
-                  className={`w-3 h-3 rounded-full ${
+                  className={`w-4 h-4 md:w-3 md:h-3 rounded-full flex-shrink-0 ${
                     step <= currentStep ? 'bg-primary' : 'bg-gray-200'
                   }`}
                 />
@@ -701,18 +701,18 @@ const SubmitReview = () => {
 
             {/* Step Content */}
             <Card>
-              <CardContent className="p-6 lg:p-8">
+              <CardContent className="p-fluid-lg lg:p-fluid-xl">
                 {renderStep()}
               </CardContent>
             </Card>
 
             {/* Navigation */}
-            <div className="flex justify-between space-x-4">
+            <div className="flex flex-col sm:flex-row justify-between gap-fluid-md sticky bottom-0 bg-background pt-fluid-md pb-fluid-sm -mb-fluid-md">
               <Button
                 variant="outline"
                 onClick={prevStep}
                 disabled={currentStep === 1}
-                className="flex-1 h-12"
+                className="flex-1 touch-target"
               >
                 Back
               </Button>
@@ -721,7 +721,7 @@ const SubmitReview = () => {
                 <Button
                   onClick={nextStep}
                   disabled={!canProceed()}
-                  className="flex-1 h-12"
+                  className="flex-1 touch-target"
                 >
                   Next
                 </Button>
@@ -729,7 +729,7 @@ const SubmitReview = () => {
                 <Button
                   onClick={handleSubmit}
                   disabled={!canProceed() || isSubmitting}
-                  className="flex-1 h-12"
+                  className="flex-1 touch-target"
                 >
                   {isSubmitting ? 'Submitting...' : 'Submit Review'}
                 </Button>
@@ -741,12 +741,12 @@ const SubmitReview = () => {
           <div className="hidden lg:block">
             <div className="sticky top-8">
               <Card className="bg-gradient-to-br from-slate-50 to-white">
-                <CardContent className="p-8">
-                  <div className="text-center mb-6">
-                    <h3 className="text-2xl font-bold bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent mb-2">
+                <CardContent className="p-fluid-xl">
+                  <div className="text-center mb-fluid-lg">
+                    <h3 className="text-fluid-2xl font-bold bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent mb-fluid-sm">
                       Live Preview
                     </h3>
-                    <p className="text-muted-foreground">See how your review will look</p>
+                    <p className="text-fluid-sm text-muted-foreground">See how your review will look</p>
                   </div>
                   <div className="flex justify-center">
                     <ReviewCard 

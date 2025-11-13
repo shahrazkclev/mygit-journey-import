@@ -613,7 +613,7 @@ export const SendCampaignModal: React.FC<SendCampaignModalProps> = ({
                   </div>
                   <div className="flex flex-wrap gap-1">
                     {listNames.map((name, index) => (
-                      <Badge key={index} variant="outline" className="text-xs border-email-primary/30 text-email-primary">
+                      <Badge key={index} variant="outline" className="border-email-primary/30 text-email-primary">
                         {name}
                       </Badge>
                     ))}
