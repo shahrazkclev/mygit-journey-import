@@ -102,16 +102,18 @@ export const SimpleContactManager = () => {
     }
   }, [user?.id]);
 
-  // Listen for contact updates from other components
+  // Listen for contact updates from other components - only reload if not currently loading
   useEffect(() => {
     const handleContactsUpdated = () => {
-      console.log('🔄 Reloading contacts due to external update...');
-      loadContacts();
+      if (!isLoading && !isLoadingMore) {
+        console.log('🔄 Reloading contacts due to external update...');
+        loadContacts(1, true);
+      }
     };
 
     window.addEventListener('contactsUpdated', handleContactsUpdated);
     return () => window.removeEventListener('contactsUpdated', handleContactsUpdated);
-  }, []);
+  }, [isLoading, isLoadingMore]);
 
   // Manual search function
   const handleManualSearch = () => {
@@ -392,7 +394,9 @@ export const SimpleContactManager = () => {
       console.error('Error searching contacts:', error);
       toast.error("Failed to search contacts");
     } finally {
-      setIsLoading(false);
+      if (contacts.length === 0) {
+        setIsLoading(false);
+      }
     }
   };
 
@@ -537,9 +541,12 @@ export const SimpleContactManager = () => {
 
       setNewContact({ name: "", email: "", phone: "", tags: "" });
       setIsAddDialogOpen(false);
-      loadContacts();
+      // Only reload if not currently loading to avoid unnecessary reloads
+      if (!isLoading && !isLoadingMore) {
+        loadContacts(1, true);
+      }
       
-      // Trigger dynamic list refresh
+      // Trigger dynamic list refresh (other components can listen)
       window.dispatchEvent(new CustomEvent('contactsUpdated'));
     } catch (error) {
       console.error('Error handling contact:', error);
@@ -1342,14 +1349,23 @@ export const SimpleContactManager = () => {
                     <div className="w-2 h-2 bg-email-accent rounded-full flex-shrink-0"></div>
                     <span>Search Contacts</span>
                   </Label>
-                  <Input
-                    id="search-contacts"
-                    placeholder="Search by name or email..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    onKeyPress={handleKeyPress}
-                    className="border-email-primary/30 focus:border-email-primary focus:ring-2 focus:ring-email-primary/20 bg-white/80 backdrop-blur-sm shadow-sm hover:shadow-md transition-all duration-200"
-                  />
+                  <div className="flex gap-2">
+                    <Input
+                      id="search-contacts"
+                      placeholder="Search by name or email..."
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                      onKeyPress={handleKeyPress}
+                      className="flex-1 border-email-primary/30 focus:border-email-primary focus:ring-2 focus:ring-email-primary/20 bg-white/80 backdrop-blur-sm shadow-sm hover:shadow-md transition-all duration-200"
+                    />
+                    <Button
+                      onClick={handleManualSearch}
+                      size="sm"
+                      className="bg-email-primary hover:bg-email-primary/90 text-white shadow-sm px-4"
+                    >
+                      Search
+                    </Button>
+                  </div>
                 </div>
                 <div className="space-y-fluid-sm">
                   <Label htmlFor="filter-tags" className="text-fluid-sm font-medium text-email-secondary flex items-center gap-fluid-sm">
@@ -1367,16 +1383,9 @@ export const SimpleContactManager = () => {
                 </div>
               </div>
               
-              {/* Search and Clear Buttons */}
-              <div className="flex justify-center gap-3">
-                <Button
-                  onClick={handleManualSearch}
-                  size="sm"
-                  className="bg-email-primary hover:bg-email-primary/90 text-white shadow-sm"
-                >
-                  Search
-                </Button>
-                {(searchTerm || tagFilter) && (
+              {/* Clear Button */}
+              {(searchTerm || tagFilter) && (
+                <div className="flex justify-center">
                   <Button
                     onClick={() => {
                       setSearchTerm('');
@@ -1389,8 +1398,8 @@ export const SimpleContactManager = () => {
                   >
                     Clear & Show All
                   </Button>
-                )}
-              </div>
+                </div>
+              )}
             </div>
           </div>
 

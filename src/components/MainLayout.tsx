@@ -67,30 +67,30 @@ export const MainLayout = () => {
         <div className="flex flex-col h-full">
           {/* Sidebar Header */}
           <div className="p-fluid-lg border-b-2 border-border/40 bg-gradient-to-br from-primary/5 via-transparent to-primary/5">
-            <h2 className="text-fluid-xl font-bold text-foreground flex items-center gap-fluid-md mb-fluid-sm">
-              <div className="p-fluid-sm bg-gradient-to-br from-primary/20 to-primary/10 rounded-fluid theme-shadow-sm border border-primary/20">
-                <Users className="icon-fluid text-primary" />
+            <h2 className="text-fluid-xl font-bold text-slate-900 flex items-center gap-fluid-md mb-fluid-sm">
+              <div className="p-fluid-sm bg-blue-100 rounded-fluid theme-shadow-sm border-2 border-blue-300">
+                <Users className="icon-fluid text-blue-700" />
               </div>
               <span>Business Dashboard</span>
             </h2>
-            <p className="text-fluid-sm text-muted-foreground font-medium">
+            <p className="text-fluid-sm text-slate-700 font-semibold">
               Manage all aspects of your business
             </p>
           </div>
 
           {/* Logged In Status - Above Navigation */}
           <div className="px-fluid-md pt-fluid-md pb-fluid-sm">
-            <div className="bg-gradient-to-br from-primary/20 via-primary/15 to-primary/10 rounded-fluid p-fluid-md border-2 border-primary/40 theme-shadow-md backdrop-blur-sm hover:theme-shadow-lg transition-all duration-200">
+            <div className="bg-slate-50 rounded-fluid p-fluid-md border-2 border-slate-300 theme-shadow-md backdrop-blur-sm hover:theme-shadow-lg transition-all duration-200">
               <div className="flex flex-col sm:flex-row items-start sm:items-center gap-fluid-sm mb-fluid-sm">
                 <div className="relative">
                   <div className="h-2.5 w-2.5 rounded-full bg-emerald-500 animate-pulse shadow-lg shadow-emerald-500/60"></div>
                   <div className="absolute inset-0 h-2.5 w-2.5 rounded-full bg-emerald-400 animate-ping opacity-75"></div>
                 </div>
-                <p className="text-fluid-xs font-bold text-foreground/90 uppercase tracking-wide">
+                <p className="text-fluid-xs font-bold text-slate-700 uppercase tracking-wide">
                   Logged in as
                 </p>
               </div>
-              <p className="text-fluid-sm font-bold text-primary truncate bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">
+              <p className="text-fluid-sm font-bold text-slate-900 truncate">
                 {user.email}
               </p>
             </div>
@@ -121,8 +121,8 @@ export const MainLayout = () => {
             })}
           </nav>
 
-          {/* Footer */}
-          <div className="p-fluid-md border-t-2 border-border/40 bg-muted/10">
+          {/* Footer - Sticky Sign Out */}
+          <div className="mt-auto p-fluid-md border-t-2 border-border/40 bg-muted/10 sticky bottom-0 z-10">
             <Button
               variant="ghost"
               className="w-full justify-start gap-fluid-md touch-target text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-fluid transition-all duration-200 hover:border-2 hover:border-destructive/30 hover:theme-shadow-sm"

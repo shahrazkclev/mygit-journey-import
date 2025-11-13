@@ -151,11 +151,11 @@ export const AutomationRuleBuilder: React.FC<AutomationRuleBuilderProps> = ({
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 p-4">
       {/* Basic Info */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Basic Information</CardTitle>
+      <Card className="bg-white border-2 border-slate-200">
+        <CardHeader className="bg-slate-50 border-b-2 border-slate-200">
+          <CardTitle className="text-slate-800">Basic Information</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           <div>
@@ -181,9 +181,9 @@ export const AutomationRuleBuilder: React.FC<AutomationRuleBuilderProps> = ({
       </Card>
 
       {/* Trigger */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Trigger</CardTitle>
+      <Card className="bg-white border-2 border-blue-200">
+        <CardHeader className="bg-blue-50 border-b-2 border-blue-200">
+          <CardTitle className="text-blue-800">Trigger</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           <div>
@@ -222,9 +222,9 @@ export const AutomationRuleBuilder: React.FC<AutomationRuleBuilderProps> = ({
       </Card>
 
       {/* Conditions */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Conditions</CardTitle>
+      <Card className="bg-white border-2 border-purple-200">
+        <CardHeader className="bg-purple-50 border-b-2 border-purple-200">
+          <CardTitle className="text-purple-800">Conditions</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           <p className="text-sm text-muted-foreground">
@@ -296,9 +296,9 @@ export const AutomationRuleBuilder: React.FC<AutomationRuleBuilderProps> = ({
       </Card>
 
       {/* Action */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Action</CardTitle>
+      <Card className="bg-white border-2 border-emerald-200">
+        <CardHeader className="bg-emerald-50 border-b-2 border-emerald-200">
+          <CardTitle className="text-emerald-800">Action</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           <div>

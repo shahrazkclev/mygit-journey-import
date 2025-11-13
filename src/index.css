@@ -9,70 +9,76 @@ All colors MUST be HSL.
 
 @layer base {
   :root {
-    /* Base design system - clean and professional */
+    /* Base design system - enhanced vibrant colors */
     --background: 0 0% 100%;
-    --foreground: 224 71% 4%;
+    --foreground: 222 47% 11%;
 
     --card: 0 0% 100%;
-    --card-foreground: 224 71% 4%;
+    --card-foreground: 222 47% 11%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 224 71% 4%;
+    --popover-foreground: 222 47% 11%;
 
-    --primary: 221 83% 53%;
-    --primary-foreground: 210 40% 98%;
+    /* Enhanced primary - vibrant blue with better saturation */
+    --primary: 217 91% 60%;
+    --primary-foreground: 0 0% 100%;
 
-    --secondary: 220 14% 96%;
-    --secondary-foreground: 220 9% 46%;
+    /* Improved secondary - warmer tone with better text contrast */
+    --secondary: 210 20% 98%;
+    --secondary-foreground: 222 50% 15%;
 
-    --muted: 220 14% 96%;
-    --muted-foreground: 220 9% 46%;
+    /* Enhanced muted - subtle but defined with better readability */
+    --muted: 210 20% 96%;
+    --muted-foreground: 215 25% 35%;
 
-    --accent: 220 14% 96%;
-    --accent-foreground: 220 9% 46%;
+    /* Better accent - distinct purple-blue */
+    --accent: 262 83% 58%;
+    --accent-foreground: 0 0% 100%;
 
-    --destructive: 0 84% 60%;
-    --destructive-foreground: 210 40% 98%;
+    /* Improved destructive - more vibrant red */
+    --destructive: 0 72% 51%;
+    --destructive-foreground: 0 0% 100%;
 
-    --border: 220 13% 91%;
-    --input: 220 13% 91%;
-    --ring: 221 83% 53%;
+    /* Better borders - more defined */
+    --border: 214 32% 91%;
+    --input: 214 32% 91%;
+    --ring: 217 91% 60%;
 
-    /* Unified theme system - all components use these */
-    --theme-primary: 221 83% 53%;
-    --theme-secondary: 204 86% 53%;
-    --theme-accent: 142 71% 45%;
-    --theme-success: 142 71% 45%;
-    --theme-warning: 35 91% 62%;
-    --theme-error: 0 84% 60%;
+    /* Unified theme system - enhanced vibrant colors */
+    --theme-primary: 217 91% 60%;
+    --theme-secondary: 204 90% 58%;
+    --theme-accent: 262 83% 58%;
+    --theme-success: 142 76% 36%;
+    --theme-warning: 38 92% 50%;
+    --theme-error: 0 72% 51%;
     
-    /* Background variations */
-    --theme-background: 220 14% 99%;
+    /* Background variations - subtle warmth */
+    --theme-background: 210 20% 99%;
     --theme-surface: 0 0% 100%;
-    --theme-muted: 220 14% 96%;
+    --theme-muted: 210 20% 96%;
     
-    /* Text variations */
-    --theme-text-primary: 224 71% 4%;
-    --theme-text-secondary: 220 9% 46%;
-    --theme-text-muted: 220 9% 60%;
+    /* Text variations - improved contrast for better readability */
+    --theme-text-primary: 222 47% 11%;
+    --theme-text-secondary: 215 30% 30%;
+    --theme-text-muted: 215 25% 40%;
 
     --radius: 0.5rem;
 
-    --sidebar-background: 0 0% 98%;
+    --sidebar-background: 210 20% 98%;
 
-    --sidebar-foreground: 240 5.3% 26.1%;
+    --sidebar-foreground: 222 47% 11%;
 
-    --sidebar-primary: 240 5.9% 10%;
+    --sidebar-primary: 222 47% 11%;
 
-    --sidebar-primary-foreground: 0 0% 98%;
+    --sidebar-primary-foreground: 0 0% 100%;
 
-    --sidebar-accent: 240 4.8% 95.9%;
+    --sidebar-accent: 210 20% 96%;
 
-    --sidebar-accent-foreground: 240 5.9% 10%;
+    --sidebar-accent-foreground: 222 47% 11%;
 
-    --sidebar-border: 220 13% 91%;
+    --sidebar-border: 214 32% 91%;
 
-    --sidebar-ring: 217.2 91.2% 59.8%;
+    --sidebar-ring: 217 91% 60%;
 
     /* Dynamic sizing variables */
     --sidebar-width: clamp(240px, 20vw, 320px);

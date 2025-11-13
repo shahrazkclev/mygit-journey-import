@@ -323,17 +323,32 @@ export const ProductManager: React.FC = () => {
     });
   };
 
+  // Calculate stats
+  const totalProducts = products.length;
+  const totalValue = products.reduce((sum, p) => sum + (p.price || 0), 0);
+  const categories = [...new Set(products.map(p => p.category).filter(Boolean))];
+  const productsWithDeals = products.filter(p => getDealsForProduct(p).length > 0).length;
+
   return (
-    <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <h2 className="text-2xl font-bold text-email-primary">Product Management</h2>
-        <Dialog open={showAddProduct} onOpenChange={setShowAddProduct}>
-          <DialogTrigger asChild>
-            <Button className="bg-email-primary hover:bg-email-primary/80">
-              <Plus className="h-4 w-4 mr-2" />
-              Add Product
-            </Button>
-          </DialogTrigger>
+    <div className="space-y-fluid-xl">
+      {/* Enhanced Header with Stats */}
+      <div className="bg-slate-50 rounded-fluid p-fluid-xl border-2 border-slate-200 theme-shadow-lg">
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-fluid-lg mb-fluid-lg">
+          <div>
+            <h2 className="text-fluid-3xl font-extrabold text-slate-800 mb-fluid-xs">
+              Product Management
+            </h2>
+            <p className="text-fluid-sm text-muted-foreground font-medium">
+              Manage your products, deals, and customer links
+            </p>
+          </div>
+          <Dialog open={showAddProduct} onOpenChange={setShowAddProduct}>
+            <DialogTrigger asChild>
+              <Button className="bg-primary hover:bg-primary/90 theme-shadow-md hover:theme-shadow-lg text-white font-semibold">
+                <Plus className="h-4 w-4 mr-2" />
+                Add Product
+              </Button>
+            </DialogTrigger>
           <DialogContent>
             <DialogHeader>
               <DialogTitle>Add New Product</DialogTitle>
@@ -408,17 +423,80 @@ export const ProductManager: React.FC = () => {
               </div>
             </div>
           </DialogContent>
-        </Dialog>
+          </Dialog>
+        </div>
+
+      {/* Stats Cards - Varied solid colors with rhythm */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-fluid-lg">
+        <Card className="bg-blue-50 border-2 border-blue-200 theme-shadow-md hover:theme-shadow-lg transition-all duration-200 hover-lift hover:border-blue-300">
+          <CardContent className="p-fluid-lg">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-fluid-sm text-blue-700 font-semibold mb-1">Total Products</p>
+                <p className="text-fluid-3xl font-bold text-blue-600">{totalProducts}</p>
+              </div>
+              <div className="p-3 bg-blue-100 rounded-fluid border border-blue-200">
+                <Package className="h-6 w-6 text-blue-600" />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="bg-emerald-50 border-2 border-emerald-200 theme-shadow-md hover:theme-shadow-lg transition-all duration-200 hover-lift hover:border-emerald-300">
+          <CardContent className="p-fluid-lg">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-fluid-sm text-emerald-700 font-semibold mb-1">Total Value</p>
+                <p className="text-fluid-3xl font-bold text-emerald-600">${totalValue.toFixed(2)}</p>
+              </div>
+              <div className="p-3 bg-emerald-100 rounded-fluid border border-emerald-200">
+                <Percent className="h-6 w-6 text-emerald-600" />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="bg-purple-50 border-2 border-purple-200 theme-shadow-md hover:theme-shadow-lg transition-all duration-200 hover-lift hover:border-purple-300">
+          <CardContent className="p-fluid-lg">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-fluid-sm text-purple-700 font-semibold mb-1">Categories</p>
+                <p className="text-fluid-3xl font-bold text-purple-600">{categories.length}</p>
+              </div>
+              <div className="p-3 bg-purple-100 rounded-fluid border border-purple-200">
+                <Tag className="h-6 w-6 text-purple-600" />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="bg-amber-50 border-2 border-amber-200 theme-shadow-md hover:theme-shadow-lg transition-all duration-200 hover-lift hover:border-amber-300">
+          <CardContent className="p-fluid-lg">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-fluid-sm text-amber-700 font-semibold mb-1">With Deals</p>
+                <p className="text-fluid-3xl font-bold text-amber-600">{productsWithDeals}</p>
+              </div>
+              <div className="p-3 bg-amber-100 rounded-fluid border border-amber-200">
+                <Percent className="h-6 w-6 text-amber-600" />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
       </div>
 
-
-      <Card className="shadow-xl shadow-email-primary/10 bg-gradient-to-br from-email-background via-white to-email-muted/20 border border-email-primary/20">
-        <CardHeader className="bg-gradient-to-r from-email-primary/5 via-email-accent/5 to-email-primary/5 border-b border-email-primary/20">
+      <Card className="theme-shadow-lg bg-white border-2 border-slate-200">
+        <CardHeader className="bg-slate-50 border-b-2 border-slate-200 p-fluid-lg">
           <CardTitle className="flex items-center space-x-3">
-            <div className="p-2 bg-gradient-to-br from-email-primary to-email-accent rounded-lg shadow-sm">
-              <Package className="h-5 w-5 text-white" />
+            <div className="p-3 bg-blue-500 rounded-fluid theme-shadow-md border border-blue-600">
+              <Package className="h-6 w-6 text-white" />
             </div>
-            <span className="text-email-secondary font-semibold">Products ({products.length})</span>
+            <div>
+              <span className="text-fluid-xl font-bold text-foreground">Products</span>
+              <p className="text-fluid-sm text-muted-foreground font-medium mt-1">
+                {products.length} {products.length === 1 ? 'product' : 'products'} in your catalog
+              </p>
+            </div>
           </CardTitle>
         </CardHeader>
         <CardContent className="pt-6">
@@ -431,7 +509,7 @@ export const ProductManager: React.FC = () => {
               products.map((product) => {
                 const productDeals = getDealsForProduct(product);
                 return (
-                  <div key={product.id} className="p-4 border rounded-lg hover:bg-email-muted/20 transition-colors border-email-primary/10">
+                  <div key={product.id} className="p-fluid-lg border-2 rounded-fluid hover:bg-muted/30 transition-all duration-200 border-border/50 hover:border-primary/30 theme-shadow-sm hover:theme-shadow-md hover-lift bg-card">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center space-x-3">
                         <div className="w-10 h-10 bg-email-accent/20 rounded-full flex items-center justify-center">
