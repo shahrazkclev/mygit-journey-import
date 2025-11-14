@@ -39,6 +39,7 @@ export const SimpleContactManager = () => {
   const { user } = useAuth();
   const [contacts, setContacts] = useState<Contact[]>([]);
   const [filteredContacts, setFilteredContacts] = useState<Contact[]>([]);
+  const [originalContacts, setOriginalContacts] = useState<Contact[]>([]); // Store original loaded contacts
   const [searchTerm, setSearchTerm] = useState("");
   const [tagFilter, setTagFilter] = useState("");
   const [isLoading, setIsLoading] = useState(true);
@@ -214,10 +215,13 @@ export const SimpleContactManager = () => {
       if (reset) {
         setContacts(filteredUiContacts);
         setFilteredContacts(filteredUiContacts);
+        setOriginalContacts(filteredUiContacts); // Store original loaded contacts
       } else {
         const updatedContacts = [...contacts, ...filteredUiContacts];
         setContacts(updatedContacts);
         setFilteredContacts(updatedContacts);
+        // Update original contacts with the full list when loading more
+        setOriginalContacts(updatedContacts);
       }
       
       setHasMoreContacts(filteredUiContacts.length === CONTACTS_PER_PAGE);
@@ -388,6 +392,7 @@ export const SimpleContactManager = () => {
       setContacts(filteredUiContacts);
       setFilteredContacts(filteredUiContacts);
       setHasMoreContacts(false); // Disable pagination for search results
+      // Don't overwrite originalContacts - keep them for restore functionality
       
       console.log(`✅ Found ${filteredUiContacts.length} contacts matching search`);
     } catch (error) {
@@ -1388,7 +1393,16 @@ export const SimpleContactManager = () => {
                     onClick={() => {
                       setSearchTerm('');
                       setTagFilter('');
-                      loadContacts(1, true); // Reset to first page
+                      // Restore original loaded contacts instead of fetching from server
+                      if (originalContacts.length > 0) {
+                        setContacts(originalContacts);
+                        setFilteredContacts(originalContacts);
+                        setHasMoreContacts(originalContacts.length === CONTACTS_PER_PAGE);
+                        setCurrentPage(1);
+                      } else {
+                        // Fallback to loading if no original contacts stored
+                        loadContacts(1, true);
+                      }
                     }}
                     variant="outline"
                     size="sm"
