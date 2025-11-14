@@ -43,6 +43,7 @@ export const SimpleContactManager = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [tagFilter, setTagFilter] = useState("");
   const [isLoading, setIsLoading] = useState(true);
+  const [isSearching, setIsSearching] = useState(false); // Separate state for search loading
   const [allTags, setAllTags] = useState<string[]>([]);
   
   // Pagination state
@@ -342,7 +343,7 @@ export const SimpleContactManager = () => {
 
   const searchContacts = async (searchQuery: string = searchTerm, tagQuery: string = tagFilter) => {
     try {
-      setIsLoading(true);
+      setIsSearching(true); // Use separate search loading state
       console.log(`🔍 Searching contacts: "${searchQuery}", tag: "${tagQuery}"`);
 
       let query = supabase
@@ -389,6 +390,7 @@ export const SimpleContactManager = () => {
       });
 
       const filteredUiContacts = uiContacts.filter(c => !(c.tags || []).some(t => (t || '').trim().toLowerCase() === 'unsub'));
+      // Only update contacts when search results are ready
       setContacts(filteredUiContacts);
       setFilteredContacts(filteredUiContacts);
       setHasMoreContacts(false); // Disable pagination for search results
@@ -399,7 +401,7 @@ export const SimpleContactManager = () => {
       console.error('Error searching contacts:', error);
       toast.error("Failed to search contacts");
     } finally {
-      setIsLoading(false);
+      setIsSearching(false); // Clear search loading state
     }
   };
 
@@ -1352,21 +1354,37 @@ export const SimpleContactManager = () => {
                     <div className="w-2 h-2 bg-email-accent rounded-full flex-shrink-0"></div>
                     <span>Search Contacts</span>
                   </Label>
-                  <div className="flex gap-2">
-                    <Input
-                      id="search-contacts"
-                      placeholder="Search by name or email..."
-                      value={searchTerm}
-                      onChange={(e) => setSearchTerm(e.target.value)}
-                      onKeyPress={handleKeyPress}
-                      className="flex-1 border-email-primary/30 focus:border-email-primary focus:ring-2 focus:ring-email-primary/20 bg-white/80 backdrop-blur-sm shadow-sm hover:shadow-md transition-all duration-200"
-                    />
+                  <div className="flex gap-2 items-center">
+                    <div className="flex-1 relative">
+                      <Input
+                        id="search-contacts"
+                        placeholder="Search by name or email..."
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                        onKeyPress={handleKeyPress}
+                        className="flex-1 border-email-primary/30 focus:border-email-primary focus:ring-2 focus:ring-email-primary/20 bg-white/80 backdrop-blur-sm shadow-sm hover:shadow-md transition-all duration-200"
+                        disabled={isSearching}
+                      />
+                      {isSearching && (
+                        <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                          <div className="animate-spin rounded-full h-4 w-4 border-2 border-email-primary border-t-transparent"></div>
+                        </div>
+                      )}
+                    </div>
                     <Button
                       onClick={handleManualSearch}
                       size="sm"
                       className="bg-email-primary hover:bg-email-primary/90 text-white shadow-sm px-4"
+                      disabled={isSearching}
                     >
-                      Search
+                      {isSearching ? (
+                        <>
+                          <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent mr-2"></div>
+                          Searching...
+                        </>
+                      ) : (
+                        'Search'
+                      )}
                     </Button>
                   </div>
                 </div>
