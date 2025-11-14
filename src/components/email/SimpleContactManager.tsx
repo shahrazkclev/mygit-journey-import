@@ -394,9 +394,7 @@ export const SimpleContactManager = () => {
       console.error('Error searching contacts:', error);
       toast.error("Failed to search contacts");
     } finally {
-      if (contacts.length === 0) {
-        setIsLoading(false);
-      }
+      setIsLoading(false);
     }
   };
 
