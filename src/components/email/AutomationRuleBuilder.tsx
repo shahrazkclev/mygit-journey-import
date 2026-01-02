@@ -36,73 +36,98 @@ export const AutomationRuleBuilder: React.FC<AutomationRuleBuilderProps> = ({
   onCancel,
 }) => {
   const { user } = useAuth();
-  const [name, setName] = useState(rule?.name || '');
-  const [description, setDescription] = useState(rule?.description || '');
-  const [triggerType, setTriggerType] = useState(rule?.trigger_config?.type || 'tag_added');
-  const [triggerTag, setTriggerTag] = useState(rule?.trigger_config?.tag || '');
   
   // Parse steps from existing rule or create default
   const parseSteps = (): AutomationStep[] => {
-    if (rule?.steps && Array.isArray(rule.steps)) {
-      return rule.steps;
-    }
-    // Legacy format: convert old action_config to steps
-    if (rule?.action_config) {
-      const steps: AutomationStep[] = [];
-      if (rule.conditions?.some((c: any) => c.type === 'wait_duration')) {
-        const waitCondition = rule.conditions.find((c: any) => c.type === 'wait_duration');
-        if (waitCondition) {
+    try {
+      if (!rule) return [];
+      
+      if (rule.steps && Array.isArray(rule.steps) && rule.steps.length > 0) {
+        return rule.steps;
+      }
+      // Legacy format: convert old action_config to steps
+      if (rule.action_config) {
+        const steps: AutomationStep[] = [];
+        if (rule.conditions?.some((c: any) => c.type === 'wait_duration')) {
+          const waitCondition = rule.conditions.find((c: any) => c.type === 'wait_duration');
+          if (waitCondition) {
+            steps.push({
+              id: `step-${Date.now()}-1`,
+              type: 'wait',
+              delay_days: waitCondition.days || 0,
+            });
+          }
+        }
+        if (rule.action_config.type === 'send_email') {
           steps.push({
-            id: `step-${Date.now()}-1`,
-            type: 'wait',
-            delay_days: waitCondition.days || 0,
+            id: `step-${Date.now()}-2`,
+            type: 'send_email',
+            template_id: rule.action_config.template_id || '',
+            webhook_url: rule.action_config.webhook_url || '',
+            subject: rule.action_config.subject || '',
+            html_content: rule.action_config.html_content || '',
           });
         }
+        return steps.length > 0 ? steps : [];
       }
-      if (rule.action_config.type === 'send_email') {
-        steps.push({
-          id: `step-${Date.now()}-2`,
-          type: 'send_email',
-          template_id: rule.action_config.template_id || '',
-          webhook_url: rule.action_config.webhook_url || '',
-          subject: rule.action_config.subject || '',
-          html_content: rule.action_config.html_content || '',
-        });
-      }
-      return steps.length > 0 ? steps : [];
+      return [];
+    } catch (error) {
+      console.error('Error parsing steps:', error);
+      return [];
     }
-    return [];
   };
 
-  const [steps, setSteps] = useState<AutomationStep[]>(parseSteps());
+  const [name, setName] = useState(() => rule?.name || '');
+  const [description, setDescription] = useState(() => rule?.description || '');
+  const [triggerType, setTriggerType] = useState(() => rule?.trigger_config?.type || 'tag_added');
+  const [triggerTag, setTriggerTag] = useState(() => rule?.trigger_config?.tag || '');
+  const [steps, setSteps] = useState<AutomationStep[]>(() => parseSteps());
   const [availableTags, setAvailableTags] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
     if (user?.id) {
-      loadAvailableTags();
+      loadAvailableTags().catch(error => {
+        console.error('Failed to load tags:', error);
+      });
     }
   }, [user?.id]);
 
   const loadAvailableTags = async () => {
     try {
-      if (!user?.id) return;
+      if (!user?.id) {
+        setAvailableTags([]);
+        return;
+      }
 
-      const { data: contacts } = await supabase
+      const { data: contacts, error } = await supabase
         .from('contacts')
         .select('tags')
         .eq('user_id', user.id);
 
+      if (error) {
+        console.error('Error loading contacts:', error);
+        setAvailableTags([]);
+        return;
+      }
+
       const tagsSet = new Set<string>();
-      contacts?.forEach(contact => {
-        if (contact.tags) {
-          contact.tags.forEach((tag: string) => tagsSet.add(tag.toLowerCase().trim()));
-        }
-      });
+      if (contacts && Array.isArray(contacts)) {
+        contacts.forEach(contact => {
+          if (contact?.tags && Array.isArray(contact.tags)) {
+            contact.tags.forEach((tag: string) => {
+              if (tag && typeof tag === 'string') {
+                tagsSet.add(tag.toLowerCase().trim());
+              }
+            });
+          }
+        });
+      }
 
       setAvailableTags(Array.from(tagsSet).sort());
     } catch (error) {
       console.error('Error loading tags:', error);
+      setAvailableTags([]);
     }
   };
 
@@ -349,7 +374,7 @@ export const AutomationRuleBuilder: React.FC<AutomationRuleBuilderProps> = ({
                   placeholder="Or type a new tag"
                 />
               </div>
-              {step.tag && !availableTags.includes(step.tag.toLowerCase()) && (
+              {step.tag && !availableTags.some(t => t.toLowerCase() === (step.tag || '').toLowerCase()) && (
                 <p className="text-sm text-muted-foreground mt-1">
                   Tag "{step.tag}" will be created when this automation is saved
                 </p>
@@ -467,29 +492,28 @@ export const AutomationRuleBuilder: React.FC<AutomationRuleBuilderProps> = ({
           {triggerType && (
             <div>
               <Label htmlFor="triggerTag">Tag *</Label>
-              <Select value={triggerTag} onValueChange={setTriggerTag}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select or type a tag" />
-                </SelectTrigger>
-                <SelectContent>
-                  {availableTags.length > 0 ? (
-                    availableTags.map(tag => (
-                      <SelectItem key={tag} value={tag}>{tag}</SelectItem>
-                    ))
-                  ) : (
-                    <SelectItem value="" disabled>No tags available</SelectItem>
-                  )}
-                </SelectContent>
-              </Select>
-              {triggerTag && (
+              <div className="space-y-2">
+                <Select value={triggerTag || ''} onValueChange={setTriggerTag}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select or type a tag" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {availableTags.length > 0 ? (
+                      availableTags.map(tag => (
+                        <SelectItem key={tag} value={tag}>{tag}</SelectItem>
+                      ))
+                    ) : (
+                      <SelectItem value="" disabled>No tags available</SelectItem>
+                    )}
+                  </SelectContent>
+                </Select>
                 <Input
-                  value={triggerTag}
+                  value={triggerTag || ''}
                   onChange={(e) => setTriggerTag(e.target.value)}
                   placeholder="Or type a new tag"
-                  className="mt-2"
                 />
-              )}
-              {!availableTags.includes(triggerTag.toLowerCase()) && triggerTag && (
+              </div>
+              {triggerTag && !availableTags.some(t => t.toLowerCase() === triggerTag.toLowerCase()) && (
                 <p className="text-sm text-muted-foreground mt-1">
                   Tag "{triggerTag}" will be created when this automation is saved
                 </p>

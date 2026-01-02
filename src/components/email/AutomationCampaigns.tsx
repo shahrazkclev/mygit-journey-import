@@ -154,9 +154,14 @@ export const AutomationCampaigns: React.FC = () => {
             <RefreshCw className={`h-4 w-4 mr-2 ${isRefreshing ? 'animate-spin' : ''}`} />
             Refresh
           </Button>
-          <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
+          <Dialog open={showCreateDialog} onOpenChange={(open) => {
+            setShowCreateDialog(open);
+            if (!open) {
+              // Reset any state when dialog closes
+            }
+          }}>
             <DialogTrigger asChild>
-              <Button>
+              <Button onClick={() => setShowCreateDialog(true)}>
                 <Plus className="h-4 w-4 mr-2" />
                 Create Automation
               </Button>
@@ -165,13 +170,17 @@ export const AutomationCampaigns: React.FC = () => {
               <DialogHeader>
                 <DialogTitle>Create Automation Rule</DialogTitle>
               </DialogHeader>
-              <AutomationRuleBuilder
-                onSave={() => {
-                  setShowCreateDialog(false);
-                  loadRules();
-                }}
-                onCancel={() => setShowCreateDialog(false)}
-              />
+              {showCreateDialog && (
+                <React.Suspense fallback={<div className="p-4">Loading...</div>}>
+                  <AutomationRuleBuilder
+                    onSave={() => {
+                      setShowCreateDialog(false);
+                      loadRules();
+                    }}
+                    onCancel={() => setShowCreateDialog(false)}
+                  />
+                </React.Suspense>
+              )}
             </DialogContent>
           </Dialog>
         </div>
