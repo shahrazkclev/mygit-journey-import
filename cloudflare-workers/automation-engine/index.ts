@@ -143,6 +143,112 @@ async function sendEmailViaWebhook(webhookUrl: string, payload: any): Promise<bo
   }
 }
 
+// Execute a single automation step
+async function executeStep(env: Env, step: any, contact: any, rule: any): Promise<boolean> {
+  try {
+    if (step.type === 'wait') {
+      // Wait steps are handled by scheduling, so this shouldn't be called
+      return true;
+    }
+    
+    if (step.type === 'add_tag') {
+      if (!step.tag) return false;
+      
+      const tags = contact.tags || [];
+      const tagLower = step.tag.toLowerCase().trim();
+      
+      // Check if tag already exists
+      if (!tags.some((t: string) => t.toLowerCase().trim() === tagLower)) {
+        const updatedTags = [...tags, step.tag];
+        await supabaseQuery(env, 'contacts', {
+          method: 'PATCH',
+          filters: { id: `eq.${contact.id}` },
+          body: { tags: updatedTags },
+        });
+      }
+      return true;
+    }
+    
+    if (step.type === 'remove_tag') {
+      if (!step.tag) return false;
+      
+      const tags = contact.tags || [];
+      const tagLower = step.tag.toLowerCase().trim();
+      const updatedTags = tags.filter((t: string) => t.toLowerCase().trim() !== tagLower);
+      
+      await supabaseQuery(env, 'contacts', {
+        method: 'PATCH',
+        filters: { id: `eq.${contact.id}` },
+        body: { tags: updatedTags },
+      });
+      return true;
+    }
+    
+    if (step.type === 'send_email') {
+      // Get email template if specified
+      let subject = step.subject || 'Hello';
+      let htmlContent = step.html_content || '';
+      
+      if (step.template_id) {
+        const templates = await supabaseQuery(env, 'email_templates', {
+          select: '*',
+          filters: { id: `eq.${step.template_id}` },
+        });
+        const template = Array.isArray(templates) ? templates[0] : templates;
+        if (template) {
+          subject = template.subject;
+          htmlContent = template.html_content;
+        }
+      }
+      
+      // Personalize content
+      const contactName = contact.first_name || contact.email.split('@')[0] || 'Friend';
+      const personalizedHtml = htmlContent
+        .replace(/\{\{name\}\}/g, contactName)
+        .replace(/\{\{email\}\}/g, contact.email)
+        .replace(/\{\{contact_id\}\}/g, contact.id)
+        .replace(/\{\{first_name\}\}/g, contact.first_name || '')
+        .replace(/\{\{last_name\}\}/g, contact.last_name || '');
+      
+      const personalizedSubject = subject
+        .replace(/\{\{name\}\}/g, contactName)
+        .replace(/\{\{email\}\}/g, contact.email);
+      
+      // Send via webhook
+      const webhookUrl = step.webhook_url || env.DEFAULT_WEBHOOK_URL;
+      if (!webhookUrl) {
+        throw new Error('No webhook URL configured');
+      }
+      
+      const webhookPayload = {
+        to: contact.email,
+        subject: personalizedSubject,
+        html: personalizedHtml,
+        automation_rule_id: rule.id,
+        contact: {
+          id: contact.id,
+          email: contact.email,
+          first_name: contact.first_name,
+          last_name: contact.last_name,
+          name: contactName,
+        },
+      };
+      
+      return await sendEmailViaWebhook(webhookUrl, webhookPayload);
+    }
+    
+    if (step.type === 'stop') {
+      // Stop automation - return false to indicate we should stop
+      return false;
+    }
+    
+    return false;
+  } catch (error: any) {
+    console.error(`Error executing step ${step.type}:`, error);
+    throw error;
+  }
+}
+
 // Process scheduled automation action
 async function processAutomationAction(env: Env, action: any): Promise<void> {
   try {
@@ -166,12 +272,12 @@ async function processAutomationAction(env: Env, action: any): Promise<void> {
       return;
     }
     
-    // Get contact
+    // Get contact (refresh to get latest tags)
     const contacts = await supabaseQuery(env, 'contacts', {
       select: '*',
       filters: { id: `eq.${action.contact_id}` },
     });
-    const contact = Array.isArray(contacts) ? contacts[0] : contacts;
+    let contact = Array.isArray(contacts) ? contacts[0] : contacts;
     
     if (!contact || contact.status !== 'subscribed') {
       await supabaseQuery(env, 'automation_actions', {
@@ -215,97 +321,133 @@ async function processAutomationAction(env: Env, action: any): Promise<void> {
       return;
     }
     
-    // Execute action
-    const actionConfig = rule.action_config || {};
+    // Get steps from rule (new format) or fall back to legacy action_config
+    const steps = rule.steps && Array.isArray(rule.steps) && rule.steps.length > 0
+      ? rule.steps
+      : (rule.action_config ? [{ type: 'send_email', ...rule.action_config }] : []);
     
-    if (actionConfig.type === 'send_email') {
-      // Get email template if specified
-      let subject = actionConfig.subject || 'Hello';
-      let htmlContent = actionConfig.html_content || '';
-      
-      if (actionConfig.template_id) {
-        const templates = await supabaseQuery(env, 'email_templates', {
-          select: '*',
-          filters: { id: `eq.${actionConfig.template_id}` },
-        });
-        const template = Array.isArray(templates) ? templates[0] : templates;
-        if (template) {
-          subject = template.subject;
-          htmlContent = template.html_content;
-        }
-      }
-      
-      // Personalize content
-      const contactName = contact.first_name || contact.email.split('@')[0] || 'Friend';
-      const personalizedHtml = htmlContent
-        .replace(/\{\{name\}\}/g, contactName)
-        .replace(/\{\{email\}\}/g, contact.email)
-        .replace(/\{\{contact_id\}\}/g, contact.id)
-        .replace(/\{\{first_name\}\}/g, contact.first_name || '')
-        .replace(/\{\{last_name\}\}/g, contact.last_name || '');
-      
-      const personalizedSubject = subject
-        .replace(/\{\{name\}\}/g, contactName)
-        .replace(/\{\{email\}\}/g, contact.email);
-      
-      // Send via webhook
-      const webhookUrl = actionConfig.webhook_url || env.DEFAULT_WEBHOOK_URL;
-      if (!webhookUrl) {
-        throw new Error('No webhook URL configured');
-      }
-      
-      const webhookPayload = {
-        to: contact.email,
-        subject: personalizedSubject,
-        html: personalizedHtml,
-        automation_rule_id: rule.id,
-        contact: {
-          id: contact.id,
-          email: contact.email,
-          first_name: contact.first_name,
-          last_name: contact.last_name,
-          name: contactName,
-        },
-      };
-      
-      const success = await sendEmailViaWebhook(webhookUrl, webhookPayload);
-      
-      if (success) {
-        await supabaseQuery(env, 'automation_actions', {
-          method: 'PATCH',
-          filters: { id: `eq.${action.id}` },
-          body: {
-            status: 'completed',
-            executed_at: new Date().toISOString(),
-          },
-        });
-        
-        // Update rule statistics
-        await supabaseQuery(env, 'automation_rules', {
-          method: 'PATCH',
-          filters: { id: `eq.${rule.id}` },
-          body: {
-            success_count: (rule.success_count || 0) + 1,
-            last_triggered_at: new Date().toISOString(),
-          },
-        });
-        
-        // Log success
-        await supabaseQuery(env, 'automation_logs', {
-          method: 'POST',
-          body: {
-            automation_rule_id: rule.id,
-            automation_action_id: action.id,
-            contact_id: contact.id,
-            event_type: 'action_executed',
-            status: 'success',
-            message: 'Email sent successfully',
-          },
-        });
-      } else {
-        throw new Error('Failed to send email via webhook');
-      }
+    if (steps.length === 0) {
+      throw new Error('No steps configured in automation rule');
     }
+    
+    // Get the step index from action metadata, or default to 0
+    const stepIndex = action.step_index !== undefined ? action.step_index : 0;
+    const currentStep = steps[stepIndex];
+    
+    if (!currentStep) {
+      // All steps completed
+      await supabaseQuery(env, 'automation_actions', {
+        method: 'PATCH',
+        filters: { id: `eq.${action.id}` },
+        body: {
+          status: 'completed',
+          executed_at: new Date().toISOString(),
+        },
+      });
+      return;
+    }
+    
+    // Execute current step
+    const stepSuccess = await executeStep(env, currentStep, contact, rule);
+    
+    if (!stepSuccess) {
+      throw new Error(`Failed to execute step: ${currentStep.type}`);
+    }
+    
+    // If this is a stop step, mark as completed and don't continue
+    if (currentStep.type === 'stop') {
+      await supabaseQuery(env, 'automation_actions', {
+        method: 'PATCH',
+        filters: { id: `eq.${action.id}` },
+        body: {
+          status: 'completed',
+          executed_at: new Date().toISOString(),
+        },
+      });
+      
+      await supabaseQuery(env, 'automation_logs', {
+        method: 'POST',
+        body: {
+          automation_rule_id: rule.id,
+          automation_action_id: action.id,
+          contact_id: contact.id,
+          event_type: 'action_executed',
+          status: 'success',
+          message: 'Automation stopped at stop step',
+        },
+      });
+      return;
+    }
+    
+    // Check if there's a next step
+    const nextStepIndex = stepIndex + 1;
+    const nextStep = steps[nextStepIndex];
+    
+    if (nextStep) {
+      // Calculate delay for next step
+      let delayDays = 0;
+      if (nextStep.type === 'wait') {
+        delayDays = nextStep.delay_days || 0;
+      }
+      
+      // Schedule next step
+      const executeAt = new Date();
+      executeAt.setDate(executeAt.getDate() + delayDays);
+      
+      await supabaseQuery(env, 'automation_actions', {
+        method: 'POST',
+        body: {
+          automation_rule_id: rule.id,
+          contact_id: contact.id,
+          status: 'pending',
+          execute_at: executeAt.toISOString(),
+          step_index: nextStepIndex,
+        },
+      });
+      
+      // Mark current action as completed
+      await supabaseQuery(env, 'automation_actions', {
+        method: 'PATCH',
+        filters: { id: `eq.${action.id}` },
+        body: {
+          status: 'completed',
+          executed_at: new Date().toISOString(),
+        },
+      });
+    } else {
+      // All steps completed
+      await supabaseQuery(env, 'automation_actions', {
+        method: 'PATCH',
+        filters: { id: `eq.${action.id}` },
+        body: {
+          status: 'completed',
+          executed_at: new Date().toISOString(),
+        },
+      });
+    }
+    
+    // Update rule statistics
+    await supabaseQuery(env, 'automation_rules', {
+      method: 'PATCH',
+      filters: { id: `eq.${rule.id}` },
+      body: {
+        success_count: (rule.success_count || 0) + 1,
+        last_triggered_at: new Date().toISOString(),
+      },
+    });
+    
+    // Log success
+    await supabaseQuery(env, 'automation_logs', {
+      method: 'POST',
+      body: {
+        automation_rule_id: rule.id,
+        automation_action_id: action.id,
+        contact_id: contact.id,
+        event_type: 'action_executed',
+        status: 'success',
+        message: `Step ${stepIndex + 1} executed: ${currentStep.type}`,
+      },
+    });
   } catch (error: any) {
     console.error(`Error processing automation action ${action.id}:`, error);
     
@@ -422,22 +564,30 @@ async function handleRequest(request: Request, env: Env): Promise<Response> {
       
       // For each matching rule, create scheduled actions
       for (const rule of matchingRules) {
-        const conditions = rule.conditions || [];
+        // Get steps from rule (new format) or fall back to legacy
+        const steps = rule.steps && Array.isArray(rule.steps) && rule.steps.length > 0
+          ? rule.steps
+          : (rule.action_config ? [{ type: 'send_email', ...rule.action_config }] : []);
+        
+        if (steps.length === 0) {
+          continue; // Skip rules with no steps
+        }
+        
+        // Find first non-wait step or first step
+        let firstStepIndex = 0;
         let delayDays = 0;
         
-        // Find wait_duration condition
-        for (const condition of conditions) {
-          if (condition.type === 'wait_duration') {
-            delayDays = condition.days || 0;
-            break;
-          }
+        // If first step is wait, use its delay
+        if (steps[0]?.type === 'wait') {
+          delayDays = steps[0].delay_days || 0;
+          firstStepIndex = 1; // Start with step after wait
         }
         
         // Calculate execute_at timestamp
         const executeAt = new Date();
         executeAt.setDate(executeAt.getDate() + delayDays);
         
-        // Create automation action
+        // Create automation action for first step
         await supabaseQuery(env, 'automation_actions', {
           method: 'POST',
           body: {
@@ -445,6 +595,7 @@ async function handleRequest(request: Request, env: Env): Promise<Response> {
             contact_id: contactId,
             status: 'pending',
             execute_at: executeAt.toISOString(),
+            step_index: firstStepIndex,
           },
         });
         

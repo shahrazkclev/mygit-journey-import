@@ -343,43 +343,74 @@ export const AutomationCampaigns: React.FC = () => {
                     </div>
                   </div>
 
-                  {/* Conditions */}
-                  {rule.conditions && rule.conditions.length > 0 && (
+                  {/* Steps (new format) */}
+                  {rule.steps && Array.isArray(rule.steps) && rule.steps.length > 0 ? (
                     <div>
-                      <h4 className="text-sm font-semibold mb-2">Conditions</h4>
-                      <div className="space-y-1 text-sm text-muted-foreground">
-                        {rule.conditions.map((condition: any, idx: number) => (
-                          <div key={idx}>
-                            {condition.type === 'wait_duration' && (
-                              <span>Wait {condition.days} day{condition.days !== 1 ? 's' : ''}</span>
+                      <h4 className="text-sm font-semibold mb-2">Automation Steps</h4>
+                      <div className="space-y-2 text-sm text-muted-foreground">
+                        {rule.steps.map((step: any, idx: number) => (
+                          <div key={idx} className="flex items-center gap-2">
+                            <span className="font-medium text-foreground">{idx + 1}.</span>
+                            {step.type === 'wait' && (
+                              <span>Wait {step.delay_days || 0} day{(step.delay_days || 0) !== 1 ? 's' : ''}</span>
                             )}
-                            {condition.type === 'tag_exists' && (
-                              <span>Contact must have tag <Badge variant="outline">{condition.tag}</Badge></span>
+                            {step.type === 'add_tag' && (
+                              <span>Add tag <Badge variant="outline">{step.tag}</Badge></span>
                             )}
-                            {condition.type === 'tag_not_exists' && (
-                              <span>Contact must NOT have tag <Badge variant="outline">{condition.tag}</Badge></span>
+                            {step.type === 'remove_tag' && (
+                              <span>Remove tag <Badge variant="outline">{step.tag}</Badge></span>
                             )}
-                            {condition.type === 'has_product' && (
-                              <span>Contact must have purchased product</span>
+                            {step.type === 'send_email' && (
+                              <span>Send email via webhook</span>
                             )}
-                            {condition.type === 'no_product' && (
-                              <span>Contact must NOT have purchased product</span>
+                            {step.type === 'stop' && (
+                              <span className="text-yellow-600">Stop automation</span>
                             )}
                           </div>
                         ))}
                       </div>
                     </div>
-                  )}
-
-                  {/* Action */}
-                  <div>
-                    <h4 className="text-sm font-semibold mb-2">Action</h4>
-                    <div className="text-sm text-muted-foreground">
-                      {rule.action_config?.type === 'send_email' && (
-                        <span>Send email via webhook</span>
+                  ) : (
+                    <>
+                      {/* Legacy Conditions */}
+                      {rule.conditions && rule.conditions.length > 0 && (
+                        <div>
+                          <h4 className="text-sm font-semibold mb-2">Conditions</h4>
+                          <div className="space-y-1 text-sm text-muted-foreground">
+                            {rule.conditions.map((condition: any, idx: number) => (
+                              <div key={idx}>
+                                {condition.type === 'wait_duration' && (
+                                  <span>Wait {condition.days} day{condition.days !== 1 ? 's' : ''}</span>
+                                )}
+                                {condition.type === 'tag_exists' && (
+                                  <span>Contact must have tag <Badge variant="outline">{condition.tag}</Badge></span>
+                                )}
+                                {condition.type === 'tag_not_exists' && (
+                                  <span>Contact must NOT have tag <Badge variant="outline">{condition.tag}</Badge></span>
+                                )}
+                                {condition.type === 'has_product' && (
+                                  <span>Contact must have purchased product</span>
+                                )}
+                                {condition.type === 'no_product' && (
+                                  <span>Contact must NOT have purchased product</span>
+                                )}
+                              </div>
+                            ))}
+                          </div>
+                        </div>
                       )}
-                    </div>
-                  </div>
+
+                      {/* Legacy Action */}
+                      <div>
+                        <h4 className="text-sm font-semibold mb-2">Action</h4>
+                        <div className="text-sm text-muted-foreground">
+                          {rule.action_config?.type === 'send_email' && (
+                            <span>Send email via webhook</span>
+                          )}
+                        </div>
+                      </div>
+                    </>
+                  )}
 
                   {/* Statistics */}
                   <div className="flex gap-4 pt-2 border-t">
