@@ -225,7 +225,9 @@ export const AutomationRuleBuilder: React.FC<AutomationRuleBuilderProps> = ({
           }
         }
         if (step.type === 'send_email') {
-          if (!step.webhook_id && !step.webhook_url?.trim()) {
+          const hasWebhookId = step.webhook_id && step.webhook_id.trim() !== '';
+          const hasWebhookUrl = step.webhook_url && step.webhook_url.trim() !== '';
+          if (!hasWebhookId && !hasWebhookUrl) {
             toast.error('Email steps must have a webhook selected or custom URL');
             return;
           }
@@ -514,8 +516,12 @@ export const AutomationRuleBuilder: React.FC<AutomationRuleBuilderProps> = ({
                 <WebhookSelector
                   value={step.webhook_id || (step.webhook_url ? '__custom__' : undefined)}
                   onChange={(webhookId) => {
-                    if (webhookId === '__custom__') {
+                    if (webhookId === '__custom__' || !webhookId) {
                       updateStep(step.id, 'webhook_id', undefined);
+                      // Don't clear webhook_url if switching to custom
+                      if (webhookId === '__custom__' && !step.webhook_url) {
+                        // Keep custom URL if it exists
+                      }
                     } else {
                       updateStep(step.id, 'webhook_id', webhookId);
                       updateStep(step.id, 'webhook_url', undefined);

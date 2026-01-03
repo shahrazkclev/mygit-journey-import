@@ -21,7 +21,7 @@ interface Webhook {
 
 interface WebhookSelectorProps {
   value?: string;
-  onChange: (webhookId: string) => void;
+  onChange: (webhookId: string | undefined) => void;
   allowCustom?: boolean;
   onCustomUrlChange?: (url: string) => void;
 }
@@ -170,11 +170,13 @@ export const WebhookSelector: React.FC<WebhookSelectorProps> = ({
           onValueChange={(val) => {
             if (val === '__custom__') {
               onChange('__custom__');
-            } else {
+            } else if (val) {
               onChange(val);
               if (onCustomUrlChange) {
                 onCustomUrlChange('');
               }
+            } else {
+              onChange(undefined);
             }
           }}
         >
