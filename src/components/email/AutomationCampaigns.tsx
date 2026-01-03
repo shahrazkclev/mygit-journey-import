@@ -166,7 +166,13 @@ export const AutomationCampaigns: React.FC = () => {
                 Create Automation
               </Button>
             </DialogTrigger>
-            <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+            <DialogContent 
+              className="max-w-4xl max-h-[90vh] overflow-y-auto"
+              style={{ 
+                aspectRatio: 'auto',
+                minHeight: 'auto'
+              }}
+            >
               <DialogHeader>
                 <DialogTitle>Create Automation Rule</DialogTitle>
                 <DialogDescription>
@@ -457,7 +463,13 @@ export const AutomationCampaigns: React.FC = () => {
       {/* Edit Dialog */}
       {editingRule && (
         <Dialog open={!!editingRule} onOpenChange={() => setEditingRule(null)}>
-          <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+          <DialogContent 
+            className="max-w-4xl max-h-[90vh] overflow-y-auto"
+            style={{ 
+              aspectRatio: 'auto',
+              minHeight: 'auto'
+            }}
+          >
             <DialogHeader>
               <DialogTitle>Edit Automation Rule</DialogTitle>
               <DialogDescription>
