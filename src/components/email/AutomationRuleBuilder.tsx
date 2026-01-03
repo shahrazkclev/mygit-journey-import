@@ -352,7 +352,7 @@ export const AutomationRuleBuilder: React.FC<AutomationRuleBuilderProps> = ({
               <Label>Tag *</Label>
               <div className="space-y-2">
                 <Select
-                  value={step.tag || ''}
+                  value={step.tag || undefined}
                   onValueChange={(value) => updateStep(step.id, 'tag', value)}
                 >
                   <SelectTrigger>
@@ -364,7 +364,7 @@ export const AutomationRuleBuilder: React.FC<AutomationRuleBuilderProps> = ({
                         <SelectItem key={tag} value={tag}>{tag}</SelectItem>
                       ))
                     ) : (
-                      <SelectItem value="" disabled>No tags available</SelectItem>
+                      <div className="px-2 py-1.5 text-sm text-muted-foreground">No tags available</div>
                     )}
                   </SelectContent>
                 </Select>
@@ -493,7 +493,7 @@ export const AutomationRuleBuilder: React.FC<AutomationRuleBuilderProps> = ({
             <div>
               <Label htmlFor="triggerTag">Tag *</Label>
               <div className="space-y-2">
-                <Select value={triggerTag || ''} onValueChange={setTriggerTag}>
+                <Select value={triggerTag || undefined} onValueChange={setTriggerTag}>
                   <SelectTrigger>
                     <SelectValue placeholder="Select or type a tag" />
                   </SelectTrigger>
@@ -503,7 +503,7 @@ export const AutomationRuleBuilder: React.FC<AutomationRuleBuilderProps> = ({
                         <SelectItem key={tag} value={tag}>{tag}</SelectItem>
                       ))
                     ) : (
-                      <SelectItem value="" disabled>No tags available</SelectItem>
+                      <div className="px-2 py-1.5 text-sm text-muted-foreground">No tags available</div>
                     )}
                   </SelectContent>
                 </Select>

@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogTrigger } from '@/components/ui/dialog';
 import { 
   Zap, 
   Plus, 
@@ -169,6 +169,9 @@ export const AutomationCampaigns: React.FC = () => {
             <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
               <DialogHeader>
                 <DialogTitle>Create Automation Rule</DialogTitle>
+                <DialogDescription>
+                  Build automated workflows that trigger based on tags and execute a series of actions.
+                </DialogDescription>
               </DialogHeader>
               {showCreateDialog && (
                 <React.Suspense fallback={<div className="p-4">Loading...</div>}>
