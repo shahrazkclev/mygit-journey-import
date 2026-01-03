@@ -460,6 +460,9 @@ export const AutomationCampaigns: React.FC = () => {
           <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>Edit Automation Rule</DialogTitle>
+              <DialogDescription>
+                Update your automation workflow settings and steps.
+              </DialogDescription>
             </DialogHeader>
             <AutomationRuleBuilder
               rule={editingRule}

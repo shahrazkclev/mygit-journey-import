@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogTrigger } from '@/components/ui/dialog';
 import { Plus } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -52,23 +52,28 @@ export const TemplateSelector: React.FC<TemplateSelectorProps> = ({
   };
 
   const handleSelect = (templateId: string) => {
-    onChange(templateId);
-    if (onTemplateSelect) {
-      const template = templates.find(t => t.id === templateId);
+    // Convert special value back to empty string
+    const actualValue = templateId === '__none__' ? '' : templateId;
+    onChange(actualValue);
+    if (onTemplateSelect && actualValue) {
+      const template = templates.find(t => t.id === actualValue);
       if (template) {
         onTemplateSelect(template);
       }
     }
   };
 
+  // Convert empty string to special value for Select component
+  const selectValue = value ? value : '__none__';
+
   return (
     <div className="flex gap-2">
-      <Select value={value} onValueChange={handleSelect}>
+      <Select value={selectValue} onValueChange={handleSelect}>
         <SelectTrigger>
           <SelectValue placeholder="Select a template (optional)" />
         </SelectTrigger>
         <SelectContent>
-          <SelectItem value="">None (use custom content)</SelectItem>
+          <SelectItem value="__none__">None (use custom content)</SelectItem>
           {templates.map(template => (
             <SelectItem key={template.id} value={template.id}>
               {template.name} {template.category && `(${template.category})`}
@@ -86,6 +91,9 @@ export const TemplateSelector: React.FC<TemplateSelectorProps> = ({
         <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Email Templates</DialogTitle>
+            <DialogDescription>
+              Create and manage email templates for your automations and campaigns.
+            </DialogDescription>
           </DialogHeader>
           <EmailTemplateManager onClose={() => {
             setShowManager(false);

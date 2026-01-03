@@ -395,8 +395,11 @@ export const AutomationRuleBuilder: React.FC<AutomationRuleBuilderProps> = ({
               <div>
                 <Label>Email Template</Label>
                 <TemplateSelector
-                  value={step.template_id || ''}
-                  onChange={(value) => updateStep(step.id, 'template_id', value)}
+                  value={step.template_id || '__none__'}
+                  onChange={(value) => {
+                    const actualValue = value === '__none__' ? '' : value;
+                    updateStep(step.id, 'template_id', actualValue);
+                  }}
                   onTemplateSelect={(template) => {
                     updateStep(step.id, 'template_id', template.id);
                     updateStep(step.id, 'subject', template.subject);
