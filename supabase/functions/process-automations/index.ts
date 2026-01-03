@@ -299,14 +299,41 @@ serve(async (req) => {
 
         if (nextStep) {
           // Calculate delay for next step
-          let delayDays = 0
-          if (nextStep.type === 'wait') {
-            delayDays = nextStep.delay_days || 0
-          }
-
-          // Schedule next step
           const executeAt = new Date()
-          executeAt.setDate(executeAt.getDate() + delayDays)
+          
+          if (nextStep.type === 'wait') {
+            const days = nextStep.delay_days || 0
+            const hours = nextStep.delay_hours || 0
+            const minutes = nextStep.delay_minutes || 0
+            
+            // Add days, hours, and minutes
+            executeAt.setDate(executeAt.getDate() + days)
+            executeAt.setHours(executeAt.getHours() + hours)
+            executeAt.setMinutes(executeAt.getMinutes() + minutes)
+            
+            // If specific time is set, set the time
+            if (nextStep.delay_time) {
+              const timeParts = nextStep.delay_time.split(' ')
+              const timeStr = timeParts[0]
+              const period = timeParts[1] // AM/PM if present
+              const [hoursStr, minutesStr] = timeStr.split(':')
+              let hour = parseInt(hoursStr) || 0
+              const minute = parseInt(minutesStr) || 0
+              
+              // Handle AM/PM (12-hour format) or use 24-hour format directly
+              if (period) {
+                const isPM = period.toUpperCase() === 'PM'
+                if (isPM && hour !== 12) {
+                  hour += 12
+                } else if (!isPM && hour === 12) {
+                  hour = 0
+                }
+              }
+              // If no period, assume 24-hour format (from HTML time input)
+              
+              executeAt.setHours(hour, minute, 0, 0)
+            }
+          }
 
           await supabase
             .from('automation_actions')

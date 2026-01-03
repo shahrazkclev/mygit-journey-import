@@ -17,6 +17,9 @@ interface AutomationStep {
   id: string;
   type: 'wait' | 'add_tag' | 'remove_tag' | 'send_email' | 'stop' | 'check_tags';
   delay_days?: number;
+  delay_hours?: number;
+  delay_minutes?: number;
+  delay_time?: string; // Time in format "HH:MM AM/PM" or "HH:MM"
   tag?: string;
   check_tags?: string | string[]; // Tags to check
   check_type?: 'exists' | 'not_exists'; // Whether tags should exist or not
@@ -139,7 +142,7 @@ export const AutomationRuleBuilder: React.FC<AutomationRuleBuilderProps> = ({
     const newStep: AutomationStep = {
       id: `step-${Date.now()}-${Math.random()}`,
       type,
-      ...(type === 'wait' && { delay_days: 0 }),
+      ...(type === 'wait' && { delay_days: 0, delay_hours: 0, delay_minutes: 0, delay_time: '' }),
       ...(type === 'add_tag' && { tag: '' }),
       ...(type === 'remove_tag' && { tag: '' }),
       ...(type === 'check_tags' && { check_tags: [], check_type: 'not_exists' }),
@@ -197,9 +200,18 @@ export const AutomationRuleBuilder: React.FC<AutomationRuleBuilderProps> = ({
 
       // Validate steps
       for (const step of steps) {
-        if (step.type === 'wait' && (!step.delay_days || step.delay_days < 0)) {
-          toast.error('Wait steps must have a delay of at least 0 days');
-          return;
+        if (step.type === 'wait') {
+          const days = step.delay_days || 0;
+          const hours = step.delay_hours || 0;
+          const minutes = step.delay_minutes || 0;
+          if (days < 0 || hours < 0 || minutes < 0) {
+            toast.error('Wait steps cannot have negative delays');
+            return;
+          }
+          if (days === 0 && hours === 0 && minutes === 0) {
+            toast.error('Wait steps must have at least some delay (days, hours, or minutes)');
+            return;
+          }
         }
         if ((step.type === 'add_tag' || step.type === 'remove_tag') && !step.tag?.trim()) {
           toast.error('Tag steps must have a tag specified');
@@ -347,16 +359,50 @@ export const AutomationRuleBuilder: React.FC<AutomationRuleBuilderProps> = ({
         </CardHeader>
         <CardContent className="space-y-4 pt-4">
           {step.type === 'wait' && (
-            <div className="flex gap-2 items-center">
-              <Label>Wait for</Label>
-              <Input
-                type="number"
-                min="0"
-                value={step.delay_days || 0}
-                onChange={(e) => updateStep(step.id, 'delay_days', parseInt(e.target.value) || 0)}
-                className="w-24"
-              />
-              <span className="text-sm text-muted-foreground">days</span>
+            <div className="space-y-4">
+              <div className="flex gap-2 items-center">
+                <Label>Wait for</Label>
+                <Input
+                  type="number"
+                  min="0"
+                  value={step.delay_days || 0}
+                  onChange={(e) => updateStep(step.id, 'delay_days', parseInt(e.target.value) || 0)}
+                  className="w-20"
+                />
+                <span className="text-sm text-muted-foreground">days</span>
+                <Input
+                  type="number"
+                  min="0"
+                  max="23"
+                  value={step.delay_hours || 0}
+                  onChange={(e) => updateStep(step.id, 'delay_hours', parseInt(e.target.value) || 0)}
+                  className="w-20"
+                />
+                <span className="text-sm text-muted-foreground">hours</span>
+                <Input
+                  type="number"
+                  min="0"
+                  max="59"
+                  value={step.delay_minutes || 0}
+                  onChange={(e) => updateStep(step.id, 'delay_minutes', parseInt(e.target.value) || 0)}
+                  className="w-20"
+                />
+                <span className="text-sm text-muted-foreground">minutes</span>
+              </div>
+              <div className="flex gap-2 items-center">
+                <Label>At specific time (optional)</Label>
+                <Input
+                  type="time"
+                  value={step.delay_time || ''}
+                  onChange={(e) => updateStep(step.id, 'delay_time', e.target.value)}
+                  className="w-32"
+                />
+                <span className="text-sm text-muted-foreground">or leave empty for immediate execution after delay</span>
+              </div>
+              <p className="text-sm text-muted-foreground">
+                {step.delay_days || 0} day(s), {step.delay_hours || 0} hour(s), {step.delay_minutes || 0} minute(s)
+                {step.delay_time && ` at ${step.delay_time}`}
+              </p>
             </div>
           )}
 

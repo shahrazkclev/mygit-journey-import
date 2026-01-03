@@ -333,7 +333,7 @@ async function processAutomationAction(env: Env, action: any): Promise<void> {
     // Get the step index from action metadata, or default to 0
     const stepIndex = action.step_index !== undefined ? action.step_index : 0;
     const currentStep = steps[stepIndex];
-    
+      
     if (!currentStep) {
       // All steps completed
       await supabaseQuery(env, 'automation_actions', {
@@ -343,7 +343,7 @@ async function processAutomationAction(env: Env, action: any): Promise<void> {
           status: 'completed',
           executed_at: new Date().toISOString(),
         },
-      });
+        });
       return;
     }
     
@@ -352,8 +352,8 @@ async function processAutomationAction(env: Env, action: any): Promise<void> {
     
     if (!stepSuccess) {
       throw new Error(`Failed to execute step: ${currentStep.type}`);
-    }
-    
+      }
+      
     // If this is a stop step, mark as completed and don't continue
     if (currentStep.type === 'stop') {
       await supabaseQuery(env, 'automation_actions', {
@@ -385,19 +385,43 @@ async function processAutomationAction(env: Env, action: any): Promise<void> {
     
     if (nextStep) {
       // Calculate delay for next step
-      let delayDays = 0;
-      if (nextStep.type === 'wait') {
-        delayDays = nextStep.delay_days || 0;
-      }
-      
-      // Schedule next step
       const executeAt = new Date();
-      executeAt.setDate(executeAt.getDate() + delayDays);
+      
+      if (nextStep.type === 'wait') {
+        const days = nextStep.delay_days || 0;
+        const hours = nextStep.delay_hours || 0;
+        const minutes = nextStep.delay_minutes || 0;
+        
+        // Add days, hours, and minutes
+        executeAt.setDate(executeAt.getDate() + days);
+        executeAt.setHours(executeAt.getHours() + hours);
+        executeAt.setMinutes(executeAt.getMinutes() + minutes);
+        
+        // If specific time is set, set the time
+        if (nextStep.delay_time) {
+          const [timeStr, period] = nextStep.delay_time.split(' ');
+          let [hoursStr, minutesStr] = timeStr.split(':');
+          let hour = parseInt(hoursStr) || 0;
+          const minute = parseInt(minutesStr) || 0;
+          
+          // Handle AM/PM
+          if (period) {
+            const isPM = period.toUpperCase() === 'PM';
+            if (isPM && hour !== 12) {
+              hour += 12;
+            } else if (!isPM && hour === 12) {
+              hour = 0;
+            }
+          }
+          
+          executeAt.setHours(hour, minute, 0, 0);
+        }
+      }
       
       await supabaseQuery(env, 'automation_actions', {
         method: 'POST',
         body: {
-          automation_rule_id: rule.id,
+        automation_rule_id: rule.id,
           contact_id: contact.id,
           status: 'pending',
           execute_at: executeAt.toISOString(),
@@ -416,38 +440,38 @@ async function processAutomationAction(env: Env, action: any): Promise<void> {
       });
     } else {
       // All steps completed
-      await supabaseQuery(env, 'automation_actions', {
-        method: 'PATCH',
-        filters: { id: `eq.${action.id}` },
-        body: {
-          status: 'completed',
-          executed_at: new Date().toISOString(),
-        },
-      });
+        await supabaseQuery(env, 'automation_actions', {
+          method: 'PATCH',
+          filters: { id: `eq.${action.id}` },
+          body: {
+            status: 'completed',
+            executed_at: new Date().toISOString(),
+          },
+        });
     }
-    
-    // Update rule statistics
-    await supabaseQuery(env, 'automation_rules', {
-      method: 'PATCH',
-      filters: { id: `eq.${rule.id}` },
-      body: {
-        success_count: (rule.success_count || 0) + 1,
-        last_triggered_at: new Date().toISOString(),
-      },
-    });
-    
-    // Log success
-    await supabaseQuery(env, 'automation_logs', {
-      method: 'POST',
-      body: {
-        automation_rule_id: rule.id,
-        automation_action_id: action.id,
-        contact_id: contact.id,
-        event_type: 'action_executed',
-        status: 'success',
+        
+        // Update rule statistics
+        await supabaseQuery(env, 'automation_rules', {
+          method: 'PATCH',
+          filters: { id: `eq.${rule.id}` },
+          body: {
+            success_count: (rule.success_count || 0) + 1,
+            last_triggered_at: new Date().toISOString(),
+          },
+        });
+        
+        // Log success
+        await supabaseQuery(env, 'automation_logs', {
+          method: 'POST',
+          body: {
+            automation_rule_id: rule.id,
+            automation_action_id: action.id,
+            contact_id: contact.id,
+            event_type: 'action_executed',
+            status: 'success',
         message: `Step ${stepIndex + 1} executed: ${currentStep.type}`,
-      },
-    });
+          },
+        });
   } catch (error: any) {
     console.error(`Error processing automation action ${action.id}:`, error);
     
@@ -575,17 +599,45 @@ async function handleRequest(request: Request, env: Env): Promise<Response> {
         
         // Find first non-wait step or first step
         let firstStepIndex = 0;
-        let delayDays = 0;
+        const executeAt = new Date();
         
         // If first step is wait, use its delay
         if (steps[0]?.type === 'wait') {
-          delayDays = steps[0].delay_days || 0;
+          const waitStep = steps[0];
+          const days = waitStep.delay_days || 0;
+          const hours = waitStep.delay_hours || 0;
+          const minutes = waitStep.delay_minutes || 0;
+          
+          // Add days, hours, and minutes
+          executeAt.setDate(executeAt.getDate() + days);
+          executeAt.setHours(executeAt.getHours() + hours);
+          executeAt.setMinutes(executeAt.getMinutes() + minutes);
+          
+          // If specific time is set, set the time
+          if (waitStep.delay_time) {
+            const timeParts = waitStep.delay_time.split(' ');
+            const timeStr = timeParts[0];
+            const period = timeParts[1]; // AM/PM if present
+            const [hoursStr, minutesStr] = timeStr.split(':');
+            let hour = parseInt(hoursStr) || 0;
+            const minute = parseInt(minutesStr) || 0;
+            
+            // Handle AM/PM (12-hour format) or use 24-hour format directly
+            if (period) {
+              const isPM = period.toUpperCase() === 'PM';
+              if (isPM && hour !== 12) {
+                hour += 12;
+              } else if (!isPM && hour === 12) {
+                hour = 0;
+              }
+            }
+            // If no period, assume 24-hour format (from HTML time input)
+            
+            executeAt.setHours(hour, minute, 0, 0);
+          }
+          
           firstStepIndex = 1; // Start with step after wait
         }
-        
-        // Calculate execute_at timestamp
-        const executeAt = new Date();
-        executeAt.setDate(executeAt.getDate() + delayDays);
         
         // Create automation action for first step
         await supabaseQuery(env, 'automation_actions', {
