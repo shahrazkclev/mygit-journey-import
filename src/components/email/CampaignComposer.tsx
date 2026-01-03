@@ -1158,6 +1158,12 @@ export const CampaignComposer: React.FC<CampaignComposerProps> = ({ onSave }) =>
       {/* Save Campaign */}
       {generatedTemplate && (
         <div className="flex flex-col sm:flex-row justify-end space-y-2 sm:space-y-0 sm:space-x-3">
+          <Button variant="outline" onClick={handleSaveTemplate}
+          className="border-email-secondary text-email-secondary hover:bg-email-secondary/10 w-full sm:w-auto"
+          >
+            <Save className="h-4 w-4 mr-2" />
+            Save as Template
+          </Button>
           <Button variant="outline" onClick={() => {
             const campaignData = {
               subject,

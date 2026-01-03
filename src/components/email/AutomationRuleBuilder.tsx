@@ -11,14 +11,18 @@ import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { TemplateSelector } from './TemplateSelector';
+import { WebhookSelector } from './WebhookSelector';
 
 interface AutomationStep {
   id: string;
-  type: 'wait' | 'add_tag' | 'remove_tag' | 'send_email' | 'stop';
+  type: 'wait' | 'add_tag' | 'remove_tag' | 'send_email' | 'stop' | 'check_tags';
   delay_days?: number;
   tag?: string;
+  check_tags?: string | string[]; // Tags to check
+  check_type?: 'exists' | 'not_exists'; // Whether tags should exist or not
   template_id?: string;
-  webhook_url?: string;
+  webhook_id?: string; // Reference to webhook
+  webhook_url?: string; // Custom webhook URL
   subject?: string;
   html_content?: string;
   stop_automation?: boolean;
@@ -138,6 +142,7 @@ export const AutomationRuleBuilder: React.FC<AutomationRuleBuilderProps> = ({
       ...(type === 'wait' && { delay_days: 0 }),
       ...(type === 'add_tag' && { tag: '' }),
       ...(type === 'remove_tag' && { tag: '' }),
+      ...(type === 'check_tags' && { check_tags: [], check_type: 'not_exists' }),
       ...(type === 'send_email' && { webhook_url: '', subject: '', html_content: '' }),
       ...(type === 'stop' && { stop_automation: true }),
     };
@@ -200,9 +205,16 @@ export const AutomationRuleBuilder: React.FC<AutomationRuleBuilderProps> = ({
           toast.error('Tag steps must have a tag specified');
           return;
         }
+        if (step.type === 'check_tags') {
+          const checkTags = Array.isArray(step.check_tags) ? step.check_tags : (step.check_tags ? [step.check_tags] : []);
+          if (checkTags.length === 0) {
+            toast.error('Tag check steps must have at least one tag to check');
+            return;
+          }
+        }
         if (step.type === 'send_email') {
-          if (!step.webhook_url?.trim()) {
-            toast.error('Email steps must have a webhook URL');
+          if (!step.webhook_id && !step.webhook_url?.trim()) {
+            toast.error('Email steps must have a webhook selected or custom URL');
             return;
           }
           if (!step.template_id && !step.html_content?.trim()) {
@@ -299,6 +311,7 @@ export const AutomationRuleBuilder: React.FC<AutomationRuleBuilderProps> = ({
                 Step {index + 1}: {step.type === 'wait' ? 'Wait' : 
                                    step.type === 'add_tag' ? 'Add Tag' :
                                    step.type === 'remove_tag' ? 'Remove Tag' :
+                                   step.type === 'check_tags' ? 'Check Tags' :
                                    step.type === 'send_email' ? 'Send Email' :
                                    'Stop Automation'}
               </CardTitle>
@@ -382,14 +395,91 @@ export const AutomationRuleBuilder: React.FC<AutomationRuleBuilderProps> = ({
             </div>
           )}
 
+          {step.type === 'check_tags' && (
+            <div className="space-y-4">
+              <div>
+                <Label>Check Type *</Label>
+                <Select
+                  value={step.check_type || 'not_exists'}
+                  onValueChange={(value) => updateStep(step.id, 'check_type', value)}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="not_exists">Tags Do NOT Exist (Skip if tags exist)</SelectItem>
+                    <SelectItem value="exists">Tags Exist (Skip if tags don't exist)</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label>Tags to Check *</Label>
+                <div className="space-y-2">
+                  <Select
+                    value={Array.isArray(step.check_tags) ? step.check_tags[0] || '' : (step.check_tags || '')}
+                    onValueChange={(value) => {
+                      const currentTags = Array.isArray(step.check_tags) ? step.check_tags : (step.check_tags ? [step.check_tags] : []);
+                      if (!currentTags.includes(value)) {
+                        updateStep(step.id, 'check_tags', [...currentTags, value]);
+                      }
+                    }}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select a tag to check" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {availableTags.map(tag => (
+                        <SelectItem key={tag} value={tag}>{tag}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  {Array.isArray(step.check_tags) && step.check_tags.length > 0 && (
+                    <div className="flex flex-wrap gap-2">
+                      {step.check_tags.map((tag, idx) => (
+                        <Badge key={idx} variant="outline" className="flex items-center gap-1">
+                          {tag}
+                          <button
+                            onClick={() => {
+                              const updated = step.check_tags.filter((_, i) => i !== idx);
+                              updateStep(step.id, 'check_tags', updated.length === 1 ? updated[0] : updated);
+                            }}
+                            className="ml-1 hover:text-red-600"
+                          >
+                            <X className="h-3 w-3" />
+                          </button>
+                        </Badge>
+                      ))}
+                    </div>
+                  )}
+                </div>
+                <p className="text-sm text-muted-foreground mt-1">
+                  {step.check_type === 'not_exists' 
+                    ? 'This step will only execute if the contact does NOT have these tags'
+                    : 'This step will only execute if the contact HAS these tags'}
+                </p>
+              </div>
+            </div>
+          )}
+
           {step.type === 'send_email' && (
             <>
               <div>
-                <Label>Webhook URL *</Label>
-                <Input
-                  value={step.webhook_url || ''}
-                  onChange={(e) => updateStep(step.id, 'webhook_url', e.target.value)}
-                  placeholder="https://hook.us2.make.com/..."
+                <Label>Webhook *</Label>
+                <WebhookSelector
+                  value={step.webhook_id || (step.webhook_url ? '__custom__' : undefined)}
+                  onChange={(webhookId) => {
+                    if (webhookId === '__custom__') {
+                      updateStep(step.id, 'webhook_id', undefined);
+                    } else {
+                      updateStep(step.id, 'webhook_id', webhookId);
+                      updateStep(step.id, 'webhook_url', undefined);
+                    }
+                  }}
+                  allowCustom={true}
+                  onCustomUrlChange={(url) => {
+                    updateStep(step.id, 'webhook_url', url);
+                    updateStep(step.id, 'webhook_id', undefined);
+                  }}
                 />
               </div>
               <div>
@@ -566,6 +656,10 @@ export const AutomationRuleBuilder: React.FC<AutomationRuleBuilderProps> = ({
             <Button variant="outline" onClick={() => addStep('remove_tag')}>
               <Plus className="h-4 w-4 mr-2" />
               Remove Tag
+            </Button>
+            <Button variant="outline" onClick={() => addStep('check_tags')}>
+              <Plus className="h-4 w-4 mr-2" />
+              Check Tags
             </Button>
             <Button variant="outline" onClick={() => addStep('send_email')}>
               <Plus className="h-4 w-4 mr-2" />
