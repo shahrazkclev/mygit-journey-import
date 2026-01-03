@@ -167,7 +167,7 @@ export const AutomationCampaigns: React.FC = () => {
               </Button>
             </DialogTrigger>
             <DialogContent 
-              className="max-w-5xl w-full max-h-[90vh] overflow-y-auto md:top-[5%] md:translate-y-0"
+              className="!max-w-[95vw] md:!max-w-[90vw] lg:!max-w-7xl w-full max-h-[90vh] overflow-y-auto md:top-[5%] md:translate-y-0"
             >
               <DialogHeader>
                 <DialogTitle>Create Automation Rule</DialogTitle>
@@ -460,7 +460,7 @@ export const AutomationCampaigns: React.FC = () => {
       {editingRule && (
         <Dialog open={!!editingRule} onOpenChange={() => setEditingRule(null)}>
           <DialogContent 
-            className="max-w-5xl w-full max-h-[90vh] overflow-y-auto md:top-[5%] md:translate-y-0"
+            className="!max-w-[95vw] md:!max-w-[90vw] lg:!max-w-7xl w-full max-h-[90vh] overflow-y-auto md:top-[5%] md:translate-y-0"
           >
             <DialogHeader>
               <DialogTitle>Edit Automation Rule</DialogTitle>
