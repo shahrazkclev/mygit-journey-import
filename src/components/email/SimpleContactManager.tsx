@@ -880,6 +880,9 @@ export const SimpleContactManager = () => {
     }
 
     try {
+      // Import trigger function dynamically to avoid circular dependencies
+      const { triggerAutomationOnTagChange } = await import('@/utils/automation-trigger');
+      
       if (bulkTagOperation === 'add') {
         const tagsToAdd = bulkTags.split(',').map(tag => tag.toLowerCase().trim()).filter(tag => tag.length > 0);
         
@@ -895,6 +898,9 @@ export const SimpleContactManager = () => {
               .eq('id', contactId);
 
             if (error) throw error;
+            
+            // Trigger automation for tag changes
+            await triggerAutomationOnTagChange(contactId, existingTags, newTags);
           }
         }
         toast.success(`Added tags to ${selectedContacts.size} contacts`);
@@ -913,6 +919,9 @@ export const SimpleContactManager = () => {
               .eq('id', contactId);
 
             if (error) throw error;
+            
+            // Trigger automation for tag changes
+            await triggerAutomationOnTagChange(contactId, existingTags, newTags);
           }
         }
         toast.success(`Removed tags from ${selectedContacts.size} contacts`);

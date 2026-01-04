@@ -256,6 +256,12 @@ export const EditContactDialog: React.FC<EditContactDialogProps> = ({
     
     setLoading(true);
     try {
+      // Get old tags before update
+      const oldTags = contact.tags || [];
+      
+      // Prepare new tags
+      const newTags = formData.tags.split(',').map(tag => tag.toLowerCase().trim()).filter(tag => tag.length > 0);
+      
       // Update contact info
       const { error: contactError } = await supabase
         .from('contacts')
@@ -263,12 +269,16 @@ export const EditContactDialog: React.FC<EditContactDialogProps> = ({
           email: formData.email.trim(),
           first_name: formData.firstName.trim() || null,
           last_name: formData.lastName.trim() || null,
-          tags: formData.tags.split(',').map(tag => tag.toLowerCase().trim()).filter(tag => tag.length > 0),
+          tags: newTags,
           status: formData.status,
         })
         .eq('id', contact.id);
 
       if (contactError) throw contactError;
+
+      // Trigger automation for tag changes
+      const { triggerAutomationOnTagChange } = await import('@/utils/automation-trigger');
+      await triggerAutomationOnTagChange(contact.id, oldTags, newTags);
 
       // Update products
       // First, remove all existing contact products
