@@ -157,9 +157,17 @@ export const AutomationRuleBuilder: React.FC<AutomationRuleBuilderProps> = ({
   };
 
   const updateStep = (stepId: string, field: keyof AutomationStep, value: any) => {
-    setSteps(steps.map(step => 
-      step.id === stepId ? { ...step, [field]: value } : step
-    ));
+    setSteps(prevSteps => {
+      const updatedSteps = prevSteps.map(step => {
+        if (step.id === stepId) {
+          const updated = { ...step, [field]: value };
+          console.log('Updating step:', { stepId, field, value, updated });
+          return updated;
+        }
+        return step;
+      });
+      return updatedSteps;
+    });
   };
 
   const moveStep = (stepId: string, direction: 'up' | 'down') => {
@@ -225,8 +233,19 @@ export const AutomationRuleBuilder: React.FC<AutomationRuleBuilderProps> = ({
           }
         }
         if (step.type === 'send_email') {
-          const hasWebhookId = step.webhook_id && step.webhook_id.trim() !== '';
-          const hasWebhookUrl = step.webhook_url && step.webhook_url.trim() !== '';
+          // Check if webhook_id is a valid non-empty string
+          const hasWebhookId = step.webhook_id && typeof step.webhook_id === 'string' && step.webhook_id.trim().length > 0;
+          // Check if webhook_url is a valid non-empty string
+          const hasWebhookUrl = step.webhook_url && typeof step.webhook_url === 'string' && step.webhook_url.trim().length > 0;
+          
+          console.log('Validating send_email step:', {
+            stepId: step.id,
+            webhook_id: step.webhook_id,
+            webhook_url: step.webhook_url,
+            hasWebhookId,
+            hasWebhookUrl
+          });
+          
           if (!hasWebhookId && !hasWebhookUrl) {
             toast.error('Email steps must have a webhook selected or custom URL');
             return;
@@ -516,6 +535,7 @@ export const AutomationRuleBuilder: React.FC<AutomationRuleBuilderProps> = ({
                 <WebhookSelector
                   value={step.webhook_id || (step.webhook_url ? '__custom__' : undefined)}
                   onChange={(webhookId) => {
+                    console.log('WebhookSelector onChange called:', { webhookId, stepId: step.id, currentWebhookId: step.webhook_id });
                     if (webhookId === '__custom__' || !webhookId) {
                       updateStep(step.id, 'webhook_id', undefined);
                       // Don't clear webhook_url if switching to custom
@@ -523,8 +543,14 @@ export const AutomationRuleBuilder: React.FC<AutomationRuleBuilderProps> = ({
                         // Keep custom URL if it exists
                       }
                     } else {
-                      updateStep(step.id, 'webhook_id', webhookId);
-                      updateStep(step.id, 'webhook_url', undefined);
+                      // Ensure webhookId is a valid string
+                      if (typeof webhookId === 'string' && webhookId.trim().length > 0) {
+                        updateStep(step.id, 'webhook_id', webhookId.trim());
+                        updateStep(step.id, 'webhook_url', undefined);
+                        console.log('Updated step with webhook_id:', webhookId);
+                      } else {
+                        console.error('Invalid webhookId received:', webhookId);
+                      }
                     }
                   }}
                   allowCustom={true}
